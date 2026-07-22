@@ -2527,7 +2527,7 @@ export default function ExamManager({ students, currentUser }) {
 
       {/* Tabs list trigger */}
       <Tabs defaultValue="exams" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-4 bg-slate-100 rounded-xl max-w-lg mb-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto p-1 gap-1 bg-slate-100 rounded-xl max-w-lg mb-6">
           <TabsTrigger value="exams" className="rounded-lg text-xs font-bold py-2.5">Exams List</TabsTrigger>
           <TabsTrigger value="entry" className="rounded-lg text-xs font-bold py-2.5">Result Entry</TabsTrigger>
           <TabsTrigger value="dashboard" className="rounded-lg text-xs font-bold py-2.5">Results Dashboard</TabsTrigger>
@@ -2607,7 +2607,7 @@ export default function ExamManager({ students, currentUser }) {
 
       {/* Exam Dialog Form */}
       <Dialog open={showExamForm} onOpenChange={v => { setShowExamForm(v); if (!v) setEditExam(null); }}>
-        <DialogContent className="max-w-xl rounded-3xl p-6">
+        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-3xl p-4 sm:p-6">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-[#052E2B]">{editExam ? "Edit Examination Details" : "Configure New Examination"}</DialogTitle>
           </DialogHeader>

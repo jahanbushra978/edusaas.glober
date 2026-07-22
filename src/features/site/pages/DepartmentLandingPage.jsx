@@ -211,7 +211,6 @@ export default function DepartmentLandingPage({ department }) {
   const quickLinks = [
     { href: "#overview", label: t.deptPage.overview, icon: GraduationCap },
     { href: "#notices", label: t.deptPage.notices, icon: Bell },
-    { href: "#results", label: t.deptPage.results, icon: Trophy },
     { href: "#gallery", label: t.deptPage.gallery, icon: ImageIcon },
   ];
 
@@ -655,127 +654,6 @@ export default function DepartmentLandingPage({ department }) {
             )}
           </SectionCard>
 
-          {/* --- বিভাগভিত্তিক ফলাফল --- */}
-          <SectionCard id="results" icon={Trophy} title={t.deptPage.results} colors={c}>
-            {filteredExams.length === 0 ? (
-              <div
-                className="rounded-2xl px-5 py-10 text-center text-sm text-slate-500 dark:text-gray-400"
-                style={{ background: c.surface, border: `1px dashed ${c.border}` }}
-              >
-                <Trophy className="mx-auto mb-2 h-6 w-6 opacity-40" style={{ color: c.primary }} />
-                {t.deptPage.noResults}
-              </div>
-            ) : (
-              <>
-                <div className="flex flex-wrap gap-2">
-                  {filteredExams.map((exam) => (
-                    <button
-                      key={exam.id}
-                      type="button"
-                      onClick={() => setSelectedExamId(exam.id)}
-                      className="rounded-full px-4 py-2 text-xs font-bold transition-all duration-300 hover:shadow-md"
-                      style={{
-                        background:
-                          activeExam?.id === exam.id ? c.primary : c.surface,
-                        color: activeExam?.id === exam.id ? "#ffffff" : c.primary,
-                        border: `1px solid ${c.border}`,
-                        boxShadow: activeExam?.id === exam.id ? `0 4px 16px ${c.glow}` : "none",
-                      }}
-                    >
-                      {exam.title}
-                    </button>
-                  ))}
-                </div>
-
-                {activeExam ? (
-                  <div className="mt-6 grid gap-5 lg:grid-cols-[1.05fr_0.95fr]">
-                    <article
-                      className="rounded-[24px] p-5 md:p-6 dark:bg-gray-800/50"
-                      style={{ background: c.surface, border: `1px solid ${c.border}` }}
-                    >
-                      <h2 className="text-lg font-bold text-slate-900 dark:text-gray-100">{activeExam.title}</h2>
-                      <p className="mt-2 text-sm text-slate-500 dark:text-gray-400">
-                        {t.deptPage.examDate}: {activeExam.exam_date || t.deptPage.notPublished} | {t.deptPage.totalMarks}: {activeExam.total_marks || 0}
-                      </p>
-                      {topResults.length === 0 ? (
-                        <p className="mt-6 text-sm text-slate-500 dark:text-gray-400">{t.deptPage.noResultData}</p>
-                      ) : (
-                        <div className="mt-5 space-y-3">
-                          {topResults.map((item, index) => (
-                            <div
-                              key={item.id}
-                              className="flex items-center gap-3 rounded-2xl px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md dark:bg-gray-700/50"
-                              style={{
-                                background: "#ffffff",
-                                border: `1px solid ${c.border}`,
-                              }}
-                            >
-                              <div
-                                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-all duration-300"
-                                style={{
-                                  background: index < 3 ? `linear-gradient(135deg, ${c.primary}, ${c.secondary})` : c.chip,
-                                  color: index < 3 ? "#ffffff" : c.primary,
-                                }}
-                              >
-                                {index + 1}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p className="truncate text-sm font-bold text-slate-800 dark:text-gray-100">
-                                  {item.student.full_name_bn || item.student.full_name_en}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-gray-400">{t.deptPage.roll} #{item.student.roll_number}</p>
-                              </div>
-                              <div className="text-right shrink-0">
-                                <p className="text-sm font-bold" style={{ color: c.primary }}>
-                                  {item.obtained_marks}/{activeExam.total_marks}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-gray-400">{item.grade || "N/A"}</p>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </article>
-
-                    <article
-                      className="rounded-[24px] p-5 md:p-6 dark:bg-gray-800/50"
-                      style={{
-                        background: "#ffffff",
-                        border: `1px solid ${c.border}`,
-                      }}
-                    >
-                      <div className="flex items-center gap-2 mb-4">
-                        <FileImage className="h-4 w-4" style={{ color: c.primary }} />
-                        <h2 className="text-lg font-bold text-slate-900 dark:text-gray-100">{t.deptPage.examGallery}</h2>
-                      </div>
-                      {filteredExamInputs.length === 0 ? (
-                        <p className="mt-5 text-sm text-slate-500 dark:text-gray-400">{t.deptPage.noInputs}</p>
-                      ) : (
-                        <div className="mt-3 grid grid-cols-2 gap-3">
-                          {filteredExamInputs.slice(0, 4).map((item) => (
-                            <button
-                              key={item.id}
-                              type="button"
-                              onClick={() => setSelectedImage({ image_url: item.image_url, title: item.title, department: department.shortLabel })}
-                              className="group overflow-hidden rounded-2xl text-left transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg dark:bg-gray-700/50"
-                              style={{ border: `1px solid ${c.border}` }}
-                            >
-                              <div className="relative aspect-[4/3]">
-                                <Image src={item.image_url} alt={item.title} fill className="object-cover transition-transform duration-500 group-hover:scale-105" sizes="(max-width: 768px) 50vw, 25vw" />
-                              </div>
-                              <div className="bg-white dark:bg-gray-800 px-3 py-3">
-                                <p className="line-clamp-2 text-xs font-semibold text-slate-700 dark:text-gray-300">{item.title}</p>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      )}
-                    </article>
-                  </div>
-                ) : null}
-              </>
-            )}
-          </SectionCard>
 
           {/* --- বিভাগভিত্তিক গ্যালারি — No "বিস্তারিত দেখুন" --- */}
           <SectionCard id="gallery" icon={FileImage} title={t.deptPage.gallery} colors={c}>

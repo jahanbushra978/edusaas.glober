@@ -1305,7 +1305,7 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
                     )}
                   </button>
                 </PopoverTrigger>
-                <PopoverContent className="w-80 p-0 rounded-2xl shadow-xl border border-gray-100 overflow-hidden bg-white z-50">
+                <PopoverContent className="w-[92vw] sm:w-80 p-0 rounded-2xl shadow-xl border border-gray-100 overflow-hidden bg-white z-50">
                   {/* Popover Header */}
                   <div className="bg-[#022c22] text-white px-4 py-3 flex items-center justify-between">
                     <div className="flex items-center gap-1.5">

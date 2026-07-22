@@ -724,7 +724,7 @@ export default function SecurityManager() {
 
       {/* Password Confirmation Modal for Settings */}
       <Dialog open={showPasswordModal} onOpenChange={setShowPasswordModal}>
-        <DialogContent className="rounded-2xl max-w-sm">
+        <DialogContent className="w-[95vw] sm:max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-slate-900">
               <ShieldAlert className="h-5 w-5 text-amber-500" />

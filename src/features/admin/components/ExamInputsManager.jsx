@@ -138,7 +138,7 @@ export default function ExamInputsManager({ exams = [] }) {
       )}
 
       <Dialog open={showForm} onOpenChange={(next) => { setShowForm(next); if (!next) resetForm(); }}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle className="italic">Upload Exam Input</DialogTitle>
           </DialogHeader>

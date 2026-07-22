@@ -560,7 +560,7 @@ function PromoteStudents({ currentUser }) {
       )}
 
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
-        <DialogContent className="max-w-xl">
+        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-emerald-900">
               <GraduationCap className="w-5 h-5 text-amber-500" />

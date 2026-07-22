@@ -1627,7 +1627,7 @@ export default function FeeManager({ students, currentUser }) {
 
           {/* Add Fee Type Dialog */}
           <Dialog open={isAddingFeeType} onOpenChange={setIsAddingFeeType}>
-            <DialogContent className="max-w-sm rounded-[24px]">
+            <DialogContent className="w-[95vw] sm:max-w-sm max-h-[90vh] overflow-y-auto rounded-[24px]">
               <DialogHeader>
                 <DialogTitle className="text-base font-bold text-[#052E2B]">Create Custom Fee Type</DialogTitle>
               </DialogHeader>

@@ -129,7 +129,7 @@ export default function FacilityManager() {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit Facility" : "Add New Facility"}</DialogTitle>
           </DialogHeader>

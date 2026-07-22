@@ -543,7 +543,7 @@ export default function NoticeManager({ currentUser }) {
       )}
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle>{editNotice ? "Edit Notice" : "Add New Notice"}</DialogTitle>
           </DialogHeader>

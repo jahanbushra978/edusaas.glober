@@ -1342,7 +1342,7 @@ export default function TeacherManager({ students, currentUser }) {
 
       {/* Add/Edit Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
+        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-primary">
               {editingTeacher ? `Edit Teacher Profile: ${editingTeacher.full_name_en}` : "Add New Teacher"}

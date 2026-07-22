@@ -128,7 +128,7 @@ export default function AdmissionApplicationManager({ currentUser }) {
 
       {/* Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle>আবেদনের বিস্তারিত</DialogTitle>
           </DialogHeader>

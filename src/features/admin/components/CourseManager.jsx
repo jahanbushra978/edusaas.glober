@@ -214,7 +214,7 @@ export default function CourseManager() {
 
       {/* Course Edit/Create Dialog */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-[#052E2B] font-bold italic">{editingItem ? "Edit Course" : "Add Course"}</DialogTitle>
           </DialogHeader>

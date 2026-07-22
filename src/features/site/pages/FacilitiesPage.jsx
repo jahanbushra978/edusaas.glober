@@ -3,7 +3,7 @@
 import React from "react";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useTranslation } from "@/lib/translations";
-import { Home, Zap, School, BookOpen, BookText, Users, Utensils, Shield, TreePine, ArrowLeft } from "lucide-react";
+import { Home, Zap, School, Droplet, Trophy, Building, Utensils, Shield, TreePine, ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 
@@ -11,9 +11,9 @@ const FACILITIES_LIST = [
   { icon: Home, key: "f1", color: "#9933cc" },
   { icon: Zap, key: "f2", color: "#f59e0b" },
   { icon: School, key: "f3", color: "#3b82f6" },
-  { icon: BookOpen, key: "f4", color: "#D4AF37" },
-  { icon: BookText, key: "f5", color: "#10b981" },
-  { icon: Users, key: "f6", color: "#8b5cf6" },
+  { icon: Droplet, key: "f4", color: "#06b6d4" },
+  { icon: Trophy, key: "f5", color: "#f59e0b" },
+  { icon: Building, key: "f6", color: "#8b5cf6" },
   { icon: Utensils, key: "f7", color: "#ef4444" },
   { icon: Shield, key: "f8", color: "#06b6d4" },
   { icon: TreePine, key: "f9", color: "#22c55e" },

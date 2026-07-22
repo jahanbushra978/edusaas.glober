@@ -345,7 +345,7 @@ export default function NavbarManager() {
       )}
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[85vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle>{editItem ? "Edit Navbar Item" : "Add New Navbar Item"}</DialogTitle>
           </DialogHeader>

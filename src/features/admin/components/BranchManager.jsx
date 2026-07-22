@@ -408,7 +408,7 @@ export default function BranchManager() {
 
       {/* Form Dialog */}
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-4xl w-[90vw] p-0 overflow-hidden bg-white dark:bg-[#0d1f17] border dark:border-green-900 rounded-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto p-0 rounded-2xl bg-white dark:bg-[#0d1f17] border dark:border-green-900">
           <DialogHeader className="px-6 pt-6 pb-4 border-b dark:border-green-900">
             <DialogTitle className="text-xl font-extrabold italic text-[#052E2B] dark:text-emerald-400">
               {editing ? "Edit Branch settings" : "Add New Branch"}

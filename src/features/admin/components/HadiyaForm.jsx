@@ -128,7 +128,7 @@ function HadiyaFormModal({ open, onClose, students, teachers, editingItem }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="rounded-3xl bg-white">
+      <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl bg-white">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-slate-800">{editingItem ? "Edit Hadiya Record" : "Add New Hadiya"}</DialogTitle>
         </DialogHeader>
@@ -228,7 +228,7 @@ function HadiyaFormModal({ open, onClose, students, teachers, editingItem }) {
 function BulkPayModal({ open, onClose, pendingList, onConfirm, loading }) {
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="rounded-3xl">
+      <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl">
         <DialogHeader>
           <DialogTitle>Mark All as Paid</DialogTitle>
         </DialogHeader>
@@ -1647,17 +1647,17 @@ export default function HadiyaForm({ students = [], teachers = [], currentUser }
 
       {/* Tabs: List / Monthly Report */}
       <Tabs value={viewTab} onValueChange={setViewTab}>
-        <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
-          <TabsTrigger value="list" className="gap-2"><Users className="h-4 w-4" /> stipend & salary List</TabsTrigger>
-          <TabsTrigger value="report" className="gap-2"><BarChart3 className="h-4 w-4" /> Monthly Report (Students)</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-2 h-auto p-1 gap-1">
+          <TabsTrigger value="list" className="gap-1.5 text-xs sm:text-sm py-2"><Users className="h-4 w-4 shrink-0" /> <span className="truncate">Stipend & Salary List</span></TabsTrigger>
+          <TabsTrigger value="report" className="gap-1.5 text-xs sm:text-sm py-2"><BarChart3 className="h-4 w-4 shrink-0" /> <span className="truncate">Monthly Report</span></TabsTrigger>
         </TabsList>
 
         {/* LIST VIEW */}
         <TabsContent value="list" className="mt-3">
           <Tabs value={tab} onValueChange={v => { setTab(v); }}>
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 mb-3">
-              <TabsTrigger value="student" className="gap-2"><GraduationCap className="h-4 w-4" /> Student Stipends</TabsTrigger>
-              <TabsTrigger value="teacher" className="gap-2"><UserCog className="h-4 w-4" /> Teacher Hadiya & Salary</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 h-auto p-1 gap-1 mb-3">
+              <TabsTrigger value="student" className="gap-1.5 text-xs sm:text-sm py-2"><GraduationCap className="h-4 w-4 shrink-0" /> <span className="truncate">Student Stipends</span></TabsTrigger>
+              <TabsTrigger value="teacher" className="gap-1.5 text-xs sm:text-sm py-2"><UserCog className="h-4 w-4 shrink-0" /> <span className="truncate">Teacher Hadiya & Salary</span></TabsTrigger>
             </TabsList>
 
             {/* ── 1. STUDENT HADIYA VIEW (Untouched functionality) ── */}
@@ -2715,9 +2715,9 @@ export default function HadiyaForm({ students = [], teachers = [], currentUser }
         {/* MONTHLY REPORT VIEW (Students - Untouched functionality) */}
         <TabsContent value="report" className="mt-3">
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2 mb-3">
-              <TabsTrigger value="student" className="gap-2"><GraduationCap className="h-4 w-4" /> Students</TabsTrigger>
-              <TabsTrigger value="teacher" className="gap-2"><UserCog className="h-4 w-4" /> Teachers</TabsTrigger>
+            <TabsList className="grid w-full grid-cols-2 h-auto p-1 gap-1 mb-3">
+              <TabsTrigger value="student" className="gap-1.5 text-xs sm:text-sm py-2"><GraduationCap className="h-4 w-4 shrink-0" /> <span className="truncate">Students</span></TabsTrigger>
+              <TabsTrigger value="teacher" className="gap-1.5 text-xs sm:text-sm py-2"><UserCog className="h-4 w-4 shrink-0" /> <span className="truncate">Teachers</span></TabsTrigger>
             </TabsList>
             {tab === "student" ? (
               studentMonthlyReport.length === 0 ? (
@@ -2883,7 +2883,7 @@ function AddTeacherSalaryModal({ open, onClose, teachers, onSave, editingProfile
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="rounded-3xl max-w-md bg-white">
+      <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto rounded-3xl bg-white">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-[#052E2B]">
             {editingProfile && editingProfile.id ? "Edit Teacher Salary Profile" : "Add Teacher Salary Profile"}
@@ -3062,7 +3062,7 @@ function AddPaymentModal({ open, onClose, rowData, onSave }) {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="rounded-3xl max-w-md bg-white">
+      <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto rounded-3xl bg-white">
         <DialogHeader>
           <DialogTitle className="text-lg font-bold text-[#052E2B]">Record Salary Payment</DialogTitle>
         </DialogHeader>

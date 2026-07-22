@@ -912,11 +912,11 @@ export default function StudentForm({ student, onSave, onCancel, currentUser }) 
               )}
             </div>
 
-            <div className="flex justify-end gap-3 pt-4 border-t">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4 border-t">
               {onCancel && (
-                <Button type="button" variant="outline" onClick={onCancel}>Cancel</Button>
+                <Button type="button" variant="outline" onClick={onCancel} className="w-full sm:w-auto">Cancel</Button>
               )}
-              <Button type="submit" disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[120px]">
+              <Button type="submit" disabled={saving} className="bg-indigo-600 hover:bg-indigo-700 text-white min-w-[120px] w-full sm:w-auto">
                 {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : student ? "Update Student" : "Add Student"}
               </Button>
             </div>

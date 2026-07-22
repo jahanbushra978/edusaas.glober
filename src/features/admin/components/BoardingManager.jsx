@@ -1672,7 +1672,7 @@ export default function BoardingManager({ currentUser }) {
 
       {/* REPORT DETAILS DIALOG */}
       <Dialog open={!!selectedReportDetails} onOpenChange={() => setSelectedReportDetails(null)}>
-        <DialogContent className="max-w-3xl rounded-[24px]">
+        <DialogContent className="w-[95vw] sm:max-w-3xl max-h-[90vh] overflow-y-auto rounded-[24px]">
           <DialogHeader>
             <DialogTitle className="text-lg font-black text-[#052E2B] flex items-center justify-between border-b pb-2">
               <span>Boarding Log details - {selectedReportDetails?.date}</span>

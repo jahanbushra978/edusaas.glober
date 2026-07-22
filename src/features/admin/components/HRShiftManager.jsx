@@ -139,7 +139,7 @@ export default function HRShiftManager({ branchId }) {
       </div>
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle>{editing ? "Edit Shift" : "Create New Shift"}</DialogTitle>
           </DialogHeader>

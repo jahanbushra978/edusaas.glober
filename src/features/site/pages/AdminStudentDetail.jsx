@@ -850,7 +850,7 @@ export default function AdminStudentDetail() {
 
         <Dialog open={showEditStudent} onOpenChange={setShowEditStudent}>
 
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] sm:max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl">
 
             <DialogHeader><DialogTitle>Edit Student</DialogTitle></DialogHeader>
 
@@ -874,7 +874,7 @@ export default function AdminStudentDetail() {
 
         <Dialog open={showLogForm} onOpenChange={setShowLogForm}>
 
-          <DialogContent>
+          <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
 
             <DialogHeader><DialogTitle>{editingLog ? "Edit Reading Log" : "Add Reading Log"}</DialogTitle></DialogHeader>
 

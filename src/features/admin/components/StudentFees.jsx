@@ -2880,7 +2880,7 @@ export default function StudentFees({ students = [], currentUser }) {
 
       {/* dialog Collect quick Fee modal */}
       <Dialog open={showCollectModal} onOpenChange={setShowCollectModal}>
-        <DialogContent className="max-w-md rounded-2xl bg-white border">
+        <DialogContent className="w-[95vw] sm:max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white border">
           <DialogHeader>
             <DialogTitle className="text-base font-bold text-[#052E2B]">
               Record Quick Fee Collection Receipt

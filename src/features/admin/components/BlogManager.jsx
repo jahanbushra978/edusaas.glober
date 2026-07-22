@@ -301,7 +301,7 @@ export default function BlogManager() {
 
       {/* Dialog Form */}
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
+        <DialogContent className="w-[95vw] sm:max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-[#052E2B] font-bold italic">{editingItem ? "Edit Blog Post" : "Write Blog Post"}</DialogTitle>
           </DialogHeader>

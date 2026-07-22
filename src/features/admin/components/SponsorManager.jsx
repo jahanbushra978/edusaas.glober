@@ -663,7 +663,7 @@ export default function SponsorManager() {
 
       {/* ── Form Dialog ──────────────────────────────────────────────────── */}
       <Dialog open={showForm} onOpenChange={(o) => { if (!o) { setShowForm(false); setEditing(null); } }}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto rounded-[24px]">
+        <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-[24px]">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-[#052E2B] flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-[#D4AF37]" />
