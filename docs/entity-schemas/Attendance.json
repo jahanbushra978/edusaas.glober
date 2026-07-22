@@ -1,0 +1,39 @@
+{
+  "name": "Attendance",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "Reference to student ID"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Attendance date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "present",
+        "absent",
+        "late",
+        "excused"
+      ],
+      "default": "present",
+      "description": "Attendance status"
+    },
+    "marked_by": {
+      "type": "string",
+      "description": "Teacher/Admin who marked attendance"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "student_id",
+    "date",
+    "status"
+  ]
+}

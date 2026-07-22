@@ -1,0 +1,1098 @@
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind base;
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind components;
+/* stylelint-disable-next-line at-rule-no-unknown */
+@tailwind utilities;
+/* stylelint-disable-next-line at-rule-no-unknown */
+
+@layer base {
+  :root {
+    --background: 0 0% 97%;
+    --foreground: 168 100% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 168 100% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 168 100% 12%;
+    --primary: 168 100% 19%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 43 77% 52%;
+    --secondary-foreground: 168 100% 12%;
+    --muted: 168 10% 95%;
+    --muted-foreground: 168 10% 45%;
+    --accent: 43 77% 52%;
+    --accent-foreground: 168 100% 12%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 168 15% 88%;
+    --input: 168 15% 88%;
+    --ring: 168 100% 19%;
+    --radius: 0.75rem;
+  }
+
+  .dark {
+    --background: 240 10% 4%; /* #09090b - Premium Zinc-950 */
+    --foreground: 0 0% 98%; /* #fafafa - White/Off-White */
+    --card: 240 5.9% 10%; /* #18181b - Premium Zinc-900 */
+    --card-foreground: 0 0% 98%;
+    --popover: 240 5.9% 10%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 240 3.7% 15.9%; /* #27272a - Zinc-800 */
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html, body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
+    font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
+
+  /* Language specific font overrides */
+  [lang="bn"], .font-bn, .font-bengali {
+    font-family: var(--font-hind-siliguri), sans-serif !important;
+  }
+  [lang="ar"], .font-ar {
+    font-family: var(--font-noto-sans-arabic), sans-serif !important;
+  }
+  [lang="en"], .font-en {
+    font-family: var(--font-inter), sans-serif !important;
+  }
+}
+
+/* ── Prevent faux italic on Bengali & Arabic scripts ──
+   These font families lack true italic variants. Synthetic italic
+   distorts conjunct characters (যুক্তবর্ণ) and Arabic cursive joiners. */
+[lang="bn"] .italic,
+[lang="ar"] .italic,
+.font-bengali .italic,
+.font-arabic .italic,
+:where([lang="bn"], [lang="ar"]) em,
+:where([lang="bn"], [lang="ar"]) i {
+  font-style: normal;
+}
+
+/* Ensure Bengali and Arabic text never gets synthetic italic */
+.font-hind-siliguri,
+.font-noto-sans-arabic {
+  font-synthesis: none;
+}
+
+/* ──────────────────────────────────
+   PREMIUM CARD
+────────────────────────────────── */
+.premium-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 98, 65, 0.12);
+  box-shadow:
+    0 4px 6px -1px rgba(0,0,0,0.05),
+    0 10px 40px -8px rgba(0, 98, 65, 0.12),
+    0 0 0 1px rgba(255,255,255,0.6) inset;
+}
+
+.dark .premium-card {
+  background: rgba(10, 28, 22, 0.85);
+  border: 1px solid rgba(0, 98, 65, 0.25);
+  box-shadow:
+    0 4px 6px -1px rgba(0,0,0,0.3),
+    0 10px 40px -8px rgba(0, 98, 65, 0.2);
+}
+
+/* ──────────────────────────────────
+   ISLAMIC GRADIENT UTILITIES
+────────────────────────────────── */
+.islamic-gradient {
+  background: linear-gradient(135deg, #005235 0%, #006241 50%, #004D40 100%);
+}
+
+.islamic-gradient-gold {
+  background: linear-gradient(135deg, #D4AF37 0%, #c9a227 100%);
+}
+
+.gold-accent { color: #D4AF37; }
+.gold-border { border-color: #D4AF37; }
+
+/* ──────────────────────────────────
+   SCROLLBAR
+────────────────────────────────── */
+html { scroll-behavior: smooth; }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 98, 65, 0.30);
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover { background: #006241; }
+.dark ::-webkit-scrollbar-thumb { background: rgba(212, 175, 55, 0.35); }
+.dark ::-webkit-scrollbar-thumb:hover { background: rgba(212, 175, 55, 0.6); }
+
+/* ──────────────────────────────────
+   BACKGROUND PATTERN
+────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23006241' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* ──────────────────────────────────
+   NOTICE BOX SCROLLING ANIMATION & HOVER EFFECTS
+────────────────────────────────── */
+
+/* Vertical scrolling animation */
+@keyframes notice-scroll-vertical {
+  0% {
+    transform: translateY(0);
+  }
+  100% {
+    transform: translateY(-50%);
+  }
+}
+
+/* Pause animation on hover */
+.hover\:animate-pause:hover {
+  animation-play-state: paused;
+}
+
+/* Smooth green hover highlight effect */
+.notice-item-hover {
+  transition: all 0.3s ease;
+}
+
+.notice-item-hover:hover {
+  background: linear-gradient(135deg, rgba(18, 113, 91, 0.08) 0%, rgba(18, 113, 91, 0.12) 100%);
+  border-color: rgba(18, 113, 91, 0.3) !important;
+  box-shadow: 0 4px 12px rgba(18, 113, 91, 0.15), 0 0 0 1px rgba(18, 113, 91, 0.1) inset;
+  transform: translateY(-2px);
+}
+
+/* ──────────────────────────────────
+   ISLAMIC PREMIUM DEPARTMENT PAGE
+────────────────────────────────── */
+
+/* Islamic geometric pattern background for hero */
+.islamic-hero-pattern {
+  background-image: 
+    radial-gradient(circle at 20% 50%, rgba(212, 175, 55, 0.04) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(212, 175, 55, 0.03) 0%, transparent 50%),
+    radial-gradient(circle at 50% 80%, rgba(0, 98, 65, 0.03) 0%, transparent 50%),
+    url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 80 80' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23006241' fill-opacity='0.03'%3E%3Cpath d='M50 50c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10s-10-4.477-10-10 4.477-10 10-10zM10 10c0-5.523 4.477-10 10-10s10 4.477 10 10-4.477 10-10 10c0 5.523-4.477 10-10 10S0 25.523 0 20s4.477-10 10-10z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  background-repeat: repeat;
+}
+
+/* Premium glass card for ayat container */
+.ayat-glass-card {
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(212, 175, 55, 0.2);
+  box-shadow: 
+    0 20px 60px -20px rgba(0, 0, 0, 0.08),
+    0 0 0 1px rgba(255, 255, 255, 0.6) inset;
+}
+
+/* Translation card style */
+.translation-card {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid rgba(0, 98, 65, 0.1);
+  box-shadow: 
+    0 8px 32px -12px rgba(0, 98, 65, 0.12),
+    0 0 0 1px rgba(212, 175, 55, 0.08) inset;
+}
+
+/* Arabic ayat text style */
+.ayat-text-arabic {
+  font-family: var(--font-amiri), var(--font-noto-sans-arabic), serif;
+  line-height: 1.6;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+/* Decorative divider with gold */
+.divider-gold {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.divider-gold::before,
+.divider-gold::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.4), transparent);
+}
+.divider-gold-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(212, 175, 55, 0.5);
+}
+
+/* Kaaba watermark */
+.kaaba-watermark {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0.06;
+  pointer-events: none;
+}
+.kaaba-watermark svg {
+  width: 180px;
+  height: 180px;
+}
+
+/* Premium content card */
+.premium-content-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(0, 98, 65, 0.08);
+  box-shadow: 
+    0 20px 60px -24px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(255, 255, 255, 0.5) inset;
+}
+
+/* Feature check item */
+.feature-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  transition: all 0.3s ease;
+}
+.feature-check-item:hover {
+  transform: translateY(-2px);
+}
+
+/* Feature icon */
+.feature-check-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  border-radius: 50%;
+  font-size: 14px;
+  margin-top: 1px;
+}
+
+/* Section title with decorative line */
+.section-title-decorated {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.section-title-decorated::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, rgba(212, 175, 55, 0.3), transparent);
+  max-width: 120px;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .kaaba-watermark svg {
+    width: 100px;
+    height: 100px;
+  }
+  .ayat-text-arabic {
+    font-size: 1.5rem !important;
+  }
+
+  /* Prevent horizontal main layout scrolling */
+  html, body {
+    max-width: 100vw;
+    overflow-x: hidden;
+  }
+
+  /* Force tables inside main content to allow scroll */
+  table {
+    display: block;
+    width: 100%;
+    overflow-x: auto;
+  }
+}
+
+/* Admin tables — mobile responsive */
+@media (max-width: 767px) {
+  .admin-table-container,
+  [class*="overflow-x-auto"] {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table td .flex,
+  table td [class*="flex"] {
+    flex-wrap: nowrap;
+  }
+
+  table td button,
+  table td a {
+    white-space: nowrap;
+  }
+}
+
+/* Fade animations */
+@keyframes fade-scale {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+@keyframes float-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(212, 175, 55, 0.1); }
+  50% { box-shadow: 0 0 20px 4px rgba(212, 175, 55, 0.06); }
+}
+
+.animate-fade-scale { animation: fade-scale 0.5s ease-out forwards; }
+.animate-float-slow { animation: float-slow 6s ease-in-out infinite; }
+.animate-slide-in-right { animation: slide-in-right 0.6s ease-out forwards; }
+.animate-glow-pulse { animation: glow-pulse 3s ease-in-out infinite; }
+.animate-delay-200 { animation-delay: 200ms; }
+.animate-delay-400 { animation-delay: 400ms; }
+
+/* ──────────────────────────────────
+   PREMIUM ANIMATION SYSTEM
+   ────────────────────────────────── */
+
+/* Fade Up */
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-up {
+  animation: fade-up 0.7s ease-out forwards;
+}
+
+/* Fade Down */
+@keyframes fade-down {
+  from { opacity: 0; transform: translateY(-40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-down {
+  animation: fade-down 0.7s ease-out forwards;
+}
+
+/* Fade Left */
+@keyframes fade-left {
+  from { opacity: 0; transform: translateX(40px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+.animate-fade-left {
+  animation: fade-left 0.7s ease-out forwards;
+}
+
+/* Zoom In */
+@keyframes zoom-in {
+  from { opacity: 0; transform: scale(0.8); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-zoom-in {
+  animation: zoom-in 0.6s ease-out forwards;
+}
+
+/* Zoom Out */
+@keyframes zoom-out {
+  from { opacity: 0; transform: scale(1.2); }
+  to { opacity: 1; transform: scale(1); }
+}
+.animate-zoom-out {
+  animation: zoom-out 0.6s ease-out forwards;
+}
+
+/* Flip Up */
+@keyframes flip-up {
+  from { opacity: 0; transform: perspective(600px) rotateX(60deg); }
+  to { opacity: 1; transform: perspective(600px) rotateX(0); }
+}
+.animate-flip-up {
+  animation: flip-up 0.8s ease-out forwards;
+}
+
+/* Rotate In */
+@keyframes rotate-in {
+  from { opacity: 0; transform: rotate(-15deg) scale(0.9); }
+  to { opacity: 1; transform: rotate(0) scale(1); }
+}
+.animate-rotate-in {
+  animation: rotate-in 0.7s ease-out forwards;
+}
+
+/* Reveal Animation */
+@keyframes reveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}
+.animate-reveal {
+  animation: reveal 0.8s ease-out forwards;
+}
+
+/* Parallax scroll utility */
+.parallax-slow {
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+/* Stagger children */
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-up 0.6s ease-out forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0ms; }
+.stagger-children > *:nth-child(2) { animation-delay: 100ms; }
+.stagger-children > *:nth-child(3) { animation-delay: 200ms; }
+.stagger-children > *:nth-child(4) { animation-delay: 300ms; }
+.stagger-children > *:nth-child(5) { animation-delay: 400ms; }
+.stagger-children > *:nth-child(6) { animation-delay: 500ms; }
+.stagger-children > *:nth-child(7) { animation-delay: 600ms; }
+.stagger-children > *:nth-child(8) { animation-delay: 700ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 800ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 900ms; }
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-up,
+  .animate-fade-down,
+  .animate-fade-left,
+  .animate-zoom-in,
+  .animate-zoom-out,
+  .animate-flip-up,
+  .animate-rotate-in,
+  .animate-reveal,
+  .stagger-children > * {
+    animation: none !important;
+    opacity: 1 !important;
+  }
+}
+
+/* =======================================================
+   CARD & BOX HOVER ANIMATION STABILITY & SMOOTHNESS
+   ======================================================= */
+.premium-modern-card,
+.premium-modern-btn {
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+/* =======================================================
+   ADMIN PANEL MOBILE RESPONSIVENESS FIXES
+   ======================================================= */
+@media (max-width: 640px) {
+  /* Reduce dashboard and header padding on mobile to optimize viewport space (scoped to Admin panel) */
+  .flex-1.flex.flex-col.min-w-0.h-screen main {
+    padding: 1rem !important;
+  }
+  
+  .flex-1.flex.flex-col.min-w-0.h-screen header {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
+
+  /* Force dialog modal and layout grid forms to stack vertically on mobile */
+  [role="dialog"] .grid,
+  [role="dialog"] [class*="grid-cols-"],
+  main .grid,
+  main [class*="grid-cols-"] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Force sidebar mobile width limit to avoid clipping */
+  aside.w-72 {
+    width: 280px !important;
+    max-width: 85vw !important;
+  }
+}
+
+/* Scrollable tables and content area wrapper mobile optimization */
+.w-full.overflow-auto,
+table,
+.table-responsive {
+  max-width: 100%;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Max dialog height limit and internal scroll for mobile access to full forms */
+[role="dialog"],
+.DialogContent {
+  max-height: 92vh !important;
+  overflow-y: auto !important;
+}
+
+/* Dialogs — prevent submit button truncation on small screens */
+@media (max-width: 640px) {
+  [role="dialog"] [class*="h-[60vh]"],
+  [role="dialog"] [class*="h-[70vh]"] {
+    max-height: 50vh;
+  }
+
+  [role="dialog"] {
+    max-height: 90dvh;
+    overflow-y: auto;
+  }
+}
+
+/* ──────────────────────────────────
+   PREMIUM DESIGN SYSTEM OVERRIDES
+   ────────────────────────────────── */
+
+/* Premium Cards */
+.premium-modern-card {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(18, 113, 91, 0.08);
+  border-radius: 1.5rem;
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.04),
+    0 1px 3px rgba(18, 113, 91, 0.02);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.dark .premium-modern-card {
+  background: rgba(13, 31, 23, 0.75);
+  border: 1px solid rgba(74, 222, 160, 0.15);
+  box-shadow: 
+    0 10px 30px -10px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(74, 222, 160, 0.05);
+}
+
+.premium-modern-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 20px 40px -15px rgba(18, 113, 91, 0.15),
+    0 0 0 1px rgba(212, 175, 55, 0.2);
+  border-color: rgba(212, 175, 55, 0.3);
+}
+
+.dark .premium-modern-card:hover {
+  box-shadow: 
+    0 20px 40px -15px rgba(74, 222, 160, 0.25),
+    0 0 0 1px rgba(212, 175, 55, 0.4);
+  border-color: rgba(212, 175, 55, 0.5);
+}
+
+/* Premium Buttons */
+.premium-modern-btn {
+  font-weight: 700;
+  font-family: inherit;
+  border-radius: 1rem;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  will-change: transform;
+}
+
+.premium-modern-btn:active {
+  transform: scale(0.96);
+}
+
+.premium-modern-btn-primary {
+  background: linear-gradient(135deg, #12715B 0%, #0d5443 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(18, 113, 91, 0.2);
+}
+
+.premium-modern-btn-primary:hover {
+  background: linear-gradient(135deg, #168a6f 0%, #12715B 100%);
+  box-shadow: 0 6px 20px rgba(18, 113, 91, 0.35);
+  transform: translateY(-1px);
+}
+
+.premium-modern-btn-secondary {
+  background: linear-gradient(135deg, #D4AF37 0%, #b39227 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(212, 175, 55, 0.25);
+}
+
+.premium-modern-btn-secondary:hover {
+  background: linear-gradient(135deg, #e3be47 0%, #D4AF37 100%);
+  box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+  transform: translateY(-1px);
+}
+
+.premium-modern-btn-outline {
+  border: 1.5px solid rgba(18, 113, 91, 0.25);
+  background: transparent;
+  color: #12715B;
+}
+
+.dark .premium-modern-btn-outline {
+  border-color: rgba(74, 222, 160, 0.35);
+  color: #4adea0;
+}
+
+.premium-modern-btn-outline:hover {
+  background: rgba(18, 113, 91, 0.05);
+  border-color: #12715B;
+}
+
+.dark .premium-modern-btn-outline:hover {
+  background: rgba(74, 222, 160, 0.08);
+  border-color: #4adea0;
+}
+
+/* Premium Form Controls */
+.premium-modern-input {
+  border-radius: 1rem;
+  border: 1.5px solid rgba(0, 0, 0, 0.08);
+  background-color: rgba(255, 255, 255, 0.98);
+  padding: 0.625rem 1rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  transition: all 0.2s ease-in-out;
+}
+
+.dark .premium-modern-input {
+  border-color: rgba(255, 255, 255, 0.08);
+  background-color: rgba(13, 31, 23, 0.5);
+  color: #ffffff;
+}
+
+.premium-modern-input:focus {
+  border-color: #12715B;
+  box-shadow: 0 0 0 3px rgba(18, 113, 91, 0.15);
+  outline: none;
+}
+
+.dark .premium-modern-input:focus {
+  border-color: #4adea0;
+  box-shadow: 0 0 0 3px rgba(74, 222, 160, 0.2);
+}
+
+/* Premium Table Enhancements */
+.premium-table-wrapper {
+  border-radius: 1.5rem;
+  overflow: hidden;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.02);
+}
+
+.dark .premium-table-wrapper {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+.premium-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  text-align: left;
+}
+
+.premium-table th {
+  background-color: #12715B;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 1rem 1.25rem;
+}
+
+.premium-table td {
+  padding: 1rem 1.25rem;
+  font-size: 0.875rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  background-color: #ffffff;
+  color: #334155;
+  transition: background-color 0.2s ease;
+}
+
+.dark .premium-table td {
+  border-bottom-color: rgba(255, 255, 255, 0.04);
+  background-color: #0c1c15;
+  color: #cbd5e1;
+}
+
+.premium-table tr:last-child td {
+  border-bottom: none;
+}
+
+.premium-table tr:hover td {
+  background-color: rgba(18, 113, 91, 0.03);
+}
+
+.dark .premium-table tr:hover td {
+  background-color: rgba(74, 222, 160, 0.03);
+}
+
+/* ──────────────────────────────────
+   GLOBAL FORM ELEMENTS & INPUTS
+   ────────────────────────────────── */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="number"],
+input[type="date"],
+input[type="tel"],
+input[type="search"],
+textarea,
+select {
+  border-radius: 0.75rem !important;
+  border: 1.5px solid rgba(0, 0, 0, 0.08) !important;
+  background-color: rgba(255, 255, 255, 0.98) !important;
+  padding: 0.5rem 0.875rem !important;
+  font-size: 0.875rem !important;
+  transition: all 0.2s ease-in-out !important;
+  color: #0f172a !important;
+}
+
+.dark input[type="text"],
+.dark input[type="email"],
+.dark input[type="password"],
+.dark input[type="number"],
+.dark input[type="date"],
+.dark input[type="tel"],
+.dark input[type="search"],
+.dark textarea,
+.dark select {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  background-color: rgba(15, 33, 25, 0.55) !important;
+  color: #f8fafc !important;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  border-color: #12715B !important;
+  box-shadow: 0 0 0 3px rgba(18, 113, 91, 0.15) !important;
+  outline: none !important;
+}
+
+.dark input:focus,
+.dark textarea:focus,
+.dark select:focus {
+  border-color: #4adea0 !important;
+  box-shadow: 0 0 0 3px rgba(74, 222, 160, 0.2) !important;
+}
+
+/* Contact form inputs override - force transparent/dark background in the dark contact section */
+#contact-section input,
+#contact-section textarea,
+#contact-section select {
+  background-color: transparent !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+}
+#contact-section input::placeholder,
+#contact-section textarea::placeholder {
+  color: rgba(255, 255, 255, 0.4) !important;
+}
+#contact-section input:focus,
+#contact-section textarea:focus {
+  border-color: #D4AF37 !important;
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.15) !important;
+}
+
+/* Styling for Admin Login card inputs to match the dark theme and green border */
+.admin-login-card input {
+  background-color: #0c0700 !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(16, 185, 129, 0.6) !important;
+  border-radius: 0.75rem !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.admin-login-card input::placeholder {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.admin-login-card input:focus {
+  border-color: #10b981 !important;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.4) !important;
+  outline: none !important;
+}
+
+.admin-login-card input:-webkit-autofill,
+.admin-login-card input:-webkit-autofill:hover, 
+.admin-login-card input:-webkit-autofill:focus, 
+.admin-login-card input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #0c0700 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Styling for Student Login card inputs to match the dark green theme */
+.student-login-card input {
+  background-color: #08140e !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(74, 222, 128, 0.4) !important;
+  border-radius: 0.75rem !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.student-login-card input::placeholder {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.student-login-card input:focus {
+  border-color: #4ade80 !important;
+  box-shadow: 0 0 10px rgba(74, 222, 128, 0.4) !important;
+  outline: none !important;
+}
+
+.student-login-card input:-webkit-autofill,
+.student-login-card input:-webkit-autofill:hover, 
+.student-login-card input:-webkit-autofill:focus, 
+.student-login-card input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #08140e inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Styling for Teacher Login card inputs to match the dark blue theme */
+.teacher-login-card input {
+  background-color: #050c16 !important;
+  color: #ffffff !important;
+  border: 1.5px solid rgba(96, 165, 250, 0.4) !important;
+  border-radius: 0.75rem !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+.teacher-login-card input::placeholder {
+  color: rgba(255, 255, 255, 0.25) !important;
+}
+
+.teacher-login-card input:focus {
+  border-color: #60a5fa !important;
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.4) !important;
+  outline: none !important;
+}
+
+.teacher-login-card input:-webkit-autofill,
+.teacher-login-card input:-webkit-autofill:hover, 
+.teacher-login-card input:-webkit-autofill:focus, 
+.teacher-login-card input:-webkit-autofill:active {
+  -webkit-box-shadow: 0 0 0 1000px #050c16 inset !important;
+  -webkit-text-fill-color: #ffffff !important;
+  color: #ffffff !important;
+}
+
+/* Global table elements formatting */
+table.w-full {
+  border-collapse: separate !important;
+  border-spacing: 0 !important;
+}
+
+table.w-full th {
+  background-color: #12715B !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 0.75rem !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.05em !important;
+  padding: 0.875rem 1.25rem !important;
+}
+
+.dark table.w-full th {
+  background-color: #0e3d30 !important;
+}
+
+table.w-full td {
+  padding: 0.875rem 1.25rem !important;
+  font-size: 0.875rem !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.04) !important;
+}
+
+.dark table.w-full td {
+  border-bottom-color: rgba(255, 255, 255, 0.04) !important;
+  background-color: #0d1f17 !important;
+}
+
+/* Scrollable container for tables inside layout */
+.table-responsive-container {
+  width: 100%;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 1rem;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.dark .table-responsive-container {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+
+/* ──────────────────────────────────
+   RESPONSIVE UTILITY CLASSES
+   ────────────────────────────────── */
+
+/* Responsive container padding */
+.container-responsive {
+  @apply px-4 sm:px-6 lg:px-8 mx-auto max-w-7xl;
+}
+
+/* Responsive text sizes */
+.text-responsive-xs {
+  @apply text-[10px] sm:text-xs;
+}
+.text-responsive-sm {
+  @apply text-xs sm:text-sm;
+}
+.text-responsive-base {
+  @apply text-sm sm:text-base;
+}
+.text-responsive-lg {
+  @apply text-base sm:text-lg;
+}
+.text-responsive-xl {
+  @apply text-lg sm:text-xl md:text-2xl;
+}
+.text-responsive-2xl {
+  @apply text-xl sm:text-2xl md:text-3xl;
+}
+.text-responsive-3xl {
+  @apply text-2xl sm:text-3xl md:text-4xl;
+}
+
+/* Responsive grid helpers */
+.grid-responsive {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6;
+}
+.grid-responsive-2 {
+  @apply grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6;
+}
+.grid-responsive-4 {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6;
+}
+
+/* Responsive flex helpers */
+.flex-responsive {
+  @apply flex flex-col sm:flex-row;
+}
+.flex-responsive-wrap {
+  @apply flex flex-wrap;
+}
+.flex-responsive-center {
+  @apply flex flex-col sm:flex-row items-center sm:items-start;
+}
+
+/* Responsive image container */
+.img-responsive-container {
+  @apply relative w-full overflow-hidden;
+}
+.img-responsive {
+  @apply w-full h-auto max-w-full object-cover;
+}
+
+/* Prevent text overflow */
+.text-ellipsis-2 {
+  @apply overflow-hidden text-ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+.text-ellipsis-3 {
+  @apply overflow-hidden text-ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+/* Responsive modal/dialog max-width */
+.dialog-responsive {
+  @apply w-[95vw] max-w-md sm:max-w-lg md:max-w-xl lg:max-w-2xl max-h-[85vh] overflow-y-auto;
+}
+
+/* Ensure tables are scrollable on mobile */
+.table-responsive-wrapper {
+  @apply w-full overflow-x-auto -mx-4 sm:mx-0;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Responsive gap */
+.gap-responsive {
+  @apply gap-3 sm:gap-4 md:gap-6;
+}
+
+/* ──────────────────────────────────
+   UI/UX POLISH - SMOOTH INTERACTIONS
+   ────────────────────────────────── */
+
+/* Smooth focus ring for all interactive elements */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:not([tabindex="-1"]):focus-visible {
+  outline: 2px solid #12715B;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+.dark a:focus-visible,
+.dark button:focus-visible,
+.dark input:focus-visible,
+.dark textarea:focus-visible,
+.dark select:focus-visible,
+.dark [role="button"]:focus-visible,
+.dark [tabindex]:not([tabindex="-1"]):focus-visible {
+  outline-color: #4ade80;
+}
+
+/* Smooth card hover transition */
+.card-hover {
+  @apply transition-all duration-300 ease-out;
+}
+.card-hover:hover {
+  @apply -translate-y-1 shadow-lg;
+}
+
+/* Subtle scale on click for buttons */
+.btn-press {
+  @apply transition-transform duration-150 ease-out;
+}
+.btn-press:active {
+  @apply scale-[0.97];
+}
+
+/* Fade in animation for page content */
+@keyframes page-enter {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.page-enter {
+  animation: page-enter 0.4s ease-out forwards;
+}
+
+/* Smooth skeleton pulse */
+.skeleton-pulse {
+  @apply animate-pulse rounded-xl bg-slate-200;
+}
+.dark .skeleton-pulse {
+  @apply bg-slate-800;
+}

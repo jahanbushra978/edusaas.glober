@@ -1,0 +1,147 @@
+-- ==========================================
+-- SQL SCRIPT TO FIX CRUD OPERATIONS (RLS POLICIES)
+-- ==========================================
+
+ALTER TABLE admission_applications ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON admission_applications;
+CREATE POLICY "Enable full access for all users" ON admission_applications FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE app_settings ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON app_settings;
+CREATE POLICY "Enable full access for all users" ON app_settings FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE attendances ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON attendances;
+CREATE POLICY "Enable full access for all users" ON attendances FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE branches ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON branches;
+CREATE POLICY "Enable full access for all users" ON branches FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE contact_messages ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON contact_messages;
+CREATE POLICY "Enable full access for all users" ON contact_messages FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE daily_lessons ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON daily_lessons;
+CREATE POLICY "Enable full access for all users" ON daily_lessons FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE exams ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON exams;
+CREATE POLICY "Enable full access for all users" ON exams FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE exam_inputs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON exam_inputs;
+CREATE POLICY "Enable full access for all users" ON exam_inputs FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE exam_results ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON exam_results;
+CREATE POLICY "Enable full access for all users" ON exam_results FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE expenses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON expenses;
+CREATE POLICY "Enable full access for all users" ON expenses FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE fees ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON fees;
+CREATE POLICY "Enable full access for all users" ON fees FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE gallery_items ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON gallery_items;
+CREATE POLICY "Enable full access for all users" ON gallery_items FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE hadiya ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON hadiya;
+CREATE POLICY "Enable full access for all users" ON hadiya FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE hero_slides ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON hero_slides;
+CREATE POLICY "Enable full access for all users" ON hero_slides FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE notices ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON notices;
+CREATE POLICY "Enable full access for all users" ON notices FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE navbar_items ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON navbar_items;
+CREATE POLICY "Enable full access for all users" ON navbar_items FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE page_sections ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON page_sections;
+CREATE POLICY "Enable full access for all users" ON page_sections FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE reading_logs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON reading_logs;
+CREATE POLICY "Enable full access for all users" ON reading_logs FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE students ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON students;
+CREATE POLICY "Enable full access for all users" ON students FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE teachers ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON teachers;
+CREATE POLICY "Enable full access for all users" ON teachers FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE teacher_attendance ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON teacher_attendance;
+CREATE POLICY "Enable full access for all users" ON teacher_attendance FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE teacher_hadiya ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON teacher_hadiya;
+CREATE POLICY "Enable full access for all users" ON teacher_hadiya FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE teacher_payments ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON teacher_payments;
+CREATE POLICY "Enable full access for all users" ON teacher_payments FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE teacher_salary_profiles ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON teacher_salary_profiles;
+CREATE POLICY "Enable full access for all users" ON teacher_salary_profiles FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON courses;
+CREATE POLICY "Enable full access for all users" ON courses FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE gallery ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON gallery;
+CREATE POLICY "Enable full access for all users" ON gallery FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE gallery_categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON gallery_categories;
+CREATE POLICY "Enable full access for all users" ON gallery_categories FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE video_categories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON video_categories;
+CREATE POLICY "Enable full access for all users" ON video_categories FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE videos ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON videos;
+CREATE POLICY "Enable full access for all users" ON videos FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE testimonials ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON testimonials;
+CREATE POLICY "Enable full access for all users" ON testimonials FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE success_stories ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON success_stories;
+CREATE POLICY "Enable full access for all users" ON success_stories FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE events ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON events;
+CREATE POLICY "Enable full access for all users" ON events FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE blogs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON blogs;
+CREATE POLICY "Enable full access for all users" ON blogs FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE faqs ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON faqs;
+CREATE POLICY "Enable full access for all users" ON faqs FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE contact_info ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON contact_info;
+CREATE POLICY "Enable full access for all users" ON contact_info FOR ALL USING (true) WITH CHECK (true);
+
+ALTER TABLE sponsors ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "Enable full access for all users" ON sponsors;
+CREATE POLICY "Enable full access for all users" ON sponsors FOR ALL USING (true) WITH CHECK (true);

@@ -1,0 +1,35 @@
+{
+  "name": "ExamResult",
+  "type": "object",
+  "properties": {
+    "exam_id": {
+      "type": "string",
+      "description": "Reference to Exam ID"
+    },
+    "student_id": {
+      "type": "string",
+      "description": "Reference to Student ID"
+    },
+    "obtained_marks": {
+      "type": "number",
+      "description": "Marks obtained by student"
+    },
+    "grade": {
+      "type": "string",
+      "description": "Grade (A+, A, B, C, D, F - auto calculated)"
+    },
+    "rank": {
+      "type": "number",
+      "description": "Rank in class"
+    },
+    "remarks": {
+      "type": "string",
+      "description": "Teacher remarks"
+    }
+  },
+  "required": [
+    "exam_id",
+    "student_id",
+    "obtained_marks"
+  ]
+}

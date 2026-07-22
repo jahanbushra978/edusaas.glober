@@ -1,0 +1,43 @@
+{
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"],
+      "@/utils": ["./src/features/site/pages/utils.js"],
+      "@/lib/periods": ["./src/lib/periods.js"],
+      "@/lib/academic": ["./src/lib/academic.js"],
+      "@/lib/permissions": ["./src/lib/permissions.js"],
+      "@/lib/supabase": ["./src/lib/supabase.js"],
+      "@/lib/supabase-admin-client": ["./src/lib/supabase-admin-client.js"],
+      "@/lib/cloudinary": ["./src/lib/cloudinary.js"],
+      "@/lib/video-optimizer": ["./src/lib/video-optimizer.js"],
+      "@/lib/pdf-utils": ["./src/lib/pdf-utils.js"],
+      "@/lib/sanitize-html": ["./src/lib/sanitize-html.js"],
+      "@/lib/permissions-definitions": ["./src/lib/permissions-definitions.js"],
+      "@/lib/VisitorAuthContext": ["./src/features/site/pages/VisitorAuthContext.jsx"],
+      "@/lib/VisitorLoginPage": ["./src/features/site/pages/VisitorLoginPage.jsx"],
+      "@/components/UserNotRegisteredError": ["./src/shared/components/ui-custom/UserNotRegisteredError.jsx"],
+      "@/components/ui/*": ["./src/components/ui/*"],
+      "@/components/admin/*": ["./src/features/admin/components/*"],
+      "@/components/home/*": ["./src/features/site/components/home/*"],
+      "@/components/student/*": ["./src/features/students/components/*"],
+      "@/components/teacher/*": ["./src/features/teachers/components/*"],
+      "@/components/ui-custom/*": ["./src/shared/components/ui-custom/*"],
+      "@/lib/*": ["./src/features/site/pages/*"],
+      "@/pages.config": ["./pages.config.js"]
+    },
+    "jsx": "react-jsx",
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "lib": ["esnext", "dom"],
+    "target": "esnext",
+    "checkJs": false,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "types": []
+  },
+  "include": ["src/**/*", "app/**/*", "Layout.jsx", "pages.config.js", "vite.config.js", "next.config.mjs"],
+  "exclude": ["node_modules", "dist"]
+} 

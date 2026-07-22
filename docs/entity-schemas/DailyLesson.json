@@ -1,0 +1,55 @@
+{
+  "name": "DailyLesson",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "Reference to student ID"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Lesson date"
+    },
+    "subject": {
+      "type": "string",
+      "description": "Subject/Book name (e.g., Quran, Hadith, Fiqh)"
+    },
+    "lesson_content": {
+      "type": "string",
+      "description": "What was taught (e.g., Surah Baqarah - Ayah 1-10)"
+    },
+    "pages_covered": {
+      "type": "number",
+      "description": "Number of pages covered"
+    },
+    "quality_score": {
+      "type": "number",
+      "description": "Quality score 1-10"
+    },
+    "memorization": {
+      "type": "string",
+      "enum": [
+        "excellent",
+        "good",
+        "average",
+        "needs_improvement"
+      ],
+      "description": "Memorization quality"
+    },
+    "teacher_notes": {
+      "type": "string",
+      "description": "Teacher's notes and feedback"
+    },
+    "recorded_by": {
+      "type": "string",
+      "description": "Teacher who recorded this lesson"
+    }
+  },
+  "required": [
+    "student_id",
+    "date",
+    "subject",
+    "lesson_content"
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "name": "ReadingLog",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "Reference to student ID"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the reading log entry"
+    },
+    "pages_read": {
+      "type": "number",
+      "description": "Number of pages read"
+    },
+    "subjects": {
+      "type": "string",
+      "description": "Subjects/topics covered (comma separated)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes about the reading session"
+    }
+  },
+  "required": [
+    "student_id",
+    "date",
+    "pages_read"
+  ]
+}

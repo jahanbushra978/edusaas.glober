@@ -1,0 +1,39 @@
+{
+  "name": "Exam",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Exam title (e.g., \u09ae\u09be\u09b8\u09bf\u0995 \u09aa\u09b0\u09c0\u0995\u09cd\u09b7\u09be - \u099c\u09be\u09a8\u09c1\u09af\u09bc\u09be\u09b0\u09bf \u09e8\u09e6\u09e8\u09ec)"
+    },
+    "exam_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the exam"
+    },
+    "session": {
+      "type": "string",
+      "enum": [
+        "\u09a8\u09c2\u09b0\u09be\u09a8\u09c0",
+        "\u09a8\u09be\u099c\u09c7\u09b0\u09be",
+        "\u09b9\u09bf\u09ab\u09af",
+        "\u09b9\u09bf\u09ab\u09af \u09b6\u09c1\u09a8\u09be\u09a8\u09bf",
+        "\u0995\u09bf\u09a8\u09cd\u09a1\u09be\u09b0 \u0997\u09be\u09b0\u09cd\u09a1\u09c7\u09a8"
+      ],
+      "description": "Which season/session this exam is for"
+    },
+    "total_marks": {
+      "type": "number",
+      "description": "Total marks for the exam"
+    },
+    "pass_marks": {
+      "type": "number",
+      "description": "Passing marks"
+    }
+  },
+  "required": [
+    "title",
+    "session",
+    "total_marks"
+  ]
+}

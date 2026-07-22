@@ -1,0 +1,16 @@
+{
+  "name": "rahmania-biometric-bridge",
+  "version": "1.0.0",
+  "description": "Local bridge application for ZKTeco K40 biometric device - connects device to Rahmania Institute ERP",
+  "main": "bridge.js",
+  "scripts": {
+    "start": "node bridge.js",
+    "test": "echo \"No tests configured\" && exit 0"
+  },
+  "dependencies": {
+    "node-fetch": "^2.7.0"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}

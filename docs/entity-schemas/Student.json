@@ -1,0 +1,112 @@
+{
+  "name": "Student",
+  "type": "object",
+  "properties": {
+    "roll_number": {
+      "type": "string",
+      "description": "Unique roll number / Student ID"
+    },
+    "password": {
+      "type": "string",
+      "description": "Student login password (set by admin)"
+    },
+    "full_name_en": {
+      "type": "string",
+      "description": "Full name in English"
+    },
+    "full_name_bn": {
+      "type": "string",
+      "description": "Full name in Bengali"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Profile photo URL"
+    },
+    "date_of_birth": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of birth"
+    },
+    "father_name": {
+      "type": "string",
+      "description": "Father's name"
+    },
+    "mother_name": {
+      "type": "string",
+      "description": "Mother's name"
+    },
+    "mobile_number": {
+      "type": "string",
+      "description": "Contact mobile number"
+    },
+    "address": {
+      "type": "string",
+      "description": "Full address"
+    },
+    "admission_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Admission date"
+    },
+    "batch": {
+      "type": "string",
+      "description": "Batch / Class / Group name (legacy)"
+    },
+    "class_name": {
+      "type": "string",
+      "description": "Exact class name from academic structure (source of truth for class filtering)"
+    },
+    "class_id": {
+      "type": "string",
+      "description": "ID of the assigned class/section from academic structure"
+    },
+    "admission_year": {
+      "type": "string",
+      "description": "Admission year for filtering"
+    },
+    "session": {
+      "type": "string",
+      "enum": [
+        "\u09a8\u09c2\u09b0\u09be\u09a8\u09c0",
+        "\u09a8\u09be\u099c\u09c7\u09b0\u09be",
+        "\u09b9\u09bf\u09ab\u09af",
+        "\u0995\u09bf\u09a8\u09cd\u09a1\u09be\u09b0\u0997\u09be\u09b0\u09cd\u099f\u09c7\u09a8",
+        "\u0995\u09bf\u09a4\u09be\u09ac\u0996\u09be\u09a8\u09be",
+        "Other"
+      ],
+      "description": "Academic session / department"
+    },
+    "assigned_teacher_id": {
+      "type": "string",
+      "description": "ID of the teacher assigned to this student"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "graduated"
+      ],
+      "default": "active",
+      "description": "Student status"
+    },
+    "total_pages_read": {
+      "type": "number",
+      "default": 0,
+      "description": "Cumulative total pages read"
+    },
+    "custom_fields": {
+      "type": "string",
+      "description": "JSON string of any extra custom fields"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Admin notes about the student"
+    }
+  },
+  "required": [
+    "full_name_en",
+    "roll_number",
+    "batch"
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "name": "GalleryItem",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Caption or title for this photo"
+    },
+    "image_url": {
+      "type": "string",
+      "description": "URL of the uploaded image"
+    },
+    "department": {
+      "type": "string",
+      "enum": [
+        "\u09a8\u09c2\u09b0\u09be\u09a8\u09c0",
+        "\u09a8\u09be\u099c\u09c7\u09b0\u09be",
+        "\u09b9\u09bf\u09ab\u09af",
+        "\u09b9\u09bf\u09ab\u09af \u09b6\u09c1\u09a8\u09be\u09a8\u09bf",
+        "\u0995\u09bf\u09a8\u09cd\u09a1\u09be\u09b0 \u0997\u09be\u09b0\u09cd\u09a1\u09c7\u09a8",
+        "\u09b8\u09be\u09a7\u09be\u09b0\u09a3"
+      ],
+      "description": "Which department/session this belongs to"
+    },
+    "is_visible": {
+      "type": "boolean",
+      "default": true,
+      "description": "Show on public gallery"
+    },
+    "sort_order": {
+      "type": "number",
+      "default": 0
+    }
+  },
+  "required": [
+    "title",
+    "image_url",
+    "department"
+  ]
+}

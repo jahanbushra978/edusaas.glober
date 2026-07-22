@@ -1,0 +1,55 @@
+{
+  "name": "Teacher",
+  "type": "object",
+  "properties": {
+    "teacher_id": {
+      "type": "string",
+      "description": "Unique teacher ID (e.g., T201)"
+    },
+    "password": {
+      "type": "string",
+      "description": "Teacher login password (set by admin)"
+    },
+    "user_email": {
+      "type": "string",
+      "description": "Associated user account email"
+    },
+    "full_name_en": {
+      "type": "string",
+      "description": "Teacher's full name in English"
+    },
+    "full_name_bn": {
+      "type": "string",
+      "description": "Teacher's full name in Bengali"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Contact phone number"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Profile photo URL"
+    },
+    "assigned_batches": {
+      "type": "string",
+      "description": "Comma-separated batch names assigned to this teacher"
+    },
+    "subjects": {
+      "type": "string",
+      "description": "Subjects/topics this teacher teaches"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active",
+      "description": "Teacher status"
+    }
+  },
+  "required": [
+    "teacher_id",
+    "full_name_en"
+  ]
+}

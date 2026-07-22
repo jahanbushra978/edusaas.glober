@@ -1,0 +1,96 @@
+{
+  "name": "Branch",
+  "type": "object",
+  "properties": {
+    "name_en": {
+      "type": "string",
+      "description": "Branch name in English"
+    },
+    "name_bn": {
+      "type": "string",
+      "description": "Branch name in Bengali"
+    },
+    "name_ar": {
+      "type": "string",
+      "description": "Branch name in Arabic"
+    },
+    "address_en": {
+      "type": "string",
+      "description": "Branch address in English"
+    },
+    "address_bn": {
+      "type": "string",
+      "description": "Branch address in Bengali"
+    },
+    "address_ar": {
+      "type": "string",
+      "description": "Branch address in Arabic"
+    },
+    "slug": {
+      "type": "string",
+      "description": "Branch slug for dynamic routes"
+    },
+    "logo": {
+      "type": "string",
+      "description": "Branch logo URL"
+    },
+    "slider_images": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of branch slider image URLs"
+    },
+    "establishment_date": {
+      "type": "string",
+      "description": "Date branch was established"
+    },
+    "map_embed_link": {
+      "type": "string",
+      "description": "Google map embed link/iframe src"
+    },
+    "email": {
+      "type": "string",
+      "description": "Branch contact email"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Branch phone number"
+    },
+    "head_teacher": {
+      "type": "string",
+      "description": "Name of branch head teacher"
+    },
+    "established_year": {
+      "type": "string",
+      "description": "Year branch was established"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "sort_order": {
+      "type": "number",
+      "default": 0
+    },
+    "academic_structure": {
+      "type": "array",
+      "description": "Classes, subjects, and assigned teachers"
+    },
+    "content_settings": {
+      "type": "object",
+      "description": "Visibility settings (Y/N) for dynamic sections"
+    },
+    "content_data": {
+      "type": "object",
+      "description": "Localized content values for the sections"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Extra configuration and future ready settings"
+    }
+  },
+  "required": [
+    "name_en"
+  ]
+}

@@ -1,0 +1,36 @@
+-- =============================================================================
+-- FIX: PUBLIC SELECT POLICIES FOR ANONYMOUS (PUBLIC) USERS
+-- Run this in the Supabase SQL Editor for your Website project:
+--   https://supabase.com/dashboard/project/yfwqbttpkugqkcpdyhum/sql/new
+-- =============================================================================
+
+-- 1. EVENTS: Allow public to read active events
+DROP POLICY IF EXISTS "events_select" ON public.events;
+CREATE POLICY "events_select" ON public.events FOR SELECT USING (
+  (is_active IS DISTINCT FROM false)
+  OR
+  (public.has_permission('events', 'view') AND public.check_branch_isolation_allow_null(branch_id))
+);
+
+-- 2. SUCCESS STORIES: Allow public to read active success stories
+DROP POLICY IF EXISTS "success_stories_select" ON public.success_stories;
+CREATE POLICY "success_stories_select" ON public.success_stories FOR SELECT USING (
+  (is_active IS DISTINCT FROM false)
+  OR
+  (public.has_permission('success_stories', 'view') AND public.check_branch_isolation_allow_null(branch_id))
+);
+
+-- 3. COURSES: Allow public to read active courses
+DROP POLICY IF EXISTS "courses_select" ON public.courses;
+CREATE POLICY "courses_select" ON public.courses FOR SELECT USING (
+  is_active IS DISTINCT FROM false OR public.has_permission('courses', 'view')
+);
+
+-- =============================================================================
+-- VERIFICATION QUERIES (run after applying fixes)
+-- =============================================================================
+-- Check policies for affected tables:
+-- SELECT schemaname, tablename, policyname, permissive, roles, cmd, qual
+-- FROM pg_policies
+-- WHERE tablename IN ('events', 'success_stories', 'courses')
+-- ORDER BY tablename, policyname;

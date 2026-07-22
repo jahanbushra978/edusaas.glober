@@ -1,0 +1,54 @@
+{
+  "name": "Hadiya",
+  "type": "object",
+  "properties": {
+    "recipient_type": {
+      "type": "string",
+      "enum": [
+        "student",
+        "teacher"
+      ],
+      "description": "Whether this hadiya is for a student or teacher"
+    },
+    "recipient_id": {
+      "type": "string",
+      "description": "Student ID or Teacher ID of the recipient"
+    },
+    "recipient_name": {
+      "type": "string",
+      "description": "Name of the recipient (for display)"
+    },
+    "month": {
+      "type": "string",
+      "description": "Month this hadiya is for (e.g., 2024-01)"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Hadiya amount in taka"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "paid"
+      ],
+      "default": "pending",
+      "description": "Payment status"
+    },
+    "paid_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when hadiya was paid"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    }
+  },
+  "required": [
+    "recipient_type",
+    "recipient_id",
+    "month",
+    "amount"
+  ]
+}

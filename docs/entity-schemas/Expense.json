@@ -1,0 +1,36 @@
+{
+  "name": "Expense",
+  "type": "object",
+  "properties": {
+    "description": {
+      "type": "string",
+      "description": "Expense description"
+    },
+    "amount": {
+      "type": "number",
+      "description": "Expense amount in taka"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Expense date"
+    },
+    "category": {
+      "type": "string",
+      "description": "Expense category"
+    },
+    "receipt_url": {
+      "type": "string",
+      "description": "URL of receipt/image"
+    },
+    "recorded_by": {
+      "type": "string",
+      "description": "Who recorded this expense"
+    }
+  },
+  "required": [
+    "description",
+    "amount",
+    "date"
+  ]
+}

@@ -1,0 +1,49 @@
+{
+  "name": "Fee",
+  "type": "object",
+  "properties": {
+    "student_id": {
+      "type": "string",
+      "description": "Reference to student ID"
+    },
+    "month": {
+      "type": "string",
+      "description": "Month this fee is for (e.g., 2024-01)"
+    },
+    "total_fee": {
+      "type": "number",
+      "description": "Total fee amount"
+    },
+    "paid_amount": {
+      "type": "number",
+      "description": "Amount paid"
+    },
+    "due_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Due date for payment"
+    },
+    "paid_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date when fee was paid"
+    },
+    "payment_method": {
+      "type": "string",
+      "description": "Payment method (cash, bank, etc.)"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes"
+    },
+    "recorded_by": {
+      "type": "string",
+      "description": "Who recorded this fee payment"
+    }
+  },
+  "required": [
+    "student_id",
+    "month",
+    "total_fee"
+  ]
+}
