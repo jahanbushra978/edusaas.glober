@@ -5,37 +5,48 @@ export default async function sitemap() {
   const base = 'https://rahmaniainstitute.org';
   const now = new Date();
 
-  // Static core routes
-  const staticSegments = [
-    '',
-    'about',
-    'mission',
-    'campus',
-    'academics',
-    'admission',
-    'admission-choice',
-    'admission-form',
-    'gallery',
-    'video-gallery',
-    'teachers',
-    'results',
-    'facilities',
-    'notices',
-    'faq',
-    'departments/noorani',
-    'departments/najera',
-    'departments/hifz',
-    'departments/hifz-shunani',
-    'departments/kindergarten',
-    'departments/madani-nessab',
-    'departments/english-version',
+  // Static core routes with granular priority and changeFrequency
+  const staticRoutes = [
+    // Homepage — highest priority, daily crawl
+    { segment: '',                           priority: 1.0, changeFrequency: 'daily'   },
+
+    // Admission & departments — high priority, weekly (content changes often)
+    { segment: 'admission',                  priority: 0.9, changeFrequency: 'weekly'  },
+    { segment: 'admission-choice',           priority: 0.9, changeFrequency: 'weekly'  },
+    { segment: 'admission-form',             priority: 0.9, changeFrequency: 'weekly'  },
+    { segment: 'noorani-page',               priority: 0.9, changeFrequency: 'weekly'  },
+    { segment: 'departments/noorani',        priority: 0.9, changeFrequency: 'weekly'  },
+    { segment: 'departments/najera',         priority: 0.9, changeFrequency: 'weekly'  },
+    { segment: 'departments/hifz',           priority: 0.9, changeFrequency: 'weekly'  },
+    { segment: 'departments/hifz-shunani',   priority: 0.9, changeFrequency: 'weekly'  },
+    { segment: 'departments/kindergarten',   priority: 0.9, changeFrequency: 'weekly'  },
+    { segment: 'departments/madani-nessab',  priority: 0.9, changeFrequency: 'weekly'  },
+    { segment: 'departments/english-version',priority: 0.9, changeFrequency: 'weekly'  },
+
+    // Teachers / About / Mission — informational, monthly updates
+    { segment: 'teachers',                   priority: 0.8, changeFrequency: 'monthly' },
+    { segment: 'about',                      priority: 0.8, changeFrequency: 'monthly' },
+    { segment: 'mission',                    priority: 0.8, changeFrequency: 'monthly' },
+    { segment: 'campus',                     priority: 0.8, changeFrequency: 'monthly' },
+    { segment: 'academics',                  priority: 0.8, changeFrequency: 'monthly' },
+
+    // Gallery / Notices / Results — updated regularly
+    { segment: 'gallery',                    priority: 0.7, changeFrequency: 'weekly'  },
+    { segment: 'video-gallery',              priority: 0.7, changeFrequency: 'weekly'  },
+    { segment: 'branch-gallery',             priority: 0.7, changeFrequency: 'weekly'  },
+    { segment: 'notices',                    priority: 0.7, changeFrequency: 'weekly'  },
+    { segment: 'results',                    priority: 0.7, changeFrequency: 'weekly'  },
+
+    // FAQ / Facilities — low churn, monthly
+    { segment: 'faq',                        priority: 0.6, changeFrequency: 'monthly' },
+    { segment: 'facilities',                 priority: 0.6, changeFrequency: 'monthly' },
   ];
 
-  const staticEntries = staticSegments.map((segment) => ({
+  const staticEntries = staticRoutes.map(({ segment, priority, changeFrequency }) => ({
     url: segment === '' ? `${base}/` : `${base}/${segment}`,
     lastModified: now,
-    changeFrequency: segment === '' ? 'daily' : 'weekly',
-    priority: segment === '' ? 1.0 : 0.8,
+    changeFrequency,
+    priority,
   }));
 
   const dynamicEntries = [];
@@ -82,6 +93,25 @@ export default async function sitemap() {
             lastModified: new Date(b.updated_date || b.created_date || now),
             changeFrequency: 'weekly',
             priority: 0.8,
+          }))
+        );
+      }
+
+      // 3. Fetch published blogs
+      const { data: blogs } = await supabase
+        .from('blogs')
+        .select('id, slug, updated_at, created_at, is_published')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false })
+        .limit(500);
+
+      if (blogs?.length) {
+        dynamicEntries.push(
+          ...blogs.map((blog) => ({
+            url: `${base}/blog/${blog.slug || blog.id}`,
+            lastModified: new Date(blog.updated_at || blog.created_at || now),
+            changeFrequency: 'weekly',
+            priority: 0.7,
           }))
         );
       }

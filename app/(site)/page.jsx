@@ -42,37 +42,30 @@ export const metadata = {
 export default async function Page() {
   const queryClient = new QueryClient()
 
-  // Fetch home page data on the server.
-  // Strategy (dual-path):
-  //   1. Seed React Query's HydrationBoundary cache — used by React Query's
-  //      useQuery() when it hydrates on the client (prevents a redundant
-  //      client-side API call on first load).
-  //   2. Pass `initialData` as a prop directly to HomeClient → Home →
-  //      HomeDataProvider — this is the key fix for Google Bot.
-  //      HomeDataProvider now accepts `initialData` and passes it to
-  //      useQuery's `initialData` option, so the very first render on the
-  //      server produces the full page HTML (no loading spinner).
+  // Prefetch home page data on the server and seed the React Query cache.
+  // HydrationBoundary dehydrates this and passes it to the browser's
+  // QueryClient, so the client's useQuery(['home-page-data']) finds data
+  // immediately — no extra API call, no loading flash for real users.
   //
-  // If the server fetch fails we simply don't seed either path and the
-  // client falls back to its own /api/public/home fetch — behaviour
-  // identical to before this change.
-  let prefetchedData = null
+  // Note: We intentionally do NOT pass initialData as a prop to HomeClient.
+  // Doing so caused React hydration error #418 because HomeContent renders
+  // language-dependent text (via LanguageContext which reads localStorage in
+  // useEffect). The server always renders in 'bn' (default), but the client's
+  // first render could use a different stored language — text mismatch.
+  // Instead, HomeContent uses a `mounted` guard: before mount it renders a
+  // neutral spinner (same on server and client), after mount it renders full
+  // content in the correct language. HydrationBoundary ensures the data is
+  // already in cache when that happens, so there is no visible loading flash.
   try {
-    prefetchedData = await fetchHomePageData()
-    queryClient.setQueryData(['home-page-data'], { ok: true, elapsed: 0, ...prefetchedData })
+    const data = await fetchHomePageData()
+    queryClient.setQueryData(['home-page-data'], { ok: true, elapsed: 0, ...data })
   } catch (e) {
     console.warn('[Homepage SSR] Failed to prefetch home data, falling back to client fetch:', e?.message)
   }
 
-  // Build the initialData shape that HomeDataProvider / useQuery expects:
-  // same structure as the /api/public/home JSON response.
-  const initialData = prefetchedData
-    ? { ok: true, elapsed: 0, ...prefetchedData }
-    : null
-
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <HomeClient initialData={initialData} />
+      <HomeClient />
     </HydrationBoundary>
   )
 }

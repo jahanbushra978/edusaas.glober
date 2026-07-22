@@ -49,6 +49,13 @@ export const metadata = {
     index: true,
     follow: true,
   },
+  verification: {
+    google: 'verify-later',
+  },
+  category: 'education',
+  classification: 'Educational Institution',
+  creator: 'Rahmania Institute',
+  publisher: 'Rahmania Institute',
   manifest: '/manifest.json',
   icons: {
     icon: '/rahmania-logo-v2.png',
@@ -57,6 +64,11 @@ export const metadata = {
   },
   other: {
     'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
+    'og:locale:alternate': ['en_US', 'ar_SA'],
+    'theme-color': '#006400',
+    'apple-mobile-web-app-capable': 'yes',
+    'apple-mobile-web-app-status-bar-style': 'default',
+    'format-detection': 'telephone=yes',
   },
 }
 

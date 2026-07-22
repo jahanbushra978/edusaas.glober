@@ -2,15 +2,31 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 
 const LanguageContext = createContext({ lang: null, setLang: () => {} });
 
-export function LanguageProvider({ children }) {
-  const [lang, setLangState] = useState("bn");
+/**
+ * LanguageProvider
+ *
+ * Accepts an `initialLang` prop from the Server Component (layout.jsx reads
+ * the `ri_lang` cookie and passes it here).  Using the server-supplied value
+ * as the initial useState value guarantees that the first server render and
+ * the first client render use the exact same language — eliminating React
+ * hydration error #418 caused by language-dependent text mismatches.
+ *
+ * After mount, the useEffect syncs with localStorage / URL params as before.
+ * When the user changes language, we also write a cookie so the server can
+ * read it on the next request and pre-render in the correct language.
+ */
+export function LanguageProvider({ children, initialLang = "bn" }) {
+  // Initialized from the server-provided cookie value — matches server render.
+  const [lang, setLangState] = useState(initialLang);
 
   useEffect(() => {
-    let activeLang = "bn";
+    let activeLang = initialLang;
     if (typeof window !== "undefined") {
       const params = new URLSearchParams(window.location.search);
       const queryLang = params.get("lang");
       if (queryLang === "bn" || queryLang === "en" || queryLang === "ar") {
+        // URL param takes priority — persist to both cookie and localStorage
+        document.cookie = `ri_lang=${queryLang}; path=/; max-age=31536000; SameSite=Strict`;
         localStorage.setItem("ri_lang", queryLang);
         activeLang = queryLang;
       } else {
@@ -20,7 +36,11 @@ export function LanguageProvider({ children }) {
         }
       }
     }
-    setLangState(activeLang);
+    // Only trigger a re-render if the language actually differs from the
+    // server-supplied value (avoids an unnecessary re-render for most users).
+    if (activeLang !== lang) {
+      setLangState(activeLang);
+    }
   }, []);
 
   useEffect(() => {
@@ -110,6 +130,9 @@ export function LanguageProvider({ children }) {
   const setLang = (l) => {
     if (l === "bn" || l === "en" || l === "ar") {
       localStorage.setItem("ri_lang", l);
+      // Write cookie so server can read it on the next request and pre-render
+      // in the correct language — this eliminates the hydration mismatch.
+      document.cookie = `ri_lang=${l}; path=/; max-age=31536000; SameSite=Strict`;
       setLangState(l);
     }
   };

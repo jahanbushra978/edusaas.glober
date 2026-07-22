@@ -4,7 +4,13 @@ export default function robots() {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
+        // Note: crawlDelay is not a standard robots.txt directive supported by
+        // Next.js MetadataRoute.Robots, but major crawlers respect a 1-second
+        // delay if configured via Google Search Console or Bing Webmaster Tools.
+        allow: [
+          '/',
+          '/api/public/home',
+        ],
         disallow: [
           '/admin',
           '/AdminDashboard',

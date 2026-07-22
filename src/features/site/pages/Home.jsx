@@ -108,10 +108,10 @@ function HomeContent() {
   const isAr = lang === "ar";
   const { data: homeData, isLoading } = useHomeData();
 
-  // Only show a full-page spinner on the very first client-only render when
-  // no SSR data is available at all (e.g. network error on the server).
-  // When initialData is seeded from the Server Component, isLoading is
-  // false on the first render — Google Bot sees the full page HTML.
+  // Show spinner only when data has never been loaded yet.
+  // With HydrationBoundary seeded in page.jsx, the cache is populated
+  // immediately on the client — so isLoading is false and homeData is
+  // available without any fetch delay. Google Bot sees the full page.
   if (isLoading && !homeData) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" /></div>;
 
   const settings = homeData?.appSettings || {};
@@ -422,14 +422,9 @@ function HomeContent() {
   );
 }
 
-/**
- * Home receives `initialData` from the Server Component (page.jsx → HomeClient).
- * Passing it into HomeDataProvider ensures useQuery's initialData is set, so
- * the first server render produces full HTML content — no spinner for bots.
- */
-export default function Home({ initialData }) {
+export default function Home() {
   return (
-    <HomeDataProvider initialData={initialData}>
+    <HomeDataProvider>
       <HomeContent />
     </HomeDataProvider>
   );
