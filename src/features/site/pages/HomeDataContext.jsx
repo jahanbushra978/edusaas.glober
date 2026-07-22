@@ -5,7 +5,20 @@ import { useQuery } from "@tanstack/react-query";
 
 const HomeDataContext = createContext(null);
 
-export function HomeDataProvider({ children }) {
+/**
+ * HomeDataProvider
+ *
+ * Accepts an optional `initialData` prop that can be seeded from the
+ * Server Component (page.jsx) via SSR prefetch.  When provided, React
+ * Query treats it as the initial cache value so the first render on
+ * both the server (HTML sent to bots / users) and the client uses real
+ * content — no loading spinner, no empty shell.
+ *
+ * The background refetch behaviour is unchanged:
+ *   - staleTime: 2 hours  →  won't refetch unless data is 2h old
+ *   - refetchOnWindowFocus / refetchOnReconnect: false
+ */
+export function HomeDataProvider({ children, initialData }) {
   const { data, isLoading } = useQuery({
     queryKey: ["home-page-data"],
     queryFn: async () => {
@@ -19,6 +32,9 @@ export function HomeDataProvider({ children }) {
       if (!json.ok) throw new Error(json.message || "Failed to load home data");
       return json;
     },
+    // When SSR seed data is provided, use it as the initial value.
+    // React Query will treat the data as fresh for `staleTime` ms.
+    ...(initialData ? { initialData, initialDataUpdatedAt: Date.now() } : {}),
     // Cache for 2 hours — homepage data rarely changes
     staleTime: 2 * 60 * 60 * 1000,
     // Keep old data while refetching in background
