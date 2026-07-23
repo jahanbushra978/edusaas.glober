@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Eye, CheckCircle2, XCircle, Clock, Phone } from "lucide-react";
+import { Loader2, Eye, CheckCircle2, XCircle, Clock, Phone, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 const SESSIONS = ["সকল", "নূরানী", "নাজেরা", "হিফয", "হিফয শুনানি", "কিন্ডারগার্টেন", "কিতাবখানা", "English Version"];
@@ -20,11 +20,11 @@ const statusStyle = {
 };
 
 export default function AdmissionApplicationManager({ currentUser }) {
-  const [filterSession, setFilterSession] = useState("সকল");
-  const [filterStatus, setFilterStatus] = useState("সকল");
+  const queryClient = useQueryClient();
   const [selected, setSelected] = useState(null);
   const [adminNote, setAdminNote] = useState("");
-  const queryClient = useQueryClient();
+  const [filterSession, setFilterSession] = useState("সকল");
+  const [filterStatus, setFilterStatus] = useState("সকল");
 
   const { data: rawApps = [], isLoading } = useQuery({
     queryKey: ["admission-applications"],
@@ -44,6 +44,18 @@ export default function AdmissionApplicationManager({ currentUser }) {
     },
     onError: (err) => {
       toast.error(err?.message || err?.details || "Failed to update application status");
+    },
+  });
+
+  const deleteMut = useMutation({
+    mutationFn: (id) => appClient.entities.AdmissionApplication.delete(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["admission-applications"] });
+      toast.success("আবেদনটি সফলভাবে মুছে ফেলা হয়েছে!");
+      if (selected) setSelected(null);
+    },
+    onError: (err) => {
+      toast.error(err?.message || err?.details || "Failed to delete application");
     },
   });
 
@@ -118,9 +130,24 @@ export default function AdmissionApplicationManager({ currentUser }) {
                         <span>{new Date(app.created_date).toLocaleDateString("bn-BD")}</span>
                       </div>
                     </div>
-                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setSelected(app); setAdminNote(app.notes || app.admin_notes || ""); }}>
-                      <Eye className="h-3.5 w-3.5" /> বিস্তারিত
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setSelected(app); setAdminNote(app.notes || app.admin_notes || ""); }}>
+                        <Eye className="h-3.5 w-3.5" /> বিস্তারিত
+                      </Button>
+                      <Button 
+                        size="sm" 
+                        variant="ghost" 
+                        className="h-8 w-8 p-0 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-xl"
+                        onClick={() => {
+                          if (confirm(`আপনি কি নিশ্চিত যে "${app.full_name_bn}" এর আবেদনটি স্থায়ীভাবে মুছে ফেলতে চান?`)) {
+                            deleteMut.mutate(app.id);
+                          }
+                        }}
+                        title="ডিলিট করুন"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -169,7 +196,7 @@ export default function AdmissionApplicationManager({ currentUser }) {
                 <label className="text-xs font-bold text-primary mb-1 block">Admin Notes</label>
                 <Textarea value={adminNote} onChange={e => setAdminNote(e.target.value)} rows={2} placeholder="Optional notes..." />
               </div>
-              <div className="flex gap-2 pt-2 border-t">
+              <div className="flex items-center gap-2 pt-2 border-t">
                 <Button className="flex-1 gap-1.5 bg-green-600 hover:bg-green-700"
                   onClick={() => updateMut.mutate({ id: selected.id, data: { status: "approved", notes: adminNote } })}>
                   <CheckCircle2 className="h-4 w-4" /> Approve
@@ -178,8 +205,20 @@ export default function AdmissionApplicationManager({ currentUser }) {
                   onClick={() => updateMut.mutate({ id: selected.id, data: { status: "rejected", notes: adminNote } })}>
                   <XCircle className="h-4 w-4" /> Reject
                 </Button>
-                <Button variant="outline" onClick={() => updateMut.mutate({ id: selected.id, data: { status: "pending", notes: adminNote } })}>
+                <Button variant="outline" title="Set Pending" onClick={() => updateMut.mutate({ id: selected.id, data: { status: "pending", notes: adminNote } })}>
                   <Clock className="h-4 w-4" />
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="text-red-600 hover:bg-red-50 border-red-200" 
+                  title="Delete Application"
+                  onClick={() => {
+                    if (confirm(`আপনি কি নিশ্চিত যে "${selected.full_name_bn}" এর আবেদনটি স্থায়ীভাবে মুছে ফেলতে চান?`)) {
+                      deleteMut.mutate(selected.id);
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             </div>

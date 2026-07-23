@@ -26,7 +26,7 @@ export default function PermissionManager({ value, onChange }) {
 
   const moduleCategories = {
     academic: ["students", "teachers", "admissions", "academic-structure", "exams", "results", "routine", "promotion", "certificates", "daily-lesson-tracker"],
-    attendance: ["student-attendance", "teacher-attendance"],
+    attendance: ["student-attendance", "teacher-attendance", "biometric-attendance"],
     finance: ["fees", "hadiya", "expenses"],
     operations: ["boarding", "notices", "gallery", "videos", "events", "messages", "library"],
     content: ["website-content", "testimonials", "success-stories", "sponsors", "blogs", "faqs"],

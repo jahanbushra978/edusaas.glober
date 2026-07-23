@@ -62,6 +62,16 @@ export const PERMISSION_MODULES = {
       { key: "export", label: { en: "Export Report", bn: "রিপোর্ট এক্সপোর্ট" } },
     ],
   },
+  "biometric-attendance": {
+    label: { en: "Biometric Attendance", bn: "বায়োমেট্রিক উপস্থিতি" },
+    actions: [
+      { key: "view", label: { en: "View Biometric", bn: "বায়োমেট্রিক দেখা" } },
+      { key: "enroll", label: { en: "Enroll Biometric", bn: "বায়োমেট্রিক রেজিস্ট্রেশন" } },
+      { key: "manage_devices", label: { en: "Manage Devices", bn: "ডিভাইস ব্যবস্থাপনা" } },
+      { key: "manage_bridges", label: { en: "Manage Bridges", bn: "ব্রিজ ব্যবস্থাপনা" } },
+      { key: "reports", label: { en: "Biometric Reports", bn: "বায়োমেট্রিক রিপোর্ট" } },
+    ],
+  },
   fees: {
     label: { en: "Fees & Finance", bn: "ফি ও ফাইন্যান্স" },
     actions: [

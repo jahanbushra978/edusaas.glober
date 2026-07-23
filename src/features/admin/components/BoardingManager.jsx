@@ -1064,13 +1064,14 @@ export default function BoardingManager({ currentUser }) {
             </div>
           </div>
 
-          {/* Grid Header */}
-          <div className="hidden md:grid grid-cols-12 gap-3 text-xs font-bold text-slate-500 uppercase px-2">
-            <div className="col-span-4">Item Name (আইটেম নাম)</div>
-            <div className="col-span-2">Quantity (পরিমাণ)</div>
-            <div className="col-span-2">Unit (ইউনিট)</div>
-            <div className="col-span-2">Per Unit Price (প্রতি ইউনিট দাম)</div>
-            <div className="col-span-2 text-right">Actual Total (মোট বিল)</div>
+          {/* Grid Header for Desktop */}
+          <div className="hidden md:flex items-center gap-3 text-xs font-bold text-slate-600 uppercase px-4 py-2 bg-slate-100/80 rounded-xl">
+            <div className="flex-[3] min-w-0">Item Name (আইটেম নাম)</div>
+            <div className="flex-[1.5] min-w-0">Quantity (পরিমাণ)</div>
+            <div className="w-28 shrink-0">Unit (ইউনিট)</div>
+            <div className="flex-[1.5] min-w-0">Per Unit Price (দাম ৳)</div>
+            <div className="flex-[1.5] min-w-0 text-right">Actual Total (মোট ৳)</div>
+            <div className="w-9 shrink-0"></div>
           </div>
 
           {/* Grid Rows */}
@@ -1083,60 +1084,56 @@ export default function BoardingManager({ currentUser }) {
               const saved = expected - actual;
 
               return (
-                <div key={idx} className="grid grid-cols-12 gap-3 p-3 bg-slate-50/50 rounded-2xl border border-slate-100 items-center">
-                  <div className="col-span-12 md:col-span-4 space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block md:hidden">Item Name</label>
-                    <Input 
-                      value={item.item_name}
-                      onChange={e => updateItemField(idx, "item_name", e.target.value)}
-                      placeholder="e.g. Rice, Potato, Fish"
-                      className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl w-full"
-                    />
-                  </div>
-                  
-                  <div className="col-span-6 sm:col-span-3 md:col-span-2 space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block md:hidden">Quantity</label>
-                    <Input 
-                      type="number"
-                      step="any"
-                      value={item.quantity}
-                      onChange={e => updateItemField(idx, "quantity", e.target.value)}
-                      placeholder="e.g. 10"
-                      className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl w-full"
-                    />
-                  </div>
+                <div key={idx} className="p-3.5 sm:p-4 bg-white rounded-2xl border border-slate-200/90 shadow-sm transition-all hover:border-emerald-300">
+                  {/* Desktop Layout */}
+                  <div className="hidden md:flex items-center gap-3">
+                    <div className="flex-[3] min-w-0">
+                      <Input 
+                        value={item.item_name}
+                        onChange={e => updateItemField(idx, "item_name", e.target.value)}
+                        placeholder="e.g. Rice, Potato, Fish"
+                        className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl w-full"
+                      />
+                    </div>
+                    
+                    <div className="flex-[1.5] min-w-0">
+                      <Input 
+                        type="number"
+                        step="any"
+                        value={item.quantity}
+                        onChange={e => updateItemField(idx, "quantity", e.target.value)}
+                        placeholder="e.g. 10"
+                        className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl w-full"
+                      />
+                    </div>
 
-                  <div className="col-span-6 sm:col-span-3 md:col-span-2 space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block md:hidden">Unit</label>
-                    <select
-                      value={item.unit}
-                      onChange={e => updateItemField(idx, "unit", e.target.value)}
-                      className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold focus:outline-none h-10"
-                    >
-                      <option value="KG">KG</option>
-                      <option value="Liter">Liter</option>
-                      <option value="Piece">Piece</option>
-                      <option value="Hali">Hali (হালি)</option>
-                      <option value="Packet">Packet</option>
-                      <option value="Other">Other</option>
-                    </select>
-                  </div>
+                    <div className="w-28 shrink-0">
+                      <select
+                        value={item.unit}
+                        onChange={e => updateItemField(idx, "unit", e.target.value)}
+                        className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500 h-10"
+                      >
+                        <option value="KG">KG</option>
+                        <option value="Liter">Liter</option>
+                        <option value="Piece">Piece</option>
+                        <option value="Hali">Hali</option>
+                        <option value="Packet">Packet</option>
+                        <option value="Other">Other</option>
+                      </select>
+                    </div>
 
-                  <div className="col-span-6 sm:col-span-3 md:col-span-2 space-y-1">
-                    <label className="text-[9px] font-bold text-slate-400 uppercase block md:hidden">Per Unit Price</label>
-                    <Input 
-                      type="number"
-                      step="any"
-                      value={item.per_unit_price}
-                      onChange={e => updateItemField(idx, "per_unit_price", e.target.value)}
-                      placeholder="e.g. 70"
-                      className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl w-full"
-                    />
-                  </div>
+                    <div className="flex-[1.5] min-w-0">
+                      <Input 
+                        type="number"
+                        step="any"
+                        value={item.per_unit_price}
+                        onChange={e => updateItemField(idx, "per_unit_price", e.target.value)}
+                        placeholder="e.g. 70"
+                        className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl w-full"
+                      />
+                    </div>
 
-                  <div className="col-span-6 sm:col-span-3 md:col-span-2 flex items-center justify-between gap-2">
-                    <div className="flex-1 space-y-1">
-                      <label className="text-[9px] font-bold text-slate-400 uppercase block md:hidden">Actual Total</label>
+                    <div className="flex-[1.5] min-w-0">
                       <Input 
                         type="number"
                         step="any"
@@ -1146,22 +1143,108 @@ export default function BoardingManager({ currentUser }) {
                         className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl text-right w-full"
                       />
                     </div>
-                    {entryItems.length > 1 && (
-                      <button 
-                        type="button"
-                        onClick={() => removeEntryItem(idx)}
-                        className="h-9 w-9 rounded-xl flex items-center justify-center bg-red-50 text-red-500 border border-red-100 hover:bg-red-100/50 shrink-0 mt-4 md:mt-0"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    )}
+
+                    <div className="w-9 shrink-0 flex justify-center">
+                      {entryItems.length > 1 && (
+                        <button 
+                          type="button"
+                          onClick={() => removeEntryItem(idx)}
+                          className="h-9 w-9 rounded-xl flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100 transition-colors"
+                          title="Remove Item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                   </div>
 
-                  {/* Calculations row underneath on mobile */}
-                  <div className="col-span-12 flex flex-wrap gap-4 px-2 pt-1.5 border-t border-slate-100 text-[10px] font-extrabold text-slate-500 italic justify-end">
-                    <span>Expected Total: ৳{expected.toLocaleString()}</span>
-                    <span className={saved >= 0 ? "text-emerald-600" : "text-rose-600"}>
-                      Saved: ৳{saved.toLocaleString()}
+                  {/* Mobile Card Layout */}
+                  <div className="md:hidden space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                      <span className="text-xs font-extrabold text-[#12715B] bg-emerald-50 px-2.5 py-1 rounded-lg">
+                        আইটেম #{idx + 1}
+                      </span>
+                      {entryItems.length > 1 && (
+                        <button 
+                          type="button"
+                          onClick={() => removeEntryItem(idx)}
+                          className="h-8 w-8 rounded-lg flex items-center justify-center bg-red-50 text-red-500 border border-red-200 hover:bg-red-100"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-extrabold text-slate-600">আইটেমের নাম (Item Name)</label>
+                      <Input 
+                        value={item.item_name}
+                        onChange={e => updateItemField(idx, "item_name", e.target.value)}
+                        placeholder="যেমন: চাউল, আলু, মাছ"
+                        className="h-10 text-xs font-bold bg-slate-50/50 border-slate-200 focus:bg-white rounded-xl w-full"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-extrabold text-slate-600">পরিমাণ (Quantity)</label>
+                        <Input 
+                          type="number"
+                          step="any"
+                          value={item.quantity}
+                          onChange={e => updateItemField(idx, "quantity", e.target.value)}
+                          placeholder="১০"
+                          className="h-10 text-xs font-bold bg-slate-50/50 border-slate-200 focus:bg-white rounded-xl w-full"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-extrabold text-slate-600">ইউনিট (Unit)</label>
+                        <select
+                          value={item.unit}
+                          onChange={e => updateItemField(idx, "unit", e.target.value)}
+                          className="w-full bg-slate-50/50 border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold focus:bg-white focus:outline-none h-10"
+                        >
+                          <option value="KG">KG (কেজি)</option>
+                          <option value="Liter">Liter (লিটার)</option>
+                          <option value="Piece">Piece (পিস)</option>
+                          <option value="Hali">Hali (হালি)</option>
+                          <option value="Packet">Packet (প্যাকেট)</option>
+                          <option value="Other">Other (অন্যান্য)</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-extrabold text-slate-600">প্রতি ইউনিট দাম (৳)</label>
+                        <Input 
+                          type="number"
+                          step="any"
+                          value={item.per_unit_price}
+                          onChange={e => updateItemField(idx, "per_unit_price", e.target.value)}
+                          placeholder="৭০"
+                          className="h-10 text-xs font-bold bg-slate-50/50 border-slate-200 focus:bg-white rounded-xl w-full"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-extrabold text-slate-600">মোট বিল (৳)</label>
+                        <Input 
+                          type="number"
+                          step="any"
+                          value={item.actual_total}
+                          onChange={e => updateItemField(idx, "actual_total", e.target.value)}
+                          placeholder="৬৫০"
+                          className="h-10 text-xs font-bold bg-slate-50/50 border-slate-200 focus:bg-white rounded-xl text-right w-full"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Calculations summary row */}
+                  <div className="mt-3 pt-2 flex flex-wrap gap-4 text-xs font-extrabold text-slate-600 justify-between items-center bg-slate-50/70 px-3 py-1.5 rounded-xl border border-slate-100">
+                    <span className="text-slate-500">আনুমানিক খরচ: <strong className="text-slate-800">৳{expected.toLocaleString()}</strong></span>
+                    <span className={saved >= 0 ? "text-emerald-700 font-bold" : "text-rose-600 font-bold"}>
+                      সাশ্রয়/পার্থক্য: ৳{saved.toLocaleString()}
                     </span>
                   </div>
                 </div>

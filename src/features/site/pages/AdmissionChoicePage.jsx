@@ -5,6 +5,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 import Link from "next/link";
 import { createPageUrl } from "@/utils";
 import { FileText, Globe } from "lucide-react";
+import { toast } from "sonner";
 
 export default function AdmissionChoicePage() {
   const { lang } = useLanguage();
@@ -17,14 +18,17 @@ export default function AdmissionChoicePage() {
 
   const getSetting = key => (Array.isArray(settings) ? settings : []).find(s => s.key === key)?.value;
   const rawFormUrl = getSetting("admission_form_url");
-  const isBroken = !rawFormUrl || rawFormUrl.includes("rdmx0kzhd3zeivhscjr7");
-  const admissionFormUrl = isBroken ? "/admission-form" : rawFormUrl;
 
   const handleDownload = () => {
-    if (admissionFormUrl && admissionFormUrl.startsWith("http")) {
-      window.open(admissionFormUrl, "_blank");
+    if (rawFormUrl && rawFormUrl.trim().length > 0 && /^https?:\/\//i.test(rawFormUrl.trim())) {
+      window.open(rawFormUrl.trim(), "_blank", "noopener,noreferrer");
     } else {
-      window.location.href = admissionFormUrl || "/admission-form";
+      toast.info(
+        isBn
+          ? "এডমিন প্যানেল থেকে নতুন ভর্তি ফরম ফাইল আপলোড করা হলে এখান থেকে সরাসরি ডাউনলোড হবে। আপনি সরাসরি অনলাইনেও আবেদন করতে পারেন।"
+          : "Admission form file will be downloadable once uploaded by admin. You can also apply online."
+      );
+      window.location.href = "/admission-form";
     }
   };
 

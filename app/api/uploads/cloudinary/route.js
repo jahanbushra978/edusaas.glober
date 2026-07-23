@@ -73,20 +73,21 @@ export async function POST(request) {
     }
 
     const isVideo = file.type.startsWith("video/") || /\.(mp4|mov|avi|mkv|webm)$/i.test(file.name);
+    const isPdf = file.type === "application/pdf" || /\.pdf$/i.test(file.name);
     const { cloudName, apiKey, apiSecret } = isVideo 
       ? getCloudinaryVideoConfig() 
       : getCloudinaryConfig();
 
-    const resourceType = isVideo ? "video" : (file.type.startsWith("image/") ? "image" : "raw");
+    const resourceType = isVideo ? "video" : (file.type.startsWith("image/") || isPdf ? "image" : "auto");
 
     const timestamp = Math.floor(Date.now() / 1000);
     
     // YouTube-style auto optimization & strict re-compression for videos (720p HD, 2Mbps bitrate ceiling, q_auto:eco)
     const eagerParams = isVideo 
       ? "w_1280,h_720,c_limit,q_auto:eco,vc_auto,br_2m,f_mp4" 
-      : (!isVideo && imageType !== "document" ? "w_400,c_limit,q_80,f_webp" : "");
+      : (!isVideo && !isPdf && imageType !== "document" ? "w_400,c_limit,q_80,f_webp" : "");
 
-    const signParams = { folder, timestamp };
+    const signParams = { access_mode: "public", folder, timestamp };
     if (eagerParams) {
       signParams.eager = eagerParams;
     }
@@ -102,6 +103,7 @@ export async function POST(request) {
     uploadForm.append("timestamp", String(timestamp));
     uploadForm.append("api_key", apiKey);
     uploadForm.append("signature", signature);
+    uploadForm.append("access_mode", "public");
     
     if (eagerParams) {
       uploadForm.append("eager", eagerParams);

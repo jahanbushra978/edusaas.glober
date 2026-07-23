@@ -202,8 +202,8 @@ async function fallbackParallelQueries(supabase, periodKey, period, today, thirt
       : Promise.resolve({ data: [], ok: true }),
     isSuperAdmin
       ? safeQuery(supabase, "events", {
-          columns: ["id", "title", "date", "time"],
-          filter: (q) => q.gte("date", today).order("date", { ascending: true }).limit(3),
+          columns: ["id", "title", "event_date", "time"],
+          filter: (q) => q.gte("event_date", today).order("event_date", { ascending: true }).limit(3),
         })
       : Promise.resolve({ data: [], ok: true }),
   ]);

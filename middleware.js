@@ -45,7 +45,7 @@ function isPublicRoute(pathname) {
     if (route.endsWith('/')) return pathname.startsWith(route)
     return pathname === route || pathname.startsWith(route + '/')
   })) return true
-  if (pathname.startsWith('/_next') || pathname.startsWith('/static') || pathname.startsWith('/api/auth/login') || pathname.startsWith('/api/auth/logout') || pathname.startsWith('/api/auth/refresh')) return true
+  if (pathname.startsWith('/_next') || pathname.startsWith('/static') || pathname.startsWith('/api/auth/login') || pathname.startsWith('/api/auth/logout') || pathname.startsWith('/api/auth/refresh') || pathname.startsWith('/api/auth/session')) return true
   return false
 }
 

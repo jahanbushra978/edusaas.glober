@@ -9,7 +9,7 @@ export function hasPermission(user, module, action = "view") {
     allowed = user.role === "boarding_manager"
       ? ["boarding"]
       : [
-          "students", "teachers", "student-attendance", "teacher-attendance",
+          "students", "teachers", "student-attendance", "teacher-attendance", "biometric-attendance",
           "daily-lesson-tracker", "exams", "fees", "hadiya",
           "notices", "academic-structure", "branches", "gallery",
           "videos", "messages", "downloadform", "sponsors",
