@@ -29,18 +29,45 @@ export default function BranchPage() {
   const [lightboxImage, setLightboxImage] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
 
-  // Fetch branch by slug or ID
+  // Fetch branch by slug, ID, or name
   const { data: branchList = [], isLoading: loadingBranch } = useQuery({
     queryKey: ['branch-detail', slug],
     queryFn: async () => {
       if (!slug) return [];
-      let res = await appClient.entities.Branch.filter({ slug });
-      if (res && res.length > 0) return res;
+      const decodedSlug = decodeURIComponent(String(slug)).trim().toLowerCase();
+
+      // 1. Fetch all active branches
+      const allBranches = await appClient.entities.Branch.list('sort_order', 100);
+      if (!allBranches || allBranches.length === 0) return [];
+
+      // 2. Flexible match by id, slug, branch_name, name_en, or name_bn
+      const found = allBranches.find(b => {
+        if (String(b.id) === decodedSlug) return true;
+        if (b.slug && String(b.slug).toLowerCase() === decodedSlug) return true;
+        const generatedSlug = (b.branch_name || b.name_en || b.name_bn || '')
+          .toLowerCase()
+          .replace(/[^\w\s\u0980-\u09FF-]/g, '')
+          .replace(/\s+/g, '-')
+          .replace(/-+/g, '-');
+        if (generatedSlug === decodedSlug) return true;
+        if (b.branch_name && b.branch_name.toLowerCase() === decodedSlug) return true;
+        if (b.name_en && b.name_en.toLowerCase() === decodedSlug) return true;
+        if (b.name_bn && b.name_bn.toLowerCase() === decodedSlug) return true;
+        return false;
+      });
+
+      if (found) return [found];
+
+      // 3. Fallback to direct ID get if numeric
       if (/^\d+$/.test(slug)) {
-        const single = await appClient.entities.Branch.get(slug);
-        if (single) return [single];
+        try {
+          const single = await appClient.entities.Branch.get(slug);
+          if (single) return [single];
+        } catch (_) {}
       }
-      return [];
+
+      // 4. Fallback to first branch if any active branch exists
+      return allBranches.slice(0, 1);
     },
     enabled: !!slug,
   });

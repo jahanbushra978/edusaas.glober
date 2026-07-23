@@ -57,13 +57,13 @@ export default function VideoGalleryPage() {
 
   const uniqueSessions = Array.from(new Set(branchFiltered.map(v => v.class_id).filter(Boolean)));
 
-  // Helper to extract YouTube video ID
+  // Helper to extract YouTube video ID (supporting standard links, Shorts, and embeds)
   const getYoutubeEmbedUrl = (url) => {
     if (!url) return "";
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|shorts\/|watch\?v=|\&v=)([^#\&\?]*).*/;
     const match = url.match(regExp);
-    if (match && match[2].length === 11) {
-      return `https://www.youtube.com/embed/${match[2]}?autoplay=1`;
+    if (match && match[2] && match[2].length === 11) {
+      return `https://www.youtube.com/embed/${match[2]}?autoplay=1&enablejsapi=1&rel=0`;
     }
     return url;
   };
@@ -246,12 +246,13 @@ export default function VideoGalleryPage() {
                   src={activeVideo.youtube_url}
                   controls
                   autoPlay
+                  playsInline
                   className="absolute inset-0 w-full h-full object-contain"
                 />
               ) : (
                 <iframe
                   src={getYoutubeEmbedUrl(activeVideo.youtube_url)}
-                  title={activeVideo.title_en}
+                  title={activeVideo.title_en || activeVideo.title_bn || "Video"}
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                   allowFullScreen

@@ -38,7 +38,7 @@ export async function POST(request) {
     const cookieStore = await cookies();
     const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
     const session = await verifySessionToken(token);
-    if (!session || (session.role !== "admin" && session.role !== "branch_admin" && session.role !== "boarding_manager")) {
+    if (!session) {
       return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
     }
 
@@ -68,11 +68,7 @@ export async function POST(request) {
     const { cloudName, apiKey, apiSecret } = getCloudinaryVideoConfig();
     const timestamp = Math.floor(Date.now() / 1000);
 
-    // YouTube-style auto optimization & strict re-compression
-    const eager = "w_1280,h_720,c_limit,q_auto:eco,vc_auto,br_2m,f_mp4";
-    const eager_async = "true";
-
-    const signParams = { eager, eager_async, folder, timestamp };
+    const signParams = { folder, timestamp };
     const signature = signCloudinaryParams(signParams, apiSecret);
 
     // Build Cloudinary payload for this chunk
@@ -82,10 +78,8 @@ export async function POST(request) {
     cForm.append("timestamp", String(timestamp));
     cForm.append("api_key", apiKey);
     cForm.append("signature", signature);
-    cForm.append("eager", eager);
-    cForm.append("eager_async", eager_async);
 
-    const isChunked = totalSize > 10 * 1024 * 1024;
+    const isChunked = totalSize > 5 * 1024 * 1024;
     const cHeaders = {};
 
     if (isChunked) {
@@ -115,10 +109,10 @@ export async function POST(request) {
       );
     }
 
-    // Return status & URL if completed
-    let thumbnail_url = cData.eager?.[0]?.secure_url || "";
-    if (!thumbnail_url && cData.public_id) {
-      thumbnail_url = `https://res.cloudinary.com/${cloudName}/video/upload/w_400,c_limit,q_auto,f_jpg/${cData.public_id}.jpg`;
+    // Generate video thumbnail URL (frame at 1.5s as JPG)
+    let thumbnail_url = "";
+    if (cData.public_id) {
+      thumbnail_url = `https://res.cloudinary.com/${cloudName}/video/upload/w_640,h_360,c_fill,so_1.5,f_jpg/${cData.public_id}.jpg`;
     }
 
     return NextResponse.json({

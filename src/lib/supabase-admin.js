@@ -60,8 +60,12 @@ export function createSupabaseAuthClient() {
 }
 
 export function createSupabasePublicClient() {
-  const url = requireServerEnv("NEXT_PUBLIC_SUPABASE_URL");
-  const anonKey = requireServerEnv("NEXT_PUBLIC_SUPABASE_ANON_KEY");
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL || process.env.SUPABASE_URL || "";
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || "";
+
+  if (!url || !anonKey) {
+    throw new Error("Missing Supabase public environment variables (NEXT_PUBLIC_SUPABASE_URL or SUPABASE_URL).");
+  }
 
   return createClient(url, anonKey, {
     auth: {

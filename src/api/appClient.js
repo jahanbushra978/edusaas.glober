@@ -1008,8 +1008,8 @@ export const appClient = {
 
   integrations: {
     Core: {
-      UploadFile: async ({ file, folder = "rahmania", label = "" }) => {
-        return uploadToCloudinary({ file, folder, label });
+      UploadFile: async ({ file, folder = "rahmania", label = "", onProgress }) => {
+        return uploadToCloudinary({ file, folder, label, onProgress });
       },
 
       InvokeLLM: async (payload) => {

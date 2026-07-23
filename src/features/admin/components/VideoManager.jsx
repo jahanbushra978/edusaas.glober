@@ -27,6 +27,7 @@ export default function VideoManager({ currentUser }) {
   const [videoUrl, setVideoUrl] = useState("");
   const [videoDesc, setVideoDesc] = useState("");
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadDate, setUploadDate] = useState(new Date().toISOString().split("T")[0]);
   const [status, setStatus] = useState("Active");
   const [showOnWebsite, setShowOnWebsite] = useState("Y");
@@ -212,12 +213,17 @@ export default function VideoManager({ currentUser }) {
     }
 
     setUploadingVideo(true);
+    setUploadProgress(0);
     try {
       // 1. Start frame capture in background
       const framePromise = captureVideoFrame(file, 1.5).catch(() => null);
 
-      // 2. Upload video
-      const { file_url, thumbnail_url } = await appClient.integrations.Core.UploadFile({ file, folder: "videos" });
+      // 2. Upload video with percentage progress callback
+      const { file_url, thumbnail_url } = await appClient.integrations.Core.UploadFile({
+        file,
+        folder: "videos",
+        onProgress: (pct) => setUploadProgress(pct),
+      });
       setVideoUrl(file_url);
 
       // 3. Auto-populate or extract frame thumbnail if not already set
@@ -238,6 +244,7 @@ export default function VideoManager({ currentUser }) {
       toast.error("Video upload failed: " + err.message);
     } finally {
       setUploadingVideo(false);
+      setUploadProgress(0);
       event.target.value = null;
     }
   };
@@ -342,10 +349,18 @@ export default function VideoManager({ currentUser }) {
                     <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">Upload Video File *</label>
                     <label className={`cursor-pointer flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-5 text-center transition-all w-full min-w-0 ${videoUrl ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30' : 'border-slate-300 hover:border-emerald-500 bg-slate-50/50 dark:bg-slate-900/50'}`}>
                       {uploadingVideo ? (
-                        <div className="flex flex-col items-center gap-2 py-2">
+                        <div className="flex flex-col items-center gap-2 py-2 w-full">
                           <Loader2 className="h-8 w-8 animate-spin text-emerald-600" />
-                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400">Uploading video to Cloudinary...</span>
-                          <span className="text-[10px] text-slate-400">Optimizing & streaming video chunks</span>
+                          <span className="text-xs font-extrabold text-emerald-700 dark:text-emerald-400">
+                            Uploading video... {uploadProgress}%
+                          </span>
+                          <div className="w-full max-w-xs bg-slate-200 dark:bg-slate-700 h-2.5 rounded-full overflow-hidden mt-1 shadow-inner">
+                            <div
+                              className="bg-gradient-to-r from-emerald-500 to-teal-500 h-full transition-all duration-300 rounded-full"
+                              style={{ width: `${uploadProgress}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] text-slate-500 font-semibold">Streaming video chunks ({uploadProgress}%)</span>
                         </div>
                       ) : videoUrl ? (
                         <div className="flex flex-col items-center gap-2 py-2 w-full min-w-0">

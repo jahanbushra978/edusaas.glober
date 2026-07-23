@@ -20,14 +20,14 @@ function isVideoFile(file) {
  * 4. Local Next.js server streams each chunk to Cloudinary server-to-server (`video/upload` endpoint).
  * 5. Applies YouTube-style auto-compression & strict re-compression ceiling (q_auto:eco, br_2m, w_1280, f_mp4).
  */
-async function uploadVideoInChunks(file, folder) {
+async function uploadVideoInChunks(file, folder, onProgress) {
   const MAX_VIDEO_BYTES = 500 * 1024 * 1024; // 500MB limit
   if (file.size > MAX_VIDEO_BYTES) {
     throw new Error("File is too large. Please reduce file size and try again.");
   }
 
   const fileSize = file.size;
-  const chunkSize = 5 * 1024 * 1024; // 5MB per chunk (always < 10MB Next.js body limit)
+  const chunkSize = 5 * 1024 * 1024; // 5MB per chunk
   const uploadId = `vid_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
   let start = 0;
@@ -46,6 +46,11 @@ async function uploadVideoInChunks(file, folder) {
     formData.append("total_size", String(fileSize));
     formData.append("original_name", file.name);
 
+    if (onProgress) {
+      const p = Math.min(99, Math.round((start / fileSize) * 100));
+      onProgress(p);
+    }
+
     const response = await fetch("/api/uploads/video-chunk", {
       method: "POST",
       body: formData,
@@ -57,7 +62,7 @@ async function uploadVideoInChunks(file, folder) {
     if (!response.ok || !data?.ok) {
       const msg = String(data?.message || "");
       if (msg.toLowerCase().includes("large") || msg.toLowerCase().includes("limit") || msg.toLowerCase().includes("bytes")) {
-        throw new Error("File is too large. Please reduce file size and try again.");
+        throw new Error("File is too large for Cloudinary account. Please choose a smaller video.");
       }
       throw new Error(msg || `Video upload failed (${response.status})`);
     }
@@ -65,6 +70,8 @@ async function uploadVideoInChunks(file, folder) {
     lastData = data;
     start = end + 1;
   }
+
+  if (onProgress) onProgress(100);
 
   if (!lastData || !lastData.secure_url) {
     throw new Error("Video upload completed but no URL was returned.");
@@ -77,16 +84,22 @@ async function uploadVideoInChunks(file, folder) {
   };
 }
 
-/**
- * Main upload entrypoint.
- * Videos strictly use browser pre-compression (if >90MB) & 5MB chunked local server proxy.
- * Images/Documents use image optimizer & server proxy.
- */
-export async function uploadToCloudinary({ file, folder = "rahmania", label = "" }) {
+export async function uploadToCloudinary({ file, folder = "rahmania", label = "", onProgress }) {
   // ── Video upload path ──
   if (isVideoFile(file)) {
-    const processedVideo = await optimizeVideo(file);
-    return uploadVideoInChunks(processedVideo, folder || "videos");
+    const isLarge = file.size > 90 * 1024 * 1024;
+    const processedVideo = await optimizeVideo(file, 90 * 1024 * 1024, (compP) => {
+      if (onProgress && isLarge) {
+        onProgress(Math.round(compP * 0.4)); // First 40% is compression
+      }
+    });
+
+    return uploadVideoInChunks(processedVideo, folder || "videos", (upP) => {
+      if (onProgress) {
+        const finalP = isLarge ? 40 + Math.round(upP * 0.6) : upP;
+        onProgress(finalP);
+      }
+    });
   }
 
   // ── Path for images / documents (unchanged) ──

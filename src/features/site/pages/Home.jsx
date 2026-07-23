@@ -108,14 +108,12 @@ function HomeContent() {
   const isAr = lang === "ar";
   const { data: homeData, isLoading } = useHomeData();
 
-  // Show spinner only when data has never been loaded yet.
-  // With HydrationBoundary seeded in page.jsx, the cache is populated
-  // immediately on the client — so isLoading is false and homeData is
-  // available without any fetch delay. Google Bot sees the full page.
-  if (isLoading && !homeData) return <div className="min-h-screen flex items-center justify-center"><div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-full animate-spin" /></div>;
+  // When homeData is initially null/loading, default to empty object so full page
+  // structure, headings, and JSON-LD schema are always rendered on the server for Googlebot.
+  const activeData = homeData || {};
 
-  const settings = homeData?.appSettings || {};
-  const pageSections = homeData?.pageSections || {};
+  const settings = activeData?.appSettings || {};
+  const pageSections = activeData?.pageSections || {};
   const isVisible = (key) => {
     const section = pageSections[key];
     if (!section) return true;

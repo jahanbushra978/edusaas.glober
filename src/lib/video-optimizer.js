@@ -3,29 +3,29 @@
  * Automatically compresses large video files (>90MB) down to ~30-60MB in the browser
  * using HTML5 Canvas & MediaRecorder before upload.
  */
-export async function optimizeVideo(file, targetMaxBytes = 90 * 1024 * 1024) {
-  // If file is already under 90MB, skip browser compression
+export async function optimizeVideo(file, targetMaxBytes = 90 * 1024 * 1024, onProgress) {
+  // If file is already under 90MB (Cloudinary safe ceiling), skip compression
   if (!file || file.size <= targetMaxBytes) {
     return file;
   }
 
-  console.log(`[Video Optimizer] Video size (${Math.round(file.size / (1024 * 1024))}MB) exceeds 90MB limit. Starting HD compression...`);
+  console.log(`[Video Optimizer] Video size (${Math.round(file.size / (1024 * 1024))}MB) exceeds Cloudinary 90MB limit. Starting 720p HD compression with audio...`);
 
   return new Promise((resolve) => {
     try {
       const video = document.createElement("video");
-      video.muted = true;
+      video.muted = false;
       video.playsInline = true;
       video.crossOrigin = "anonymous";
       const objectUrl = URL.createObjectURL(file);
       video.src = objectUrl;
 
-      // 3-minute timeout so large videos compress completely without timing out
+      // 5-minute timeout safety
       const timer = setTimeout(() => {
         console.warn("[Video Optimizer] Compression timeout, proceeding with original file.");
         URL.revokeObjectURL(objectUrl);
         resolve(file);
-      }, 180000);
+      }, 300000);
 
       video.onloadedmetadata = async () => {
         try {
@@ -41,13 +41,39 @@ export async function optimizeVideo(file, targetMaxBytes = 90 * 1024 * 1024) {
 
           canvas.width = width;
           canvas.height = height;
-
           const ctx = canvas.getContext("2d");
-          const stream = canvas.captureStream(30);
 
-          let mimeType = "video/webm;codecs=vp9";
+          const canvasStream = canvas.captureStream(30);
+          const videoTrack = canvasStream.getVideoTracks()[0];
+
+          // Capture audio track via WebAudio API to guarantee sound is preserved
+          let audioTrack = null;
+          try {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) {
+              const audioCtx = new AudioCtx();
+              const source = audioCtx.createMediaElementSource(video);
+              const dest = audioCtx.createMediaStreamDestination();
+              source.connect(dest);
+              audioTrack = dest.stream.getAudioTracks()[0] || null;
+            }
+          } catch (e) {
+            console.warn("[Video Optimizer] WebAudio capture error:", e);
+          }
+
+          if (!audioTrack && (video.captureStream || video.mozCaptureStream)) {
+            const rawStream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
+            audioTrack = rawStream.getAudioTracks()[0] || null;
+          }
+
+          const combinedStream = new MediaStream([
+            videoTrack,
+            ...(audioTrack ? [audioTrack] : [])
+          ]);
+
+          let mimeType = "video/webm;codecs=vp9,opus";
           if (typeof MediaRecorder !== "undefined") {
-            if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "video/webm;codecs=vp8";
+            if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "video/webm;codecs=vp8,opus";
             if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "video/webm";
             if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "video/mp4";
           }
@@ -58,9 +84,9 @@ export async function optimizeVideo(file, targetMaxBytes = 90 * 1024 * 1024) {
             return resolve(file);
           }
 
-          const recorder = new MediaRecorder(stream, {
+          const recorder = new MediaRecorder(combinedStream, {
             mimeType: MediaRecorder.isTypeSupported(mimeType) ? mimeType : undefined,
-            videoBitsPerSecond: 1_800_000, // 1.8 Mbps (Crisp 720p HD, ~13MB per minute)
+            videoBitsPerSecond: 1_800_000, // Crisp 720p HD (~13MB/min)
           });
 
           const recordedChunks = [];
@@ -78,7 +104,7 @@ export async function optimizeVideo(file, targetMaxBytes = 90 * 1024 * 1024) {
             const compressedFile = new File(
               [compressedBlob],
               file.name.substring(0, file.name.lastIndexOf(".")) + ext,
-              { type: mimeType || "video/webm", lastModified: Date.now() },
+              { type: mimeType || "video/webm", lastModified: Date.now() }
             );
 
             console.log(`[Video Optimizer] Done! ${Math.round(file.size / (1024 * 1024))}MB → ${Math.round(compressedFile.size / (1024 * 1024))}MB`);
@@ -86,8 +112,8 @@ export async function optimizeVideo(file, targetMaxBytes = 90 * 1024 * 1024) {
           };
 
           recorder.start(100);
-          video.playbackRate = 1.0; // 1.0x Normal Speed - Preserves 100% exact original duration
-          await video.play();
+          video.playbackRate = 1.0;
+          await video.play().catch(() => {});
 
           const drawFrame = () => {
             if (video.paused || video.ended) {
@@ -95,13 +121,17 @@ export async function optimizeVideo(file, targetMaxBytes = 90 * 1024 * 1024) {
               return;
             }
             ctx.drawImage(video, 0, 0, width, height);
+            if (video.duration && onProgress) {
+              const p = Math.min(99, Math.round((video.currentTime / video.duration) * 100));
+              onProgress(p);
+            }
             requestAnimationFrame(drawFrame);
           };
 
           drawFrame();
         } catch (err) {
           clearTimeout(timer);
-          console.warn("[Video Optimizer] Canvas compression error, using original:", err);
+          console.warn("[Video Optimizer] Compression exception, proceeding with original:", err);
           URL.revokeObjectURL(objectUrl);
           resolve(file);
         }
