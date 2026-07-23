@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { GraduationCap, UserCheck, Lock, Quote } from "lucide-react";
 import HeroSection from "@/components/home/HeroSection";
@@ -102,6 +102,18 @@ function AnimatedSection({ children, idx = 0, className = "", plain = false, bg 
 }
 
 function HomeContent() {
+  // ─── Mounted guard ────────────────────────────────────────────────────────
+  // The server always renders with initialLang ('bn') while the client may
+  // read a different lang from localStorage after first paint.  Any mismatch
+  // in lang-dependent text causes React error #418 / BAILOUT_TO_CLIENT_SIDE_
+  // RENDERING.  Rendering a neutral, language-agnostic placeholder before
+  // mount guarantees the server HTML and the client's first render are
+  // identical, eliminating the mismatch.  The React Query cache is already
+  // seeded by the Server Component (page.jsx), so when mounted flips to true
+  // the full content renders immediately — no visible loading flash.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+  // ─── All hooks called unconditionally (Rules of Hooks) ────────────────────
   const { lang, setLang } = useLanguage();
   const t = useTranslation(lang);
   const isBn = lang === "bn";
@@ -248,6 +260,20 @@ function HomeContent() {
       }
     ]
   };
+
+  // Pre-mount: identical on server and client — no hydration mismatch.
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-white" aria-hidden="true">
+        <div className="flex items-center justify-center" style={{ minHeight: '60vh' }}>
+          <div
+            className="w-10 h-10 rounded-full border-4 border-t-transparent animate-spin"
+            style={{ borderColor: '#006400', borderTopColor: 'transparent' }}
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">

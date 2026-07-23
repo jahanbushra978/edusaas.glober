@@ -2,7 +2,7 @@ import './globals.css'
 import Script from 'next/script'
 import { Analytics } from "@vercel/analytics/react"
 import { SpeedInsights } from "@vercel/speed-insights/next"
-
+import { cookies } from 'next/headers'
 
 import Providers from './providers'
 import { inter, hindSiliguri, notoSansArabic, amiri } from './fonts'
@@ -66,15 +66,21 @@ export const metadata = {
     'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400',
     'og:locale:alternate': ['en_US', 'ar_SA'],
     'theme-color': '#006400',
-    'apple-mobile-web-app-capable': 'yes',
+    'mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'default',
     'format-detection': 'telephone=yes',
   },
 }
 
-export default function RootLayout({ children }) {
+export default async function RootLayout({ children }) {
+  // Read ri_lang cookie server-side so SSR and client first render
+  // always use the same language — prevents React hydration error #418.
+  const cookieStore = await cookies()
+  const langCookie = cookieStore.get('ri_lang')?.value
+  const initialLang = (langCookie === 'bn' || langCookie === 'en' || langCookie === 'ar') ? langCookie : 'bn'
+
   return (
-    <html lang="bn" suppressHydrationWarning className={`${inter.variable} ${hindSiliguri.variable} ${notoSansArabic.variable} ${amiri.variable}`}>
+    <html lang={initialLang} suppressHydrationWarning className={`${inter.variable} ${hindSiliguri.variable} ${notoSansArabic.variable} ${amiri.variable}`}>
       <head>
         <meta charSet="utf-8" />
         <script
@@ -103,7 +109,7 @@ export default function RootLayout({ children }) {
             </Script>
           </>
         )}
-        <Providers>{children}</Providers>
+        <Providers initialLang={initialLang}>{children}</Providers>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
