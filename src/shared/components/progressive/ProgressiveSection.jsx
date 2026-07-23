@@ -33,7 +33,7 @@ export default function ProgressiveSection({
   rootMargin = "1600px 0px",
 }) {
   const ref = useRef(null);
-  const [shouldRender, setShouldRender] = useState(false);
+  const [shouldRender, setShouldRender] = useState(true);
 
   useEffect(() => {
     if (shouldRender) return undefined;

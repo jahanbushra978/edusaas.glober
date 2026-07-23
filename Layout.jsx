@@ -14,10 +14,7 @@ import { pagesConfig } from "@/pages.config";
 import { useNavbarItems } from "@/hooks/useNavbarItems";
 import ProgressiveSection, { SectionSkeleton } from "@/shared/components/progressive/ProgressiveSection";
 
-const Footer = dynamic(() => import("@/components/layout/Footer"), {
-  loading: () => <SectionSkeleton minHeight={360} />,
-  ssr: false,
-})
+import Footer from "@/components/layout/Footer";
 
 const LOGO_URL = "/rahmania-logo-v2.png";
 
