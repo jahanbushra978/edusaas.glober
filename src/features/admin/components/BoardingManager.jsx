@@ -1038,23 +1038,23 @@ export default function BoardingManager({ currentUser }) {
                 Fill the details below. Quantity and unit prices will calculate expected costs.
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="space-y-1">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+              <div className="space-y-1 flex-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase block">Report Date</label>
                 <Input 
                   type="date" 
                   value={entryDate} 
                   onChange={e => setEntryDate(e.target.value)} 
-                  className="h-10 text-xs font-bold border-slate-200 focus:border-[#12715B] rounded-xl"
+                  className="h-10 text-xs font-bold border-slate-200 focus:border-[#12715B] rounded-xl w-full"
                   required 
                 />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 flex-1">
                 <label className="text-[10px] font-bold text-slate-400 uppercase block">Main Category</label>
                 <select
                   value={entryCategory}
                   onChange={e => setEntryCategory(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500 h-10"
+                  className="w-full bg-white border border-slate-200 rounded-xl py-2 px-3 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500 h-10"
                 >
                   {EXPENSE_CATEGORIES.map(cat => (
                     <option key={cat} value={cat}>{cat}</option>
@@ -1065,7 +1065,7 @@ export default function BoardingManager({ currentUser }) {
           </div>
 
           {/* Grid Header */}
-          <div className="hidden md:grid grid-cols-1 sm:grid-cols-12 gap-3 text-xs font-bold text-slate-500 uppercase px-2">
+          <div className="hidden md:grid grid-cols-12 gap-3 text-xs font-bold text-slate-500 uppercase px-2">
             <div className="col-span-4">Item Name (আইটেম নাম)</div>
             <div className="col-span-2">Quantity (পরিমাণ)</div>
             <div className="col-span-2">Unit (ইউনিট)</div>
@@ -1083,18 +1083,18 @@ export default function BoardingManager({ currentUser }) {
               const saved = expected - actual;
 
               return (
-                <div key={idx} className="grid grid-cols-1 md:grid-cols-12 gap-3 p-3 bg-slate-50/50 rounded-2xl border border-slate-100 items-center">
-                  <div className="col-span-4 space-y-1">
+                <div key={idx} className="grid grid-cols-12 gap-3 p-3 bg-slate-50/50 rounded-2xl border border-slate-100 items-center">
+                  <div className="col-span-12 md:col-span-4 space-y-1">
                     <label className="text-[9px] font-bold text-slate-400 uppercase block md:hidden">Item Name</label>
                     <Input 
                       value={item.item_name}
                       onChange={e => updateItemField(idx, "item_name", e.target.value)}
                       placeholder="e.g. Rice, Potato, Fish"
-                      className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl"
+                      className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl w-full"
                     />
                   </div>
                   
-                  <div className="col-span-2 space-y-1">
+                  <div className="col-span-6 sm:col-span-3 md:col-span-2 space-y-1">
                     <label className="text-[9px] font-bold text-slate-400 uppercase block md:hidden">Quantity</label>
                     <Input 
                       type="number"
@@ -1102,11 +1102,11 @@ export default function BoardingManager({ currentUser }) {
                       value={item.quantity}
                       onChange={e => updateItemField(idx, "quantity", e.target.value)}
                       placeholder="e.g. 10"
-                      className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl"
+                      className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl w-full"
                     />
                   </div>
 
-                  <div className="col-span-2 space-y-1">
+                  <div className="col-span-6 sm:col-span-3 md:col-span-2 space-y-1">
                     <label className="text-[9px] font-bold text-slate-400 uppercase block md:hidden">Unit</label>
                     <select
                       value={item.unit}
@@ -1122,7 +1122,7 @@ export default function BoardingManager({ currentUser }) {
                     </select>
                   </div>
 
-                  <div className="col-span-2 space-y-1">
+                  <div className="col-span-6 sm:col-span-3 md:col-span-2 space-y-1">
                     <label className="text-[9px] font-bold text-slate-400 uppercase block md:hidden">Per Unit Price</label>
                     <Input 
                       type="number"
@@ -1130,11 +1130,11 @@ export default function BoardingManager({ currentUser }) {
                       value={item.per_unit_price}
                       onChange={e => updateItemField(idx, "per_unit_price", e.target.value)}
                       placeholder="e.g. 70"
-                      className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl"
+                      className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl w-full"
                     />
                   </div>
 
-                  <div className="col-span-2 flex items-center justify-between gap-2">
+                  <div className="col-span-6 sm:col-span-3 md:col-span-2 flex items-center justify-between gap-2">
                     <div className="flex-1 space-y-1">
                       <label className="text-[9px] font-bold text-slate-400 uppercase block md:hidden">Actual Total</label>
                       <Input 
@@ -1143,14 +1143,14 @@ export default function BoardingManager({ currentUser }) {
                         value={item.actual_total}
                         onChange={e => updateItemField(idx, "actual_total", e.target.value)}
                         placeholder="e.g. 650"
-                        className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl text-right"
+                        className="h-10 text-xs font-bold bg-white border-slate-200 focus:border-[#12715B] rounded-xl text-right w-full"
                       />
                     </div>
                     {entryItems.length > 1 && (
                       <button 
                         type="button"
                         onClick={() => removeEntryItem(idx)}
-                        className="h-9 w-9 rounded-xl flex items-center justify-center bg-red-50 text-red-500 border border-red-100 hover:bg-red-100/50 mt-4 md:mt-0"
+                        className="h-9 w-9 rounded-xl flex items-center justify-center bg-red-50 text-red-500 border border-red-100 hover:bg-red-100/50 shrink-0 mt-4 md:mt-0"
                       >
                         <Trash2 className="h-4 w-4" />
                       </button>

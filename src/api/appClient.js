@@ -378,7 +378,22 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
         query = query.limit(safeLimit);
       }
       const { data, error } = await query;
-      if (error) throw error;
+      if (error) {
+        if (isPublic && (error.status === 401 || error.code === 'PGRST301')) {
+          setSupabaseToken(null);
+          setAdminSupabaseToken(null);
+          let retryQuery = supabaseAdmin.from(tableName).select(select);
+          if (sort && sort !== "id") {
+            const desc = sort.startsWith("-");
+            const field = desc ? sort.slice(1) : sort;
+            retryQuery = retryQuery.order(field, { ascending: !desc });
+          }
+          retryQuery = retryQuery.limit(safeLimit);
+          const { data: retryData, error: retryErr } = await retryQuery;
+          if (!retryErr) return (retryData || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item));
+        }
+        throw error;
+      }
       return (data || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item));
     });
     if (isPublic) setCache(cacheKey, result);
@@ -953,6 +968,8 @@ export const appClient = {
     me: async () => {
       const data = await requestJson(`/api/auth/session?t=${Date.now()}`, { method: "GET", cache: "no-store" }).catch(() => null);
       if (!data?.authenticated || !data.user) {
+        setSupabaseToken(null);
+        setAdminSupabaseToken(null);
         throw { status: 401, message: "Not authenticated" };
       }
       if (data.supabaseToken) {

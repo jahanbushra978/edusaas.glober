@@ -80,7 +80,7 @@ export default async function RootLayout({ children }) {
   const initialLang = (langCookie === 'bn' || langCookie === 'en' || langCookie === 'ar') ? langCookie : 'bn'
 
   return (
-    <html lang={initialLang} suppressHydrationWarning className={`${inter.variable} ${hindSiliguri.variable} ${notoSansArabic.variable} ${amiri.variable}`}>
+    <html lang={initialLang} suppressHydrationWarning data-scroll-behavior="smooth" className={`${inter.variable} ${hindSiliguri.variable} ${notoSansArabic.variable} ${amiri.variable}`}>
       <head>
         <meta charSet="utf-8" />
         <script
@@ -134,11 +134,27 @@ export default async function RootLayout({ children }) {
               "url": "https://rahmaniainstitute.org",
               "logo": "https://rahmaniainstitute.org/rahmania-logo-v2.png",
               "image": "https://rahmaniainstitute.org/rahmania-logo-v2.png",
-              "description": "দ্বীনি ও জাগতিক শিক্ষার সমন্বয়ে একটি আধুনিক শিক্ষা প্রতিষ্ঠান।",
+              "description": "দ্বীনি ও জাগতিক শিক্ষার সমন্বয়ে গড়ে ওঠা গাজীপুরের একটি আধুনিক শিক্ষা প্রতিষ্ঠান। নূরানী, নাজেরা, হিফয, কিতাবখানা, কিন্ডারগার্টেন ও ইংলিশ ভার্সন বিভাগ।",
               "address": {
                 "@type": "PostalAddress",
+                "streetAddress": "গাজীপুর, ঢাকা",
                 "addressLocality": "Gazipur",
-                "addressCountry": "BD"
+                "addressRegion": "Dhaka",
+                "countryName": "Bangladesh"
+              },
+              "telephone": "+8801906898939",
+              "email": "rahmaniainstitute.org@gmail.com",
+              "hasOfferCatalog": {
+                "@type": "OfferCatalog",
+                "name": "শিক্ষা কার্যক্রম ও বিভাগসমূহ",
+                "itemListElement": [
+                  { "@type": "Offer", "itemOffered": { "@type": "Course", "name": "নূরানী বিভাগ" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Course", "name": "নাজেরা বিভাগ" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Course", "name": "হিফযুল কুরআন" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Course", "name": "কিতাবখানা (কিতাব বিভাগ)" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Course", "name": "কিন্ডারগার্টেন" } },
+                  { "@type": "Offer", "itemOffered": { "@type": "Course", "name": "ইংলিশ ভার্সন" } }
+                ]
               }
             })
           }}

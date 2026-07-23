@@ -13,9 +13,9 @@ export default function AboutSection() {
         <div className="flex flex-col items-center gap-10">
           <div className="w-full">
             {/* Main Header */}
-            <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black italic mb-6 text-[#15803D] dark:text-[#4adea0] leading-tight tracking-tight max-w-3xl mx-auto">
+            <h1 className="text-3xl sm:text-4xl lg:text-5xl font-black italic mb-6 text-[#15803D] dark:text-[#4adea0] leading-tight tracking-tight max-w-3xl mx-auto">
               {t.aboutSection.h1}
-            </h2>
+            </h1>
 
             {/* Elegant Header Divider */}
             <div className="flex items-center justify-center gap-3 mb-10">

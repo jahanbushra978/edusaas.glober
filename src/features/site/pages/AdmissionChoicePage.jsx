@@ -16,13 +16,15 @@ export default function AdmissionChoicePage() {
   });
 
   const getSetting = key => (Array.isArray(settings) ? settings : []).find(s => s.key === key)?.value;
-  const admissionFormUrl = getSetting("admission_form_url");
+  const rawFormUrl = getSetting("admission_form_url");
+  const isBroken = !rawFormUrl || rawFormUrl.includes("rdmx0kzhd3zeivhscjr7");
+  const admissionFormUrl = isBroken ? "/admission-form" : rawFormUrl;
 
   const handleDownload = () => {
-    if (admissionFormUrl) {
+    if (admissionFormUrl && admissionFormUrl.startsWith("http")) {
       window.open(admissionFormUrl, "_blank");
     } else {
-      alert(isBn ? "দুঃখিত, আবেদন ফরম পাওয়া যায়নি।" : "Sorry, admission form is not available.");
+      window.location.href = admissionFormUrl || "/admission-form";
     }
   };
 
@@ -72,13 +74,8 @@ export default function AdmissionChoicePage() {
               {isBn ? "আবেদন ফরম Download করুন" : "Download Form"}
             </h3>
             <p className="text-sm text-slate-500 dark:text-gray-400">
-              {isBn ? "ফরম ডাউনলোড করে আবেদন করুন" : "Download form to apply"}
+              {isBn ? "ফরম দেখতে বা পেতে এখানে ক্লিক করুন" : "Click here to view or download form"}
             </p>
-            {!admissionFormUrl && (
-              <p className="text-xs text-red-500 mt-2">
-                {isBn ? "(ফরম পাওয়া যায়নি)" : "(Form not available)"}
-              </p>
-            )}
           </div>
         </div>
 

@@ -117,7 +117,7 @@ export default function HeroNavBar() {
                 height={56}
                 priority
                 className="h-10 w-auto object-contain lg:h-14"
-                style={{ maxWidth: "240px", width: "auto", height: "auto" }}
+                style={{ maxWidth: "240px", width: "auto" }}
                 alt="Rahmania Institute"
               />
             </Link>

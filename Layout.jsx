@@ -230,7 +230,7 @@ export default function Layout({ children, currentPageName: currentPageNameProp 
                 width={240}
                 height={56}
                 className="h-9 sm:h-11 md:h-14 w-auto object-contain drop-shadow-md brightness-110 transition-transform duration-300 hover:scale-105 max-w-[160px] sm:max-w-[200px] md:max-w-[240px]"
-                style={{ width: "auto", height: "auto" }}
+                style={{ width: "auto" }}
                 priority
               />
             </Link>

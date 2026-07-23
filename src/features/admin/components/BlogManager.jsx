@@ -207,12 +207,20 @@ export default function BlogManager() {
     const fallbackContent = formData.content_bn || formData.content_en || formData.content_ar;
     const finalSlug = formData.slug.trim() || generateSlug(fallbackTitle);
 
-    saveMut.mutate({
+    const payload = {
       ...formData,
       title: fallbackTitle,
       content: fallbackContent,
       slug: finalSlug,
-    });
+    };
+
+    if (!payload.reading_time || isNaN(Number(payload.reading_time))) {
+      delete payload.reading_time;
+    } else {
+      payload.reading_time = Number(payload.reading_time);
+    }
+
+    saveMut.mutate(payload);
   };
 
   return (

@@ -440,14 +440,17 @@ export default function NoticeManager({ currentUser }) {
   const createMut = useMutation({
     mutationFn: d => appClient.entities.Notice.create(d),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["notices"] }); setShowForm(false); toast.success("Notice added!"); },
+    onError: (err) => { toast.error(err?.message || err?.details || "Failed to add notice"); },
   });
   const updateMut = useMutation({
     mutationFn: ({ id, data }) => appClient.entities.Notice.update(id, data),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["notices"] }); setShowForm(false); setEditNotice(null); toast.success("Updated!"); },
+    onError: (err) => { toast.error(err?.message || err?.details || "Failed to update notice"); },
   });
   const deleteMut = useMutation({
     mutationFn: id => appClient.entities.Notice.delete(id),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ["notices"] }); toast.success("Deleted!"); },
+    onError: (err) => { toast.error(err?.message || err?.details || "Failed to delete notice"); },
   });
   const toggleMut = useMutation({
     mutationFn: ({ id, is_active }) => appClient.entities.Notice.update(id, { is_active, is_published: is_active }),
@@ -458,8 +461,13 @@ export default function NoticeManager({ currentUser }) {
     const enrichedData = {
       ...data,
       description: data.body || "",
-      file_url: data.attachment_url || "",
+      file_url: data.attachment_url || null,
       is_published: data.is_active ?? true,
+      publish_date: data.publish_date?.trim() || null,
+      notice_number: data.notice_number?.trim() || null,
+      image: data.image?.trim() || null,
+      attachment_url: data.attachment_url?.trim() || null,
+      attachment_name: data.attachment_name?.trim() || null,
     };
     if (currentUser?.role === "branch_admin") {
       enrichedData.branch_id = Number(currentUser.branch_id);

@@ -42,6 +42,9 @@ export default function AdmissionApplicationManager({ currentUser }) {
       toast.success("Updated!");
       setSelected(null);
     },
+    onError: (err) => {
+      toast.error(err?.message || err?.details || "Failed to update application status");
+    },
   });
 
   const filtered = apps.filter(a => {
@@ -115,7 +118,7 @@ export default function AdmissionApplicationManager({ currentUser }) {
                         <span>{new Date(app.created_date).toLocaleDateString("bn-BD")}</span>
                       </div>
                     </div>
-                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setSelected(app); setAdminNote(app.admin_notes || ""); }}>
+                    <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setSelected(app); setAdminNote(app.notes || app.admin_notes || ""); }}>
                       <Eye className="h-3.5 w-3.5" /> বিস্তারিত
                     </Button>
                   </div>
@@ -168,14 +171,14 @@ export default function AdmissionApplicationManager({ currentUser }) {
               </div>
               <div className="flex gap-2 pt-2 border-t">
                 <Button className="flex-1 gap-1.5 bg-green-600 hover:bg-green-700"
-                  onClick={() => updateMut.mutate({ id: selected.id, data: { status: "approved", admin_notes: adminNote } })}>
+                  onClick={() => updateMut.mutate({ id: selected.id, data: { status: "approved", notes: adminNote } })}>
                   <CheckCircle2 className="h-4 w-4" /> Approve
                 </Button>
                 <Button variant="destructive" className="flex-1 gap-1.5"
-                  onClick={() => updateMut.mutate({ id: selected.id, data: { status: "rejected", admin_notes: adminNote } })}>
+                  onClick={() => updateMut.mutate({ id: selected.id, data: { status: "rejected", notes: adminNote } })}>
                   <XCircle className="h-4 w-4" /> Reject
                 </Button>
-                <Button variant="outline" onClick={() => updateMut.mutate({ id: selected.id, data: { status: "pending", admin_notes: adminNote } })}>
+                <Button variant="outline" onClick={() => updateMut.mutate({ id: selected.id, data: { status: "pending", notes: adminNote } })}>
                   <Clock className="h-4 w-4" />
                 </Button>
               </div>

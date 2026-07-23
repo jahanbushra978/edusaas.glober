@@ -25,7 +25,7 @@ export default function Footer({ user: userProp }) {
                   className="relative flex h-16 w-16 md:h-[4.5rem] md:w-[4.5rem] items-center justify-center rounded-full bg-white p-1 border-2 border-[#D4AF37] shadow-[0_4px_20px_rgba(0,0,0,0.3)] transition-transform duration-300 hover:scale-105"
                 >
                   <div className="h-full w-full rounded-full overflow-hidden flex items-center justify-center bg-white">
-                    <Image src={LOGO_URL} alt={instNameEn} width={100} height={100} className="h-full w-auto max-h-full object-contain rounded-full" />
+                    <Image src={LOGO_URL} alt={instNameEn} width={100} height={100} className="h-full w-auto max-h-full object-contain rounded-full" style={{ width: "auto" }} />
                   </div>
                 </div>
               </div>

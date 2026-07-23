@@ -31,12 +31,18 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
   global: {
-    fetch: (url, options = {}) => {
+    fetch: async (url, options = {}) => {
       const headers = new Headers(options.headers || {});
       if (currentSupabaseToken) {
         headers.set("Authorization", `Bearer ${currentSupabaseToken}`);
       }
-      return fetch(url, { ...options, headers });
+      const response = await fetch(url, { ...options, headers });
+      if (response.status === 401 && currentSupabaseToken) {
+        setSupabaseToken(null);
+        const fallbackHeaders = new Headers(options.headers || {});
+        return fetch(url, { ...options, headers: fallbackHeaders });
+      }
+      return response;
     },
   },
 });

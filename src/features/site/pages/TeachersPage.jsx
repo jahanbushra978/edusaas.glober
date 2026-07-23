@@ -15,6 +15,7 @@ export default function TeachersPage() {
 
   const [selectedBranch, setSelectedBranch] = useState(null);
   const [selectedClass, setSelectedClass] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(50);
 
   // Fetch branches dynamically
   const { data: branches = [] } = useQuery({
@@ -23,15 +24,13 @@ export default function TeachersPage() {
     select: d => d.filter(b => b.is_active !== false)
   });
 
-  // Fetch all active teachers
+  // Fetch all active teachers (uses listAll so all teachers are retrieved even if > 200)
   const { data: teachers = [], isLoading, error } = useQuery({
     queryKey: ["teachers-all-public"],
-    queryFn: () => appClient.entities.Teacher.filter(
-      { status: "active" }, 
-      "created_date", 
-      500, 
-      "id,teacher_id,user_email,full_name_en,full_name_bn,phone,photo_url,designation,bio,facebook,linkedin,is_active,full_name_ar,designation_bn,designation_ar,bio_bn,bio_ar,name,image_url,employee_code,branch,department,website_showing_serial,featured_teacher,cv_url,alt_phone,qualification,experience_years,special_skills,show_on_website,branch_id,assigned_batches"
-    ),
+    queryFn: () => appClient.entities.Teacher.listAll({
+      sort: "created_date",
+      select: "id,teacher_id,user_email,full_name_en,full_name_bn,phone,photo_url,designation,bio,facebook,linkedin,is_active,full_name_ar,designation_bn,designation_ar,bio_bn,bio_ar,name,image_url,employee_code,branch,department,website_showing_serial,featured_teacher,cv_url,alt_phone,qualification,experience_years,special_skills,show_on_website,branch_id,assigned_batches,status"
+    }).then(list => list.filter(t => t.status === "active" || t.is_active !== false)),
     staleTime: 15 * 60 * 1000,
   });
 
@@ -132,6 +131,8 @@ export default function TeachersPage() {
     return true;
   });
 
+  const displayedTeachers = filteredTeachers.slice(0, visibleCount);
+
   return (
     <div className={`min-h-screen ${isAr ? 'direction-rtl' : ''}`} style={{ background: "linear-gradient(160deg,#0e2e1f 0%,#144733 50%,#0e2e1f 100%)" }}>
       <div className="max-w-7xl mx-auto px-4 py-16">
@@ -172,6 +173,7 @@ export default function TeachersPage() {
               onClick={() => {
                 setSelectedBranch(null);
                 setSelectedClass(null);
+                setVisibleCount(50);
               }}
               className={`px-5 py-2.5 rounded-full text-xs font-bold italic transition-all duration-200 ${
                 !selectedBranch
@@ -193,6 +195,7 @@ export default function TeachersPage() {
                   onClick={() => {
                     setSelectedBranch(b);
                     setSelectedClass(null);
+                    setVisibleCount(50);
                   }}
                   className={`px-5 py-2.5 rounded-full text-xs font-bold italic transition-all duration-200 ${
                     isSelectedBranch
@@ -211,7 +214,10 @@ export default function TeachersPage() {
             <div className="flex flex-wrap gap-2.5 justify-center pt-2 pb-6 border-b border-white/5 animate-fade-in relative z-30">
               {/* All Classes in Selected Branch Tab */}
               <button
-                onClick={() => setSelectedClass(null)}
+                onClick={() => {
+                  setSelectedClass(null);
+                  setVisibleCount(50);
+                }}
                 className={`px-4 py-1.5 rounded-full text-[11px] font-bold italic transition-all duration-200 ${
                   !selectedClass
                     ? "bg-emerald-500 text-[#0c2419] shadow-[0_4px_12px_rgba(16,185,129,0.2)]"
@@ -230,7 +236,10 @@ export default function TeachersPage() {
                 return (
                   <button
                     key={cls.id || cIdx}
-                    onClick={() => setSelectedClass(cls)}
+                    onClick={() => {
+                      setSelectedClass(cls);
+                      setVisibleCount(50);
+                    }}
                     className={`px-4 py-1.5 rounded-full text-[11px] font-bold italic transition-all duration-200 ${
                       isSelectedClass
                         ? "bg-emerald-500 text-[#0c2419] shadow-[0_4px_12px_rgba(16,185,129,0.2)]"
@@ -260,131 +269,148 @@ export default function TeachersPage() {
             <p className="text-white/30 italic text-lg">{t.teachersPage.noTeachers}</p>
           </div>
         ) : (
-          /* Responsive Layout Grid */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
-            {filteredTeachers.map(teacher => {
-              // Apply show_on_website visibility checks
-              const showOnWebsite = teacher.show_on_website || {};
-              const showPhoto = showOnWebsite.photo !== "N";
-              const showName = showOnWebsite.name !== "N";
-              const showDesignation = showOnWebsite.designation !== "N";
-              const showBranch = showOnWebsite.branch !== "N";
-              const showDept = showOnWebsite.department !== "N";
-              const showSubjects = showOnWebsite.subjects !== "N";
-              const showQualification = showOnWebsite.qualification !== "N";
-              const showExperience = showOnWebsite.experience !== "N";
-              const showSkills = showOnWebsite.skills !== "N";
-              const showBio = showOnWebsite.bio !== "N";
-              const showPhone = showOnWebsite.phone !== "N";
-              const showEmail = showOnWebsite.email !== "N";
+          <>
+            {/* Responsive Layout Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+              {displayedTeachers.map(teacher => {
+                // Apply show_on_website visibility checks
+                const showOnWebsite = teacher.show_on_website || {};
+                const showPhoto = showOnWebsite.photo !== "N";
+                const showName = showOnWebsite.name !== "N";
+                const showDesignation = showOnWebsite.designation !== "N";
+                const showBranch = showOnWebsite.branch !== "N";
+                const showDept = showOnWebsite.department !== "N";
+                const showSubjects = showOnWebsite.subjects !== "N";
+                const showQualification = showOnWebsite.qualification !== "N";
+                const showExperience = showOnWebsite.experience !== "N";
+                const showSkills = showOnWebsite.skills !== "N";
+                const showBio = showOnWebsite.bio !== "N";
+                const showPhone = showOnWebsite.phone !== "N";
+                const showEmail = showOnWebsite.email !== "N";
 
-              // Resolve name based on language rules
-              const name = isBn ? (teacher.full_name_bn || teacher.full_name_en) 
-                         : isAr ? (teacher.full_name_ar || teacher.full_name_en) 
-                         : (teacher.full_name_en || teacher.full_name_bn);
+                // Resolve name based on language rules
+                const name = isBn ? (teacher.full_name_bn || teacher.full_name_en) 
+                           : isAr ? (teacher.full_name_ar || teacher.full_name_en) 
+                           : (teacher.full_name_en || teacher.full_name_bn);
 
-              // Resolve designation based on language rules
-              const designation = isBn ? (teacher.designation_bn || teacher.designation) 
-                               : isAr ? (teacher.designation_ar || teacher.designation) 
-                               : (teacher.designation || teacher.designation_bn);
+                // Resolve designation based on language rules
+                const designation = isBn ? (teacher.designation_bn || teacher.designation) 
+                                 : isAr ? (teacher.designation_ar || teacher.designation) 
+                                 : (teacher.designation || teacher.designation_bn);
 
-              // Resolve bio based on language rules
-              const bio = isBn ? (teacher.bio_bn || teacher.bio) 
-                        : isAr ? (teacher.bio_ar || teacher.bio) 
-                        : (teacher.bio || teacher.bio_bn);
+                // Resolve bio based on language rules
+                const bio = isBn ? (teacher.bio_bn || teacher.bio) 
+                          : isAr ? (teacher.bio_ar || teacher.bio) 
+                          : (teacher.bio || teacher.bio_bn);
 
-              return (
-                <div key={teacher.id}
-                  className="group relative rounded-3xl p-8 text-center bg-white/5 border border-[#D4AF37]/25 shadow-lg shadow-[#D4AF37]/5 backdrop-blur-md transition-all duration-500 hover:-translate-y-2 hover:bg-white/10 hover:border-[#D4AF37]/65 hover:shadow-xl hover:shadow-[#D4AF37]/15 flex flex-col justify-between animate-fade-in"
-                >
-                  <div>
-                    {/* Decorative background element */}
-                    <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-bl-[100px] pointer-events-none" />
-                    
-                    <div className="relative w-28 h-28 rounded-3xl mx-auto mb-6 overflow-hidden border-2 border-white/20 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:border-amber-500/50 group-hover:rotate-3 flex items-center justify-center bg-emerald-900/40">
-                      {teacher.photo_url && showPhoto ? (
-                        <Image src={teacher.photo_url} alt={name} fill sizes="112px" className="object-cover" />
-                      ) : (
-                        <User className="h-12 w-12 text-white/20" />
+                return (
+                  <div key={teacher.id}
+                    className="group relative rounded-3xl p-8 text-center bg-white/5 border border-[#D4AF37]/25 shadow-lg shadow-[#D4AF37]/5 backdrop-blur-md transition-all duration-500 hover:-translate-y-2 hover:bg-white/10 hover:border-[#D4AF37]/65 hover:shadow-xl hover:shadow-[#D4AF37]/15 flex flex-col justify-between animate-fade-in"
+                  >
+                    <div>
+                      {/* Decorative background element */}
+                      <div className="absolute top-0 right-0 w-24 h-24 bg-amber-500/5 rounded-bl-[100px] pointer-events-none" />
+                      
+                      <div className="relative w-28 h-28 rounded-3xl mx-auto mb-6 overflow-hidden border-2 border-white/20 shadow-xl transition-all duration-500 group-hover:scale-110 group-hover:border-amber-500/50 group-hover:rotate-3 flex items-center justify-center bg-emerald-900/40">
+                        {teacher.photo_url && showPhoto ? (
+                          <Image src={teacher.photo_url} alt={name} fill sizes="112px" className="object-cover" />
+                        ) : (
+                          <User className="h-12 w-12 text-white/20" />
+                        )}
+                      </div>
+
+                      {showName && (
+                        <h3 className="font-bold italic text-white text-lg leading-tight mb-2">
+                          {name}
+                        </h3>
+                      )}
+                      
+                      {showDesignation && designation && (
+                        <div className={`flex items-center justify-center gap-1.5 text-xs font-bold mb-2 ${isAr ? 'flex-row-reverse' : ''}`} style={{ color: "rgba(212,175,55,0.8)" }}>
+                          <GraduationCap className="w-3.5 h-3.5" />
+                          <span className="italic">
+                            {designation}
+                          </span>
+                        </div>
+                      )}
+
+                      {showQualification && teacher.qualification && (
+                        <p className="text-xs text-white/70 mb-2 font-medium">
+                          🎓 {teacher.qualification}
+                        </p>
+                      )}
+
+                      {showExperience && teacher.experience_years && (
+                        <p className="text-xs text-white/60 mb-2 italic">
+                          💼 {teacher.experience_years} {isBn ? "বছর অভিজ্ঞতা" : isAr ? "سنوات خبرة" : "Years Experience"}
+                        </p>
+                      )}
+
+                      {showSkills && teacher.special_skills && (
+                        <p className="text-xs text-amber-300/80 mb-4 font-semibold">
+                          ⚡ {teacher.special_skills}
+                        </p>
+                      )}
+
+                      {showSubjects && teacher.subjects && (
+                        <div className="flex flex-wrap justify-center gap-2 mb-4">
+                          {teacher.subjects.split(",").map((s, i) => (
+                            <span key={i} className="text-[10px] px-3 py-1 rounded-full bg-white/5 text-white/60 border border-white/10 group-hover:bg-amber-500/10 group-hover:text-amber-300 group-hover:border-amber-500/20 transition-all">
+                              {s.trim()}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {showBio && bio && (
+                        <p className="text-xs text-white/50 italic leading-relaxed mb-6 border-t border-white/5 pt-4">
+                          &ldquo;{bio}&rdquo;
+                        </p>
                       )}
                     </div>
 
-                    {showName && (
-                      <h3 className="font-bold italic text-white text-lg leading-tight mb-2">
-                        {name}
-                      </h3>
-                    )}
-                    
-                    {showDesignation && designation && (
-                      <div className={`flex items-center justify-center gap-1.5 text-xs font-bold mb-2 ${isAr ? 'flex-row-reverse' : ''}`} style={{ color: "rgba(212,175,55,0.8)" }}>
-                        <GraduationCap className="w-3.5 h-3.5" />
-                        <span className="italic">
-                          {designation}
-                        </span>
-                      </div>
-                    )}
+                    <div className="space-y-2 mt-auto">
+                      {showBranch && teacher.branch && (
+                        <div className="flex items-center justify-center gap-1 text-[11px] text-white/45 mb-2">
+                          <MapPin className="h-3.5 w-3.5" />
+                          <span>{teacher.branch}</span>
+                        </div>
+                      )}
 
-                    {showQualification && teacher.qualification && (
-                      <p className="text-xs text-white/70 mb-2 font-medium">
-                        🎓 {teacher.qualification}
-                      </p>
-                    )}
+                      {teacher.phone && showPhone && (
+                        <a href={`tel:${teacher.phone}`} className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-bold italic hover:bg-emerald-500 hover:text-white transition-all ${isAr ? 'flex-row-reverse' : ''}`}>
+                          <Phone className="w-3.5 h-3.5" />
+                          <span className="font-sans">{teacher.phone}</span>
+                        </a>
+                      )}
 
-                    {showExperience && teacher.experience_years && (
-                      <p className="text-xs text-white/60 mb-2 italic">
-                        💼 {teacher.experience_years} {isBn ? "বছর অভিজ্ঞতা" : isAr ? "سنوات خبرة" : "Years Experience"}
-                      </p>
-                    )}
-
-                    {showSkills && teacher.special_skills && (
-                      <p className="text-xs text-amber-300/80 mb-4 font-semibold">
-                        ⚡ {teacher.special_skills}
-                      </p>
-                    )}
-
-                    {showSubjects && teacher.subjects && (
-                      <div className="flex flex-wrap justify-center gap-2 mb-4">
-                        {teacher.subjects.split(",").map((s, i) => (
-                          <span key={i} className="text-[10px] px-3 py-1 rounded-full bg-white/5 text-white/60 border border-white/10 group-hover:bg-amber-500/10 group-hover:text-amber-300 group-hover:border-amber-500/20 transition-all">
-                            {s.trim()}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    {showBio && bio && (
-                      <p className="text-xs text-white/50 italic leading-relaxed mb-6 border-t border-white/5 pt-4">
-                        &ldquo;{bio}&rdquo;
-                      </p>
-                    )}
+                      {teacher.user_email && showEmail && (
+                        <a href={`mailto:${teacher.user_email}`} className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 text-blue-400 text-xs font-bold italic hover:bg-blue-500 hover:text-white transition-all ${isAr ? 'flex-row-reverse' : ''}`}>
+                          <Mail className="w-3.5 h-3.5" />
+                          <span className="font-sans truncate">{teacher.user_email}</span>
+                        </a>
+                      )}
+                    </div>
                   </div>
+                );
+              })}
+            </div>
 
-                  <div className="space-y-2 mt-auto">
-                    {showBranch && teacher.branch && (
-                      <div className="flex items-center justify-center gap-1 text-[11px] text-white/45 mb-2">
-                        <MapPin className="h-3.5 w-3.5" />
-                        <span>{teacher.branch}</span>
-                      </div>
-                    )}
-
-                    {teacher.phone && showPhone && (
-                      <a href={`tel:${teacher.phone}`} className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-500/10 text-emerald-400 text-xs font-bold italic hover:bg-emerald-500 hover:text-white transition-all ${isAr ? 'flex-row-reverse' : ''}`}>
-                        <Phone className="w-3.5 h-3.5" />
-                        <span className="font-sans">{teacher.phone}</span>
-                      </a>
-                    )}
-
-                    {teacher.user_email && showEmail && (
-                      <a href={`mailto:${teacher.user_email}`} className={`w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-blue-500/10 text-blue-400 text-xs font-bold italic hover:bg-blue-500 hover:text-white transition-all ${isAr ? 'flex-row-reverse' : ''}`}>
-                        <Mail className="w-3.5 h-3.5" />
-                        <span className="font-sans truncate">{teacher.user_email}</span>
-                      </a>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+            {/* Load More Button */}
+            {filteredTeachers.length > visibleCount && (
+              <div className="text-center mt-12">
+                <button
+                  onClick={() => setVisibleCount(prev => prev + 50)}
+                  className="px-8 py-3.5 rounded-full text-xs font-extrabold italic bg-gradient-to-r from-amber-500 via-yellow-500 to-amber-500 text-slate-950 shadow-[0_4px_24px_rgba(245,158,11,0.3)] hover:scale-105 active:scale-95 transition-all duration-300 tracking-wider uppercase"
+                >
+                  {isBn ? `আরও শিক্ষক দেখুন (+৫০)` : isAr ? `عرض المزيد (+৫০)` : `Load More Teachers (+50)`}
+                </button>
+                <p className="text-xs text-white/40 italic mt-3">
+                  {isBn ? `${filteredTeachers.length} জনের মধ্যে ${displayedTeachers.length} জন দেখানো হচ্ছে` : `Showing ${displayedTeachers.length} of ${filteredTeachers.length} teachers`}
+                </p>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

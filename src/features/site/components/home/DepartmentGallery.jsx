@@ -7,12 +7,24 @@ import { useTranslation } from "@/lib/translations";
 import Link from "next/link";
 import { GALLERY_SELECTION_OPTIONS, matchesDepartmentValue, DEPARTMENT_PAGES } from "@/lib/departmentData";
 
+import { useHomeData } from "@/features/site/pages/HomeDataContext";
+
 export default function DepartmentGallery() {
   const { lang } = useLanguage();
   const t = useTranslation(lang);
   const isAr = lang === "ar";
   const [active, setActive] = useState("all");
   const [lightbox, setLightbox] = useState(null);
+
+  let homeGallery = null;
+  try {
+    const homeCtx = useHomeData();
+    if (homeCtx?.data?.gallery?.length) {
+      homeGallery = homeCtx.data.gallery;
+    }
+  } catch (e) {
+    // context not present
+  }
 
   const DEPARTMENTS = [
     { key: "all", label: lang === 'bn' ? "সকল" : lang === 'ar' ? "الكل" : "All" },
@@ -33,11 +45,15 @@ export default function DepartmentGallery() {
     })),
   ];
 
-  const { data: items = [] } = useQuery({
+  const { data: queryItems = [] } = useQuery({
     queryKey: ["gallery-public"],
     queryFn: () => appClient.entities.Gallery.list("-created_at", 200),
     select: d => d.filter(i => i.is_published !== false && i.show_on_website !== "N"),
+    enabled: !homeGallery?.length,
   });
+
+  const rawItems = homeGallery || queryItems;
+  const items = rawItems.filter(i => i.is_published !== false && i.show_on_website !== "N");
 
   const filtered = active === "all"
     ? items
@@ -45,7 +61,7 @@ export default function DepartmentGallery() {
         // Find the department in DEPARTMENT_PAGES to get all aliases
         const deptPage = DEPARTMENT_PAGES.find(p => p.departmentKey === active || p.aliases.includes(active));
         const aliases = deptPage ? deptPage.aliases : [active, active.replace(/\s+/g, " "), "কিন্ডার গার্ডেন", "Kindergarten"];
-        return matchesDepartmentValue(i.category, { aliases });
+        return matchesDepartmentValue(i.category || i.department, { aliases });
       });
 
   return (
@@ -111,14 +127,16 @@ export default function DepartmentGallery() {
                   {/* Department badge */}
                   <div className={`absolute top-2.5 ${isAr ? 'right-2.5' : 'left-2.5'} px-2.5 py-0.5 rounded-full text-[10px] font-bold opacity-0 group-hover:opacity-100 transition-all duration-300 -translate-y-1 group-hover:translate-y-0`}
                     style={{ background: "rgba(15,118,110,0.92)", color: "#ffffff" }}>
-                    {item.category === "Noorani" ? t.seasons.noorani :
-                     item.category === "Nazera" ? t.seasons.nazera :
-                     item.category === "Hifz" ? t.seasons.hifz :
-                     item.category === "Hifz Shunani" ? t.seasons.hifzShunani :
-                     item.category === "Kitab Khana" ? t.seasons.kitabKhana :
-                     item.category === "Kindergarten" ? t.seasons.kindergarten :
-                     item.category === "English Version" ? (lang === 'bn' ? "ইংলিশ ভার্সন" : lang === 'ar' ? "النسخة الإنجليزية" : "English Version") :
-                     (lang === 'bn' ? "সাধারণ" : lang === 'ar' ? "عام" : "General")}
+                    {((cat) => (
+                      cat === "Noorani" ? t.seasons.noorani :
+                      cat === "Nazera" ? t.seasons.nazera :
+                      cat === "Hifz" ? t.seasons.hifz :
+                      cat === "Hifz Shunani" ? t.seasons.hifzShunani :
+                      cat === "Kitab Khana" ? t.seasons.kitabKhana :
+                      cat === "Kindergarten" ? t.seasons.kindergarten :
+                      cat === "English Version" ? (lang === 'bn' ? "ইংলিশ ভার্সন" : lang === 'ar' ? "النسخة الإنجليزية" : "English Version") :
+                      (lang === 'bn' ? "সাধারণ" : lang === 'ar' ? "عام" : "General")
+                    ))(item.category || item.department)}
                   </div>
                   <p className={`absolute bottom-0 left-0 right-0 p-3 text-sm font-bold italic text-white opacity-0 group-hover:opacity-100 transition-all duration-300 translate-y-2 group-hover:translate-y-0 truncate ${isAr ? 'text-right' : ''}`}>
                     {lang === "bn" ? (item.title_bn || item.title) : lang === "ar" ? (item.title_ar || item.title) : item.title}

@@ -27,7 +27,7 @@ export default function AcademicStructureManager({ currentUser }) {
 
   const { data: allTeachers = [] } = useQuery({
     queryKey: ["teachers-admin-all"],
-    queryFn: () => appClient.entities.Teacher.list("full_name_en", 500),
+    queryFn: () => appClient.entities.Teacher.list("full_name_en", 200),
   });
 
   const teachers = selectedBranch
