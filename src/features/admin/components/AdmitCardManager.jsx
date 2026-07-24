@@ -12,6 +12,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { DEFAULT_LOGO } from "@/utils";
+import ImageUpload from "./ImageUpload";
 import { drawBengaliText, drawBengaliTextWrapped, containsBengali } from "@/lib/pdf-utils";
 import QRCode from "qrcode";
 import {
@@ -150,6 +151,24 @@ function createDefaultTemplate(name) {
   };
 }
 
+const SERIAL_TEMPLATE_STORAGE_KEY = "admit_card_serial_template";
+
+function getStoredSerialTemplate() {
+  if (typeof window === "undefined") return getDefaultSerialSheetTemplate();
+  try {
+    const raw = localStorage.getItem(SERIAL_TEMPLATE_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : getDefaultSerialSheetTemplate();
+  } catch { return getDefaultSerialSheetTemplate(); }
+}
+
+function saveSerialTemplate(tpl) {
+  try {
+    localStorage.setItem(SERIAL_TEMPLATE_STORAGE_KEY, JSON.stringify(tpl));
+  } catch {}
+}
+
+const STUDENT_AVATAR_SVG = `<svg viewBox="0 0 24 24" width="36" height="36" fill="#94a3b8" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
+
 function getDefaultSerialSheetTemplate() {
   return {
     id: `serial_${Date.now()}`,
@@ -168,6 +187,7 @@ function getDefaultSerialSheetTemplate() {
     cardMargin: 4,
     cardPadding: 6,
     fontSize: 8,
+    customLogoUrl: "",
   };
 }
 
@@ -198,7 +218,7 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
 
   const [templates, setTemplates] = useState([]);
   const [activeTemplateId, setActiveTemplateId] = useState(null);
-  const [serialTemplate, setSerialTemplate] = useState(() => getDefaultSerialSheetTemplate());
+  const [serialTemplate, setSerialTemplate] = useState(() => getStoredSerialTemplate());
 
   const [selectedStudentsForPrint, setSelectedStudentsForPrint] = useState([]);
   const [generating, setGenerating] = useState({ admitCard: false, serialSheet: false, preview: false });
@@ -434,7 +454,7 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
   };
 
   const generateAdmitCardHTML = useCallback((student, branch, exam, tpl) => {
-    const logoUrl = branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
+    const logoUrl = tpl?.customLogoUrl || branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
     const instNameEn = settings?.institute_name_en || "RAHMANIA INSTITUTE";
     const instNameBn = settings?.institute_name_bn || "রহমানিয়া ইনস্টিটিউট";
     const branchName = branch?.name_en || branch?.name_bn || "";
@@ -539,7 +559,7 @@ ${tpl.showWatermark ? `<div class="watermark">${tpl.watermarkText}</div>` : ""}
   <h3>${exam?.title || "Admit Card"}</h3>
 </div>
 <div class="body-section">
-  ${fields.studentPhoto ? `<div class="photo-section"><img src="${student?.photo_url || DEFAULT_LOGO}" alt="Photo" onerror="this.style.display='none'" /></div>` : ""}
+  ${fields.studentPhoto ? `<div class="photo-section">${student?.photo_url ? `<img src="${student.photo_url}" alt="Photo" onerror="this.style.display='none'" />` : `<div class="photo-placeholder" style="width:${tpl.studentPhotoSize}px;height:${tpl.studentPhotoSize}px;background:#f1f5f9;border-radius:8px;border:2px solid ${sc};display:flex;align-items:center;justify-content:center;">${STUDENT_AVATAR_SVG}</div>`}</div>` : ""}
   <div class="info-section">
     ${fields.studentName ? `<div class="full-width"><span class="label">Student Name / শিক্ষার্থীর নাম</span><div class="value">${student?.full_name_bn || student?.full_name_en || ""}</div></div>` : ""}
     ${fields.fatherName ? `<div><span class="label">Father's Name / পিতার নাম</span><div class="value">${student?.father_name || ""}</div></div>` : ""}
@@ -572,7 +592,7 @@ ${tpl.customFooter ? `<div class="footer">${tpl.customFooter}</div>` : ""}
   }, [settings, filters.sectionId, filters.group, selectedFlatClass]);
 
   const generateSerialCardHTML = useCallback((studentsList, branch, exam, tpl) => {
-    const logoUrl = branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
+    const logoUrl = tpl?.customLogoUrl || branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
     const instNameBn = settings?.institute_name_bn || "রহমানিয়া ইনস্টিটিউট";
     const instNameEn = settings?.institute_name_en || "RAHMANIA INSTITUTE";
     const branchName = branch?.name_en || branch?.name_bn || "";
@@ -594,7 +614,7 @@ ${tpl.customFooter ? `<div class="footer">${tpl.customFooter}</div>` : ""}
           </div>
         </div>
         <div class="card-body">
-          ${tpl.showStudentPhoto ? `<div class="s-photo"><img src="${student?.photo_url || DEFAULT_LOGO}" alt="" /></div>` : ""}
+          ${tpl.showStudentPhoto ? `<div class="s-photo">${student?.photo_url ? `<img src="${student.photo_url}" alt="" onerror="this.style.display='none'" />` : `<div class="s-photo-placeholder" style="width:40px;height:40px;background:#f1f5f9;border-radius:4px;border:1px solid ${tpl.secondaryColor};display:flex;align-items:center;justify-content:center;">${STUDENT_AVATAR_SVG}</div>`}</div>` : ""}
           <div class="s-info">
             <div class="s-row"><span class="s-lbl">Name / নাম</span><span class="s-val">${student?.full_name_bn || student?.full_name_en || ""}</span></div>
             <div class="s-row"><span class="s-lbl">Roll / রোল</span><span class="s-val">${student?.roll_number || ""}</span></div>
@@ -779,7 +799,7 @@ ${cardsHtml}
       const H = activeTemplate.layout === "landscape" ? 210 : 297;
 
       const tpl = activeTemplate;
-      const logoUrl = branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
+      const logoUrl = activeTemplate?.customLogoUrl || branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
       const instNameBn = settings?.institute_name_bn || "রহমানিয়া ইনস্টিটিউট";
       const instNameEn = settings?.institute_name_en || "RAHMANIA INSTITUTE";
       const branchName = branch?.name_en || branch?.name_bn || "";
@@ -973,7 +993,7 @@ ${cardsHtml}
           const W = activeTemplate.layout === "landscape" ? 297 : 210;
           const H = activeTemplate.layout === "landscape" ? 210 : 297;
           const tpl = activeTemplate;
-          const logoUrl = branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
+          const logoUrl = activeTemplate?.customLogoUrl || branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
           const instNameBn = settings?.institute_name_bn || "রহমানিয়া ইনস্টিটিউট";
           const instNameEn = settings?.institute_name_en || "RAHMANIA INSTITUTE";
           const branchName = branch?.name_en || branch?.name_bn || "";
@@ -1578,15 +1598,49 @@ ${cardsHtml}
                 </div>
 
                 <div className="space-y-3">
+                  <h4 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1"><Image className="h-3.5 w-3.5" /> Logo Customization / লোগো</h4>
+                  <div className="flex items-center gap-2 mb-2">
+                    <label className="flex items-center gap-2 text-xs">
+                      <input type="checkbox" checked={activeTemplate?.showLogo !== false} onChange={e => updateTemplateField("showLogo", e.target.checked)} className="rounded" />
+                      Show Logo on Card
+                    </label>
+                  </div>
+                  {activeTemplate?.showLogo !== false && (
+                    <div className="space-y-2">
+                      <ImageUpload
+                        value={activeTemplate?.customLogoUrl || ""}
+                        onChange={url => updateTemplateField("customLogoUrl", url)}
+                        label="Custom Logo Image"
+                      />
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          value={activeTemplate?.customLogoUrl || ""}
+                          onChange={e => updateTemplateField("customLogoUrl", e.target.value)}
+                          placeholder="Or paste image URL..."
+                          className="h-9 text-xs rounded-xl flex-1"
+                        />
+                        {activeTemplate?.customLogoUrl && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 text-xs rounded-xl text-red-500 border-red-200 hover:bg-red-50"
+                            onClick={() => updateTemplateField("customLogoUrl", "")}
+                          >
+                            Reset Logo
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
                   <h4 className="text-xs font-bold text-slate-500 uppercase flex items-center gap-1"><Image className="h-3.5 w-3.5" /> Watermark & Extras</h4>
                   <div className="flex items-center gap-2">
                     <label className="flex items-center gap-2 text-xs">
                       <input type="checkbox" checked={activeTemplate?.showWatermark || false} onChange={e => updateTemplateField("showWatermark", e.target.checked)} className="rounded" />
                       Show Watermark
-                    </label>
-                    <label className="flex items-center gap-2 text-xs">
-                      <input type="checkbox" checked={activeTemplate?.showLogo !== false} onChange={e => updateTemplateField("showLogo", e.target.checked)} className="rounded" />
-                      Show Logo
                     </label>
                     <label className="flex items-center gap-2 text-xs">
                       <input type="checkbox" checked={activeTemplate?.showBorder !== false} onChange={e => updateTemplateField("showBorder", e.target.checked)} className="rounded" />
@@ -1667,13 +1721,43 @@ ${cardsHtml}
                       Cutting Guide
                     </label>
                   </div>
+
+                  {serialTemplate.showLogo && (
+                    <div className="space-y-2 border-t pt-3 mt-3">
+                      <label className="text-xs font-bold text-slate-500 uppercase block">Serial Sheet Custom Logo</label>
+                      <ImageUpload
+                        value={serialTemplate.customLogoUrl || ""}
+                        onChange={url => setSerialTemplate(prev => ({ ...prev, customLogoUrl: url }))}
+                        label="Custom Logo Image"
+                      />
+                      <div className="flex gap-2 items-center">
+                        <Input
+                          value={serialTemplate.customLogoUrl || ""}
+                          onChange={e => setSerialTemplate(prev => ({ ...prev, customLogoUrl: e.target.value }))}
+                          placeholder="Or paste image URL..."
+                          className="h-9 text-xs rounded-xl flex-1"
+                        />
+                        {serialTemplate.customLogoUrl && (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-9 text-xs rounded-xl text-red-500 border-red-200 hover:bg-red-50"
+                            onClick={() => setSerialTemplate(prev => ({ ...prev, customLogoUrl: "" }))}
+                          >
+                            Reset Logo
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </>
             )}
           </div>
 
           <div className="sticky bottom-0 bg-white border-t p-4">
-            <Button className="w-full bg-[#052E2B] hover:bg-[#031c1a] text-white rounded-xl gap-2" onClick={() => { setShowCustomizer(false); toast.success("Settings saved"); }}>
+            <Button className="w-full bg-[#052E2B] hover:bg-[#031c1a] text-white rounded-xl gap-2" onClick={() => { saveSerialTemplate(serialTemplate); setShowCustomizer(false); toast.success("Settings saved"); }}>
               <Save className="h-4 w-4" /> Save Settings
             </Button>
           </div>

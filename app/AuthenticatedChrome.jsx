@@ -4,7 +4,7 @@ import { lazy, Suspense } from 'react'
 import Layout from '../Layout.jsx'
 import { useAuth } from '@/lib/AuthContext'
 
-const UserNotRegisteredError = lazy(() => import('@/components/UserNotRegisteredError'))
+const UserNotRegisteredError = lazy(() => import('@/shared/components/ui-custom/UserNotRegisteredError'))
 
 const PageLoader = () => (
   <div className="fixed inset-0 flex items-center justify-center">

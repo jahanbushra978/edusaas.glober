@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { appClient } from "@/api/appClient";
 import { useQuery } from "@tanstack/react-query";
-import { X, Play, ArrowLeft, Video } from "lucide-react";
+import { X, Play, ArrowLeft, Video, ChevronDown } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useTranslation } from "@/lib/translations";
 import Link from "next/link";
@@ -19,6 +19,11 @@ export default function VideoGalleryPage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [activeSession, setActiveSession] = useState("all");
   const [activeVideo, setActiveVideo] = useState(null);
+  const [visibleCount, setVisibleCount] = useState(8);
+
+  useEffect(() => {
+    setVisibleCount(8);
+  }, [activeCategory, activeSession, branchId]);
 
   // Fetch dynamic categories
   const { data: dbCategories = [], isLoading: loadingCats } = useQuery({
@@ -66,6 +71,19 @@ export default function VideoGalleryPage() {
       return `https://www.youtube.com/embed/${match[2]}?autoplay=1&enablejsapi=1&rel=0`;
     }
     return url;
+  };
+
+  /**
+   * Transform a Cloudinary video URL to force MP4/H.264 delivery.
+   * This fixes "audio works but no video" when the original upload was MOV/AVI/MKV.
+   * Cloudinary delivers the raw original format unless a format transformation is specified.
+   */
+  const getCloudinaryVideoUrl = (url) => {
+    if (!url || !url.includes("cloudinary.com") || !/\/video\/upload\//i.test(url)) return url;
+    // Remove any existing extension, insert f_mp4,q_auto transformation, add .mp4
+    const withoutExt = url.replace(/\.(mp4|webm|ogg|mov|avi|mkv|m4v)$/i, "");
+    const withTransform = withoutExt.replace(/\/video\/upload\/(?!f_mp4)/, "/video/upload/f_mp4,q_auto/");
+    return withTransform + ".mp4";
   };
 
   return (
@@ -162,63 +180,81 @@ export default function VideoGalleryPage() {
         ) : (
           /* Responsive Videos Grid */
           /* Desktop -> 4, Laptop -> 3, Tablet -> 2, Mobile -> 1 */
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {finalFilteredVideos.map(video => {
-              const title = lang === "bn" ? (video.title_bn || video.title_en) : lang === "ar" ? (video.title_ar || video.title_en) : video.title_en;
-              return (
-                <div
-                  key={video.id}
-                  className="group bg-white dark:bg-[#0d1f17] rounded-2xl overflow-hidden cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between border border-slate-100 dark:border-green-950/40 hover:-translate-y-1"
-                  onClick={() => setActiveVideo(video)}
-                >
-                  <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 flex items-center justify-center">
-                    {video.thumbnail_url ? (
-                      <img
-                        src={video.thumbnail_url}
-                        loading="lazy"
-                        alt={title}
-                        className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        onError={(e) => {
-                          e.target.onerror = null;
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center text-emerald-400/80">
-                        <Video className="w-10 h-10 mb-1" />
-                        <span className="text-[11px] font-medium text-slate-400">Play Video</span>
-                      </div>
-                    )}
-                    {/* Play Overlay */}
-                    <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      <div className="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg transform scale-75 group-hover:scale-100 transition-transform duration-300">
-                        <Play className="h-6 w-6 fill-current" />
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {finalFilteredVideos.slice(0, visibleCount).map(video => {
+                const title = lang === "bn" ? (video.title_bn || video.title_en) : lang === "ar" ? (video.title_ar || video.title_en) : video.title_en;
+                return (
+                  <div
+                    key={video.id}
+                    className="group bg-white dark:bg-[#0d1f17] rounded-2xl overflow-hidden cursor-pointer shadow-md hover:shadow-2xl transition-all duration-300 flex flex-col justify-between border border-slate-100 dark:border-green-950/40 hover:-translate-y-1"
+                    onClick={() => setActiveVideo(video)}
+                  >
+                    <div className="relative aspect-video w-full overflow-hidden bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 flex items-center justify-center">
+                      {video.thumbnail_url ? (
+                        <img
+                          src={video.thumbnail_url}
+                          loading="lazy"
+                          alt={title}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          onError={(e) => {
+                            e.target.onerror = null;
+                            e.target.style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center justify-center text-emerald-400/80">
+                          <Video className="w-10 h-10 mb-1" />
+                          <span className="text-[11px] font-medium text-slate-400">Play Video</span>
+                        </div>
+                      )}
+                      {/* Play Overlay */}
+                      <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        <div className="w-12 h-12 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-lg transform scale-75 group-hover:scale-100 transition-transform duration-300">
+                          <Play className="h-6 w-6 fill-current" />
+                        </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  {/* Video Content */}
-                  <div className="p-4 flex-1 flex flex-col justify-between gap-2">
-                    <div>
-                      <h3 className={`text-sm sm:text-base font-extrabold italic text-slate-800 dark:text-slate-200 line-clamp-2 leading-snug group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors ${isAr ? 'text-right' : ''}`}>
-                        {title}
-                      </h3>
-                      {video.description && (
-                        <p className={`text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-1 italic leading-relaxed ${isAr ? 'text-right' : ''}`}>
-                          {video.description}
-                        </p>
+                    
+                    {/* Video Content */}
+                    <div className="p-4 flex-1 flex flex-col justify-between gap-2">
+                      <div>
+                        <h3 className={`text-sm sm:text-base font-extrabold italic text-slate-800 dark:text-slate-200 line-clamp-2 leading-snug group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors ${isAr ? 'text-right' : ''}`}>
+                          {title}
+                        </h3>
+                        {video.description && (
+                          <p className={`text-xs text-slate-500 dark:text-slate-400 line-clamp-2 mt-1 italic leading-relaxed ${isAr ? 'text-right' : ''}`}>
+                            {video.description}
+                          </p>
+                        )}
+                      </div>
+                      {video.upload_date && (
+                        <span className={`text-[10px] text-slate-400 dark:text-slate-500 font-semibold block mt-1 ${isAr ? 'text-right' : ''}`}>
+                          📅 {video.upload_date}
+                        </span>
                       )}
                     </div>
-                    {video.upload_date && (
-                      <span className={`text-[10px] text-slate-400 dark:text-slate-500 font-semibold block mt-1 ${isAr ? 'text-right' : ''}`}>
-                        📅 {video.upload_date}
-                      </span>
-                    )}
                   </div>
-                </div>
-              );
-            })}
-          </div>
+                );
+              })}
+            </div>
+
+            {/* See More Button */}
+            {visibleCount < finalFilteredVideos.length && (
+              <div className="flex justify-center mt-10">
+                <button
+                  onClick={() => setVisibleCount(prev => prev + 8)}
+                  className="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-2xl shadow-xl hover:shadow-emerald-500/25 transition-all transform active:scale-95 flex items-center gap-3 group"
+                >
+                  <span>{lang === "bn" ? "ভিডিও আরও দেখুন" : isAr ? "عرض المزيد من الفيديوهات" : "See More Videos"}</span>
+                  <span className="bg-white/20 text-white text-xs px-2.5 py-0.5 rounded-full font-bold">
+                    +{finalFilteredVideos.length - visibleCount}
+                  </span>
+                  <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
 
@@ -243,7 +279,7 @@ export default function VideoGalleryPage() {
             <div className="relative aspect-video rounded-3xl overflow-hidden bg-black shadow-2xl">
               {activeVideo.youtube_url && (activeVideo.youtube_url.includes("cloudinary.com") || activeVideo.youtube_url.match(/\.(mp4|webm|ogg|mov)$/i)) ? (
                 <video
-                  src={activeVideo.youtube_url}
+                  src={getCloudinaryVideoUrl(activeVideo.youtube_url)}
                   controls
                   autoPlay
                   playsInline

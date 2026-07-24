@@ -27,8 +27,9 @@ async function uploadVideoInChunks(file, folder, onProgress) {
   }
 
   const fileSize = file.size;
-  const chunkSize = 5 * 1024 * 1024; // 5MB per chunk
-  const uploadId = `vid_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  const chunkSize = 6 * 1024 * 1024; // 6MB per chunk — satisfies Cloudinary requirement that intermediate chunks must be >= 5MB
+  const timestamp = Math.floor(Date.now() / 1000);
+  const uploadId = `vid_${timestamp}_${Math.random().toString(36).substring(2, 9)}`;
 
   let start = 0;
   let lastData = null;
@@ -41,6 +42,7 @@ async function uploadVideoInChunks(file, folder, onProgress) {
     formData.append("chunk", chunk, file.name);
     formData.append("folder", folder);
     formData.append("upload_id", uploadId);
+    formData.append("timestamp", String(timestamp));
     formData.append("start", String(start));
     formData.append("end", String(end));
     formData.append("total_size", String(fileSize));
@@ -60,11 +62,8 @@ async function uploadVideoInChunks(file, folder, onProgress) {
     const data = await response.json().catch(() => null);
 
     if (!response.ok || !data?.ok) {
-      const msg = String(data?.message || "");
-      if (msg.toLowerCase().includes("large") || msg.toLowerCase().includes("limit") || msg.toLowerCase().includes("bytes")) {
-        throw new Error("File is too large for Cloudinary account. Please choose a smaller video.");
-      }
-      throw new Error(msg || `Video upload failed (${response.status})`);
+      const msg = String(data?.message || `Video chunk upload failed (${response.status})`);
+      throw new Error(msg);
     }
 
     lastData = data;
@@ -87,8 +86,8 @@ async function uploadVideoInChunks(file, folder, onProgress) {
 export async function uploadToCloudinary({ file, folder = "rahmania", label = "", onProgress }) {
   // ── Video upload path ──
   if (isVideoFile(file)) {
-    const isLarge = file.size > 90 * 1024 * 1024;
-    const processedVideo = await optimizeVideo(file, 90 * 1024 * 1024, (compP) => {
+    const isLarge = file.size > 150 * 1024 * 1024;
+    const processedVideo = await optimizeVideo(file, 150 * 1024 * 1024, (compP) => {
       if (onProgress && isLarge) {
         onProgress(Math.round(compP * 0.4)); // First 40% is compression
       }

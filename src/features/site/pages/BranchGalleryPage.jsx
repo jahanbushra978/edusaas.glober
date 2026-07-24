@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { appClient } from "@/api/appClient";
 import { useQuery } from "@tanstack/react-query";
-import { X, Play, ArrowLeft, Image as ImageIcon, Video, Building2 } from "lucide-react";
+import { X, Play, ArrowLeft, Image as ImageIcon, Video, Building2, ChevronDown } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useTranslation } from "@/lib/translations";
 import Link from "next/link";
@@ -20,6 +20,11 @@ export default function BranchGalleryPage() {
   const [activeMediaTab, setActiveMediaTab] = useState("photos"); // 'photos' or 'videos'
   const [lightboxImage, setLightboxImage] = useState(null);
   const [activeVideo, setActiveVideo] = useState(null);
+  const [visibleVideoCount, setVisibleVideoCount] = useState(8);
+
+  useEffect(() => {
+    setVisibleVideoCount(8);
+  }, [branchId, classId, activeMediaTab]);
 
   // Fetch branch details
   const { data: branch, isLoading: loadingBranch } = useQuery({
@@ -72,6 +77,14 @@ export default function BranchGalleryPage() {
       return `https://www.youtube.com/embed/${match[2]}?autoplay=1&enablejsapi=1&rel=0`;
     }
     return url;
+  };
+
+  // Force MP4/H.264 delivery for Cloudinary videos — fixes "audio only, no video" for MOV/AVI/MKV uploads.
+  const getCloudinaryVideoUrl = (url) => {
+    if (!url || !url.includes("cloudinary.com") || !/\/video\/upload\//i.test(url)) return url;
+    const withoutExt = url.replace(/\.(mp4|webm|ogg|mov|avi|mkv|m4v)$/i, "");
+    const withTransform = withoutExt.replace(/\/video\/upload\/(?!f_mp4)/, "/video/upload/f_mp4,q_auto/");
+    return withTransform + ".mp4";
   };
 
   const getBranchName = () => {
@@ -189,8 +202,9 @@ export default function BranchGalleryPage() {
             </div>
           ) : (
             /* Responsive Grid: 4 per row on Desktop, 3 on Laptop, 2 on Tablet, 1 on Mobile */
+          <>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {videos.map(video => {
+              {videos.slice(0, visibleVideoCount).map(video => {
                 const title = lang === "bn" ? (video.title_bn || video.title_en) : lang === "ar" ? (video.title_ar || video.title_en) : video.title_en;
                 return (
                   <div
@@ -220,6 +234,23 @@ export default function BranchGalleryPage() {
                 );
               })}
             </div>
+
+            {/* See More Button */}
+            {visibleVideoCount < videos.length && (
+              <div className="flex justify-center mt-10">
+                <button
+                  onClick={() => setVisibleVideoCount(prev => prev + 8)}
+                  className="px-8 py-3.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold rounded-2xl shadow-xl hover:shadow-emerald-500/25 transition-all transform active:scale-95 flex items-center gap-3 group"
+                >
+                  <span>{lang === "bn" ? "ভিডিও আরও দেখুন" : isAr ? "عرض المزيد من الفيديوهات" : "See More Videos"}</span>
+                  <span className="bg-white/20 text-white text-xs px-2.5 py-0.5 rounded-full font-bold">
+                    +{videos.length - visibleVideoCount}
+                  </span>
+                  <ChevronDown className="w-4 h-4 group-hover:translate-y-0.5 transition-transform" />
+                </button>
+              </div>
+            )}
+          </>
           )
         )}
 
@@ -256,7 +287,7 @@ export default function BranchGalleryPage() {
             <div className="relative aspect-video rounded-3xl overflow-hidden bg-black shadow-2xl">
               {activeVideo.youtube_url && (activeVideo.youtube_url.includes("cloudinary.com") || activeVideo.youtube_url.match(/\.(mp4|webm|ogg|mov)$/i)) ? (
                 <video
-                  src={activeVideo.youtube_url}
+                  src={getCloudinaryVideoUrl(activeVideo.youtube_url)}
                   controls
                   autoPlay
                   playsInline

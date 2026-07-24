@@ -17,10 +17,13 @@ const SANITIZE_OPTIONS = {
 };
 
 let DOMPurify = null;
-try {
-  DOMPurify = (require("isomorphic-dompurify").default || require("isomorphic-dompurify"));
-} catch {
-  DOMPurify = null;
+
+if (typeof globalThis !== "undefined") {
+  import("isomorphic-dompurify").then((mod) => {
+    DOMPurify = mod.default || mod;
+  }).catch(() => {
+    DOMPurify = null;
+  });
 }
 
 export function sanitizeHtml(html) {

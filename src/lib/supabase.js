@@ -47,4 +47,31 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+/**
+ * A plain anon-key client that ALWAYS uses the anon key in Authorization header.
+ * Never reads or writes any session. Never sends a user JWT.
+ * Use for all public entity reads (Teachers, Notices, etc.) to prevent 401 errors
+ * when a stale session token is in memory.
+ *
+ * Uses a unique storageKey to avoid the "Multiple GoTrueClient instances" warning
+ * and a custom fetch to hard-pin the anon key regardless of internal auth state.
+ */
+export const supabaseAnon = createClient(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    persistSession: false,
+    autoRefreshToken: false,
+    detectSessionInUrl: false,
+    storageKey: `sb-anon-${supabaseUrl.replace(/[^a-z0-9]/gi, "")}`,
+  },
+  global: {
+    fetch: async (url, options = {}) => {
+      // Hard-pin the anon key — never use a session JWT for public queries.
+      const headers = new Headers(options.headers || {});
+      headers.set("Authorization", `Bearer ${supabaseAnonKey}`);
+      headers.set("apikey", supabaseAnonKey);
+      return fetch(url, { ...options, headers });
+    },
+  },
+});
+
 export default supabase;

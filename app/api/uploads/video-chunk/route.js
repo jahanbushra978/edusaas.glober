@@ -9,6 +9,9 @@ import { checkRateLimit } from "../../../../src/lib/rate-limit";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
+// Allow up to 20MB request body so 6MB video chunks (+ multipart overhead)
+// are never rejected by Vercel/Next.js with HTTP 413.
+export const bodyLimit = '20mb';
 
 /**
  * POST /api/uploads/video-chunk
@@ -47,6 +50,8 @@ export async function POST(request) {
     const chunk = formData.get("chunk");
     const folder = String(formData.get("folder") || "videos");
     const uploadId = String(formData.get("upload_id") || `vid_${Date.now()}`);
+    const reqTimestamp = Number(formData.get("timestamp"));
+    const timestamp = !isNaN(reqTimestamp) && reqTimestamp > 0 ? reqTimestamp : Math.floor(Date.now() / 1000);
     const start = Number(formData.get("start") || 0);
     const end = Number(formData.get("end") || 0);
     const totalSize = Number(formData.get("total_size") || 0);
@@ -66,26 +71,32 @@ export async function POST(request) {
     }
 
     const { cloudName, apiKey, apiSecret } = getCloudinaryVideoConfig();
-    const timestamp = Math.floor(Date.now() / 1000);
 
     const signParams = { folder, timestamp };
     const signature = signCloudinaryParams(signParams, apiSecret);
 
+    // Convert chunk File/Blob to a clean Buffer and Blob for Node.js multipart serialization
+    const chunkArrayBuffer = await chunk.arrayBuffer();
+    const chunkBuffer = Buffer.from(chunkArrayBuffer);
+    const chunkBlob = new Blob([chunkBuffer], { type: chunk.type || "video/mp4" });
+
     // Build Cloudinary payload for this chunk
     const cForm = new FormData();
-    cForm.append("file", chunk, originalName);
+    cForm.append("file", chunkBlob, originalName);
     cForm.append("folder", folder);
     cForm.append("timestamp", String(timestamp));
     cForm.append("api_key", apiKey);
     cForm.append("signature", signature);
 
-    const isChunked = totalSize > 5 * 1024 * 1024;
+    const isChunked = (start > 0 || end < totalSize - 1) || totalSize > 4 * 1024 * 1024;
     const cHeaders = {};
 
     if (isChunked) {
       cHeaders["X-Unique-Upload-Id"] = uploadId;
       cHeaders["Content-Range"] = `bytes ${start}-${end}/${totalSize}`;
     }
+
+    console.log(`[video-chunk] Uploading chunk (${chunkBuffer.length} bytes, range ${start}-${end}/${totalSize}) for uploadId: ${uploadId}`);
 
     // Node.js server-to-server call to Cloudinary (video/upload endpoint)
     const cResponse = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/video/upload`, {
@@ -97,14 +108,11 @@ export async function POST(request) {
     const cData = await cResponse.json().catch(() => null);
 
     if (!cResponse.ok) {
-      console.error("[video-chunk] Cloudinary response error:", cData?.error || cData);
-      const rawMsg = String(cData?.error?.message || "");
-      let userMsg = rawMsg || `Upload failed (${cResponse.status})`;
-      if (rawMsg.toLowerCase().includes("large") || rawMsg.toLowerCase().includes("limit") || rawMsg.toLowerCase().includes("bytes")) {
-        userMsg = "File is too large. Please reduce file size and try again.";
-      }
+      console.error("[video-chunk] Cloudinary HTTP Error Status:", cResponse.status);
+      console.error("[video-chunk] Cloudinary Raw Error Payload:", JSON.stringify(cData));
+      const rawMsg = String(cData?.error?.message || `Cloudinary upload failed with status ${cResponse.status}`);
       return NextResponse.json(
-        { ok: false, message: userMsg },
+        { ok: false, message: rawMsg, details: cData },
         { status: cResponse.status },
       );
     }

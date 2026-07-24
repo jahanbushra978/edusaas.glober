@@ -331,7 +331,7 @@ export default function BrandingSettings() {
           {getVal("admission_form_url") && (
             <div className="flex gap-2">
               <a
-                href={getVal("admission_form_url")}
+                href={`/api/public/download-pdf?url=${encodeURIComponent(getVal("admission_form_url"))}`}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg bg-primary/10 text-primary text-sm font-medium hover:bg-primary/20 transition-all"

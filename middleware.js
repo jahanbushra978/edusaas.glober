@@ -36,6 +36,7 @@ const PUBLIC_API_ROUTES = [
   '/api/public',
   '/api/health',
   '/api/cron',
+  '/api/uploads',
 ]
 
 function isPublicRoute(pathname) {

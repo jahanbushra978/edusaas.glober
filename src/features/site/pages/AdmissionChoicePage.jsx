@@ -21,14 +21,20 @@ export default function AdmissionChoicePage() {
 
   const handleDownload = () => {
     if (rawFormUrl && rawFormUrl.trim().length > 0 && /^https?:\/\//i.test(rawFormUrl.trim())) {
-      window.open(rawFormUrl.trim(), "_blank", "noopener,noreferrer");
+      const downloadProxyUrl = `/api/public/download-pdf?url=${encodeURIComponent(rawFormUrl.trim())}`;
+      const a = document.createElement("a");
+      a.href = downloadProxyUrl;
+      a.download = "admission-form.pdf";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      toast.success(isBn ? "ভর্তি ফরম ডাউনলোড শুরু হয়েছে!" : "Admission form download started!");
     } else {
       toast.info(
         isBn
-          ? "এডমিন প্যানেল থেকে নতুন ভর্তি ফরম ফাইল আপলোড করা হলে এখান থেকে সরাসরি ডাউনলোড হবে। আপনি সরাসরি অনলাইনেও আবেদন করতে পারেন।"
-          : "Admission form file will be downloadable once uploaded by admin. You can also apply online."
+          ? "এডমিন প্যানেল থেকে ভর্তি ফরম ফাইল আপলোড করা হলে এখান থেকে সরাসরি ডাউনলোড করা যাবে। আপাতত পাশের 'Online আবেদন করুন' অপশন ব্যবহার করে আবেদন করুন।"
+          : "Admission form file will be downloadable once uploaded by admin. Please use the 'Online Apply' option to apply."
       );
-      window.location.href = "/admission-form";
     }
   };
 

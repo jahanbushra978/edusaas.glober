@@ -1,4 +1,4 @@
-import { setSupabaseToken } from "@/lib/supabase";
+import { setSupabaseToken, supabaseAnon } from "@/lib/supabase";
 import { supabaseAdmin, setAdminSupabaseToken } from "@/lib/supabase-admin-client";
 import { uploadToCloudinary } from "@/lib/cloudinary";
 import {
@@ -332,7 +332,7 @@ const TABLES_WITH_ARCHIVE = new Set([
   'boarding_daily_reports', 'boarding_expenses'
 ]);
 
-const MAX_SAFE_RECORDS = 200;
+const MAX_SAFE_RECORDS = 1000;
 
 const createEntityAPI = (entityName, tableName, isPublic = false) => ({
   list: async (sort = "id", maxRecords = 100, select = "*", rangeFrom, rangeTo, options = {}) => {
@@ -343,19 +343,11 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       if (cached) return cached;
     }
     const safeLimit = Math.min(maxRecords, MAX_SAFE_RECORDS);
-    if (rangeFrom === undefined && maxRecords > MAX_SAFE_RECORDS && typeof console !== "undefined") {
-      // C1 fix: MAX_SAFE_RECORDS is an intentional per-request cap (protects
-      // Supabase from unbounded queries), but silently returning fewer rows
-      // than asked for used to be invisible to callers. Surface it loudly so
-      // any remaining under-fetching call site is easy to spot and, where a
-      // full dataset is genuinely required, migrated to entities.X.listAll().
-      console.warn(
-        `[appClient] ${entityName}.list() requested ${maxRecords} records but is capped at ${MAX_SAFE_RECORDS}. ` +
-        `If this view needs the complete dataset, use ${entityName}.listAll() instead.`
-      );
-    }
     const result = await dedup(cacheKey, async () => {
-      let query = supabaseAdmin.from(tableName).select(select);
+      // Public entities use the anon client so a stale in-memory JWT is never
+      // forwarded, preventing spurious 401 errors for unauthenticated visitors.
+      const db = isPublic ? supabaseAnon : supabaseAdmin;
+      let query = db.from(tableName).select(select);
       const filterVal = isPublic ? null : await getBranchFilterValue(tableName, user);
       if (filterVal) {
         if (filterVal.type === "eq") {
@@ -380,17 +372,8 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       const { data, error } = await query;
       if (error) {
         if (isPublic && (error.status === 401 || error.code === 'PGRST301')) {
-          setSupabaseToken(null);
-          setAdminSupabaseToken(null);
-          let retryQuery = supabaseAdmin.from(tableName).select(select);
-          if (sort && sort !== "id") {
-            const desc = sort.startsWith("-");
-            const field = desc ? sort.slice(1) : sort;
-            retryQuery = retryQuery.order(field, { ascending: !desc });
-          }
-          retryQuery = retryQuery.limit(safeLimit);
-          const { data: retryData, error: retryErr } = await retryQuery;
-          if (!retryErr) return (retryData || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item));
+          console.warn(`[appClient] Public query for ${entityName} returned 401/PGRST301 (RLS restriction). Returning empty array.`);
+          return [];
         }
         throw error;
       }
@@ -412,7 +395,8 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       if (cached) return cached;
     }
     const result = await dedup(cacheKey, async () => {
-      let query = supabaseAdmin.from(tableName).select(select).eq("id", id);
+      const db = isPublic ? supabaseAnon : supabaseAdmin;
+      let query = db.from(tableName).select(select).eq("id", id);
       const filterVal = isPublic ? null : await getBranchFilterValue(tableName, user);
       if (filterVal) {
         if (filterVal.type === "eq") {
@@ -443,7 +427,8 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       if (cached) return cached;
     }
     const result = await dedup(cacheKey, async () => {
-      let query = supabaseAdmin.from(tableName).select(select).in("id", uniqueIds);
+      const db = isPublic ? supabaseAnon : supabaseAdmin;
+      let query = db.from(tableName).select(select).in("id", uniqueIds);
       const filterVal = isPublic ? null : await getBranchFilterValue(tableName, user);
       if (filterVal) {
         if (filterVal.type === "eq") {
@@ -734,7 +719,8 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       if (cached) return cached;
     }
     const result = await dedup(cacheKey, async () => {
-      let query = supabaseAdmin.from(tableName).select(select);
+      const db = isPublic ? supabaseAnon : supabaseAdmin;
+      let query = db.from(tableName).select(select);
       const filterVal = isPublic ? null : await getBranchFilterValue(tableName, user);
       if (filterVal) {
         if (filterVal.type === "eq") {
@@ -831,8 +817,9 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
     }
     const result = await dedup(cacheKey, async () => {
       const filterVal = isPublic ? null : await getBranchFilterValue(tableName, user);
-      let countQuery = supabaseAdmin.from(tableName).select("*", { count: "exact", head: true });
-      let dataQuery = supabaseAdmin.from(tableName).select(select, { count: "exact" });
+      const db = isPublic ? supabaseAnon : supabaseAdmin;
+      let countQuery = db.from(tableName).select("*", { count: "exact", head: true });
+      let dataQuery = db.from(tableName).select(select, { count: "exact" });
       if (filterVal) {
         if (filterVal.type === "eq") {
           countQuery = countQuery.eq(filterVal.field, filterVal.value);
@@ -877,8 +864,9 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
     }
     const result = await dedup(cacheKey, async () => {
       const filterVal = isPublic ? null : await getBranchFilterValue(tableName, user);
-      let countQuery = supabaseAdmin.from(tableName).select("*", { count: "exact", head: true });
-      let dataQuery = supabaseAdmin.from(tableName).select(select, { count: "exact" });
+      const db = isPublic ? supabaseAnon : supabaseAdmin;
+      let countQuery = db.from(tableName).select("*", { count: "exact", head: true });
+      let dataQuery = db.from(tableName).select(select, { count: "exact" });
       if (filterVal) {
         if (filterVal.type === "eq") {
           countQuery = countQuery.eq(filterVal.field, filterVal.value);

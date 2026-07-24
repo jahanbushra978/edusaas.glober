@@ -3,27 +3,52 @@
  * Automatically compresses large video files (>90MB) down to ~30-60MB in the browser
  * using HTML5 Canvas & MediaRecorder before upload.
  */
-export async function optimizeVideo(file, targetMaxBytes = 90 * 1024 * 1024, onProgress) {
-  // If file is already under 90MB (Cloudinary safe ceiling), skip compression
+export async function optimizeVideo(file, targetMaxBytes = 150 * 1024 * 1024, onProgress) {
+  // If file is already under 150MB (Cloudinary safe ceiling), skip compression
   if (!file || file.size <= targetMaxBytes) {
     return file;
   }
 
-  console.log(`[Video Optimizer] Video size (${Math.round(file.size / (1024 * 1024))}MB) exceeds Cloudinary 90MB limit. Starting 720p HD compression with audio...`);
+  console.log(`[Video Optimizer] Video size (${Math.round(file.size / (1024 * 1024))}MB) exceeds 150MB limit. Starting 720p HD compression with audio...`);
 
   return new Promise((resolve) => {
     try {
       const video = document.createElement("video");
       video.muted = false;
+      video.volume = 1.0;
       video.playsInline = true;
       video.crossOrigin = "anonymous";
+      video.style.position = "fixed";
+      video.style.left = "-9999px";
+      video.style.top = "-9999px";
+      video.style.width = "1px";
+      video.style.height = "1px";
+      video.style.opacity = "0.01";
+      video.style.pointerEvents = "none";
+      document.body.appendChild(video);
+
       const objectUrl = URL.createObjectURL(file);
       video.src = objectUrl;
+
+      let intervalId = null;
+
+      const cleanup = () => {
+        if (intervalId) {
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+        try {
+          if (video.parentNode) video.parentNode.removeChild(video);
+        } catch (_) {}
+        try {
+          URL.revokeObjectURL(objectUrl);
+        } catch (_) {}
+      };
 
       // 5-minute timeout safety
       const timer = setTimeout(() => {
         console.warn("[Video Optimizer] Compression timeout, proceeding with original file.");
-        URL.revokeObjectURL(objectUrl);
+        cleanup();
         resolve(file);
       }, 300000);
 
@@ -46,24 +71,33 @@ export async function optimizeVideo(file, targetMaxBytes = 90 * 1024 * 1024, onP
           const canvasStream = canvas.captureStream(30);
           const videoTrack = canvasStream.getVideoTracks()[0];
 
-          // Capture audio track via WebAudio API to guarantee sound is preserved
+          // Capture audio track (raw stream or WebAudio API) to guarantee sound is preserved
           let audioTrack = null;
           try {
-            const AudioCtx = window.AudioContext || window.webkitAudioContext;
-            if (AudioCtx) {
-              const audioCtx = new AudioCtx();
-              const source = audioCtx.createMediaElementSource(video);
-              const dest = audioCtx.createMediaStreamDestination();
-              source.connect(dest);
-              audioTrack = dest.stream.getAudioTracks()[0] || null;
+            if (video.captureStream || video.mozCaptureStream) {
+              const rawStream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
+              audioTrack = rawStream.getAudioTracks()[0] || null;
             }
           } catch (e) {
-            console.warn("[Video Optimizer] WebAudio capture error:", e);
+            console.warn("[Video Optimizer] Direct audio track capture fallback:", e);
           }
 
-          if (!audioTrack && (video.captureStream || video.mozCaptureStream)) {
-            const rawStream = video.captureStream ? video.captureStream() : video.mozCaptureStream();
-            audioTrack = rawStream.getAudioTracks()[0] || null;
+          if (!audioTrack) {
+            try {
+              const AudioCtx = window.AudioContext || window.webkitAudioContext;
+              if (AudioCtx) {
+                const audioCtx = new AudioCtx();
+                if (audioCtx.state === "suspended") {
+                  await audioCtx.resume().catch(() => {});
+                }
+                const source = audioCtx.createMediaElementSource(video);
+                const dest = audioCtx.createMediaStreamDestination();
+                source.connect(dest);
+                audioTrack = dest.stream.getAudioTracks()[0] || null;
+              }
+            } catch (e) {
+              console.warn("[Video Optimizer] WebAudio capture error:", e);
+            }
           }
 
           const combinedStream = new MediaStream([
@@ -73,14 +107,16 @@ export async function optimizeVideo(file, targetMaxBytes = 90 * 1024 * 1024, onP
 
           let mimeType = "video/webm;codecs=vp9,opus";
           if (typeof MediaRecorder !== "undefined") {
-            if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "video/webm;codecs=vp8,opus";
-            if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "video/webm";
-            if (!MediaRecorder.isTypeSupported(mimeType)) mimeType = "video/mp4";
+            if (MediaRecorder.isTypeSupported("video/mp4;codecs=avc1,mp4a")) mimeType = "video/mp4;codecs=avc1,mp4a";
+            else if (MediaRecorder.isTypeSupported("video/mp4")) mimeType = "video/mp4";
+            else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp9,opus")) mimeType = "video/webm;codecs=vp9,opus";
+            else if (MediaRecorder.isTypeSupported("video/webm;codecs=vp8,opus")) mimeType = "video/webm;codecs=vp8,opus";
+            else if (MediaRecorder.isTypeSupported("video/webm")) mimeType = "video/webm";
           }
 
           if (typeof MediaRecorder === "undefined" || !MediaRecorder.isTypeSupported(mimeType)) {
             clearTimeout(timer);
-            URL.revokeObjectURL(objectUrl);
+            cleanup();
             return resolve(file);
           }
 
@@ -96,7 +132,7 @@ export async function optimizeVideo(file, targetMaxBytes = 90 * 1024 * 1024, onP
 
           recorder.onstop = () => {
             clearTimeout(timer);
-            URL.revokeObjectURL(objectUrl);
+            cleanup();
             if (recordedChunks.length === 0) return resolve(file);
 
             const compressedBlob = new Blob(recordedChunks, { type: mimeType || "video/webm" });
@@ -115,31 +151,46 @@ export async function optimizeVideo(file, targetMaxBytes = 90 * 1024 * 1024, onP
           video.playbackRate = 1.0;
           await video.play().catch(() => {});
 
-          const drawFrame = () => {
-            if (video.paused || video.ended) {
+          const renderFrame = () => {
+            const isFinished = video.ended || (video.duration > 0 && video.currentTime >= video.duration - 0.2);
+            if (isFinished) {
+              if (intervalId) {
+                clearInterval(intervalId);
+                intervalId = null;
+              }
               if (recorder.state === "recording") recorder.stop();
               return;
+            }
+            if (video.paused && !video.ended) {
+              video.play().catch(() => {});
             }
             ctx.drawImage(video, 0, 0, width, height);
             if (video.duration && onProgress) {
               const p = Math.min(99, Math.round((video.currentTime / video.duration) * 100));
               onProgress(p);
             }
-            requestAnimationFrame(drawFrame);
+            if (typeof video.requestVideoFrameCallback === "function") {
+              video.requestVideoFrameCallback(renderFrame);
+            }
           };
 
-          drawFrame();
+          if (typeof video.requestVideoFrameCallback === "function") {
+            video.requestVideoFrameCallback(renderFrame);
+          } else {
+            intervalId = setInterval(renderFrame, 1000 / 30);
+          }
+          renderFrame();
         } catch (err) {
           clearTimeout(timer);
           console.warn("[Video Optimizer] Compression exception, proceeding with original:", err);
-          URL.revokeObjectURL(objectUrl);
+          cleanup();
           resolve(file);
         }
       };
 
       video.onerror = () => {
         clearTimeout(timer);
-        URL.revokeObjectURL(objectUrl);
+        cleanup();
         resolve(file);
       };
     } catch (e) {

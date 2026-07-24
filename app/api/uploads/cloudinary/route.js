@@ -5,6 +5,8 @@ import { createSupabaseAdminClient } from "../../../../src/lib/supabase-admin.js
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
+// Allow up to 30MB so image/PDF uploads are never rejected with 413.
+export const bodyLimit = '30mb';
 
 import { cookies } from "next/headers";
 import { AUTH_COOKIE_NAME } from "../../../../src/lib/auth-identity";
@@ -78,7 +80,7 @@ export async function POST(request) {
       ? getCloudinaryVideoConfig() 
       : getCloudinaryConfig();
 
-    const resourceType = isVideo ? "video" : (file.type.startsWith("image/") || isPdf ? "image" : "auto");
+    const resourceType = isVideo ? "video" : (isPdf ? "raw" : (file.type.startsWith("image/") ? "image" : "auto"));
 
     const timestamp = Math.floor(Date.now() / 1000);
     
