@@ -59,7 +59,7 @@ function hasAuthCookie(request) {
   return request.cookies.has(AUTH_COOKIE_NAME)
 }
 
-export async function middleware(request) {
+export async function proxy(request) {
   const { pathname } = request.nextUrl
 
   if (isAsset(pathname)) {
@@ -93,6 +93,10 @@ export async function middleware(request) {
   }
 
   return response
+}
+
+export async function middleware(request) {
+  return proxy(request)
 }
 
 export const config = {
