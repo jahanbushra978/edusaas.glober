@@ -487,35 +487,26 @@ export default function SaaSLandingPage() {
                     transition={{ delay: 0.37, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <h1
-                      className="relative text-[2.1rem] sm:text-[3.3rem] lg:text-[3.9rem] xl:text-[4.4rem] font-black leading-[1.15] tracking-tight inline-block font-bengali"
+                      className="relative text-[2.1rem] sm:text-[3.3rem] lg:text-[3.9rem] xl:text-[4.4rem] font-bold leading-[1.15] tracking-tight inline-block font-bengali"
                       style={{ fontFamily: "var(--font-hind-siliguri), 'Hind Siliguri', sans-serif" }}
                     >
                       <span
+                        className="font-bengali font-bold"
                         style={{
-                          backgroundImage: "linear-gradient(100deg, #7A5523 0%, #C9963C 18%, #F0C85A 35%, #FFF0A0 50%, #F0C85A 65%, #C9963C 82%, #7A5523 100%)",
+                          fontFamily: "var(--font-hind-siliguri), 'Hind Siliguri', sans-serif",
+                          backgroundImage: "linear-gradient(100deg, #8A6025 0%, #E6B438 20%, #FFE575 40%, #FFF5BD 50%, #FFE575 60%, #E6B438 80%, #8A6025 100%)",
                           backgroundSize: "250% auto",
                           backgroundClip: "text",
                           WebkitBackgroundClip: "text",
                           WebkitTextFillColor: "transparent",
                           color: "transparent",
                           animation: "goldShimmer 5s linear infinite",
-                          filter: "drop-shadow(0 2px 24px rgba(212,175,55,0.6))",
-                          display: "inline",
+                          filter: "drop-shadow(0 2px 18px rgba(212,175,55,0.45))",
+                          display: "inline-block",
                         }}
                       >
                         স্মার্ট ডিজিটাল সমাধান
                       </span>
-
-                      <motion.span
-                        initial={{ scaleX: 0, opacity: 0 }}
-                        animate={{ scaleX: 1, opacity: 1 }}
-                        transition={{ delay: 0.9, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-                        className="absolute -bottom-2 left-0 right-0 h-[3px] origin-left rounded-full block"
-                        style={{
-                          background: "linear-gradient(90deg, #D4AF37, #FFE87C 55%, transparent)",
-                          boxShadow: "0 0 14px 3px rgba(212,175,55,0.5)",
-                        }}
-                      />
                     </h1>
                   </motion.div>
                 </div>
