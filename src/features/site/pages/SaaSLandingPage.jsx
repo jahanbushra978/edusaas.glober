@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
@@ -16,6 +16,91 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { generateFaqSchema, generateEducationalOrgSchema } from "@/lib/seo";
+
+// ── Animated Counter Spinner Component (0 to value count-up) ──
+function AnimatedCounterSpinner({ targetValue }) {
+  const [count, setCount] = useState(0);
+  const [hasStarted, setHasStarted] = useState(false);
+  const elementRef = useRef(null);
+
+  const parseNum = (str) => {
+    if (!str) return 0;
+    const bnToEn = { '০': '0', '১': '1', '২': '2', '৩': '3', '৪': '4', '৫': '5', '৬': '6', '৭': '7', '৮': '8', '৯': '9' };
+    const cleaned = str.replace(/[০-৯]/g, (match) => bnToEn[match]).replace(/,/g, '');
+    const matched = cleaned.match(/[\d.]+/);
+    return matched ? parseFloat(matched[0]) : 0;
+  };
+
+  const toBengaliDigits = (num) => {
+    const enToBn = { '0': '০', '1': '১', '2': '২', '3': '৩', '4': '৪', '5': '৫', '6': '৬', '7': '৭', '8': '৮', '9': '৯' };
+    return num.toString().replace(/\d/g, (match) => enToBn[match]);
+  };
+
+  const finalValue = useMemo(() => parseNum(targetValue), [targetValue]);
+  const isDecimal = targetValue.includes('.');
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          setHasStarted(true);
+        }
+      },
+      { threshold: 0.2 }
+    );
+
+    if (elementRef.current) {
+      observer.observe(elementRef.current);
+    }
+
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!hasStarted || finalValue <= 0) return;
+
+    let start = 0;
+    const duration = 1800; // 1.8 seconds animation
+    const steps = 50;
+    const increment = finalValue / steps;
+    const stepTime = duration / steps;
+
+    const timer = setInterval(() => {
+      start += increment;
+      if (start >= finalValue) {
+        setCount(finalValue);
+        clearInterval(timer);
+      } else {
+        setCount(start);
+      }
+    }, stepTime);
+
+    return () => clearInterval(timer);
+  }, [hasStarted, finalValue]);
+
+  const formattedCount = useMemo(() => {
+    if (!hasStarted) return "০";
+    if (isDecimal) {
+      return toBengaliDigits(count.toFixed(1));
+    }
+    const rounded = Math.floor(count);
+    const withCommas = rounded.toLocaleString('en-US');
+    return toBengaliDigits(withCommas);
+  }, [count, hasStarted, isDecimal]);
+
+  const formattedSuffix = useMemo(() => {
+    if (targetValue.includes('+')) return '+';
+    if (targetValue.includes('%')) return '%';
+    if (targetValue.includes('/৭')) return '/৭';
+    return '';
+  }, [targetValue]);
+
+  return (
+    <span ref={elementRef} className="inline-flex items-center">
+      {formattedCount}{formattedSuffix}
+    </span>
+  );
+}
 
 export default function SaaSLandingPage() {
   const [activeFaq, setActiveFaq] = useState(null);
@@ -347,24 +432,24 @@ export default function SaaSLandingPage() {
             className="object-cover object-center"
             quality={90}
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-[#010b0a]/95 via-[#052E2B]/85 to-[#041a14]/90" />
-          <div className="absolute top-1/3 left-1/5 w-[700px] h-[700px] bg-emerald-600/12 rounded-full blur-[130px] animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/5 w-[550px] h-[550px] bg-[#D4AF37]/10 rounded-full blur-[110px] animate-pulse" style={{animationDelay: "1.5s"}} />
-          <div className="absolute inset-0 opacity-[0.06]" style={{backgroundImage: `radial-gradient(circle, #D4AF37 1px, transparent 1px)`, backgroundSize: "40px 40px"}} />
+          <div className="absolute inset-0 bg-white/[0.14]" />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/10 via-[#06382c]/10 to-[#010b0a]/30" />
+          <div className="absolute top-1/3 left-1/5 w-[700px] h-[700px] bg-[#D4AF37]/15 rounded-full blur-[130px] animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/5 w-[550px] h-[550px] bg-white/15 rounded-full blur-[110px] animate-pulse" style={{animationDelay: "1.5s"}} />
           <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#D4AF37]/50 to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-[#D4AF37]/25 to-transparent" />
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 py-16 w-full">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 py-10 sm:py-16 w-full">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             {/* LEFT: Hero Content */}
-            <div className="space-y-6 text-center lg:text-left">
+            <div className="space-y-5 sm:space-y-6 text-center lg:text-left">
 
               {/* ── Eyebrow Pill ── */}
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="inline-flex items-center gap-2 bg-[#06382c]/90 border border-emerald-500/40 text-emerald-400 text-xs font-mono font-bold px-4 py-1.5 rounded-full uppercase tracking-widest shadow-md"
+                className="inline-flex items-center gap-2 bg-[#06382c]/90 border border-emerald-500/40 text-emerald-400 text-[10px] sm:text-xs font-mono font-bold px-3.5 sm:px-4 py-1.5 rounded-full uppercase tracking-widest shadow-md"
               >
                 <span>• EDUSAAS GLOBAL PLATFORM •</span>
               </motion.div>
@@ -376,7 +461,7 @@ export default function SaaSLandingPage() {
                     initial={{ y: "105%", opacity: 0 }}
                     animate={{ y: "0%", opacity: 1 }}
                     transition={{ delay: 0.15, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-                    className="text-[2.5rem] sm:text-[3.3rem] lg:text-[3.9rem] xl:text-[4.4rem] font-black text-white leading-[1.12] tracking-tight font-bengali"
+                    className="text-[2.1rem] sm:text-[3.3rem] lg:text-[3.9rem] xl:text-[4.4rem] font-black text-white leading-[1.15] sm:leading-[1.12] tracking-tight font-bengali"
                     style={{ fontFamily: "var(--font-hind-siliguri), 'Hind Siliguri', sans-serif" }}
                   >
                     শিক্ষা প্রতিষ্ঠান
@@ -388,7 +473,7 @@ export default function SaaSLandingPage() {
                     initial={{ y: "105%", opacity: 0 }}
                     animate={{ y: "0%", opacity: 1 }}
                     transition={{ delay: 0.25, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
-                    className="text-[2.5rem] sm:text-[3.3rem] lg:text-[3.9rem] xl:text-[4.4rem] font-black text-white leading-[1.12] tracking-tight font-bengali"
+                    className="text-[2.1rem] sm:text-[3.3rem] lg:text-[3.9rem] xl:text-[4.4rem] font-black text-white leading-[1.15] sm:leading-[1.12] tracking-tight font-bengali"
                     style={{ fontFamily: "var(--font-hind-siliguri), 'Hind Siliguri', sans-serif" }}
                   >
                     পরিচালনায় এখন
@@ -402,7 +487,7 @@ export default function SaaSLandingPage() {
                     transition={{ delay: 0.37, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
                   >
                     <h1
-                      className="relative text-[2.5rem] sm:text-[3.3rem] lg:text-[3.9rem] xl:text-[4.4rem] font-black leading-[1.15] tracking-tight inline-block font-bengali"
+                      className="relative text-[2.1rem] sm:text-[3.3rem] lg:text-[3.9rem] xl:text-[4.4rem] font-black leading-[1.15] tracking-tight inline-block font-bengali"
                       style={{ fontFamily: "var(--font-hind-siliguri), 'Hind Siliguri', sans-serif" }}
                     >
                       <span
@@ -448,7 +533,7 @@ export default function SaaSLandingPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25, duration: 0.55 }}
-                className="text-base sm:text-[1.05rem] text-slate-300/90 leading-[1.85] font-medium max-w-xl mx-auto lg:mx-0"
+                className="text-sm sm:text-base text-slate-300/90 leading-[1.8] sm:leading-[1.85] font-medium max-w-xl mx-auto lg:mx-0 px-2 sm:px-0"
               >
                 হাজারো প্রতিষ্ঠান একটি ক্লাউড নেটওয়ার্কে যুক্ত — ওয়েবসাইট, বায়োমেট্রিক হাজিরা, অটো রেজাল্ট, ফি কালেকশন ও অভিভাবক SMS।
               </motion.p>
@@ -458,10 +543,10 @@ export default function SaaSLandingPage() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 }}
-                className="flex flex-col sm:flex-row flex-wrap gap-3.5 justify-center lg:justify-start"
+                className="flex flex-col sm:flex-row flex-wrap gap-3 sm:gap-3.5 justify-center lg:justify-start px-4 sm:px-0"
               >
-                <Link href="/platform-console/organizations/new">
-                  <button className="group relative px-7 py-4 rounded-2xl bg-gradient-to-r from-[#D4AF37] via-amber-400 to-amber-500 text-slate-950 font-black text-sm shadow-2xl shadow-amber-900/40 hover:shadow-amber-500/50 hover:scale-[1.03] transition-all duration-300 flex items-center justify-center gap-2.5 overflow-hidden">
+                <Link href="/platform-console/organizations/new" className="w-full sm:w-auto">
+                  <button className="w-full sm:w-auto group relative px-7 py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-[#D4AF37] via-amber-400 to-amber-500 text-slate-950 font-black text-sm shadow-2xl shadow-amber-900/40 hover:shadow-amber-500/50 hover:scale-[1.03] transition-all duration-300 flex items-center justify-center gap-2.5 overflow-hidden">
                     <span className="absolute inset-0 bg-gradient-to-r from-transparent via-white/25 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                     <span className="relative">🚀 বিনামূল্যে শুরু করুন</span>
                     <ArrowRight className="relative h-4 w-4 group-hover:translate-x-1 transition-transform" />
@@ -469,14 +554,14 @@ export default function SaaSLandingPage() {
                 </Link>
                 <button 
                   onClick={() => setIsWebsiteFormOpen(true)}
-                  className="px-6 py-4 rounded-2xl bg-amber-500/15 backdrop-blur-md border border-amber-400/40 text-amber-200 font-bold text-sm hover:bg-amber-500/25 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
+                  className="w-full sm:w-auto px-6 py-3.5 sm:py-4 rounded-2xl bg-amber-500/15 backdrop-blur-md border border-amber-400/40 text-amber-200 font-bold text-sm hover:bg-amber-500/25 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
                 >
                   <FileSpreadsheet className="h-4 w-4 text-[#D4AF37]" />
                   <span>📄 তথ্য ফরম পূরণ করুন</span>
                 </button>
                 <button 
                   onClick={() => setIsMsgModalOpen(true)}
-                  className="px-6 py-4 rounded-2xl bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-200 font-bold text-sm hover:bg-emerald-500/30 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
+                  className="w-full sm:w-auto px-6 py-3.5 sm:py-4 rounded-2xl bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-200 font-bold text-sm hover:bg-emerald-500/30 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
                 >
                   <MessageSquare className="h-4 w-4 text-emerald-400" />
                   <span>💬 মেসেজ পাঠান</span>
@@ -488,7 +573,7 @@ export default function SaaSLandingPage() {
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="flex flex-wrap gap-x-5 gap-y-2.5 text-[11px] text-slate-400 font-semibold justify-center lg:justify-start pt-1"
+                className="flex flex-wrap gap-x-4 sm:gap-x-5 gap-y-2 text-[10px] sm:text-[11px] text-slate-400 font-semibold justify-center lg:justify-start pt-1"
               >
                 {[
                   { icon: "✅", text: "সেটআপ ফি শূন্য" },
@@ -496,7 +581,7 @@ export default function SaaSLandingPage() {
                   { icon: "🔒", text: "এনক্রিপ্টেড ডাটা" },
                   { icon: "📱", text: "মোবাইল ফার্স্ট" },
                 ].map(t => (
-                  <span key={t.text} className="flex items-center gap-1.5">
+                  <span key={t.text} className="flex items-center gap-1">
                     <span>{t.icon}</span> <span className="text-slate-300">{t.text}</span>
                   </span>
                 ))}
@@ -508,7 +593,7 @@ export default function SaaSLandingPage() {
               initial={{ opacity: 0, scale: 0.9 }} 
               animate={{ opacity: 1, scale: 1 }} 
               transition={{ delay: 0.3, duration: 0.7 }} 
-              className="relative hidden lg:flex items-center justify-center min-h-[480px]"
+              className="relative flex items-center justify-center min-h-[340px] sm:min-h-[420px] lg:min-h-[480px] mt-6 lg:mt-0 scale-[0.72] sm:scale-[0.88] lg:scale-100 origin-center"
             >
               {/* Top Right Institution Counter Badge */}
               <div className="absolute top-0 right-0 z-20 flex items-center gap-2 bg-gradient-to-r from-[#D4AF37] to-amber-500 text-slate-950 font-black text-xs px-4 py-2 rounded-full shadow-xl">
@@ -519,30 +604,56 @@ export default function SaaSLandingPage() {
               {/* Central Outer Orbit Circle Container */}
               <div className="relative w-[440px] h-[440px] flex items-center justify-center">
                 
+                {/* RADIANT LIGHT BEAMS & ENERGY PULSE FROM INSIDE CENTRAL HUB CORE */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-0">
+                  {/* Inner Core Glowing Core Ring */}
+                  <motion.div
+                    animate={{ scale: [0.6, 2.2], opacity: [0.45, 0] }}
+                    transition={{ duration: 3.5, repeat: Infinity, ease: "easeOut" }}
+                    className="absolute w-36 h-36 rounded-full bg-gradient-to-r from-[#D4AF37]/25 via-emerald-400/20 to-transparent blur-2xl"
+                  />
+                  {/* Soft Secondary Emitter Ring */}
+                  <motion.div
+                    animate={{ scale: [0.8, 1.8], opacity: [0.35, 0] }}
+                    transition={{ duration: 2.8, repeat: Infinity, ease: "easeOut", delay: 0.8 }}
+                    className="absolute w-40 h-40 rounded-full bg-gradient-to-r from-amber-200/20 to-emerald-500/20 blur-xl"
+                  />
+                  {/* Subtle Soft Rotating Sunburst Light Rays */}
+                  <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 28, repeat: Infinity, ease: "linear" }}
+                    className="absolute w-[420px] h-[420px] rounded-full opacity-25"
+                    style={{
+                      background: "conic-gradient(from 0deg, transparent 0deg, rgba(212,175,55,0.2) 15deg, transparent 30deg, rgba(16,185,129,0.2) 45deg, transparent 60deg, rgba(255,232,124,0.22) 75deg, transparent 90deg, rgba(212,175,55,0.2) 105deg, transparent 120deg, rgba(16,185,129,0.2) 135deg, transparent 150deg, rgba(255,232,124,0.22) 165deg, transparent 180deg, rgba(212,175,55,0.2) 195deg, transparent 210deg, rgba(16,185,129,0.2) 225deg, transparent 240deg, rgba(255,232,124,0.22) 255deg, transparent 270deg, rgba(212,175,55,0.2) 285deg, transparent 300deg, rgba(16,185,129,0.2) 315deg, transparent 330deg, rgba(255,232,124,0.22) 345deg, transparent 360deg)"
+                    }}
+                  />
+                </div>
+
                 {/* Connecting Lines SVG */}
                 <svg className="absolute inset-0 w-full h-full pointer-events-none z-0 overflow-visible" viewBox="0 0 440 440">
-                  <line x1="220" y1="220" x2="220" y2="50" stroke="#D4AF37" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.6" />
-                  <line x1="220" y1="220" x2="370" y2="120" stroke="#D4AF37" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.6" />
-                  <line x1="220" y1="220" x2="400" y2="260" stroke="#D4AF37" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.6" />
-                  <line x1="220" y1="220" x2="350" y2="380" stroke="#D4AF37" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.6" />
-                  <line x1="220" y1="220" x2="90" y2="380" stroke="#D4AF37" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.6" />
-                  <line x1="220" y1="220" x2="40" y2="260" stroke="#D4AF37" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.6" />
-                  <line x1="220" y1="220" x2="80" y2="120" stroke="#D4AF37" strokeWidth="1.5" strokeDasharray="4 4" opacity="0.6" />
+                  <line x1="220" y1="220" x2="220" y2="50" stroke="#D4AF37" strokeWidth="2" strokeDasharray="5 5" opacity="0.8" />
+                  <line x1="220" y1="220" x2="370" y2="120" stroke="#D4AF37" strokeWidth="2" strokeDasharray="5 5" opacity="0.8" />
+                  <line x1="220" y1="220" x2="400" y2="260" stroke="#D4AF37" strokeWidth="2" strokeDasharray="5 5" opacity="0.8" />
+                  <line x1="220" y1="220" x2="350" y2="380" stroke="#D4AF37" strokeWidth="2" strokeDasharray="5 5" opacity="0.8" />
+                  <line x1="220" y1="220" x2="90" y2="380" stroke="#D4AF37" strokeWidth="2" strokeDasharray="5 5" opacity="0.8" />
+                  <line x1="220" y1="220" x2="40" y2="260" stroke="#D4AF37" strokeWidth="2" strokeDasharray="5 5" opacity="0.8" />
+                  <line x1="220" y1="220" x2="80" y2="120" stroke="#D4AF37" strokeWidth="2" strokeDasharray="5 5" opacity="0.8" />
                 </svg>
 
-                {/* CENTRAL HUB CIRCLE */}
+                {/* CENTRAL HUB CIRCLE WITH LIGHT RAY GLOW */}
                 <motion.div 
-                  animate={{ scale: [1, 1.03, 1] }} 
-                  transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                  className="relative z-10 w-44 h-44 rounded-full bg-gradient-to-br from-[#064235] via-[#052E2B] to-[#021815] border-4 border-emerald-500/60 shadow-[0_0_60px_rgba(16,185,129,0.3)] flex flex-col items-center justify-center text-center p-3"
+                  animate={{ scale: [1, 1.05, 1] }} 
+                  transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                  className="relative z-10 w-44 h-44 rounded-full bg-gradient-to-br from-[#095747] via-[#052E2B] to-[#021815] border-4 border-[#D4AF37] shadow-[0_0_80px_rgba(212,175,55,0.7),0_0_40px_rgba(16,185,129,0.6)] flex flex-col items-center justify-center text-center p-3 font-bengali"
+                  style={{ fontFamily: "var(--font-hind-siliguri), 'Hind Siliguri', sans-serif" }}
                 >
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center mb-1 text-emerald-300">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#D4AF37] to-amber-600 border border-white/40 flex items-center justify-center mb-1 text-slate-950 shadow-lg">
                     <Globe className="h-5 w-5" />
                   </div>
-                  <span className="font-black text-white text-sm font-serif leading-none">EduSaaS</span>
-                  <span className="text-[10px] text-[#D4AF37] font-bold">.global</span>
-                  <span className="mt-2 text-[9px] font-bold text-emerald-300 bg-emerald-900/60 px-2.5 py-0.5 rounded-full border border-emerald-500/30 flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="font-black text-white text-base leading-none tracking-tight">EduSaaS</span>
+                  <span className="text-[11px] text-[#D4AF37] font-extrabold tracking-wider">.global</span>
+                  <span className="mt-2 text-[9px] font-black text-slate-950 bg-gradient-to-r from-[#D4AF37] to-amber-400 px-2.5 py-0.5 rounded-full border border-white/30 flex items-center gap-1 shadow-md">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-950 animate-ping" />
                     ১,২০০+ যুক্ত
                   </span>
                 </motion.div>
@@ -633,34 +744,6 @@ export default function SaaSLandingPage() {
             </motion.div>
           </div>
 
-          {/* ── Bottom Stats Bar ── */}
-          <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.6 }} className="mt-20">
-            {/* Divider */}
-            <div className="flex items-center gap-4 mb-8">
-              <div className="flex-1 h-px bg-gradient-to-r from-transparent to-[#D4AF37]/30" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-[#D4AF37]/60 font-mono">Platform Metrics</span>
-              <div className="flex-1 h-px bg-gradient-to-l from-transparent to-[#D4AF37]/30" />
-            </div>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {stats.map((s, idx) => {
-                const Icon = s.icon;
-                return (
-                  <motion.div
-                    key={idx}
-                    whileHover={{ scale: 1.03, backgroundColor: "rgba(255,255,255,0.1)" }}
-                    className="bg-white/5 backdrop-blur-md border border-white/8 rounded-2xl px-4 py-5 text-center group cursor-default transition-all"
-                  >
-                    <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#D4AF37]/20 to-transparent border border-[#D4AF37]/20 flex items-center justify-center mx-auto mb-3 group-hover:scale-110 transition-transform">
-                      <Icon className="h-4.5 w-4.5 text-[#D4AF37]" />
-                    </div>
-                    <p className="text-[1.65rem] font-black text-white font-mono leading-none tracking-tight">{s.number}</p>
-                    <p className="text-[11px] font-bold text-[#D4AF37]/90 mt-1.5 leading-tight">{s.label}</p>
-                    <p className="text-[10px] text-white/30 mt-0.5 font-medium">{s.desc}</p>
-                  </motion.div>
-                );
-              })}
-            </div>
-          </motion.div>
         </div>
       </section>
 
