@@ -5,15 +5,15 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import { cookies } from 'next/headers'
 
 import Providers from './providers'
-import { inter, hindSiliguri, notoSansArabic, amiri } from './fonts'
+import { inter, hindSiliguri, notoSansBengali, notoSansArabic, amiri, playfairDisplay } from './fonts'
 
 export const revalidate = 3600;
 
 export const metadata = {
   metadataBase: new URL('https://rahmaniainstitute.org'),
   title: {
-    default: 'Rahmania Institute (রহমানিয়া ইনস্টিটিউট) — আধুনিক ও দ্বীনি শিক্ষার অনন্য সমন্বয়',
-    template: '%s | Rahmania Institute (রহমানিয়া ইনস্টিটিউট)',
+    default: 'Educational SaaS Platform',
+    template: '%s',
   },
   description:
     'Rahmania Institute (রহমানিয়া ইনস্টিটিউট) — দ্বীনি ও জাগতিক শিক্ষার সমন্বয়ে একটি আধুনিক শিক্ষা প্রতিষ্ঠান। এখানে নূরানী, নাজেরা, হিফয ও জেনারেল শিক্ষা বিভাগে অভিজ্ঞ শিক্ষকমণ্ডলী দ্বারা পাঠদান করা হয়।',
@@ -80,21 +80,11 @@ export default async function RootLayout({ children }) {
   const initialLang = (langCookie === 'bn' || langCookie === 'en' || langCookie === 'ar') ? langCookie : 'bn'
 
   return (
-    <html lang={initialLang} suppressHydrationWarning data-scroll-behavior="smooth" className={`${inter.variable} ${hindSiliguri.variable} ${notoSansArabic.variable} ${amiri.variable}`}>
+    <html lang={initialLang} suppressHydrationWarning data-scroll-behavior="smooth" className={`light ${inter.variable} ${hindSiliguri.variable} ${notoSansBengali.variable} ${notoSansArabic.variable} ${amiri.variable} ${playfairDisplay.variable}`}>
       <head>
         <meta charSet="utf-8" />
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-              try {
-                document.documentElement.classList.remove('dark');
-                localStorage.setItem('theme', 'light');
-              } catch (_) {}
-            `,
-          }}
-        />
       </head>
-      <body suppressHydrationWarning>
+      <body suppressHydrationWarning className="light">
         <link rel="preconnect" href="https://www.googletagmanager.com" />
         {process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID && (
           <>

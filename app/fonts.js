@@ -1,4 +1,4 @@
-import { Inter, Hind_Siliguri, Noto_Sans_Arabic, Amiri } from "next/font/google";
+import { Inter, Hind_Siliguri, Noto_Sans_Bengali, Noto_Sans_Arabic, Amiri, Playfair_Display } from "next/font/google";
 
 // next/font self-hosts these at build time — no runtime request to
 // fonts.googleapis.com, no render-blocking <link>, automatic font-display:
@@ -18,6 +18,13 @@ export const hindSiliguri = Hind_Siliguri({
   display: "swap",
 });
 
+export const notoSansBengali = Noto_Sans_Bengali({
+  subsets: ["bengali"],
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-noto-sans-bengali",
+  display: "swap",
+});
+
 export const notoSansArabic = Noto_Sans_Arabic({
   subsets: ["arabic"],
   weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
@@ -32,3 +39,12 @@ export const amiri = Amiri({
   variable: "--font-amiri",
   display: "swap",
 });
+
+export const playfairDisplay = Playfair_Display({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800", "900"],
+  style: ["normal", "italic"],
+  variable: "--font-playfair",
+  display: "swap",
+});
+

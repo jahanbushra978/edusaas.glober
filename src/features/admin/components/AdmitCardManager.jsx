@@ -7,10 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { toast } from "sonner";
 import { DEFAULT_LOGO } from "@/utils";
 import ImageUpload from "./ImageUpload";
 import { drawBengaliText, drawBengaliTextWrapped, containsBengali } from "@/lib/pdf-utils";
@@ -20,13 +20,42 @@ import {
   CreditCard, Grid3X3, Settings, Palette, ZoomIn, ZoomOut,
   Maximize2, Minimize2, Loader2, User, X, Check, Save,
   CheckSquare, Square, ArrowUpDown, Trash2, Copy, Plus,
-  FileText, Image, Type, Layout, Monitor, AlertCircle
+  FileText, Image, Type, Layout, Monitor, AlertCircle, Pencil
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { toast } from "sonner";
 
-const PAGE_SIZE = 40;
+const PAGE_SIZE = 30;
 const TEMPLATE_STORAGE_KEY = "admit_card_templates";
 const DEFAULT_TEMPLATE_KEY = "admit_card_default_template";
+const SEATING_CONFIG_STORAGE_KEY = "admit_card_seating_config";
+
+function getStoredSeatingConfig() {
+  if (typeof window === "undefined") return getDefaultSeatingConfig();
+  try {
+    const raw = localStorage.getItem(SEATING_CONFIG_STORAGE_KEY);
+    return raw ? { ...getDefaultSeatingConfig(), ...JSON.parse(raw) } : getDefaultSeatingConfig();
+  } catch { return getDefaultSeatingConfig(); }
+}
+
+function saveSeatingConfig(cfg) {
+  try {
+    localStorage.setItem(SEATING_CONFIG_STORAGE_KEY, JSON.stringify(cfg));
+  } catch {}
+}
+
+function getDefaultSeatingConfig() {
+  return {
+    examTitle: "",
+    cardTitle: "ADMIT CARD / প্রবেশপত্র",
+    centerName: "",
+    startingSeat: 1,
+    seatPrefix: "",
+    seatDigits: 3,
+    startingRoom: "1",
+    studentsPerRoom: 20,
+  };
+}
 
 function hexToRgb(hex) {
   const v = parseInt(hex.replace("#", ""), 16);
@@ -41,6 +70,10 @@ function loadImageElement(src) {
     img.onerror = () => reject(new Error("Failed to load image"));
     img.src = src;
   });
+}
+
+function resolveLogoUrl(tpl, branch, settings) {
+  return tpl?.customLogoUrl || branch?.logo || branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
 }
 
 function getFlatClassOptions(academicStructure) {
@@ -219,9 +252,11 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
   const [templates, setTemplates] = useState([]);
   const [activeTemplateId, setActiveTemplateId] = useState(null);
   const [serialTemplate, setSerialTemplate] = useState(() => getStoredSerialTemplate());
+  const [seatingConfig, setSeatingConfig] = useState(() => getStoredSeatingConfig());
+  const [studentOverrides, setStudentOverrides] = useState({});
+  const [editingStudentSeating, setEditingStudentSeating] = useState(null);
 
-  const [selectedStudentsForPrint, setSelectedStudentsForPrint] = useState([]);
-  const [generating, setGenerating] = useState({ admitCard: false, serialSheet: false, preview: false });
+  const [generating, setGenerating] = useState({ admitCard: false, serialSheet: false, preview: false, bulkDownload: false });
 
   const searchTimeoutRef = useRef(null);
   const previewRef = useRef(null);
@@ -276,31 +311,42 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
     setSelectAll(false);
   }, [filters.branchId, filters.examId, filters.classId, filters.sectionId, filters.group]);
 
+  // When exam selection changes, load seating_config from that exam (if available)
+  useEffect(() => {
+    if (filters.examId === "all") return;
+    const selectedExam = exams.find(e => String(e.id) === String(filters.examId));
+    if (!selectedExam?.seating_config) return;
+    const cfg = typeof selectedExam.seating_config === "string"
+      ? (() => { try { return JSON.parse(selectedExam.seating_config); } catch { return null; } })()
+      : selectedExam.seating_config;
+    if (cfg && typeof cfg === "object") {
+      setSeatingConfig(prev => ({ ...prev, ...cfg }));
+    }
+  }, [filters.examId, exams]);
+
   const activeTemplate = useMemo(() => templates.find(t => t.id === activeTemplateId) || templates[0], [templates, activeTemplateId]);
 
   const selectedBranch = branches.find(b => String(b.id) === String(filters.branchId));
   const academicStructure = selectedBranch?.academic_structure || [];
   const flatClassOptions = useMemo(() => getFlatClassOptions(academicStructure), [academicStructure]);
   const selectedFlatClass = flatClassOptions.find(o => o.id === filters.classId);
-  const classIdForFilter = selectedFlatClass?.classId || filters.classId;
 
   const filteredExams = exams.filter(e => {
     const bMatch = filters.branchId === "all" || String(e.branch_id) === String(filters.branchId);
     return bMatch;
   });
 
-  const sections = useMemo(() => {
+  const groupOptions = useMemo(() => {
     if (!selectedFlatClass) return [];
-    if (selectedFlatClass.section_name && selectedFlatClass.section_name !== filters.sectionId) return [];
     const classObj = academicStructure.find(c => String(c.id) === String(selectedFlatClass.classId));
-    if (classObj?.sections) {
-      return classObj.sections.filter(s => {
-        if (filters.sectionId !== "all" && String(s.id) !== String(filters.sectionId)) return false;
-        return true;
-      });
+    if (classObj && Array.isArray(classObj.groups)) {
+      return classObj.groups.map(g => ({
+        value: String(g.id),
+        label: g.group_name?.bn || g.group_name?.en || String(g.id)
+      }));
     }
     return [];
-  }, [academicStructure, selectedFlatClass, filters.sectionId]);
+  }, [academicStructure, selectedFlatClass]);
 
   const studentColumns = "id,roll_number,full_name_en,full_name_bn,father_name,mother_name,photo_url,branch_id,class_id,session,status,class_name,session_id,class_group_id";
 
@@ -453,16 +499,34 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
     });
   };
 
-  const generateAdmitCardHTML = useCallback((student, branch, exam, tpl) => {
-    const logoUrl = tpl?.customLogoUrl || branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
-    const instNameEn = settings?.institute_name_en || "RAHMANIA INSTITUTE";
-    const instNameBn = settings?.institute_name_bn || "রহমানিয়া ইনস্টিটিউট";
+  const generateAdmitCardHTML = useCallback((student, branch, exam, tpl, options = { fullDocument: true }, idx = 0) => {
+    const logoUrl = resolveLogoUrl(tpl, branch, settings);
+    const instNameBn = settings?.institute_name_bn || branch?.name_bn || "রহমানিয়া ইনস্টিটিউট";
+    const instNameEn = settings?.institute_name_en || branch?.name_en || "RAHMANIA INSTITUTE";
     const branchName = branch?.name_en || branch?.name_bn || "";
-    const address = branch?.address_en || branch?.address_bn || settings?.address || "";
-    const pc = tpl.primaryColor;
-    const sc = tpl.secondaryColor;
+    const address = branch?.address_bn || branch?.address_en || settings?.address || "";
+    const pc = tpl?.primaryColor || "#052E2B";
+    const sc = tpl?.secondaryColor || "#D4AF37";
+    const fields = tpl?.showFields || {};
 
-    const fields = tpl.showFields;
+    const override = studentOverrides[student?.id] || {};
+    const resolvedExamTitle = seatingConfig.examTitle || exam?.title || "Exam";
+    const resolvedCenterName = override.centerName || seatingConfig.centerName || branchName || settings?.institute_name_bn || "";
+
+    let resolvedSeatNumber = override.seatNumber;
+    if (!resolvedSeatNumber) {
+      const rawNum = Number(seatingConfig.startingSeat || 1) + (idx || 0);
+      const padded = String(rawNum).padStart(Number(seatingConfig.seatDigits || 3), "0");
+      resolvedSeatNumber = `${seatingConfig.seatPrefix || ""}${padded}`;
+    }
+
+    let resolvedRoomNumber = override.roomNumber;
+    if (!resolvedRoomNumber) {
+      const startRm = Number(seatingConfig.startingRoom) || 1;
+      const perRm = Math.max(1, Number(seatingConfig.studentsPerRoom) || 20);
+      const rmOffset = Math.floor((idx || 0) / perRm);
+      resolvedRoomNumber = String(startRm + rmOffset);
+    }
 
     const classNameVal = (() => {
       const structure = branch?.academic_structure || [];
@@ -470,11 +534,11 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
     })();
 
     const sectionNameVal = (() => {
-      if (!student?.session_id || !branch?.academic_structure) return "";
+      if (!filters.sectionId || filters.sectionId === "all" || !branch?.academic_structure) return "";
       for (const c of branch.academic_structure) {
         if (c.sections) {
-          const sec = c.sections.find(s => String(s.id) === String(student.session_id));
-          if (sec) return sec.section_name?.bn || sec.section_name?.en || "";
+          const s = c.sections.find(sec => String(sec.id) === String(filters.sectionId));
+          if (s) return s.section_name?.bn || s.section_name?.en || "";
         }
       }
       return "";
@@ -491,202 +555,416 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
       return "";
     })();
 
-    return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&family=Inter:wght@400;500;700&display=swap');
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  font-family: 'Noto Sans Bengali', 'Inter', sans-serif;
-  background: #f8f9fa;
-  display: flex; justify-content: center; padding: 20px;
-}
-.admit-card {
-  width: ${tpl.layout === "landscape" ? "842px" : "595px"};
-  background: ${tpl.bgColor};
-  border: ${tpl.showBorder ? `${tpl.borderWidth}px ${tpl.borderStyle} ${tpl.borderColor}` : "none"};
-  border-radius: 12px;
-  padding: ${tpl.cardPadding}px;
-  margin: ${tpl.cardMargin}px auto;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-  position: relative;
-  overflow: hidden;
-}
-${tpl.showWatermark ? `.watermark {
-  position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-30deg);
-  font-size: 80px; font-weight: 900; color: rgba(0,0,0,0.03); pointer-events: none;
-  white-space: nowrap; letter-spacing: 10px;
-}` : ""}
-.header { text-align: ${tpl.headerLayout}; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid ${sc}; }
-.header .logo { ${tpl.headerLayout === "center" ? "margin: 0 auto;" : ""} width: 60px; height: 60px; object-fit: contain; }
-.header h1 { font-size: 16px; font-weight: 700; color: ${pc}; margin-top: 6px; }
-.header h2 { font-size: 13px; font-weight: 500; color: #444; }
-.header p { font-size: 10px; color: #666; }
-.title-bar { background: linear-gradient(135deg, ${pc}, ${sc}); color: white; text-align: center; padding: 8px; border-radius: 6px; margin-bottom: 12px; }
-.title-bar h3 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
-.body-section { display: flex; gap: 12px; margin-bottom: 10px; }
-${fields.studentPhoto ? `.photo-section { width: ${tpl.studentPhotoSize + 20}px; flex-shrink: 0; }
-.photo-section img { width: ${tpl.studentPhotoSize}px; height: ${tpl.studentPhotoSize}px; object-fit: cover; border-radius: 8px; border: 2px solid ${sc}; }` : `.photo-section { display: none; }`}
-.info-section { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 4px 16px; font-size: ${tpl.fontSize}px; }
-.info-section .label { color: #666; font-size: ${tpl.fontSize - 2}px; }
-.info-section .value { font-weight: 600; color: #1a1a1a; }
-.info-section .full-width { grid-column: 1 / -1; }
-.subject-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: ${tpl.fontSize - 1}px; }
-.subject-table th { background: ${pc}; color: white; padding: 4px 8px; text-align: left; }
-.subject-table td { padding: 4px 8px; border-bottom: 1px solid #eee; }
-.signature-section { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
-.signature-section .sig { text-align: center; font-size: ${tpl.fontSize - 2}px; }
-.signature-section .sig .line { width: 120px; height: 1px; border-top: 1px solid #333; margin: 0 auto 4px; }
-.seal-section { text-align: center; margin: 8px 0; }
-.seal-section img { height: 50px; }
-.footer { text-align: ${tpl.footerLayout}; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: ${tpl.fontSize - 2}px; color: #666; }
-.instructions { margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px; font-size: ${tpl.fontSize - 3}px; border-left: 3px solid ${sc}; }
-.instructions h4 { color: ${pc}; margin-bottom: 4px; }
-.instructions p { color: #555; line-height: 1.5; white-space: pre-line; }
-.qr-section { text-align: center; margin-top: 6px; }
-.qr-section img { width: 50px; height: 50px; }
-</style></head>
-<body>
-<div class="admit-card">
-${tpl.showWatermark ? `<div class="watermark">${tpl.watermarkText}</div>` : ""}
-<div class="header">
-  ${tpl.showLogo ? `<img class="logo" src="${logoUrl}" alt="Logo" onerror="this.style.display='none'" />` : ""}
-  <h1>${instNameBn}</h1>
-  <h2>${instNameEn}</h2>
-  ${branchName ? `<p>${branchName}${address ? " | " + address : ""}</p>` : ""}
-</div>
-<div class="title-bar">
-  <h3>${exam?.title || "Admit Card"}</h3>
-</div>
-<div class="body-section">
-  ${fields.studentPhoto ? `<div class="photo-section">${student?.photo_url ? `<img src="${student.photo_url}" alt="Photo" onerror="this.style.display='none'" />` : `<div class="photo-placeholder" style="width:${tpl.studentPhotoSize}px;height:${tpl.studentPhotoSize}px;background:#f1f5f9;border-radius:8px;border:2px solid ${sc};display:flex;align-items:center;justify-content:center;">${STUDENT_AVATAR_SVG}</div>`}</div>` : ""}
-  <div class="info-section">
-    ${fields.studentName ? `<div class="full-width"><span class="label">Student Name / শিক্ষার্থীর নাম</span><div class="value">${student?.full_name_bn || student?.full_name_en || ""}</div></div>` : ""}
-    ${fields.fatherName ? `<div><span class="label">Father's Name / পিতার নাম</span><div class="value">${student?.father_name || ""}</div></div>` : ""}
-    ${fields.motherName ? `<div><span class="label">Mother's Name / মাতার নাম</span><div class="value">${student?.mother_name || ""}</div></div>` : ""}
-    ${fields.studentId ? `<div><span class="label">Student ID / আইডি</span><div class="value">${student?.id || ""}</div></div>` : ""}
-    ${fields.roll ? `<div><span class="label">Roll / রোল</span><div class="value">${student?.roll_number || ""}</div></div>` : ""}
-    ${fields.registrationNumber ? `<div><span class="label">Reg. No / রেজি. নং</span><div class="value">${student?.registration_number || student?.id || ""}</div></div>` : ""}
-    ${fields.className ? `<div><span class="label">Class / ক্লাস</span><div class="value">${classNameVal}</div></div>` : ""}
-    ${fields.section ? `<div><span class="label">Section / শাখা</span><div class="value">${sectionNameVal || "—"}</div></div>` : ""}
-    ${fields.group ? `<div><span class="label">Group / গ্রুপ</span><div class="value">${groupNameVal || "—"}</div></div>` : ""}
-    ${fields.session ? `<div><span class="label">Session / সেশন</span><div class="value">${exam?.session || exam?.academic_year || student?.session || ""}</div></div>` : ""}
-    ${fields.examDate ? `<div><span class="label">Exam Date / পরীক্ষার তারিখ</span><div class="value">${exam?.exam_date || exam?.start_date || ""}</div></div>` : ""}
-    ${fields.examTime ? `<div><span class="label">Time / সময়</span><div class="value">${exam?.exam_time || "9:00 AM - 12:00 PM"}</div></div>` : ""}
+    // Build subject rows
+    let schedulesArr = exam?.subject_schedules || [];
+    if (typeof schedulesArr === "string") { try { schedulesArr = JSON.parse(schedulesArr); } catch { schedulesArr = []; } }
+    const subjectRows = (selectedFlatClass?.subjects || []).map((sub, i) => {
+      const subjectName = typeof sub.subject_name === "string" ? sub.subject_name : sub.subject_name?.bn || sub.subject_name?.en || sub.name_bn || sub.name_en || String(sub);
+      const subId = sub.id || i;
+      const match = Array.isArray(schedulesArr) ? schedulesArr.find(s => String(s.subject_id) === String(subId) || s.subject_name === subjectName) : null;
+      const subDate = match?.date || exam?.start_date || "—";
+      const subTime = match?.time || "9:00 AM - 12:00 PM";
+      const bg = i % 2 === 0 ? "#f8fffe" : "#ffffff";
+      return `<tr style="background:${bg};">
+        <td style="padding:5px 8px;text-align:center;border-bottom:1px solid #e2eef0;font-weight:700;color:${pc};">${i + 1}</td>
+        <td style="padding:5px 8px;border-bottom:1px solid #e2eef0;font-weight:600;">${subjectName}</td>
+        <td style="padding:5px 8px;border-bottom:1px solid #e2eef0;">${subDate}</td>
+        <td style="padding:5px 8px;border-bottom:1px solid #e2eef0;">${subTime}</td>
+      </tr>`;
+    }).join("");
+
+    const resolvedCardTitle = seatingConfig.cardTitle || tpl?.watermarkText || "ADMIT CARD / প্রবেশপত্র";
+    const instructions = tpl?.customInstructions || "";
+
+    const PHOTO_W = 72, PHOTO_H = 90;
+    const cardMarkup = `
+<div class="admit-card" style="width:595px;max-width:100%;background:#fff;border:2px solid ${pc};border-radius:10px;overflow:hidden;position:relative;font-family:'Noto Sans Bengali',Arial,sans-serif;box-shadow:0 6px 24px rgba(0,0,0,0.10);">
+  ${tpl?.showWatermark ? `<div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:60px;font-weight:900;color:rgba(0,0,0,0.03);white-space:nowrap;pointer-events:none;z-index:0;">${tpl.watermarkText || "ADMIT CARD"}</div>` : ""}
+  <!-- TOP STRIPE -->
+  <div style="height:6px;background:linear-gradient(90deg,${pc} 0%,${sc} 50%,${pc} 100%);"></div>
+  <!-- HEADER -->
+  <div style="display:flex;align-items:center;justify-content:center;gap:10px;padding:12px 18px 8px;text-align:center;border-bottom:2px solid ${sc};background:linear-gradient(180deg,rgba(5,46,43,0.04) 0%,#fff 100%);">
+    ${tpl?.showLogo !== false ? `<img src="${logoUrl}" alt="Logo" style="width:56px;height:56px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'" />` : ""}
+    <div style="text-align:center;">
+      <div style="font-size:18px;font-weight:700;color:${pc};line-height:1.2;">${instNameBn}</div>
+      <div style="font-size:11px;font-weight:500;color:#555;">${instNameEn}</div>
+      ${branchName ? `<div style="font-size:9px;color:#888;margin-top:1px;">${branchName}${address ? " | " + address : ""}</div>` : ""}
+    </div>
   </div>
-</div>
-${fields.subjectList ? `<div><h4 style="color:${pc};font-size:11px;margin-bottom:4px;">Subjects / বিষয়সমূহ</h4><table class="subject-table"><tr><th>#</th><th>Subject / বিষয়</th><th>Date / তারিখ</th><th>Time / সময়</th></tr>
-${(selectedFlatClass?.subjects || []).map((sub, i) => `<tr><td>${i + 1}</td><td>${sub.name_bn || sub.name_en || sub}</td><td></td><td></td></tr>`).join("")}
-</table></div>` : ""}
-${fields.instructions && tpl.customInstructions ? `<div class="instructions"><h4>Important Instructions / গুরুত্বপূর্ণ নির্দেশনা</h4><p>${tpl.customInstructions}</p></div>` : ""}
-<div class="signature-section">
-  ${fields.principalSignature ? `<div class="sig"><div class="line"></div>Principal / অধ্যক্ষ</div>` : ""}
-  ${fields.controllerSignature ? `<div class="sig"><div class="line"></div>Controller of Examination<br/>পরীক্ষা নিয়ন্ত্রক</div>` : ""}
-  ${fields.instituteSeal && branch?.logo_url ? `<div class="seal-section"><img src="${branch.logo_url}" alt="Seal" style="height:40px;" /></div>` : ""}
-</div>
-${fields.qrCode ? `<div class="qr-section"><img src="https://api.qrserver.com/v1/create-qr-code/?size=50x50&data=${encodeURIComponent(`https://rahmaniainstitute.org/verify?student=${student?.id}&exam=${exam?.id}`)}" alt="QR" /></div>` : ""}
-${tpl.customFooter ? `<div class="footer">${tpl.customFooter}</div>` : ""}
-</div>
-</body>
+  <!-- EXAM BADGE -->
+  <div style="text-align:center;padding:4px 16px;font-size:11px;font-weight:700;color:${pc};background:${sc}25;border-bottom:1px solid ${sc}66;">${resolvedExamTitle}</div>
+  <!-- TITLE BAR -->
+  <div style="background:linear-gradient(135deg,${pc},${pc}cc);padding:9px 16px;text-align:center;position:relative;overflow:hidden;">
+    <div style="position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,${sc}33,transparent);"></div>
+    <span style="font-size:15px;font-weight:900;color:#fff;letter-spacing:2px;text-transform:uppercase;position:relative;z-index:1;">${resolvedCardTitle}</span>
+  </div>
+  <!-- BODY -->
+  <div style="display:flex;flex-direction:row;gap:10px;padding:14px 18px;align-items:flex-start;">
+    <!-- LEFT: PHOTO + INFO -->
+    <div style="flex:1;display:flex;flex-direction:row;gap:10px;min-width:0;align-items:flex-start;">
+      <!-- PHOTO -->
+      ${fields.studentPhoto !== false ? `<div style="flex-shrink:0;width:${PHOTO_W}px;text-align:center;">
+        ${student?.photo_url
+          ? `<img src="${student.photo_url}" alt="Photo" width="${PHOTO_W}" height="${PHOTO_H}" style="width:${PHOTO_W}px;height:${PHOTO_H}px;max-width:${PHOTO_W}px;object-fit:cover;border-radius:5px;border:2px solid ${sc};display:block;" onerror="this.style.display='none'" />`
+          : `<div style="width:${PHOTO_W}px;height:${PHOTO_H}px;border-radius:5px;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:9px;color:#bbb;background:#f9f9f9;text-align:center;box-sizing:border-box;">No Photo</div>`}
+        <div style="font-size:8px;color:#bbb;margin-top:2px;">Student Photo</div>
+      </div>` : ""}
+      <!-- INFO GRID -->
+      <div style="flex:1;min-width:0;">
+        ${fields.studentName !== false ? `<div style="margin-bottom:6px;padding-bottom:5px;border-bottom:1.5px solid ${sc}66;">
+          <div style="font-size:8px;color:#999;text-transform:uppercase;margin-bottom:1px;">শিক্ষার্থীর নাম / Student Name</div>
+          <div style="font-size:14px;font-weight:700;color:${pc};word-break:break-word;">${student?.full_name_bn || student?.full_name_en || ""}</div>
+        </div>` : ""}
+        <table style="width:100%;border-collapse:collapse;font-size:0;">
+          <tbody>
+            <tr>
+              ${fields.fatherName !== false ? `<td style="padding:3px 4px 3px 0;width:50%;vertical-align:top;font-size:10px;">
+                <div style="font-size:8px;color:#999;text-transform:uppercase;margin-bottom:1px;">পিতার নাম / Father's</div>
+                <div style="font-weight:600;color:#222;word-break:break-word;">${student?.father_name || "—"}</div>
+              </td>` : "<td></td>"}
+              ${fields.motherName !== false ? `<td style="padding:3px 0 3px 4px;width:50%;vertical-align:top;font-size:10px;">
+                <div style="font-size:8px;color:#999;text-transform:uppercase;margin-bottom:1px;">মাতার নাম / Mother's</div>
+                <div style="font-weight:600;color:#222;word-break:break-word;">${student?.mother_name || "—"}</div>
+              </td>` : "<td></td>"}
+            </tr>
+            <tr>
+              ${fields.studentId !== false ? `<td style="padding:3px 4px 3px 0;vertical-align:top;font-size:10px;">
+                <div style="font-size:8px;color:#999;text-transform:uppercase;margin-bottom:1px;">Student ID / আইডি</div>
+                <div style="font-weight:600;color:#222;">${student?.id || "—"}</div>
+              </td>` : "<td></td>"}
+              ${fields.roll !== false ? `<td style="padding:3px 0 3px 4px;vertical-align:top;font-size:10px;">
+                <div style="font-size:8px;color:#999;text-transform:uppercase;margin-bottom:1px;">Roll / রোল</div>
+                <div style="font-weight:600;color:#222;">${student?.roll_number || "—"}</div>
+              </td>` : "<td></td>"}
+            </tr>
+            <tr>
+              ${fields.registrationNumber !== false ? `<td style="padding:3px 4px 3px 0;vertical-align:top;font-size:10px;">
+                <div style="font-size:8px;color:#999;text-transform:uppercase;margin-bottom:1px;">Reg. No / রেজি.</div>
+                <div style="font-weight:600;color:#222;">${student?.registration_number || student?.id || "—"}</div>
+              </td>` : "<td></td>"}
+              ${fields.className !== false ? `<td style="padding:3px 0 3px 4px;vertical-align:top;font-size:10px;">
+                <div style="font-size:8px;color:#999;text-transform:uppercase;margin-bottom:1px;">Class / ক্লাস</div>
+                <div style="font-weight:600;color:#222;">${classNameVal || "—"}</div>
+              </td>` : "<td></td>"}
+            </tr>
+            <tr>
+              ${fields.session !== false ? `<td style="padding:3px 4px 3px 0;vertical-align:top;font-size:10px;">
+                <div style="font-size:8px;color:#999;text-transform:uppercase;margin-bottom:1px;">Session / সেশন</div>
+                <div style="font-weight:600;color:#222;">${exam?.session || exam?.academic_year || "—"}</div>
+              </td>` : "<td></td>"}
+              ${(sectionNameVal && fields.section !== false) ? `<td style="padding:3px 0 3px 4px;vertical-align:top;font-size:10px;">
+                <div style="font-size:8px;color:#999;text-transform:uppercase;margin-bottom:1px;">Section / শাখা</div>
+                <div style="font-weight:600;color:#222;">${sectionNameVal}</div>
+              </td>` : (groupNameVal && fields.group !== false ? `<td style="padding:3px 0 3px 4px;vertical-align:top;font-size:10px;">
+                <div style="font-size:8px;color:#999;text-transform:uppercase;margin-bottom:1px;">Group / গ্রুপ</div>
+                <div style="font-weight:600;color:#222;">${groupNameVal}</div>
+              </td>` : "<td></td>")}
+            </tr>
+            <tr>
+              ${fields.examDate !== false ? `<td style="padding:3px 4px 3px 0;vertical-align:top;font-size:10px;">
+                <div style="font-size:8px;color:#999;text-transform:uppercase;margin-bottom:1px;">Exam Date / তারিখ</div>
+                <div style="font-weight:600;color:#222;">${exam?.start_date || "—"}</div>
+              </td>` : "<td></td>"}
+              ${fields.examTime !== false ? `<td style="padding:3px 0 3px 4px;vertical-align:top;font-size:10px;">
+                <div style="font-size:8px;color:#999;text-transform:uppercase;margin-bottom:1px;">Time / সময়</div>
+                <div style="font-weight:600;color:#222;">${exam?.exam_time || "9:00 AM - 12:00 PM"}</div>
+              </td>` : "<td></td>"}
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <!-- SEATING BOX -->
+    <div style="width:110px;flex-shrink:0;border:2px solid ${pc};border-radius:7px;overflow:hidden;align-self:flex-start;">
+      <div style="background:${pc};color:#fff;font-size:9px;font-weight:700;text-align:center;padding:5px 4px;letter-spacing:0.5px;">পরীক্ষার তথ্য</div>
+      <div style="padding:6px 8px;border-bottom:1px dashed #ddd;text-align:center;">
+        <div style="font-size:8px;color:#888;margin-bottom:2px;">Seat No / আসন</div>
+        <div style="font-size:22px;font-weight:900;color:${pc};line-height:1.1;">${resolvedSeatNumber}</div>
+      </div>
+      <div style="padding:5px 8px;border-bottom:1px dashed #ddd;text-align:center;">
+        <div style="font-size:8px;color:#888;margin-bottom:1px;">Room / কক্ষ</div>
+        <div style="font-size:12px;font-weight:700;color:#222;">${resolvedRoomNumber}</div>
+      </div>
+      <div style="padding:5px 8px;text-align:center;">
+        <div style="font-size:8px;color:#888;margin-bottom:1px;">Center / কেন্দ্র</div>
+        <div style="font-size:9px;font-weight:600;color:#222;word-break:break-word;">${resolvedCenterName}</div>
+      </div>
+    </div>
+  </div>
+  <!-- SUBJECT TABLE -->
+  ${fields.subjectList !== false && subjectRows ? `<div style="padding:0 18px 10px;">
+    <div style="font-size:9px;font-weight:700;color:${pc};text-transform:uppercase;margin-bottom:4px;border-left:3px solid ${sc};padding-left:5px;">Subjects / বিষয়সমূহ</div>
+    <table style="width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed;">
+      <thead><tr>
+        <th style="background:${pc};color:#fff;padding:4px 7px;text-align:center;width:28px;font-size:9px;">#</th>
+        <th style="background:${pc};color:#fff;padding:4px 7px;text-align:left;font-size:9px;">Subject / বিষয়</th>
+        <th style="background:${pc};color:#fff;padding:4px 7px;text-align:left;width:90px;font-size:9px;">Date / তারিখ</th>
+        <th style="background:${pc};color:#fff;padding:4px 7px;text-align:left;width:125px;font-size:9px;">Time / সময়</th>
+      </tr></thead>
+      <tbody>${subjectRows}</tbody>
+    </table>
+  </div>` : ""}
+  <!-- INSTRUCTIONS -->
+  ${instructions ? `<div style="margin:0 18px 10px;background:#fffbeb;border-left:3px solid ${sc};border-radius:3px;padding:6px 9px;">
+    <div style="font-size:9px;font-weight:700;color:${pc};margin-bottom:3px;">গুরুত্বপূর্ণ নির্দেশনা</div>
+    <div style="font-size:9px;color:#555;line-height:1.5;white-space:pre-line;">${instructions}</div>
+  </div>` : ""}
+  <!-- SIGNATURES -->
+  <div style="display:flex;justify-content:space-around;align-items:flex-end;padding:10px 18px 12px;border-top:1px solid #e2e8f0;">
+    ${fields.principalSignature !== false ? `<div style="text-align:center;">
+      <div style="width:90px;height:1px;border-top:1.5px solid #333;margin:0 auto 3px;"></div>
+      <div style="font-size:8.5px;color:#555;">অধ্যক্ষ / Principal</div>
+    </div>` : ""}
+    ${fields.controllerSignature !== false ? `<div style="text-align:center;">
+      <div style="width:90px;height:1px;border-top:1.5px solid #333;margin:0 auto 3px;"></div>
+      <div style="font-size:8.5px;color:#555;line-height:1.4;">পরীক্ষা নিয়ন্ত্রক<br/>Controller of Exam</div>
+    </div>` : ""}
+    ${fields.qrCode !== false ? `<div style="text-align:center;">
+      <img src="https://api.qrserver.com/v1/create-qr-code/?size=52x52&data=${encodeURIComponent(`ID:${student?.id}|Seat:${resolvedSeatNumber}|Room:${resolvedRoomNumber}`)}" alt="QR" style="width:52px;height:52px;" />
+      <div style="font-size:8px;color:#aaa;margin-top:1px;">Verify</div>
+    </div>` : ""}
+  </div>
+  <!-- BOTTOM STRIPE -->
+  <div style="height:5px;background:linear-gradient(90deg,${sc} 0%,${pc} 50%,${sc} 100%);"></div>
+</div>`;
+
+    if (options && options.fullDocument === false) return cardMarkup;
+
+    return `<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<title>Admit Card</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700;900&family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+@page{size:A4 portrait;margin:10mm;}
+body{font-family:'Noto Sans Bengali','Inter',sans-serif;background:#f0f4f8;padding:20px;display:flex;justify-content:center;align-items:flex-start;}
+@media print{
+  body{background:white;padding:0;display:block;}
+  .admit-card{box-shadow:none!important;width:100%!important;border-radius:0!important;page-break-inside:avoid;break-inside:avoid;}
+}
+.admit-card{width:595px;max-width:100%;background:#fff;border:2px solid ${pc};border-radius:10px;overflow:hidden;position:relative;box-shadow:0 6px 24px rgba(0,0,0,0.10);display:flex;flex-direction:column;}
+.watermark{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) rotate(-35deg);font-size:60px;font-weight:900;color:rgba(0,0,0,0.03);white-space:nowrap;pointer-events:none;z-index:0;}
+.top-stripe{height:6px;background:linear-gradient(90deg,${pc} 0%,${sc} 50%,${pc} 100%);}
+.header{display:flex;align-items:center;justify-content:center;gap:12px;padding:12px 18px 10px;text-align:center;background:linear-gradient(180deg,rgba(5,46,43,0.04) 0%,#fff 100%);border-bottom:1.5px solid ${sc}55;position:relative;z-index:1;}
+.logo{width:58px;height:58px;object-fit:contain;flex-shrink:0;}
+.inst-info{text-align:center;}
+.inst-name-bn{font-size:18px;font-weight:700;color:${pc};line-height:1.2;}
+.inst-name-en{font-size:11px;font-weight:500;color:#555;letter-spacing:0.4px;}
+.inst-branch{font-size:9.5px;color:#888;margin-top:1px;}
+.exam-badge{text-align:center;padding:4px 16px;font-size:11px;font-weight:700;color:${pc};background:${sc}25;border-bottom:1px solid ${sc}44;position:relative;z-index:1;}
+.title-bar{background:linear-gradient(135deg,${pc} 0%,${pc}ee 100%);padding:9px 16px;text-align:center;position:relative;overflow:hidden;z-index:1;}
+.title-bar::before{content:"";position:absolute;top:0;left:0;right:0;bottom:0;background:linear-gradient(90deg,transparent,${sc}33,transparent);}
+.title-bar-text{font-size:15px;font-weight:900;color:#fff;letter-spacing:2px;text-transform:uppercase;position:relative;z-index:1;}
+.body{display:flex;gap:12px;padding:14px 18px;flex:1;position:relative;z-index:1;align-items:flex-start;}
+.left-col{flex:1;display:flex;gap:12px;min-width:0;}
+.photo-box{flex-shrink:0;text-align:center;width:70px;}
+.photo-box img{width:70px;height:88px;object-fit:cover;border-radius:5px;border:2px solid ${sc};display:block;}
+.photo-fallback{width:70px;height:88px;border-radius:5px;border:2px dashed #ccc;display:flex;align-items:center;justify-content:center;font-size:9px;color:#bbb;background:#f9f9f9;text-align:center;}
+.photo-label{font-size:8px;color:#bbb;margin-top:2px;text-align:center;}
+.info-grid{flex:1;min-width:0;display:grid;grid-template-columns:1fr 1fr;gap:6px 12px;align-content:start;}
+.info-full{grid-column:1/-1;border-bottom:1.5px solid ${sc}55;padding-bottom:5px;margin-bottom:2px;}
+.info-half{min-width:0;}
+.info-label{font-size:8px;color:#999;font-weight:500;text-transform:uppercase;letter-spacing:0.2px;margin-bottom:1px;}
+.info-value{font-size:10.5px;font-weight:600;color:#1a1a1a;word-break:break-word;overflow-wrap:break-word;line-height:1.3;}
+.info-value.big{font-size:13.5px;font-weight:700;color:${pc};}
+.seating-box{width:115px;flex-shrink:0;border:1.5px solid ${pc};border-radius:7px;overflow:hidden;align-self:flex-start;}
+.seating-header{background:${pc};color:#fff;font-size:9px;font-weight:700;text-align:center;padding:4px;letter-spacing:0.5px;}
+.seating-row{padding:6px 8px;border-bottom:1px dashed #ddd;text-align:center;}
+.seating-row:last-child{border-bottom:none;}
+.seating-label{font-size:8px;color:#888;font-weight:500;margin-bottom:1px;}
+.seating-num{font-size:20px;font-weight:900;color:${pc};line-height:1.1;}
+.seating-val{font-size:11px;font-weight:700;color:#1a1a1a;}
+.center-name{font-size:9px;font-weight:600;}
+.subject-section{padding:0 18px 10px;position:relative;z-index:1;}
+.section-title{font-size:9px;font-weight:700;color:${pc};text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;border-left:3px solid ${sc};padding-left:5px;}
+.subject-table{width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed;}
+.subject-table th{background:${pc};color:#fff;padding:4px 7px;text-align:left;font-size:9px;font-weight:700;}
+.subject-table td{padding:3.5px 7px;border-bottom:1px solid #edf2f7;word-break:break-word;vertical-align:middle;}
+.instructions-box{margin:0 18px 10px;background:#fffbeb;border-left:3px solid ${sc};border-radius:3px;padding:6px 9px;position:relative;z-index:1;}
+.instructions-title{font-size:9px;font-weight:700;color:${pc};margin-bottom:3px;}
+.instructions-text{font-size:9px;color:#555;line-height:1.5;white-space:pre-line;}
+.signature-row{display:flex;justify-content:space-around;align-items:flex-end;padding:10px 18px 12px;border-top:1px solid #e2e8f0;margin-top:auto;position:relative;z-index:1;}
+.sig-box{text-align:center;}.sig-line{width:90px;height:1px;border-top:1.5px solid #333;margin:0 auto 3px;}.sig-label{font-size:8.5px;color:#555;font-weight:500;line-height:1.4;}
+.qr-box{text-align:center;}.qr-box img{width:52px;height:52px;}.qr-label{font-size:8px;color:#aaa;margin-top:1px;}
+.bottom-stripe{height:5px;background:linear-gradient(90deg,${sc} 0%,${pc} 50%,${sc} 100%);}
+</style>
+</head>
+<body>${cardMarkup}</body>
 </html>`;
-  }, [settings, filters.sectionId, filters.group, selectedFlatClass]);
+  }, [settings, filters.sectionId, filters.group, selectedFlatClass, seatingConfig, studentOverrides]);
 
   const generateSerialCardHTML = useCallback((studentsList, branch, exam, tpl) => {
-    const logoUrl = tpl?.customLogoUrl || branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
-    const instNameBn = settings?.institute_name_bn || "রহমানিয়া ইনস্টিটিউট";
-    const instNameEn = settings?.institute_name_en || "RAHMANIA INSTITUTE";
+    const logoUrl = resolveLogoUrl(tpl, branch, settings);
+    const instNameBn = settings?.institute_name_bn || branch?.name_bn || "রহমানিয়া ইনস্টিটিউট";
+    const instNameEn = settings?.institute_name_en || branch?.name_en || "RAHMANIA INSTITUTE";
     const branchName = branch?.name_en || branch?.name_bn || "";
-    const pc = tpl.primaryColor;
+    const pc = tpl?.primaryColor || "#052E2B";
+    const sc = tpl?.secondaryColor || "#D4AF37";
+    const resolvedExamTitle = seatingConfig.examTitle || exam?.title || "";
+    const PHOTO_W = 44, PHOTO_H = 54;
+
     const cardsHtml = studentsList.map((student, idx) => {
-      const seatNumber = String(idx + 1).padStart(3, "0");
-      const roomNumber = String(Math.floor((idx / 20) % 10) + 1);
+      const override = studentOverrides[student?.id] || {};
+      const resolvedCenterName = override.centerName || seatingConfig.centerName || branchName;
+
+      let seatNumber = override.seatNumber;
+      if (!seatNumber) {
+        const rawNum = Number(seatingConfig.startingSeat || 1) + idx;
+        const padded = String(rawNum).padStart(Number(seatingConfig.seatDigits || 3), "0");
+        seatNumber = `${seatingConfig.seatPrefix || ""}${padded}`;
+      }
+
+      let roomNumber = override.roomNumber;
+      if (!roomNumber) {
+        const startRm = Number(seatingConfig.startingRoom) || 1;
+        const perRm = Math.max(1, Number(seatingConfig.studentsPerRoom) || 20);
+        roomNumber = String(startRm + Math.floor(idx / perRm));
+      }
+
       const classNameVal = (() => {
         const structure = branch?.academic_structure || [];
         return resolveAcademicDisplayName(student?.class_id, student?.session_id, student?.class_group_id, structure, 'bn') || student?.class_name || "";
       })();
-      return `<div class="serial-card"${idx % tpl.cardsPerPage === 0 && idx > 0 ? ` style="page-break-before: always;"` : ""}>
-        <div class="card-header">
-          ${tpl.showLogo ? `<img src="${logoUrl}" alt="" class="s-logo" />` : ""}
-          <div class="s-inst">
-            <div class="s-name-bn">${instNameBn}</div>
-            <div class="s-name-en">${instNameEn}</div>
-            ${branchName ? `<div class="s-branch">${branchName}</div>` : ""}
+
+      const isEven = idx % 2 === 0;
+      const cardBg = isEven ? "#ffffff" : "#f9fffe";
+
+      return `<div style="
+        background:${cardBg};
+        border:1.5px solid ${pc}44;
+        border-top:3px solid ${pc};
+        border-radius:8px;
+        overflow:hidden;
+        position:relative;
+        page-break-inside:avoid;
+        break-inside:avoid;
+        font-family:'Noto Sans Bengali',Arial,sans-serif;
+        box-shadow:0 2px 8px rgba(0,0,0,0.07);
+      ">
+        <!-- TOP STRIPE -->
+        <div style="height:3px;background:linear-gradient(90deg,${pc},${sc},${pc});"></div>
+
+        <!-- HEADER -->
+        <div style="display:flex;align-items:center;gap:5px;padding:5px 7px 4px;border-bottom:1px solid ${sc}55;background:linear-gradient(180deg,${pc}08 0%,transparent 100%);">
+          ${tpl?.showLogo !== false ? `<img src="${logoUrl}" alt="" width="22" height="22" style="width:22px;height:22px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'" />` : ""}
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:8.5px;font-weight:700;color:${pc};line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${instNameBn}</div>
+            <div style="font-size:7px;color:#666;line-height:1.1;">${instNameEn}${branchName ? " · " + branchName : ""}</div>
+          </div>
+          <!-- SEAT BADGE -->
+          <div style="background:${pc};color:#fff;border-radius:5px;padding:2px 6px;text-align:center;flex-shrink:0;">
+            <div style="font-size:6.5px;font-weight:600;opacity:0.85;">আসন</div>
+            <div style="font-size:14px;font-weight:900;line-height:1;">${seatNumber}</div>
           </div>
         </div>
-        <div class="card-body">
-          ${tpl.showStudentPhoto ? `<div class="s-photo">${student?.photo_url ? `<img src="${student.photo_url}" alt="" onerror="this.style.display='none'" />` : `<div class="s-photo-placeholder" style="width:40px;height:40px;background:#f1f5f9;border-radius:4px;border:1px solid ${tpl.secondaryColor};display:flex;align-items:center;justify-content:center;">${STUDENT_AVATAR_SVG}</div>`}</div>` : ""}
-          <div class="s-info">
-            <div class="s-row"><span class="s-lbl">Name / নাম</span><span class="s-val">${student?.full_name_bn || student?.full_name_en || ""}</span></div>
-            <div class="s-row"><span class="s-lbl">Roll / রোল</span><span class="s-val">${student?.roll_number || ""}</span></div>
-            <div class="s-row"><span class="s-lbl">ID / আইডি</span><span class="s-val">${student?.id || ""}</span></div>
-            <div class="s-row"><span class="s-lbl">Father / পিতা</span><span class="s-val">${student?.father_name || ""}</span></div>
-            <div class="s-row"><span class="s-lbl">Class / ক্লাস</span><span class="s-val">${classNameVal}</span></div>
-          </div>
-          <div class="s-exam-info">
-            <div class="s-row"><span class="s-lbl">Exam</span><span class="s-val">${exam?.title || ""}</span></div>
-            <div class="s-row"><span class="s-lbl">Seat / আসন</span><span class="s-val s-seat">${seatNumber}</span></div>
-            <div class="s-row"><span class="s-lbl">Room / কক্ষ</span><span class="s-val">${roomNumber}</span></div>
-            <div class="s-row"><span class="s-lbl">Center / কেন্দ্র</span><span class="s-val">${branchName}</span></div>
+
+        <!-- EXAM BADGE -->
+        ${resolvedExamTitle ? `<div style="text-align:center;font-size:7.5px;font-weight:700;color:${pc};background:${sc}22;padding:2px 6px;border-bottom:1px solid ${sc}44;">${resolvedExamTitle}</div>` : ""}
+
+        <!-- BODY -->
+        <div style="display:flex;gap:5px;padding:6px 7px;">
+          <!-- PHOTO -->
+          ${tpl?.showStudentPhoto !== false ? `<div style="flex-shrink:0;width:${PHOTO_W}px;">
+            ${student?.photo_url
+              ? `<img src="${student.photo_url}" alt="" width="${PHOTO_W}" height="${PHOTO_H}" style="width:${PHOTO_W}px;height:${PHOTO_H}px;max-width:${PHOTO_W}px;object-fit:cover;border-radius:4px;border:1.5px solid ${sc};display:block;" onerror="this.style.display='none'" />`
+              : `<div style="width:${PHOTO_W}px;height:${PHOTO_H}px;border-radius:4px;border:1.5px dashed #ccc;background:#f5f5f5;display:flex;align-items:center;justify-content:center;box-sizing:border-box;"><span style="font-size:7px;color:#ccc;">Photo</span></div>`}
+          </div>` : ""}
+
+          <!-- INFO -->
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:9.5px;font-weight:700;color:${pc};line-height:1.2;margin-bottom:3px;word-break:break-word;">${student?.full_name_bn || student?.full_name_en || ""}</div>
+
+            <div style="display:flex;justify-content:space-between;margin-bottom:1.5px;">
+              <span style="font-size:7px;color:#888;">পিতা</span>
+              <span style="font-size:7.5px;font-weight:600;color:#222;text-align:right;max-width:70%;word-break:break-word;">${student?.father_name || "—"}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:1.5px;">
+              <span style="font-size:7px;color:#888;">Roll</span>
+              <span style="font-size:7.5px;font-weight:700;color:${pc};">${student?.roll_number || "—"}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:1.5px;">
+              <span style="font-size:7px;color:#888;">Class</span>
+              <span style="font-size:7.5px;font-weight:600;color:#222;text-align:right;">${classNameVal || "—"}</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;margin-bottom:0;">
+              <span style="font-size:7px;color:#888;">ID</span>
+              <span style="font-size:7.5px;font-weight:600;color:#555;">${student?.id || "—"}</span>
+            </div>
           </div>
         </div>
-        ${tpl.showQRCode ? `<div class="s-qr"><img src="https://api.qrserver.com/v1/create-qr-code/?size=30x30&data=${encodeURIComponent(`https://rahmaniainstitute.org/verify?student=${student?.id}&seat=${seatNumber}`)}" alt="QR" /></div>` : ""}
-        ${tpl.showCuttingGuide ? `<div class="cut-guide"></div>` : ""}
+
+        <!-- ROOM / CENTER -->
+        <div style="display:flex;border-top:1px dashed ${pc}33;margin:0 7px;">
+          <div style="flex:1;text-align:center;padding:3px 4px;border-right:1px dashed ${pc}33;">
+            <div style="font-size:6.5px;color:#888;">কক্ষ / Room</div>
+            <div style="font-size:10px;font-weight:700;color:${pc};">${roomNumber}</div>
+          </div>
+          <div style="flex:2;text-align:center;padding:3px 4px;">
+            <div style="font-size:6.5px;color:#888;">কেন্দ্র / Center</div>
+            <div style="font-size:7.5px;font-weight:600;color:#333;word-break:break-word;">${resolvedCenterName}</div>
+          </div>
+        </div>
+
+        <!-- QR + BOTTOM -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 7px 5px;border-top:1px dashed ${sc}66;">
+          <div style="font-size:6.5px;color:#aaa;font-style:italic;">#${idx + 1}</div>
+          ${tpl?.showQRCode !== false ? `<img src="https://api.qrserver.com/v1/create-qr-code/?size=28x28&data=${encodeURIComponent(`ID:${student?.id}|Seat:${seatNumber}|Room:${roomNumber}`)}" alt="QR" width="28" height="28" style="width:28px;height:28px;" />` : ""}
+        </div>
+
+        <!-- BOTTOM STRIPE -->
+        <div style="height:2.5px;background:linear-gradient(90deg,${sc},${pc},${sc});"></div>
       </div>`;
     }).join("");
 
     return `<!DOCTYPE html>
-<html>
-<head><meta charset="utf-8"><style>
-@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&family=Inter:wght@400;500;700&display=swap');
-* { margin: 0; padding: 0; box-sizing: border-box; }
-body {
-  font-family: 'Noto Sans Bengali', 'Inter', sans-serif;
-  background: #f0f0f0; padding: 10px;
-}
-@media print {
-  body { background: white; padding: 0; }
-  @page { size: A4; margin: 8mm; }
-}
-.serial-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-width: 210mm; margin: 0 auto; }
-.serial-card {
-  border: 1px solid ${tpl.borderColor || "#e2e8f0"};
-  border-radius: 6px;
-  padding: ${tpl.cardPadding}px;
-  background: ${tpl.bgColor};
-  font-size: ${tpl.fontSize}px;
-  position: relative;
-  page-break-inside: avoid;
-  break-inside: avoid;
-}
-.card-header { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; padding-bottom: 4px; border-bottom: 1px solid ${tpl.secondaryColor}; }
-.s-logo { width: 24px; height: 24px; object-fit: contain; }
-.s-inst { flex: 1; }
-.s-name-bn { font-size: ${tpl.fontSize + 1}px; font-weight: 700; color: ${pc}; line-height: 1.2; }
-.s-name-en { font-size: ${tpl.fontSize - 2}px; color: #444; line-height: 1.2; }
-.s-branch { font-size: ${tpl.fontSize - 2}px; color: ${tpl.secondaryColor}; line-height: 1.2; }
-.card-body { display: flex; gap: 6px; margin-bottom: 4px; }
-.s-photo { width: 40px; flex-shrink: 0; }
-.s-photo img { width: 40px; height: 40px; object-fit: cover; border-radius: 4px; border: 1px solid ${tpl.secondaryColor}; }
-.s-info { flex: 1; min-width: 0; }
-.s-exam-info { width: 70px; flex-shrink: 0; border-left: 1px solid #eee; padding-left: 4px; }
-.s-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1px; }
-.s-lbl { font-size: ${tpl.fontSize - 2}px; color: #888; }
-.s-val { font-weight: 600; color: #1a1a1a; font-size: ${tpl.fontSize - 1}px; }
-.s-seat { font-size: ${tpl.fontSize + 2}px; font-weight: 700; color: ${pc}; }
-.s-qr { text-align: right; margin-top: 2px; }
-.s-qr img { width: 24px; height: 24px; }
-.cut-guide { position: absolute; top: 0; left: 0; right: 0; bottom: 0; border: 1px dashed #ccc; border-radius: 6px; pointer-events: none; }
-@media print {
-  .serial-card { border-color: #ccc; }
-}
-</style></head>
+<html lang="bn">
+<head>
+<meta charset="utf-8">
+<title>Exam Serial Sheet</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;600;700;900&family=Inter:wght@400;500;600;700&display=swap');
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;}
+@page{size:A4 portrait;margin:8mm;}
+body{font-family:'Noto Sans Bengali','Inter',sans-serif;background:#eef2f7;padding:16px;display:flex;justify-content:center;}
+@media print{body{background:white;padding:0;display:block;}}
+.wrapper{width:100%;max-width:794px;}
+.serial-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px;}
+</style>
+</head>
 <body>
-<div class="serial-grid">
+<div class="wrapper">
+  <!-- UNIFIED CONTAINER -->
+  <div style="background:#fff;border:2px solid ${pc};border-radius:10px;overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,0.10);">
+    <!-- TOP STRIPE -->
+    <div style="height:5px;background:linear-gradient(90deg,${pc},${sc},${pc});"></div>
+    <!-- PAGE HEADER -->
+    <div style="display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:2px solid ${sc}66;background:linear-gradient(180deg,${pc}06 0%,#fff 100%);">
+      <img src="${logoUrl}" alt="" width="54" height="54" style="width:54px;height:54px;object-fit:contain;flex-shrink:0;" onerror="this.style.display='none'" />
+      <div style="flex:1;">
+        <div style="font-size:20px;font-weight:700;color:${pc};line-height:1.2;">${instNameBn}</div>
+        <div style="font-size:11px;color:#666;margin-top:1px;">${instNameEn}${branchName ? " | " + branchName : ""}</div>
+      </div>
+      <div style="text-align:center;background:${pc};color:#fff;border-radius:8px;padding:8px 18px;flex-shrink:0;">
+        <div style="font-size:8px;font-weight:600;opacity:0.85;text-transform:uppercase;letter-spacing:0.8px;">Exam Serial Sheet</div>
+        <div style="font-size:14px;font-weight:700;margin-top:1px;">${resolvedExamTitle || exam?.title || ""}</div>
+        <div style="font-size:8.5px;opacity:0.8;margin-top:1px;">মোট: ${studentsList.length} জন শিক্ষার্থী</div>
+      </div>
+    </div>
+    <!-- SUBHEADER STRIPE -->
+    <div style="height:3px;background:linear-gradient(90deg,${sc},${pc},${sc});"></div>
+    <!-- CARD GRID -->
+    <div class="serial-grid">
 ${cardsHtml}
+    </div>
+    <!-- BOTTOM STRIPE -->
+    <div style="height:4px;background:linear-gradient(90deg,${pc},${sc},${pc});"></div>
+  </div>
 </div>
 </body>
 </html>`;
-  }, [settings, filters]);
+  }, [settings, filters, seatingConfig, studentOverrides]);
 
   const handlePrintAdmitCards = useCallback(async (studentIds) => {
     if (!studentIds || studentIds.length === 0) {
@@ -710,30 +988,130 @@ ${cardsHtml}
         if (branchIdNum) query = query.eq("branch_id", branchIdNum);
         const { data } = await query;
         const batchStudents = data || [];
-        for (const student of batchStudents) {
-          allHtml.push(generateAdmitCardHTML(student, branch, exam, activeTemplate));
+        for (let idx = 0; idx < batchStudents.length; idx++) {
+          const student = batchStudents[idx];
+          allHtml.push(generateAdmitCardHTML(student, branch, exam, activeTemplate, { fullDocument: false }, i + idx));
         }
       }
+
+      const pc = activeTemplate.primaryColor;
+      const sc = activeTemplate.secondaryColor;
+      const tpl = activeTemplate;
+      const fields = tpl.showFields || {};
+
+      const bulkStyles = `
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+Bengali:wght@400;700&family=Inter:wght@400;500;700&display=swap');
+        * {
+          margin: 0;
+          padding: 0;
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact !important;
+          print-color-adjust: exact !important;
+          color-adjust: exact !important;
+        }
+        html, body {
+          margin: 0 !important;
+          padding: 0 !important;
+          background: white !important;
+          font-family: 'Noto Sans Bengali', 'Inter', sans-serif;
+          width: 100% !important;
+        }
+        .admit-card-page {
+          page-break-after: always !important;
+          break-after: page !important;
+          page-break-inside: avoid !important;
+          break-inside: avoid !important;
+          display: block !important;
+          width: 100% !important;
+          box-sizing: border-box !important;
+          padding: 10px 0 !important;
+        }
+        .admit-card-page:last-child {
+          page-break-after: auto !important;
+          break-after: auto !important;
+        }
+        .admit-card {
+          width: ${tpl.layout === "landscape" ? "842px" : "595px"};
+          max-width: 100%;
+          background: ${tpl.bgColor};
+          border: ${tpl.showBorder ? `${tpl.borderWidth}px ${tpl.borderStyle} ${tpl.borderColor}` : "none"};
+          border-radius: 12px;
+          padding: ${tpl.cardPadding}px;
+          margin: 0 auto;
+          box-shadow: none;
+          position: relative;
+          overflow: hidden;
+        }
+        ${tpl.showWatermark ? `.watermark {
+          position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%) rotate(-30deg);
+          font-size: 80px; font-weight: 900; color: rgba(0,0,0,0.03); pointer-events: none;
+          white-space: nowrap; letter-spacing: 10px;
+        }` : ""}
+        .header { text-align: ${tpl.headerLayout}; margin-bottom: 12px; padding-bottom: 10px; border-bottom: 2px solid ${sc}; }
+        .header .logo { ${tpl.headerLayout === "center" ? "margin: 0 auto;" : ""} width: 60px; height: 60px; object-fit: contain; }
+        .header h1 { font-size: 16px; font-weight: 700; color: ${pc}; margin-top: 6px; line-height: 1.3; }
+        .header h2 { font-size: 13px; font-weight: 500; color: #444; line-height: 1.3; }
+        .header p { font-size: 10px; color: #666; line-height: 1.3; }
+        .title-bar { background: linear-gradient(135deg, ${pc}, ${sc}); color: white; text-align: center; padding: 8px; border-radius: 6px; margin-bottom: 12px; }
+        .title-bar h3 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .body-section { display: flex; gap: 12px; margin-bottom: 10px; }
+        ${fields.studentPhoto ? `.photo-section { width: ${tpl.studentPhotoSize + 20}px; flex-shrink: 0; }
+        .photo-section img { width: ${tpl.studentPhotoSize}px; height: ${tpl.studentPhotoSize}px; object-fit: cover; border-radius: 8px; border: 2px solid ${sc}; }` : `.photo-section { display: none; }`}
+        .info-section { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px 16px; font-size: ${tpl.fontSize}px; line-height: 1.4; }
+        .info-section .label { color: #666; font-size: ${tpl.fontSize - 2}px; display: block; margin-bottom: 2px; }
+        .info-section .value { font-weight: 600; color: #1a1a1a; word-break: break-word; overflow-wrap: break-word; }
+        .info-section .full-width { grid-column: 1 / -1; }
+        .subject-table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: ${tpl.fontSize - 1}px; table-layout: fixed; }
+        .subject-table th { background: ${pc}; color: white; padding: 5px 8px; text-align: left; font-weight: 700; font-size: ${tpl.fontSize - 1}px; }
+        .subject-table td { padding: 5px 8px; border-bottom: 1px solid #eee; word-break: break-word; overflow-wrap: break-word; vertical-align: middle; line-height: 1.3; }
+        .signature-section { display: flex; justify-content: space-between; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; }
+        .signature-section .sig { text-align: center; font-size: ${tpl.fontSize - 2}px; }
+        .signature-section .sig .line { width: 120px; height: 1px; border-top: 1px solid #333; margin: 0 auto 4px; }
+        .seal-section { text-align: center; margin: 8px 0; }
+        .seal-section img { height: 50px; }
+        .footer { text-align: ${tpl.footerLayout}; margin-top: 10px; padding-top: 10px; border-top: 1px solid #e2e8f0; font-size: ${tpl.fontSize - 2}px; color: #666; }
+        .instructions { margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 6px; font-size: ${tpl.fontSize - 3}px; border-left: 3px solid ${sc}; }
+        .instructions h4 { color: ${pc}; margin-bottom: 4px; }
+        .instructions p { color: #555; line-height: 1.5; white-space: pre-line; }
+        .qr-section { text-align: center; margin-top: 6px; }
+        .qr-section img { width: 50px; height: 50px; }
+        @media print {
+          @page { size: A4 ${activeTemplate.layout}; margin: 5mm; }
+          body { margin: 0; padding: 0; background: white; }
+          .admit-card-page { page-break-after: always !important; break-after: page !important; }
+          .admit-card-page:last-child { page-break-after: auto !important; break-after: auto !important; }
+        }
+      `;
 
       const printWindow = window.open("", "_blank");
       printWindow.document.open("text/html", "replace");
       printWindow.document.write(`
+        <!DOCTYPE html>
         <html>
         <head>
+          <meta charset="utf-8">
           <title>Admit Cards - ${exam.title}</title>
-          <style>
-            @media print {
-              @page { size: A4 ${activeTemplate.layout}; margin: 5mm; }
-              body { margin: 0; padding: 0; }
-              .admit-card { page-break-after: always; box-shadow: none; margin: 0 auto; }
-              .admit-card:last-child { page-break-after: auto; }
-            }
-          </style>
+          <style>${bulkStyles}</style>
         </head>
-        <body>${allHtml.join("\n")}</body>
+        <body>
+          ${allHtml.map((cardMarkup) => `<div class="admit-card-page">${cardMarkup}</div>`).join("\n")}
+        </body>
         </html>
       `);
       printWindow.document.close();
+      printWindow.focus();
+      const printWhenReady = () => {
+        try {
+          printWindow.print();
+        } catch (err) {
+          console.warn("Print window not ready yet", err);
+        }
+      };
+      if (printWindow.document.readyState === "complete") {
+        printWhenReady();
+      } else {
+        printWindow.onload = printWhenReady;
+      }
       toast.success(`${studentIds.length} admit card(s) generated`);
     } catch (err) {
       toast.error(err.message || "Failed to generate admit cards");
@@ -764,6 +1142,19 @@ ${cardsHtml}
       printWindow.document.open("text/html", "replace");
       printWindow.document.write(html);
       printWindow.document.close();
+      printWindow.focus();
+      const printWhenReady = () => {
+        try {
+          printWindow.print();
+        } catch (err) {
+          console.warn("Print window not ready yet", err);
+        }
+      };
+      if (printWindow.document.readyState === "complete") {
+        printWhenReady();
+      } else {
+        printWindow.onload = printWhenReady;
+      }
       toast.success(`${studentIds.length} serial card(s) generated`);
     } catch (err) {
       toast.error(err.message || "Failed to generate serial sheet");
@@ -771,6 +1162,194 @@ ${cardsHtml}
       setGenerating(prev => ({ ...prev, serialSheet: false }));
     }
   }, [filters, branches, exams, serialTemplate, generateSerialCardHTML, studentColumns]);
+
+  const generateAdmitCardPdfBlob = useCallback(async (student, branch, exam, tpl) => {
+    const jsPDF = (await import("jspdf")).default;
+    const doc = new jsPDF({ unit: "mm", format: "a4", orientation: tpl.layout === "landscape" ? "l" : "p" });
+    const W = tpl.layout === "landscape" ? 297 : 210;
+    const H = tpl.layout === "landscape" ? 210 : 297;
+
+    const logoUrl = resolveLogoUrl(tpl, branch, settings);
+    const instNameBn = settings?.institute_name_bn || "রহমানিয়া ইনস্টিটিউট";
+    const instNameEn = settings?.institute_name_en || "RAHMANIA INSTITUTE";
+    const branchName = branch?.name_en || branch?.name_bn || "";
+    const address = branch?.address_en || branch?.address_bn || settings?.address || "";
+    const pc = tpl.primaryColor;
+    const sc = tpl.secondaryColor;
+
+    let y = tpl.cardMargin;
+    const logoSize = 16;
+    try {
+      const logoImg = await loadImageElement(logoUrl);
+      if (logoImg && tpl.showLogo) {
+        const lx = tpl.headerLayout === "center" ? (W - logoSize) / 2 : tpl.cardMargin;
+        doc.addImage(logoImg, "PNG", lx, y, logoSize, logoSize);
+        y += logoSize + 3;
+      }
+    } catch {}
+
+    doc.setFontSize(11);
+    doc.setTextColor(...hexToRgb(pc));
+    doc.setFont("helvetica", "bold");
+    drawBengaliText(doc, instNameBn, W / 2, y, 11, pc, "center");
+    y += 5;
+    doc.setFontSize(8);
+    doc.setTextColor(...hexToRgb(sc));
+    doc.setFont("helvetica", "normal");
+    drawBengaliText(doc, instNameEn, W / 2, y, 8, sc, "center");
+    y += 4;
+    if (branchName || address) {
+      doc.setFontSize(6);
+      doc.setTextColor(100, 100, 100);
+      doc.text(`${branchName}${address ? " | " + address : ""}`, W / 2, y, { align: "center" });
+      y += 4;
+    }
+
+    y += 2;
+    doc.setFillColor(...hexToRgb(pc));
+    doc.rect(tpl.cardMargin, y, W - tpl.cardMargin * 2, 6, "F");
+    doc.setTextColor(255, 255, 255);
+    doc.setFontSize(7);
+    doc.setFont("helvetica", "bold");
+    doc.text(exam?.title || "ADMIT CARD", W / 2, y + 4, { align: "center" });
+    y += 10;
+
+    const photoSize = tpl.studentPhotoSize / 3;
+    const col1 = tpl.cardMargin;
+
+    if (tpl.showFields.studentPhoto && student?.photo_url) {
+      try {
+        const photoImg = await loadImageElement(student.photo_url);
+        if (photoImg) {
+          doc.addImage(photoImg, "JPEG", col1, y, photoSize, photoSize);
+        }
+      } catch {}
+    }
+
+    const photoOffset = (tpl.showFields.studentPhoto && student?.photo_url) ? photoSize + 5 : 0;
+    const infoX = tpl.showFields.studentPhoto && student?.photo_url ? col1 + photoSize + 3 : col1;
+
+    const renderInfo = (label, value, x) => {
+      if (!value) return;
+      doc.setFontSize(tpl.fontSize - 1);
+      doc.setTextColor(120, 120, 120);
+      doc.setFont("helvetica", "normal");
+      doc.text(label, x, y + 3);
+      doc.setTextColor(20, 20, 20);
+      doc.setFont("helvetica", "bold");
+      const valText = String(value || "");
+      if (containsBengali(valText)) {
+        drawBengaliText(doc, valText, x, y + 7, tpl.fontSize - 1, "#141414", "left");
+      } else {
+        doc.text(valText, x, y + 7);
+      }
+      y += 9;
+    };
+
+    const classNameVal = resolveAcademicDisplayName(
+      student?.class_id, student?.session_id, student?.class_group_id, branch?.academic_structure, 'bn'
+    ) || student?.class_name || "";
+    if (tpl.showFields.studentName) renderInfo("Student Name:", student?.full_name_bn || student?.full_name_en, infoX);
+    if (tpl.showFields.fatherName) renderInfo("Father's Name:", student?.father_name, infoX);
+    if (tpl.showFields.motherName) renderInfo("Mother's Name:", student?.mother_name, infoX);
+    if (tpl.showFields.studentId) renderInfo("Student ID:", String(student?.id), infoX);
+    if (tpl.showFields.roll) renderInfo("Roll:", student?.roll_number, infoX);
+    if (tpl.showFields.className) renderInfo("Class:", classNameVal, infoX);
+    if (tpl.showFields.session) renderInfo("Session:", exam?.session || exam?.academic_year, infoX);
+    if (tpl.showFields.examDate) renderInfo("Exam Date:", exam?.exam_date || exam?.start_date, infoX);
+
+    y = Math.max(y + 3, y + photoOffset + 5);
+
+    if (tpl.showFields.instructions && tpl.customInstructions) {
+      y += 3;
+      doc.setDrawColor(...hexToRgb(sc));
+      doc.setLineWidth(0.5);
+      doc.line(tpl.cardMargin, y, tpl.cardMargin + 3, y);
+      doc.setFontSize(7);
+      doc.setTextColor(...hexToRgb(pc));
+      doc.setFont("helvetica", "bold");
+      doc.text("Important Instructions:", tpl.cardMargin + 5, y + 1);
+      y += 4;
+      doc.setFontSize(6);
+      doc.setTextColor(80, 80, 80);
+      doc.setFont("helvetica", "normal");
+      const instrLines = drawBengaliTextWrapped(doc, tpl.customInstructions, W - tpl.cardMargin * 2 - 10, 6, "#505050", "left");
+      for (const line of instrLines) {
+        if (y > H - 30) break;
+        drawBengaliText(doc, line, tpl.cardMargin + 5, y, 6, "#505050", "left");
+        y += 4;
+      }
+    }
+
+    if (y > H - 35) y = H - 35;
+    doc.setDrawColor(150, 150, 150);
+    doc.setLineWidth(0.3);
+    const sigY = H - 20;
+    if (tpl.showFields.principalSignature) {
+      doc.line(tpl.cardMargin + 5, sigY, tpl.cardMargin + 50, sigY);
+      doc.setFontSize(6);
+      doc.setTextColor(100, 100, 100);
+      drawBengaliText(doc, "Principal / অধ্যক্ষ", tpl.cardMargin + 28, sigY + 4, 6, "#646464", "center");
+    }
+    if (tpl.showFields.controllerSignature) {
+      doc.line(W - tpl.cardMargin - 50, sigY, W - tpl.cardMargin - 5, sigY);
+      drawBengaliText(doc, "Controller of Exam\nপরীক্ষা নিয়ন্ত্রক", W - tpl.cardMargin - 28, sigY + 4, 6, "#646464", "center");
+    }
+
+    if (tpl.showFields.qrCode) {
+      try {
+        const qrDataUrl = await QRCode.toDataURL(`https://rahmaniainstitute.org/verify?student=${student?.id}`, { width: 30, margin: 0 });
+        doc.addImage(qrDataUrl, "PNG", W - tpl.cardMargin - 12, H - 28, 10, 10);
+      } catch {}
+    }
+
+    if (tpl.customFooter) {
+      doc.setFontSize(6);
+      doc.setTextColor(120, 120, 120);
+      drawBengaliText(doc, tpl.customFooter, W / 2, H - 5, 6, "#787878", "center");
+    }
+
+    return doc.output("blob");
+  }, [settings]);
+
+  const _handleBulkDownloadAdmitCards = useCallback(async () => {
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return toast.error("Please select at least one student");
+    if (filters.classId === "all" || filters.examId === "all") {
+      return toast.error("Please select a specific Class and Exam");
+    }
+    setGenerating(prev => ({ ...prev, bulkDownload: true }));
+    try {
+      const branch = branches.find(b => String(b.id) === String(filters.branchId));
+      const exam = exams.find(e => String(e.id) === String(filters.examId));
+      if (!branch || !exam) return toast.error("Branch or Exam not found");
+
+      const branchIdNum = branch?.id ? Number(branch.id) : null;
+      let query = supabaseAdmin.from("students").select(studentColumns).in("id", ids.map(Number));
+      if (branchIdNum) query = query.eq("branch_id", branchIdNum);
+      const { data } = await query;
+      const studentsList = data || [];
+
+      for (const student of studentsList) {
+        const pdfBlob = await generateAdmitCardPdfBlob(student, branch, exam, activeTemplate);
+        const url = URL.createObjectURL(pdfBlob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `admit-card-${student?.roll_number || student?.id}.pdf`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+
+      toast.success(`${studentsList.length} admit card PDF(s) downloaded`);
+    } catch (err) {
+      toast.error(err.message || "Failed to download admit cards");
+    } finally {
+      setGenerating(prev => ({ ...prev, bulkDownload: false }));
+    }
+  }, [selectedIds, filters, branches, exams, activeTemplate, studentColumns, generateAdmitCardPdfBlob]);
 
   const handlePreviewStudent = useCallback(async (student) => {
     setPreviewStudent(student);
@@ -799,7 +1378,7 @@ ${cardsHtml}
       const H = activeTemplate.layout === "landscape" ? 210 : 297;
 
       const tpl = activeTemplate;
-      const logoUrl = activeTemplate?.customLogoUrl || branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
+      const logoUrl = resolveLogoUrl(activeTemplate, branch, settings);
       const instNameBn = settings?.institute_name_bn || "রহমানিয়া ইনস্টিটিউট";
       const instNameEn = settings?.institute_name_en || "RAHMANIA INSTITUTE";
       const branchName = branch?.name_en || branch?.name_bn || "";
@@ -847,22 +1426,21 @@ ${cardsHtml}
 
       const photoSize = tpl.studentPhotoSize / 3;
       const col1 = tpl.cardMargin;
-      const col2 = W / 2 + 5;
 
-      if (tpl.showFields.studentPhoto && student?.photo_url) {
+      if (tpl.showFields.studentPhoto && previewStudent?.photo_url) {
         try {
-          const photoImg = await loadImageElement(student.photo_url);
+          const photoImg = await loadImageElement(previewStudent.photo_url);
           if (photoImg) {
             doc.addImage(photoImg, "JPEG", col1, y, photoSize, photoSize);
           }
         } catch {}
       }
 
-      const photoOffset = (tpl.showFields.studentPhoto && student?.photo_url) ? photoSize + 5 : 0;
-      const infoX = tpl.showFields.studentPhoto && student?.photo_url ? col1 + photoSize + 3 : col1;
+      const photoOffset = (tpl.showFields.studentPhoto && previewStudent?.photo_url) ? photoSize + 5 : 0;
+      const infoX = tpl.showFields.studentPhoto && previewStudent?.photo_url ? col1 + photoSize + 3 : col1;
       const infoW = W - infoX - tpl.cardMargin;
 
-      const renderInfo = (label, value, x, w) => {
+      const renderInfo = (label, value, x, _w) => {
         if (!value) return;
         doc.setFontSize(tpl.fontSize - 1);
         doc.setTextColor(120, 120, 120);
@@ -880,12 +1458,15 @@ ${cardsHtml}
       };
 
       const startY = y;
-      if (tpl.showFields.studentName) renderInfo("Student Name:", student?.full_name_bn || student?.full_name_en, infoX, infoW);
-      if (tpl.showFields.fatherName) renderInfo("Father's Name:", student?.father_name, infoX, infoW);
-      if (tpl.showFields.motherName) renderInfo("Mother's Name:", student?.mother_name, infoX, infoW);
-      if (tpl.showFields.studentId) renderInfo("Student ID:", String(student?.id), infoX, infoW);
-      if (tpl.showFields.roll) renderInfo("Roll:", student?.roll_number, infoX, infoW);
-      if (tpl.showFields.className) renderInfo("Class:", student?.class_name, infoX, infoW);
+      const classNameVal = resolveAcademicDisplayName(
+        previewStudent?.class_id, previewStudent?.session_id, previewStudent?.class_group_id, branch?.academic_structure, 'bn'
+      ) || previewStudent?.class_name || "";
+      if (tpl.showFields.studentName) renderInfo("Student Name:", previewStudent?.full_name_bn || previewStudent?.full_name_en, infoX, infoW);
+      if (tpl.showFields.fatherName) renderInfo("Father's Name:", previewStudent?.father_name, infoX, infoW);
+      if (tpl.showFields.motherName) renderInfo("Mother's Name:", previewStudent?.mother_name, infoX, infoW);
+      if (tpl.showFields.studentId) renderInfo("Student ID:", String(previewStudent?.id), infoX, infoW);
+      if (tpl.showFields.roll) renderInfo("Roll:", previewStudent?.roll_number, infoX, infoW);
+      if (tpl.showFields.className) renderInfo("Class:", classNameVal, infoX, infoW);
       if (tpl.showFields.session) renderInfo("Session:", exam?.session || exam?.academic_year, infoX, infoW);
       if (tpl.showFields.examDate) renderInfo("Exam Date:", exam?.exam_date || exam?.start_date, infoX, infoW);
 
@@ -930,7 +1511,7 @@ ${cardsHtml}
 
       if (tpl.showFields.qrCode) {
         try {
-          const qrDataUrl = await QRCode.toDataURL(`https://rahmaniainstitute.org/verify?student=${student?.id}`, { width: 30, margin: 0 });
+          const qrDataUrl = await QRCode.toDataURL(`https://rahmaniainstitute.org/verify?student=${previewStudent?.id}`, { width: 30, margin: 0 });
           doc.addImage(qrDataUrl, "PNG", W - tpl.cardMargin - 12, H - 28, 10, 10);
         } catch {}
       }
@@ -945,7 +1526,7 @@ ${cardsHtml}
       const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `admit-card-${student?.roll_number || student?.id}.pdf`;
+      link.download = `admit-card-${previewStudent?.roll_number || previewStudent?.id}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
       toast.success("PDF downloaded");
@@ -993,7 +1574,7 @@ ${cardsHtml}
           const W = activeTemplate.layout === "landscape" ? 297 : 210;
           const H = activeTemplate.layout === "landscape" ? 210 : 297;
           const tpl = activeTemplate;
-          const logoUrl = activeTemplate?.customLogoUrl || branch?.logo_url || settings?.logo_url || DEFAULT_LOGO;
+          const logoUrl = resolveLogoUrl(activeTemplate, branch, settings);
           const instNameBn = settings?.institute_name_bn || "রহমানিয়া ইনস্টিটিউট";
           const instNameEn = settings?.institute_name_en || "RAHMANIA INSTITUTE";
           const branchName = branch?.name_en || branch?.name_bn || "";
@@ -1064,12 +1645,15 @@ ${cardsHtml}
           };
 
           const startY = y;
+          const classNameVal = resolveAcademicDisplayName(
+            student?.class_id, student?.session_id, student?.class_group_id, branch?.academic_structure, 'bn'
+          ) || student?.class_name || "";
           if (tpl.showFields.studentName) renderInfo("Student Name:", student?.full_name_bn || student?.full_name_en);
           if (tpl.showFields.fatherName) renderInfo("Father's Name:", student?.father_name);
           if (tpl.showFields.motherName) renderInfo("Mother's Name:", student?.mother_name);
           if (tpl.showFields.studentId) renderInfo("Student ID:", String(student?.id));
           if (tpl.showFields.roll) renderInfo("Roll:", student?.roll_number);
-          if (tpl.showFields.className) renderInfo("Class:", student?.class_name);
+          if (tpl.showFields.className) renderInfo("Class:", classNameVal);
           if (tpl.showFields.session) renderInfo("Session:", exam?.session || exam?.academic_year);
           if (tpl.showFields.examDate) renderInfo("Exam Date:", exam?.exam_date || exam?.start_date);
 
@@ -1185,6 +1769,18 @@ ${cardsHtml}
             </SelectContent>
           </Select>
         </div>
+        {groupOptions.length > 0 && (
+          <div>
+            <label className="text-[10px] uppercase font-bold text-slate-500 block mb-1">Group / গ্রুপ</label>
+            <Select value={filters.group} onValueChange={v => handleFilterChange("group", v)} disabled={filters.classId === "all"}>
+              <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Select Group" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">সব গ্রুপ (All Groups)</SelectItem>
+                {groupOptions.map(o => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -1259,12 +1855,19 @@ ${cardsHtml}
                     <th className="py-3 px-4 text-left font-bold text-slate-500">Name</th>
                     <th className="py-3 px-4 text-left font-bold text-slate-500">Father's Name</th>
                     <th className="py-3 px-4 text-left font-bold text-slate-500">Class</th>
+                    <th className="py-3 px-4 text-center font-bold text-slate-500">Seat #</th>
+                    <th className="py-3 px-4 text-center font-bold text-slate-500">Room</th>
                     <th className="py-3 px-4 text-center font-bold text-slate-500">Status</th>
                     <th className="py-3 px-4 text-center font-bold text-slate-500">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {students.map(student => (
+                  {students.map((student, idx) => {
+                    const override = studentOverrides[student.id] || {};
+                    const globalIdx = (page - 1) * PAGE_SIZE + idx;
+                    const seatNum = override.seatNumber || `${seatingConfig.seatPrefix || ""}${String(Number(seatingConfig.startingSeat || 1) + globalIdx).padStart(Number(seatingConfig.seatDigits || 3), "0")}`;
+                    const roomNum = override.roomNumber || String(Number(seatingConfig.startingRoom || 1) + Math.floor(globalIdx / Math.max(1, Number(seatingConfig.studentsPerRoom || 20))));
+                    return (
                     <tr key={student.id} className={`hover:bg-slate-50/50 transition-colors ${selectedIds.has(String(student.id)) ? "bg-[#052E2B]/5" : ""}`}>
                       <td className="py-3 px-4">
                         <Checkbox
@@ -1287,7 +1890,17 @@ ${cardsHtml}
                         {student.full_name_bn && <p className="text-[10px] text-slate-400">{student.full_name_bn}</p>}
                       </td>
                       <td className="py-3 px-4 text-slate-600">{student.father_name || "—"}</td>
-                      <td className="py-3 px-4">{student.class_name || "—"}</td>
+                      <td className="py-3 px-4">
+                        {resolveAcademicDisplayName(
+                          student.class_id, student.session_id, student.class_group_id, selectedBranch?.academic_structure, 'bn'
+                        ) || student.class_name || "—"}
+                      </td>
+                      <td className="py-3 px-4 text-center font-mono font-bold text-[#052E2B]">
+                        <Badge className="bg-[#052E2B]/10 text-[#052E2B] border-0 text-[10px]">{seatNum}</Badge>
+                      </td>
+                      <td className="py-3 px-4 text-center font-mono text-slate-600">
+                        <Badge className="bg-amber-50 text-amber-700 border-0 text-[10px]">Rm {roomNum}</Badge>
+                      </td>
                       <td className="py-3 px-4 text-center">
                         <Badge className={`text-[10px] font-bold border-0 ${student.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                           {student.status || "active"}
@@ -1295,6 +1908,9 @@ ${cardsHtml}
                       </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center justify-center gap-1">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-purple-50" onClick={() => setEditingStudentSeating(student)} title="Edit Seating (Seat/Room/Center)">
+                            <Pencil className="h-3.5 w-3.5 text-purple-600" />
+                          </Button>
                           <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-50" onClick={() => handleIndividualAction(student, "preview")} title="Preview">
                             <Eye className="h-3.5 w-3.5 text-blue-600" />
                           </Button>
@@ -1307,7 +1923,8 @@ ${cardsHtml}
                         </div>
                       </td>
                     </tr>
-                  ))}
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -1364,7 +1981,7 @@ ${cardsHtml}
             <Button
               size="sm"
               className="flex-1 bg-[#052E2B] hover:bg-[#031c1a] text-white rounded-xl h-9 text-xs font-bold gap-1.5"
-              onClick={(e) => { e.stopPropagation(); setShowCustomizer(true); }}
+              onClick={(e) => { e.stopPropagation(); setActiveModule("admit-card"); setShowCustomizer(true); }}
             >
               <Palette className="h-3.5 w-3.5" /> Customize
             </Button>
@@ -1398,7 +2015,7 @@ ${cardsHtml}
             <Button
               size="sm"
               className="flex-1 bg-[#052E2B] hover:bg-[#031c1a] text-white rounded-xl h-9 text-xs font-bold gap-1.5"
-              onClick={(e) => { e.stopPropagation(); setShowCustomizer(true); }}
+              onClick={(e) => { e.stopPropagation(); setActiveModule("serial-sheet"); setShowCustomizer(true); }}
             >
               <Settings className="h-3.5 w-3.5" /> Settings
             </Button>
@@ -1426,17 +2043,47 @@ ${cardsHtml}
           exit={{ opacity: 0, x: 300 }}
           className="fixed inset-y-0 right-0 w-full max-w-lg z-50 bg-white shadow-2xl border-l overflow-y-auto"
         >
-          <div className="sticky top-0 bg-white border-b z-10 p-4 flex items-center justify-between">
-            <h3 className="font-bold text-[#052E2B] flex items-center gap-2">
-              {activeModule === "admit-card" ? <Palette className="h-5 w-5" /> : <Settings className="h-5 w-5" />}
-              {activeModule === "admit-card" ? "Design Customizer" : "Serial Sheet Settings"}
-            </h3>
-            <Button variant="ghost" size="icon" onClick={() => setShowCustomizer(false)}>
+          <div className="sticky top-0 bg-white border-b z-10 p-3.5 flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-xl">
+              <button
+                type="button"
+                onClick={() => setActiveModule("admit-card")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  activeModule === "admit-card"
+                    ? "bg-[#052E2B] text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Palette className="h-3.5 w-3.5" />
+                Admit Card Customizer
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveModule("serial-sheet")}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                  activeModule === "serial-sheet"
+                    ? "bg-[#D4AF37] text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <Settings className="h-3.5 w-3.5" />
+                Serial Sheet Settings
+              </button>
+            </div>
+            <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full" onClick={() => setShowCustomizer(false)}>
               <X className="h-5 w-5" />
             </Button>
           </div>
 
           <div className="p-5 space-y-6">
+            <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-2">
+              <Settings className="h-3.5 w-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <p className="text-[10px] text-amber-700 leading-relaxed">
+                <strong>Seating &amp; Exam Configuration</strong> (Exam Title, Card Title, Center Name, Seat/Room numbering) is now configured when <strong>creating or editing an Exam</strong> from the <em>Exams List</em> tab.<br />
+                Use the <strong>✏️ pencil icon</strong> in the student table to override values for individual students.
+              </p>
+            </div>
+
             {activeModule === "admit-card" ? (
               <>
                 <div>
@@ -1869,6 +2516,97 @@ ${cardsHtml}
 
       {renderCustomizer()}
       {renderPreview()}
+
+      {/* ── Per-student Seating Override Dialog ── */}
+      {editingStudentSeating && (() => {
+        const stu = editingStudentSeating;
+        const existing = studentOverrides[stu.id] || {};
+        const globalIdx = students.findIndex(s => s.id === stu.id);
+        const autoSeat = `${seatingConfig.seatPrefix || ""}${String(Number(seatingConfig.startingSeat || 1) + Math.max(0, globalIdx)).padStart(Number(seatingConfig.seatDigits || 3), "0")}`;
+        const autoRoom = String(Number(seatingConfig.startingRoom || 1) + Math.floor(Math.max(0, globalIdx) / Math.max(1, Number(seatingConfig.studentsPerRoom || 20))));
+        return (
+          <Dialog open={!!editingStudentSeating} onOpenChange={open => !open && setEditingStudentSeating(null)}>
+            <DialogContent className="max-w-md rounded-2xl">
+              <DialogHeader>
+                <DialogTitle className="text-sm font-bold text-[#052E2B] flex items-center gap-2">
+                  <Pencil className="h-4 w-4 text-purple-600" />
+                  {"Override Seating \u2014 "}{stu.full_name_en || stu.full_name_bn || `Student #${stu.id}`}
+                </DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 pt-1">
+                <p className="text-[10px] text-slate-400">Leave a field blank to use the auto-calculated value. Auto: Seat <strong>{autoSeat}</strong>, Room <strong>{autoRoom}</strong>, Center <strong>{seatingConfig.centerName || "(global default)"}</strong></p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs text-slate-500 block mb-1 font-medium">আসন নম্বর / Seat Number</label>
+                    <Input
+                      defaultValue={existing.seatNumber || ""}
+                      placeholder={`Auto: ${autoSeat}`}
+                      className="h-9 text-xs rounded-xl"
+                      id="override-seat"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 block mb-1 font-medium">কক্ষ নম্বর / Room Number</label>
+                    <Input
+                      defaultValue={existing.roomNumber || ""}
+                      placeholder={`Auto: ${autoRoom}`}
+                      className="h-9 text-xs rounded-xl"
+                      id="override-room"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-slate-500 block mb-1 font-medium">পরীক্ষা কেন্দ্র / Center Name</label>
+                    <Input
+                      defaultValue={existing.centerName || ""}
+                      placeholder={seatingConfig.centerName || "Global center name"}
+                      className="h-9 text-xs rounded-xl"
+                      id="override-center"
+                    />
+                  </div>
+                </div>
+                <div className="flex gap-2 pt-1">
+                  <Button
+                    className="flex-1 h-9 text-xs rounded-xl bg-[#052E2B] hover:bg-[#052E2B]/90 text-white"
+                    onClick={() => {
+                      const seatVal = document.getElementById("override-seat")?.value.trim() || "";
+                      const roomVal = document.getElementById("override-room")?.value.trim() || "";
+                      const centerVal = document.getElementById("override-center")?.value.trim() || "";
+                      setStudentOverrides(prev => ({
+                        ...prev,
+                        [stu.id]: {
+                          seatNumber: seatVal || null,
+                          roomNumber: roomVal || null,
+                          centerName: centerVal || null,
+                        },
+                      }));
+                      setEditingStudentSeating(null);
+                    }}
+                  >
+                    Save Override
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 h-9 text-xs rounded-xl text-red-500 border-red-200 hover:bg-red-50"
+                    onClick={() => {
+                      setStudentOverrides(prev => {
+                        const next = { ...prev };
+                        delete next[stu.id];
+                        return next;
+                      });
+                      setEditingStudentSeating(null);
+                    }}
+                  >
+                    Clear Override
+                  </Button>
+                  <Button variant="ghost" className="h-9 text-xs rounded-xl" onClick={() => setEditingStudentSeating(null)}>
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
     </div>
   );
 }

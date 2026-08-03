@@ -1,7 +1,6 @@
 'use client'
 
 import React, { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -12,7 +11,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { useTranslation } from "@/lib/translations";
 import { pagesConfig } from "@/pages.config";
 import { useNavbarItems } from "@/hooks/useNavbarItems";
-import ProgressiveSection, { SectionSkeleton } from "@/shared/components/progressive/ProgressiveSection";
+import ProgressiveSection from "@/shared/components/progressive/ProgressiveSection";
 
 import Footer from "@/components/layout/Footer";
 
@@ -72,6 +71,33 @@ export default function Layout({ children, currentPageName: currentPageNameProp 
     document.documentElement.dir = validLang === 'ar' ? 'rtl' : 'ltr';
   }, [lang]);
 
+  const [isSaasView, setIsSaasView] = useState(false);
+
+  useEffect(() => {
+    if (pathname === "/" || pathname === "") {
+      const checkView = () => {
+        const p = new URLSearchParams(window.location.search);
+        if (p.get("view") === "school") {
+          setIsSaasView(false);
+        } else if (p.get("view") === "saas") {
+          setIsSaasView(true);
+        } else {
+          const saved = localStorage.getItem("home_view_mode");
+          setIsSaasView(saved ? saved === "saas" : true);
+        }
+      };
+      checkView();
+      window.addEventListener("storage", checkView);
+      window.addEventListener("home_view_changed", checkView);
+      return () => {
+        window.removeEventListener("storage", checkView);
+        window.removeEventListener("home_view_changed", checkView);
+      };
+    } else {
+      setIsSaasView(false);
+    }
+  }, [pathname]);
+
   const cleanPath = pathname?.toLowerCase() || "";
   const isPortalOrDashboard = 
     cleanPath === '/admin' || 
@@ -115,6 +141,14 @@ export default function Layout({ children, currentPageName: currentPageNameProp 
       document.documentElement.style.overflow = "";
     };
   }, [cleanPath, isLoginRoute, isMainAdminDashboard, isLoggedInAdmin]);
+
+  if (isSaasView && (pathname === "/" || pathname === "")) {
+    return (
+      <div className="min-h-screen bg-[#FAF8F5]">
+        {children}
+      </div>
+    );
+  }
 
   if (isPortalOrDashboard) {
     const useViewportConstraint = isLoggedInAdmin && isMainAdminDashboard && !isLoginRoute;

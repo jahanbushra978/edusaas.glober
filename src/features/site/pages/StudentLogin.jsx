@@ -249,13 +249,9 @@ export default function StudentLogin() {
 
 
         <div className="text-center mt-6">
-
-          <Link href={createPageUrl("Home")} className="text-xs italic text-white/30 hover:text-white/60 transition-colors">
-
-            ← Back to Home
-
+          <Link href="/" className="inline-flex items-center gap-1.5 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 text-[#D4AF37] text-xs font-bold transition-all border border-white/20 shadow-sm">
+            ← Back to Home / হোমপেজে ফিরুন
           </Link>
-
         </div>
 
       </div>

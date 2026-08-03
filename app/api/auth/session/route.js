@@ -23,13 +23,14 @@ export async function GET() {
 
     let allowedFeatures = session.allowed_features || null;
     const branchId = session.branch_id || null;
+    let organizationId = session.organization_id || null;
 
     if (session.role === "branch_admin" || session.role === "boarding_manager") {
       if (branchId) {
         const adminClient = createSupabaseAdminClient();
         const { data: branch, error } = await adminClient
           .from("branches")
-          .select("is_active, allowed_features, boarding_enabled")
+          .select("is_active, allowed_features, boarding_enabled, organization_id")
           .eq("id", branchId)
           .maybeSingle();
 
@@ -52,6 +53,9 @@ export async function GET() {
         } else {
           allowedFeatures = branch.allowed_features || null;
         }
+        if (branch.organization_id) {
+          organizationId = branch.organization_id;
+        }
       }
     }
 
@@ -62,6 +66,7 @@ export async function GET() {
       profileId: session.profileId,
       email: session.email,
       branch_id: branchId,
+      organization_id: organizationId,
       allowed_features: allowedFeatures,
     };
 

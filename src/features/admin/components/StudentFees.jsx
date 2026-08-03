@@ -682,7 +682,7 @@ export default function StudentFees({ students = [], currentUser }) {
               </div>
               <div class="inst-details">
                 <h1>রহমানিয়া ইনস্টিটিউট</h1>
-                <h2>Rahmania Institute</h2>
+                <h2>{typeof window !== 'undefined' && sessionStorage.getItem('active_tenant_slug') && sessionStorage.getItem('active_tenant_slug') !== 'rahmania' ? sessionStorage.getItem('active_tenant_slug').toUpperCase() : "Rahmania Institute"}</h2>
                 <p class="branch-info">
                   <strong>${branchNameStr}</strong><br/>
                   Address: ${branch?.address_en || "N/A"} • Phone: ${branch?.phone || "N/A"}

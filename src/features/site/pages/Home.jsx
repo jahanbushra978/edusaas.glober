@@ -23,6 +23,7 @@ import SuccessStoriesSection from "@/components/home/SuccessStoriesSection";
 import EventsSection from "@/components/home/EventsSection";
 import BlogsSection from "@/components/home/BlogsSection";
 import ContactSection from "@/components/home/ContactSection";
+import SaaSLandingPage from "./SaaSLandingPage";
 
 // NOTE: this used to animate x:-80 / x:80 (slide in from left/right).
 // Sideways motion forces the browser to repaint horizontally on every scroll
@@ -107,6 +108,26 @@ function HomeContent() {
   const isBn = lang === "bn";
   const isAr = lang === "ar";
   const { data: homeData, isLoading } = useHomeData();
+
+  const [viewMode, setViewMode] = useState("saas");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    if (typeof window !== "undefined") {
+      const p = new URLSearchParams(window.location.search);
+      if (p.get("view") === "school") setViewMode("school");
+      else if (p.get("view") === "saas") setViewMode("saas");
+      else {
+        const saved = localStorage.getItem("home_view_mode");
+        if (saved) setViewMode(saved);
+      }
+    }
+  }, []);
+
+  if (viewMode === "saas") {
+    return <SaaSLandingPage />;
+  }
 
   // When homeData is initially null/loading, default to empty object so full page
   // structure, headings, and JSON-LD schema are always rendered on the server for Googlebot.
@@ -418,6 +439,22 @@ function HomeContent() {
       {isVisible('contact') && <AnimatedSection idx={17} plain={true}>
         <ContactSection />
       </AnimatedSection>}
+
+      {/* Floating Toggle Button to return to SaaS Platform */}
+      <div className="fixed bottom-5 right-5 z-50">
+        <button
+          onClick={() => {
+            setViewMode("saas");
+            if (typeof window !== "undefined") {
+              localStorage.setItem("home_view_mode", "saas");
+              window.dispatchEvent(new Event("home_view_changed"));
+            }
+          }}
+          className="flex items-center gap-2 bg-[#052E2B] text-white px-4 py-2.5 rounded-full shadow-2xl border-2 border-[#D4AF37] text-xs font-bold hover:scale-105 transition-all"
+        >
+          <span>🚀 SaaS প্ল্যাটফর্ম হোমপেজে ফিরুন</span>
+        </button>
+      </div>
     </div>
   );
 }

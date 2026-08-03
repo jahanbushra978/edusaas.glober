@@ -290,8 +290,48 @@ const getBranchTeacherStrIds = (branchId) => {
   return cachedTeacherStrIdsMap.get(branchId);
 };
 
+function getOrgFilterValue(user) {
+  if (!user) return null;
+  const orgId = user.organization_id || user.user_metadata?.organizationId || null;
+  if (!orgId) return null;
+  return { type: "eq", field: "organization_id", value: orgId };
+}
+
+async function getTenantFilterValues(tableName, user) {
+  const orgVal = getOrgFilterValue(user);
+  const filterVal = await getBranchFilterValue(tableName, user);
+  return { orgVal, filterVal };
+}
+
+function applyTenantFiltersSync(query, tableName, user, filters) {
+  if (!filters) return query;
+  const { orgVal, filterVal } = filters;
+  if (orgVal) {
+    query = query.eq(orgVal.field, orgVal.value);
+  }
+  if (filterVal) {
+    if (filterVal.type === "eq") {
+      query = query.eq(filterVal.field, filterVal.value);
+    } else if (filterVal.type === "in") {
+      query = query.in(filterVal.field, filterVal.value);
+    }
+  }
+  return query;
+}
+
 async function getBranchFilterValue(tableName, user) {
-  if (!user || user.role === "admin" || user.role === "student" || user.role === "teacher") return null;
+  if (!user || user.role === "student" || user.role === "teacher") return null;
+
+  const orgVal = getOrgFilterValue(user);
+
+  if (user.role === "admin") {
+    return null;
+  }
+
+  if (user.role === "admin") {
+    if (orgVal) return orgVal;
+    return null;
+  }
 
   if (!user.branch_id) {
     console.error(`[getBranchFilterValue] Authentication Problem: User has role ${user.role} but branch_id is null/undefined.`);
@@ -344,17 +384,11 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
     }
     const safeLimit = Math.min(maxRecords, MAX_SAFE_RECORDS);
     const result = await dedup(cacheKey, async () => {
-      // Public entities use the anon client so a stale in-memory JWT is never
-      // forwarded, preventing spurious 401 errors for unauthenticated visitors.
       const db = isPublic ? supabaseAnon : supabaseAdmin;
       let query = db.from(tableName).select(select);
-      const filterVal = isPublic ? null : await getBranchFilterValue(tableName, user);
-      if (filterVal) {
-        if (filterVal.type === "eq") {
-          query = query.eq(filterVal.field, filterVal.value);
-        } else if (filterVal.type === "in") {
-          query = query.in(filterVal.field, filterVal.value);
-        }
+      if (!isPublic) {
+        const filters = await getTenantFilterValues(tableName, user);
+        query = applyTenantFiltersSync(query, tableName, user, filters);
       }
       if (TABLES_WITH_ARCHIVE.has(tableName) && !options?.includeArchived && !isPublic) {
         query = query.eq("is_archived", false);
@@ -397,13 +431,9 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
     const result = await dedup(cacheKey, async () => {
       const db = isPublic ? supabaseAnon : supabaseAdmin;
       let query = db.from(tableName).select(select).eq("id", id);
-      const filterVal = isPublic ? null : await getBranchFilterValue(tableName, user);
-      if (filterVal) {
-        if (filterVal.type === "eq") {
-          query = query.eq(filterVal.field, filterVal.value);
-        } else if (filterVal.type === "in") {
-          query = query.in(filterVal.field, filterVal.value);
-        }
+      if (!isPublic) {
+        const filters = await getTenantFilterValues(tableName, user);
+        query = applyTenantFiltersSync(query, tableName, user, filters);
       }
       const { data, error } = await query.maybeSingle();
       if (error) throw error;
@@ -429,13 +459,9 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
     const result = await dedup(cacheKey, async () => {
       const db = isPublic ? supabaseAnon : supabaseAdmin;
       let query = db.from(tableName).select(select).in("id", uniqueIds);
-      const filterVal = isPublic ? null : await getBranchFilterValue(tableName, user);
-      if (filterVal) {
-        if (filterVal.type === "eq") {
-          query = query.eq(filterVal.field, filterVal.value);
-        } else if (filterVal.type === "in") {
-          query = query.in(filterVal.field, filterVal.value);
-        }
+      if (!isPublic) {
+        const filters = await getTenantFilterValues(tableName, user);
+        query = applyTenantFiltersSync(query, tableName, user, filters);
       }
       const { data, error } = await query;
       if (error) throw error;
@@ -488,6 +514,11 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
           }
         : {}),
     };
+
+    const orgVal = getOrgFilterValue(user);
+    if (orgVal && !payload.organization_id) {
+      payload.organization_id = orgVal.value;
+    }
 
     if (user && user.role !== "admin" && user.branch_id) {
       const targetBranchId = Number(user.branch_id);
@@ -610,18 +641,13 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
 
     delete payload.id;
 
+    const filters = await getTenantFilterValues(tableName, user);
     let query = supabaseAdmin.from(tableName).update(payload).eq("id", id);
-    const filterVal = await getBranchFilterValue(tableName, user);
-    if (filterVal) {
-      if (filterVal.type === "eq") {
-        query = query.eq(filterVal.field, filterVal.value);
-      } else if (filterVal.type === "in") {
-        query = query.in(filterVal.field, filterVal.value);
-      }
-    }
+    query = applyTenantFiltersSync(query, tableName, user, filters);
 
-    const { data: updated, error } = await query.select(select).maybeSingle();
+    const { data: updatedRows, error } = await query.select(select);
     if (error) throw error;
+    const updated = updatedRows?.[0] || null;
 
     if (tableName === 'teachers') {
       cachedTeacherIdsMap.clear();
@@ -677,18 +703,13 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       });
     }
 
+    const filters = await getTenantFilterValues(tableName, user);
     let query = supabaseAdmin.from(tableName).delete().eq("id", id);
-    const filterVal = await getBranchFilterValue(tableName, user);
-    if (filterVal) {
-      if (filterVal.type === "eq") {
-        query = query.eq(filterVal.field, filterVal.value);
-      } else if (filterVal.type === "in") {
-        query = query.in(filterVal.field, filterVal.value);
-      }
-    }
+    query = applyTenantFiltersSync(query, tableName, user, filters);
 
-    const { data: deleted, error } = await query.select("id").maybeSingle();
+    const { data: deletedRows, error } = await query.select("id");
     if (error) throw error;
+    const deleted = deletedRows?.[0] || null;
 
     if (tableName === 'teachers') {
       cachedTeacherIdsMap.clear();
@@ -721,13 +742,8 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
     const result = await dedup(cacheKey, async () => {
       const db = isPublic ? supabaseAnon : supabaseAdmin;
       let query = db.from(tableName).select(select);
-      const filterVal = isPublic ? null : await getBranchFilterValue(tableName, user);
-      if (filterVal) {
-        if (filterVal.type === "eq") {
-          query = query.eq(filterVal.field, filterVal.value);
-        } else if (filterVal.type === "in") {
-          query = query.in(filterVal.field, filterVal.value);
-        }
+      if (!isPublic) {
+        query = await applyTenantFilters(query, tableName, user);
       }
 
       if (TABLES_WITH_ARCHIVE.has(tableName) && !options?.includeArchived && !isPublic) {
@@ -770,14 +786,7 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
   count: async (filterObj = {}, options = {}) => {
     const user = await getSessionUser();
     let query = supabaseAdmin.from(tableName).select("*", { count: "exact", head: true });
-    const filterVal = await getBranchFilterValue(tableName, user);
-    if (filterVal) {
-      if (filterVal.type === "eq") {
-        query = query.eq(filterVal.field, filterVal.value);
-      } else if (filterVal.type === "in") {
-        query = query.in(filterVal.field, filterVal.value);
-      }
-    }
+    query = await applyTenantFilters(query, tableName, user);
     if (TABLES_WITH_ARCHIVE.has(tableName) && !options?.includeArchived && !isPublic) {
       query = query.eq("is_archived", false);
     }
@@ -792,13 +801,11 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
   },
 
   updateAllFields: async (id, data, select = "*") => {
+    const user = await getSessionUser();
     delete data.id;
-    const { data: updated, error } = await supabaseAdmin
-      .from(tableName)
-      .update(data)
-      .eq("id", id)
-      .select(select)
-      .single();
+    let query = supabaseAdmin.from(tableName).update(data).eq("id", id);
+    query = await applyTenantFilters(query, tableName, user);
+    const { data: updated, error } = await query.select(select).single();
     if (error) throw error;
     if (isPublic) publicCache.clear();
     return sanitizeManagedEntityRecord(entityName, withId(updated));
@@ -816,18 +823,12 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       if (cached) return cached;
     }
     const result = await dedup(cacheKey, async () => {
-      const filterVal = isPublic ? null : await getBranchFilterValue(tableName, user);
       const db = isPublic ? supabaseAnon : supabaseAdmin;
       let countQuery = db.from(tableName).select("*", { count: "exact", head: true });
       let dataQuery = db.from(tableName).select(select, { count: "exact" });
-      if (filterVal) {
-        if (filterVal.type === "eq") {
-          countQuery = countQuery.eq(filterVal.field, filterVal.value);
-          dataQuery = dataQuery.eq(filterVal.field, filterVal.value);
-        } else if (filterVal.type === "in") {
-          countQuery = countQuery.in(filterVal.field, filterVal.value);
-          dataQuery = dataQuery.in(filterVal.field, filterVal.value);
-        }
+      if (!isPublic) {
+        countQuery = await applyTenantFilters(countQuery, tableName, user);
+        dataQuery = await applyTenantFilters(dataQuery, tableName, user);
       }
       if (TABLES_WITH_ARCHIVE.has(tableName) && !options?.includeArchived && !isPublic) {
         countQuery = countQuery.eq("is_archived", false);
@@ -863,18 +864,12 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       if (cached) return cached;
     }
     const result = await dedup(cacheKey, async () => {
-      const filterVal = isPublic ? null : await getBranchFilterValue(tableName, user);
       const db = isPublic ? supabaseAnon : supabaseAdmin;
       let countQuery = db.from(tableName).select("*", { count: "exact", head: true });
       let dataQuery = db.from(tableName).select(select, { count: "exact" });
-      if (filterVal) {
-        if (filterVal.type === "eq") {
-          countQuery = countQuery.eq(filterVal.field, filterVal.value);
-          dataQuery = dataQuery.eq(filterVal.field, filterVal.value);
-        } else if (filterVal.type === "in") {
-          countQuery = countQuery.in(filterVal.field, filterVal.value);
-          dataQuery = dataQuery.in(filterVal.field, filterVal.value);
-        }
+      if (!isPublic) {
+        countQuery = await applyTenantFilters(countQuery, tableName, user);
+        dataQuery = await applyTenantFilters(dataQuery, tableName, user);
       }
       if (TABLES_WITH_ARCHIVE.has(tableName) && !options?.includeArchived && !isPublic) {
         countQuery = countQuery.eq("is_archived", false);

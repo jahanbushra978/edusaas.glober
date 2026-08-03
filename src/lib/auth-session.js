@@ -92,6 +92,7 @@ export async function generateSupabaseJwt(user, ttlSeconds = SESSION_TTL_SECONDS
     user_metadata: {
       role: user.role || null,
       branchId: user.branch_id || null,
+      organizationId: user.organization_id || null,
       allowedFeatures: user.allowed_features || null,
       profileId: user.profileId || null,
       loginId: user.loginId || null

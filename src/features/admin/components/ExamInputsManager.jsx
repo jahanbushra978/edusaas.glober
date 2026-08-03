@@ -103,7 +103,7 @@ export default function ExamInputsManager({ exams = [] }) {
       ) : inputs.length === 0 ? (
         <div className="py-12 text-center italic text-muted-foreground">
           <ImageIcon className="mx-auto mb-3 h-10 w-10 opacity-20" />
-          <p>No inputs uploaded yet. Click "Upload Input" to add question papers or images.</p>
+          <p>No inputs uploaded yet. Click &quot;Upload Input&quot; to add question papers or images.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

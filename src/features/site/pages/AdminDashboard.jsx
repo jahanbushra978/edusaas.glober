@@ -29,7 +29,7 @@ import {
 
   Pencil, Eye, Loader2, Download, BarChart3, Award, UserCog, DollarSign, Settings, Bell, AlertCircle,
 
-  CalendarCheck, Wallet, ArrowDownCircle, Clock, Trophy, Images, Building2, ImagePlay, LayoutDashboard, Menu, FileText, Mail, Quote, PanelLeftClose, PanelLeftOpen, Sparkles, Home, Calendar, Shield, Monitor
+  CalendarCheck, Wallet, ArrowDownCircle, Clock, Trophy, Images, Building2, ImagePlay, LayoutDashboard, Menu, FileText, Mail, Quote, PanelLeftClose, PanelLeftOpen, Sparkles, Home, Calendar, Shield, Monitor, Layers, Palette
 } from "lucide-react";
 
 
@@ -208,6 +208,81 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
     return () => window.removeEventListener("admin_tab_changed", handleTabChange);
   }, []);
 
+  const resolveSchoolName = (slug) => {
+    if (!slug || slug === "rahmania" || slug === "default") return "Rahmania Institute";
+    if (slug === "rrr" || slug === "bushra-jahan") return "Bushra Jahan School";
+    if (slug === "raa") return "Raa Institution";
+    if (slug === "noorania") return "Noorania Madrasah";
+    return slug.split("-").map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
+  };
+
+  const [activeSchoolSlug, setActiveSchoolSlug] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get("slug") || params.get("tenant") || sessionStorage.getItem("active_tenant_slug") || localStorage.getItem("active_tenant_slug");
+      if (slug) {
+        sessionStorage.setItem("active_tenant_slug", slug);
+        localStorage.setItem("active_tenant_slug", slug);
+        return slug;
+      }
+    }
+    return "rahmania";
+  });
+
+  const [activeSchoolName, setActiveSchoolName] = useState(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const slug = params.get("slug") || params.get("tenant") || sessionStorage.getItem("active_tenant_slug") || localStorage.getItem("active_tenant_slug");
+      if (slug) {
+        return resolveSchoolName(slug);
+      }
+    }
+    return "Rahmania Institute";
+  });
+
+  const [warningNotice, setWarningNotice] = useState(null);
+  const [isAccountSuspended, setIsAccountSuspended] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      let slug = params.get("slug") || params.get("tenant");
+      if (!slug) {
+        slug = sessionStorage.getItem("active_tenant_slug") || localStorage.getItem("active_tenant_slug") || "rahmania";
+      } else {
+        sessionStorage.setItem("active_tenant_slug", slug);
+        localStorage.setItem("active_tenant_slug", slug);
+      }
+
+      if (slug) {
+        setActiveSchoolSlug(slug);
+        const name = resolveSchoolName(slug);
+        setActiveSchoolName(name);
+        document.title = `${name} - Management Suite`;
+
+        // Check SaaS Warning Alert Notice
+        const savedWarn = localStorage.getItem(`org_warning_${slug}`);
+        if (savedWarn) {
+          try {
+            const parsed = JSON.parse(savedWarn);
+            if (parsed && parsed.message) {
+              setWarningNotice(parsed.message);
+            }
+          } catch (e) {
+            console.error("Error loading warning:", e);
+          }
+        }
+
+        // Check Account Suspension
+        const savedOrgs = JSON.parse(localStorage.getItem("created_orgs") || "[]");
+        const currentOrg = savedOrgs.find((o) => (o.slug || o.subdomain || "").toLowerCase() === slug.toLowerCase());
+        if (currentOrg && currentOrg.status === "suspended") {
+          setIsAccountSuspended(true);
+        }
+      }
+    }
+  }, []);
+
   useEffect(() => {
     setVisibleStudentCount(30);
   }, [search, branchFilter, classFilter, sessionFilter, groupFilter]);
@@ -310,6 +385,16 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
         { label: "Events", value: "events", icon: CalendarCheck },
         { label: "Blogs", value: "blogs", icon: FileText },
         { label: "FAQs", value: "faqs", icon: AlertCircle },
+      ],
+    },
+    {
+      title: "WEBSITE BUILDER",
+      items: [
+        { label: "⚡ Visual Page Builder", value: "page-builder", icon: Layers, href: "/admin/website/page-builder" },
+        { label: "🎨 Theme Marketplace", value: "themes", icon: Palette, href: "/platform-console/themes" },
+        { label: "🧭 Menu Builder", value: "menus", icon: Menu, href: "/platform-console/menus" },
+        { label: "📝 Form Builder & Inbox", value: "forms", icon: FileText, href: "/platform-console/forms" },
+        { label: "🖼️ Media Library", value: "media", icon: Images, href: "/platform-console/media" },
       ],
     },
     {
@@ -496,6 +581,14 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
   const branches = currentUser?.role === "branch_admin" || currentUser?.role === "boarding_manager"
     ? rawBranches.filter((b) => String(b.id) === String(currentUser.branch_id))
     : rawBranches;
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && activeSchoolSlug && branches && Array.isArray(branches) && branches.length > 0) {
+      const clean = activeSchoolSlug.toLowerCase().replace(/%20|\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+      localStorage.setItem(`branches_${activeSchoolSlug}`, JSON.stringify(branches));
+      localStorage.setItem(`branches_${clean}`, JSON.stringify(branches));
+    }
+  }, [activeSchoolSlug, branches]);
 
   const { data: messages = [] } = useQuery({
     queryKey: ["admin-messages-overview"],
@@ -732,25 +825,36 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
 
 
   if (!isAdmin) {
-
     return (
-
       <div className="flex flex-col items-center justify-center min-h-screen bg-slate-50">
-
         <h2 className="text-xl font-semibold text-primary mb-2">Access Denied</h2>
-
         <p className="text-slate-500 mb-4">Please log in to the Admin Portal.</p>
-
         <Link href="/admin">
-
           <Button className="gap-2">Admin Login</Button>
-
         </Link>
-
       </div>
-
     );
+  }
 
+  if (isAccountSuspended) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-slate-950 text-white p-6">
+        <div className="max-w-md w-full p-8 rounded-3xl bg-slate-900 border border-red-500/40 text-center space-y-4 shadow-2xl">
+          <div className="h-16 w-16 bg-red-500/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto border border-red-500/30">
+            <AlertCircle size={36} />
+          </div>
+          <h2 className="text-2xl font-bold text-white">অ্যাাকাউন্ট সাময়িকভাবে স্থগিত (Suspended)</h2>
+          <p className="text-xs text-slate-300 leading-relaxed">
+            বিলিং পরিশোধ বকেয়া বা প্ল্যাটফর্ম নীতিমালার কারণে <b>{activeSchoolName}</b>-এর ড্যাশবোর্ড একসেস সাময়িকভাবে স্থগিত রাখা হয়েছে।
+          </p>
+          <div className="pt-2">
+            <button onClick={() => window.location.reload()} className="px-5 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-white border border-slate-700">
+              পুনরায় চেষ্টা করুন
+            </button>
+          </div>
+        </div>
+      </div>
+    );
   }
 
 
@@ -1166,16 +1270,31 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
     }))
     .filter((category) => category.items.length > 0);
 
+  const handleSidebarItemClick = (item) => {
+    setSidebarOpen(false);
+    if (["page-builder", "themes", "menus", "forms", "media"].includes(item.value)) {
+      window.location.href = `/admin/website/page-builder?slug=${activeSchoolSlug}`;
+      return;
+    }
+    setActiveTab(item.value);
+  };
+
   const renderSidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Brand Header */}
       <div className="px-6 py-5 flex items-center gap-3 border-b border-[#033324]/30 select-none">
         <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-white border border-[#D4AF37]/30 shadow-sm flex-shrink-0">
-          <img src="/rahmania-logo-v2.png" loading="lazy" className="h-full w-full object-contain p-1" alt="Logo" />
+          {activeSchoolSlug === "rahmania" || activeSchoolName === "Rahmania Institute" ? (
+            <img src="/rahmania-logo-v2.png" loading="lazy" className="h-full w-full object-contain p-1" alt="Rahmania Logo" />
+          ) : (
+            <div className="h-full w-full bg-gradient-to-br from-teal-500 to-emerald-700 text-white font-bold text-lg flex items-center justify-center">
+              {activeSchoolName.charAt(0).toUpperCase()}
+            </div>
+          )}
         </div>
         <div>
-          <h2 className="text-sm font-bold tracking-tight text-white leading-tight font-serif">
-            Rahmania Institute
+          <h2 className="text-sm font-bold tracking-tight text-white leading-tight font-serif truncate max-w-[140px]">
+            {activeSchoolName}
           </h2>
           <p className="text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] mt-0.5">
             MANAGEMENT SUITE
@@ -1197,10 +1316,7 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
                 return (
                   <button
                     key={item.value}
-                    onClick={() => {
-                      setActiveTab(item.value);
-                      setSidebarOpen(false);
-                    }}
+                    onClick={() => handleSidebarItemClick(item)}
                     className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-200 active:scale-95 group text-start ${
                       isActive
                         ? "bg-[#052E2B] text-[#D4AF37] border-l-4 border-[#D4AF37] shadow-sm font-bold"
@@ -1276,6 +1392,13 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
 
             {/* Right Side: Session Badge, Notification, Actions */}
             <div className="flex items-center gap-3">
+              {/* Quick Page Builder Button */}
+              <Link href={`/admin/website/page-builder?slug=${activeSchoolSlug}`}>
+                <Button size="sm" className="bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold shadow-sm h-8 px-3">
+                  <Layers size={14} className="mr-1.5" /> ⚡ Page Builder
+                </Button>
+              </Link>
+
               <ThemeToggle />
 
               {/* Role Badge */}
@@ -1409,6 +1532,21 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
           {/* Main Content Area */}
           <main className="flex-1 px-4 sm:px-6 py-4 sm:py-6 space-y-6">
             
+            {warningNotice && (
+              <div className="p-4 rounded-2xl bg-amber-500 text-slate-950 font-bold shadow-lg border border-amber-400 flex items-center justify-between gap-4 animate-in fade-in">
+                <div className="flex items-center gap-3">
+                  <AlertCircle size={22} className="shrink-0 text-slate-950" />
+                  <div>
+                    <span className="font-extrabold uppercase tracking-wider text-[10px] bg-slate-950 text-amber-400 px-2 py-0.5 rounded-md mr-2">SaaS Console Notice</span>
+                    <span className="text-xs sm:text-sm">{warningNotice}</span>
+                  </div>
+                </div>
+                <button onClick={() => setWarningNotice(null)} className="text-slate-950 hover:bg-amber-600/40 px-3 py-1 rounded-xl text-xs font-extrabold shrink-0 border border-slate-950/20">
+                  Dismiss
+                </button>
+              </div>
+            )}
+
             <PeriodNotificationBanner onNavigateToPeriod={() => setActiveTab("period")} />
 
             {/* Radix Tabs wrapper — only controls visual display, not state */}

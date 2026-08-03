@@ -28,6 +28,7 @@
     --input: 168 15% 88%;
     --ring: 168 100% 19%;
     --radius: 0.75rem;
+    --font-display: var(--font-hind-siliguri, 'Hind Siliguri', sans-serif);
   }
 
   .dark {

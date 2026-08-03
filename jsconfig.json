@@ -14,6 +14,7 @@
       "@/lib/pdf-utils": ["./src/lib/pdf-utils.js"],
       "@/lib/sanitize-html": ["./src/lib/sanitize-html.js"],
       "@/lib/permissions-definitions": ["./src/lib/permissions-definitions.js"],
+      "@/lib/seo": ["./src/lib/seo.js"],
       "@/lib/VisitorAuthContext": ["./src/features/site/pages/VisitorAuthContext.jsx"],
       "@/lib/VisitorLoginPage": ["./src/features/site/pages/VisitorLoginPage.jsx"],
       "@/components/UserNotRegisteredError": ["./src/shared/components/ui-custom/UserNotRegisteredError.jsx"],
@@ -23,7 +24,8 @@
       "@/components/student/*": ["./src/features/students/components/*"],
       "@/components/teacher/*": ["./src/features/teachers/components/*"],
       "@/components/ui-custom/*": ["./src/shared/components/ui-custom/*"],
-      "@/lib/*": ["./src/features/site/pages/*"],
+      "@/lib/tenant/*": ["./src/lib/tenant/*"],
+      "@/lib/*": ["./src/lib/*", "./src/features/site/pages/*"],
       "@/pages.config": ["./pages.config.js"]
     },
     "jsx": "react-jsx",

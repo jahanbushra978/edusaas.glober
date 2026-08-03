@@ -11,18 +11,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Plus, Loader2, Trophy, Pencil, Trash2, 
-  Search, Award, AlertTriangle, ShieldCheck, Printer, CreditCard 
+  Search, Award, AlertTriangle, ShieldCheck, Printer, CreditCard, ImageIcon 
 } from "lucide-react";
 import dynamic from "next/dynamic";
 const AdmitCardManager = dynamic(() => import("./AdmitCardManager"), { ssr: false });
+const ExamInputsManager = dynamic(() => import("./ExamInputsManager"), { ssr: false });
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { DEFAULT_LOGO } from "@/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
 const EXAM_TYPE_OPTIONS = ["First Terminal Exam", "Half Yearly Exam", "Annual Exam", "Model Test", "Monthly Test"];
-const ACADEMIC_YEAR_OPTIONS = ["2024", "2025", "2026", "2027", "2028"];
-const STATUS_OPTIONS = ["Active", "Inactive"];
 
 // Build flat class options matching StudentForm format:
 // - When sections exist: value = sec.id (section-level ID) — matches student.class_id
@@ -95,17 +94,6 @@ export function getPrintableMarksheetHTML(student, branch, className, exam, resu
   const logoUrl = settings?.logo_url || DEFAULT_LOGO;
   const instNameEn = settings?.institute_name_en || "RAHMANIA INSTITUTE";
   const instNameBn = settings?.institute_name_bn || "রহমানিয়া ইনস্টিটিউট";
-  
-  const groupName = (() => {
-    if (!student?.class_group_id || !branch?.academic_structure) return "";
-    for (const c of branch.academic_structure) {
-      if (c.groups) {
-        const g = c.groups.find(grp => String(grp.id) === String(student.class_group_id));
-        if (g) return g.group_name?.bn || g.group_name?.en || "";
-      }
-    }
-    return "";
-  })();
 
   const subjectsHtml = (result.marks_details || []).map(sub => {
     const isSubFailed = sub.obtained_marks < sub.pass_marks;
@@ -240,7 +228,6 @@ export function getPrintableMarksheetHTML(student, branch, className, exam, resu
             <p><strong>Roll Number:</strong> ${student.roll_number || "N/A"}</p>
             <p><strong>Branch:</strong> ${branch?.name_bn || branch?.name_en || "N/A"}</p>
             <p><strong>Class:</strong> ${className}</p>
-            ${groupName ? `<p><strong>Group:</strong> ${groupName}</p>` : ""}
           </div>
         </div>
         
@@ -410,11 +397,22 @@ function printResultSheet(branch, className, exam, results, studentsList, settin
     `;
   }).join("");
 
-  const firstResult = results[0];
-  const subjectHeaders = firstResult ? (firstResult.marks_details || []).map(sub => {
+  // Union of all subjects across all results (if student 1 has subA+subB, and student 2 has subB+subC,
+  // show all three subject columns so no data is lost to missing headers).
+  const allSubjectIds = new Set();
+  const allSubjectsMap = new Map();
+  for (const r of results) {
+    for (const sub of (r.marks_details || [])) {
+      if (!allSubjectIds.has(sub.subject_id)) {
+        allSubjectIds.add(sub.subject_id);
+        allSubjectsMap.set(sub.subject_id, sub);
+      }
+    }
+  }
+  const subjectHeaders = Array.from(allSubjectsMap.values()).map(sub => {
     const sName = typeof sub.subject_name === "string" ? sub.subject_name : (sub.subject_name?.bn || sub.subject_name?.en || "");
     return `<th style="border: 1px solid #002818; background: #004D3A; color: white; padding: 6px; font-size: 11px;">${sName}</th>`;
-  }).join("") : "";
+  }).join("");
 
   const html = `
     <!DOCTYPE html>
@@ -490,7 +488,6 @@ function printResultSheet(branch, className, exam, results, studentsList, settin
 
 function printBlankMarksheet(branch, className, subjectsList, studentsList) {
   const instNameBn = "রহমানিয়া ইনস্টিটিউট";
-  const instNameEn = "RAHMANIA INSTITUTE";
 
   const subjectHeaders = subjectsList.map(sub => {
     const sName = typeof sub.subject_name === "string" ? sub.subject_name : (sub.subject_name?.bn || sub.subject_name?.en || "");
@@ -583,7 +580,32 @@ function printBlankMarksheet(branch, className, subjectsList, studentsList) {
 // ────────────────────────────────────────────────────────
 // Exam Form Component (Creates/Updates an Exam)
 // ────────────────────────────────────────────────────────
+function getSubjectDisplayName(sub) {
+  if (!sub) return "";
+  if (typeof sub === "string") return sub;
+  if (typeof sub.subject_name === "string") return sub.subject_name;
+  if (typeof sub.subject_name === "object" && sub.subject_name !== null) {
+    return sub.subject_name.bn || sub.subject_name.en || sub.subject_name.ar || "";
+  }
+  return sub.name_bn || sub.name_en || sub.name_ar || sub.title || "";
+}
+
 function ExamForm({ exam, branches, onSave, onCancel, currentUser }) {
+  const defaultSeatingConfig = {
+    examTitle: "", cardTitle: "ADMIT CARD / প্রবেশপত্র", centerName: "",
+    startingSeat: "1", seatPrefix: "", seatDigits: "3",
+    startingRoom: "1", studentsPerRoom: "20",
+  };
+  const [seatingCfg, setSeatingCfg] = useState(() => {
+    const stored = exam?.seating_config;
+    if (stored) {
+      if (typeof stored === "string") { try { return { ...defaultSeatingConfig, ...JSON.parse(stored) }; } catch { return defaultSeatingConfig; } }
+      if (typeof stored === "object") return { ...defaultSeatingConfig, ...stored };
+    }
+    return defaultSeatingConfig;
+  });
+  const updateSeat = (k, v) => setSeatingCfg(p => ({ ...p, [k]: v }));
+
   const [form, setForm] = useState({
     title: exam?.title || "",
     exam_type: exam?.exam_type || EXAM_TYPE_OPTIONS[0],
@@ -597,8 +619,15 @@ function ExamForm({ exam, branches, onSave, onCancel, currentUser }) {
     session_id: exam?.session_id || "",
     class_group_id: exam?.class_group_id || "",
   });
+
+  const [subjectSchedules, setSubjectSchedules] = useState(() => {
+    if (Array.isArray(exam?.subject_schedules)) return exam.subject_schedules;
+    if (typeof exam?.subject_schedules === "string") {
+      try { return JSON.parse(exam.subject_schedules); } catch { return []; }
+    }
+    return [];
+  });
   
-  const [selectedClassIds, setSelectedClassIds] = useState([]);
   const [saving, setSaving] = useState(false);
   
   const selectedBranch = branches.find(b => String(b.id) === String(form.branch_id));
@@ -606,19 +635,26 @@ function ExamForm({ exam, branches, onSave, onCancel, currentUser }) {
   
   const updateForm = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
-  const handleClassToggle = (id) => {
-    setSelectedClassIds(prev => 
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
-  };
-
-  const handleAllClassesToggle = () => {
-    if (selectedClassIds.length === classes.length) {
-      setSelectedClassIds([]);
-    } else {
-      setSelectedClassIds(classes.map(c => c.id));
+  // Compute available subjects for selected Class / Session / Group
+  const currentClass = classes.find(c => String(c.id) === String(form.class_id));
+  let availableSubjects = [];
+  if (currentClass) {
+    if (form.session_id && Array.isArray(currentClass.sections) && currentClass.sections.length > 0) {
+      const sec = currentClass.sections.find(s => String(s.id) === String(form.session_id));
+      if (sec && Array.isArray(sec.subjects) && sec.subjects.length > 0) {
+        availableSubjects = sec.subjects;
+      }
     }
-  };
+    if (availableSubjects.length === 0 && form.class_group_id && Array.isArray(currentClass.groups) && currentClass.groups.length > 0) {
+      const grp = currentClass.groups.find(g => String(g.id) === String(form.class_group_id));
+      if (grp && Array.isArray(grp.subjects) && grp.subjects.length > 0) {
+        availableSubjects = grp.subjects;
+      }
+    }
+    if (availableSubjects.length === 0 && Array.isArray(currentClass.subjects) && currentClass.subjects.length > 0) {
+      availableSubjects = currentClass.subjects;
+    }
+  }
 
   return (
     <form onSubmit={async e => {
@@ -630,7 +666,6 @@ function ExamForm({ exam, branches, onSave, onCancel, currentUser }) {
         return toast.error("Please select a Class");
       }
       
-      const currentClass = classes.find(c => String(c.id) === String(form.class_id));
       if (currentClass) {
         const hasSessions = Array.isArray(currentClass.sections) && currentClass.sections.length > 0;
         const hasGroups = Array.isArray(currentClass.groups) && currentClass.groups.length > 0;
@@ -642,6 +677,19 @@ function ExamForm({ exam, branches, onSave, onCancel, currentUser }) {
           return toast.error("Please select a Group");
         }
       }
+
+      // Build finalized subject_schedules array ensuring every available subject has an entry
+      const finalSchedules = availableSubjects.map((sub, idx) => {
+        const subName = getSubjectDisplayName(sub);
+        const subId = sub.id || idx;
+        const existing = subjectSchedules.find(s => String(s.subject_id) === String(subId) || s.subject_name === subName);
+        return {
+          subject_id: subId,
+          subject_name: subName,
+          date: existing?.date || form.start_date || "",
+          time: existing?.time || "9:00 AM - 12:00 PM",
+        };
+      });
       
       setSaving(true);
       try {
@@ -649,10 +697,11 @@ function ExamForm({ exam, branches, onSave, onCancel, currentUser }) {
           ...form,
           branch_id: Number(form.branch_id),
           is_active: form.is_active === true || String(form.is_active) === "true",
-          session: classes.find(c => c.id === form.class_id)?.class_name?.en || classes.find(c => c.id === form.class_id)?.class_name?.bn || "", // sync legacy session
-          total_marks: 100 // fallback
+          session: classes.find(c => c.id === form.class_id)?.class_name?.en || classes.find(c => c.id === form.class_id)?.class_name?.bn || "",
+          total_marks: 100,
+          subject_schedules: finalSchedules
         };
-        await onSave(payload);
+        await onSave({ ...payload, seating_config: seatingCfg });
       } catch (err) {
         toast.error(err.message || "Failed to save exam");
       } finally {
@@ -675,7 +724,7 @@ function ExamForm({ exam, branches, onSave, onCancel, currentUser }) {
         </div>
         <div>
           <label className="text-xs font-bold text-slate-700 block mb-1">Branch *</label>
-          <Select value={form.branch_id} onValueChange={v => { updateForm("branch_id", v); updateForm("class_id", ""); setSelectedClassIds([]); }} disabled={currentUser?.role === "branch_admin"}>
+          <Select value={form.branch_id} onValueChange={v => { updateForm("branch_id", v); updateForm("class_id", ""); updateForm("session_id", ""); updateForm("class_group_id", ""); }} disabled={currentUser?.role === "branch_admin"}>
             <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
             <SelectContent>
               {branches.map(b => <SelectItem key={b.id} value={String(b.id)}>{b.name_bn || b.name_en}</SelectItem>)}
@@ -695,7 +744,6 @@ function ExamForm({ exam, branches, onSave, onCancel, currentUser }) {
           </Select>
         </div>
         {(() => {
-          const currentClass = classes.find(c => String(c.id) === String(form.class_id));
           const hasSessions = currentClass && Array.isArray(currentClass.sections) && currentClass.sections.length > 0;
           if (!hasSessions) return null;
           return (
@@ -714,7 +762,6 @@ function ExamForm({ exam, branches, onSave, onCancel, currentUser }) {
           );
         })()}
         {(() => {
-          const currentClass = classes.find(c => String(c.id) === String(form.class_id));
           const hasGroups = currentClass && Array.isArray(currentClass.groups) && currentClass.groups.length > 0;
           if (!hasGroups) return null;
           return (
@@ -743,7 +790,7 @@ function ExamForm({ exam, branches, onSave, onCancel, currentUser }) {
           />
         </div>
         <div>
-          <label className="text-xs font-bold text-slate-700 block mb-1">Status</label>
+          <label className="text-xs font-bold text-[#052E2B] block mb-1 font-semibold">Status</label>
           <Select value={form.is_active ? "Active" : "Inactive"} onValueChange={v => updateForm("is_active", v === "Active")}>
             <SelectTrigger><SelectValue /></SelectTrigger>
             <SelectContent>
@@ -766,6 +813,133 @@ function ExamForm({ exam, branches, onSave, onCancel, currentUser }) {
         <div>
           <label className="text-xs font-bold text-slate-700 block mb-1">Result Publish Date</label>
           <Input type="date" value={form.result_publish_date} onChange={e => updateForm("result_publish_date", e.target.value)} />
+        </div>
+      </div>
+
+      {/* ── Subject-Wise Exam Routine Setup ── */}
+      {availableSubjects.length > 0 && (
+        <div className="border-t pt-3 mt-3">
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-xs font-extrabold text-[#052E2B] uppercase tracking-wider block">
+              📅 বিষয়ভিত্তিক পরীক্ষার সময়সূচী (Subject Exam Routine)
+            </label>
+            <span className="text-[11px] text-slate-500 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              মোট বিষয়: {availableSubjects.length} টি
+            </span>
+          </div>
+
+          <div className="overflow-x-auto rounded-xl border border-slate-200 bg-slate-50/50 p-1.5 max-h-[220px] overflow-y-auto">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="border-b border-slate-200 text-slate-700 font-bold bg-white">
+                  <th className="p-2 w-8 text-center">#</th>
+                  <th className="p-2 min-w-[130px]">বিষয় (Subject)</th>
+                  <th className="p-2 min-w-[135px]">তারিখ (Date)</th>
+                  <th className="p-2 min-w-[145px]">সময় (Time)</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {availableSubjects.map((sub, idx) => {
+                  const subName = getSubjectDisplayName(sub);
+                  const subId = sub.id || idx;
+                  const schedule = subjectSchedules.find(s => String(s.subject_id) === String(subId) || s.subject_name === subName) || {};
+                  const curDate = schedule.date || form.start_date || "";
+                  const curTime = schedule.time || "9:00 AM - 12:00 PM";
+
+                  return (
+                    <tr key={subId} className="hover:bg-white/80 transition-colors">
+                      <td className="p-2 text-center font-semibold text-slate-500">{idx + 1}</td>
+                      <td className="p-2 font-bold text-slate-800 break-words max-w-[160px]">{subName}</td>
+                      <td className="p-2">
+                        <Input
+                          type="date"
+                          value={curDate}
+                          onChange={e => {
+                            const newDate = e.target.value;
+                            setSubjectSchedules(prev => {
+                              const exists = prev.some(s => String(s.subject_id) === String(subId) || s.subject_name === subName);
+                              if (exists) {
+                                return prev.map(s => (String(s.subject_id) === String(subId) || s.subject_name === subName) ? { ...s, date: newDate } : s);
+                              }
+                              return [...prev, { subject_id: subId, subject_name: subName, date: newDate, time: curTime }];
+                            });
+                          }}
+                          className="h-8 text-xs rounded-lg bg-white border-slate-300"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <Input
+                          type="text"
+                          value={curTime}
+                          placeholder="9:00 AM - 12:00 PM"
+                          onChange={e => {
+                            const newTime = e.target.value;
+                            setSubjectSchedules(prev => {
+                              const exists = prev.some(s => String(s.subject_id) === String(subId) || s.subject_name === subName);
+                              if (exists) {
+                                return prev.map(s => (String(s.subject_id) === String(subId) || s.subject_name === subName) ? { ...s, time: newTime } : s);
+                              }
+                              return [...prev, { subject_id: subId, subject_name: subName, date: curDate, time: newTime }];
+                            });
+                          }}
+                          className="h-8 text-xs rounded-lg bg-white border-slate-300 font-sans"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── Seating & Admit Card Configuration ── */}
+      <div className="border-t pt-4 mt-2 space-y-3">
+        <div className="flex items-center gap-2 mb-1">
+          <span className="text-xs font-extrabold text-[#052E2B] uppercase tracking-wider">🎓 Admit Card &amp; Seating Configuration</span>
+          <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-2 py-0.5 font-semibold">Used in Admit Card &amp; Serial Sheet</span>
+        </div>
+        <div className="bg-[#052E2B]/5 rounded-2xl border border-[#052E2B]/15 p-4 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 block mb-1">পরীক্ষার নাম / Exam Title (Admit Card)</label>
+              <Input value={seatingCfg.examTitle} onChange={e => updateSeat("examTitle", e.target.value)} placeholder="e.g. বার্ষিক পরীক্ষা ২০২৬" className="h-9 text-xs rounded-xl" />
+            </div>
+            <div>
+              <label className="text-[10px] font-bold text-slate-500 block mb-1">কার্ডের শিরোনাম / Card Title</label>
+              <Input value={seatingCfg.cardTitle} onChange={e => updateSeat("cardTitle", e.target.value)} placeholder="e.g. প্রবেশপত্র" className="h-9 text-xs rounded-xl" />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-[10px] font-bold text-slate-500 block mb-1">পরীক্ষা কেন্দ্র / Exam Center Name</label>
+              <Input value={seatingCfg.centerName} onChange={e => updateSeat("centerName", e.target.value)} placeholder="e.g. রহমানিয়া মাদরাসা পরীক্ষা কেন্দ্র" className="h-9 text-xs rounded-xl" />
+            </div>
+          </div>
+          <div className="border-t border-[#052E2B]/10 pt-3">
+            <p className="text-[10px] font-bold text-slate-400 uppercase mb-2">Seat / Room Auto-Assignment</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="text-[10px] text-slate-500 block mb-1">Starting Seat #</label>
+                <Input type="number" value={seatingCfg.startingSeat} onChange={e => updateSeat("startingSeat", e.target.value)} className="h-9 text-xs rounded-xl" min="1" />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 block mb-1">Seat Prefix</label>
+                <Input value={seatingCfg.seatPrefix} onChange={e => updateSeat("seatPrefix", e.target.value)} placeholder="e.g. S-" className="h-9 text-xs rounded-xl" />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 block mb-1">Digit Padding</label>
+                <Input type="number" value={seatingCfg.seatDigits} onChange={e => updateSeat("seatDigits", e.target.value)} className="h-9 text-xs rounded-xl" min="1" max="6" />
+              </div>
+              <div>
+                <label className="text-[10px] text-slate-500 block mb-1">Starting Room #</label>
+                <Input type="number" value={seatingCfg.startingRoom} onChange={e => updateSeat("startingRoom", e.target.value)} className="h-9 text-xs rounded-xl" min="1" />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="text-[10px] text-slate-500 block mb-1">Students Per Room</label>
+                <Input type="number" value={seatingCfg.studentsPerRoom} onChange={e => updateSeat("studentsPerRoom", e.target.value)} className="h-9 text-xs rounded-xl" min="1" />
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -839,24 +1013,49 @@ function ExamResultEntry({ branches, exams, students, settings, currentUser }) {
     return [];
   }, [selectedFlatClass, classes, selClassId]);
 
-  // Filter exams for this branch and class (exams store class-level ID)
-  const classExams = exams.filter(e => String(e.branch_id) === String(selBranchId) && String(e.class_id) === String(classIdForExams));
+  // Filter exams for this branch, class, session, and group selected in Step 2
+  const classExams = exams.filter(e => {
+    if (String(e.branch_id) !== String(selBranchId)) return false;
+    if (String(e.class_id) !== String(classIdForExams)) return false;
+
+    // Filter by Session (Section) if exam is scoped to a specific session
+    if (e.session_id && selClassId && String(e.session_id) !== String(selClassId)) {
+      return false;
+    }
+
+    // Filter by Group if exam is scoped to a specific group
+    if (e.class_group_id && selGroupId !== "all" && String(e.class_group_id) !== String(selGroupId)) {
+      return false;
+    }
+
+    return true;
+  });
   const selectedExam = classExams.find(e => String(e.id) === String(selExamId));
   
-  // Filter students in this class/branch using central logic and group selector
-  const classStudents = students.filter(s => {
-    if (String(s.branch_id) !== String(selBranchId)) return false;
-    if (selectedExam) {
-      const examOptionId = selectedExam.session_id || selectedExam.class_id;
-      if (!isStudentInClassOption(s, examOptionId, selectedBranch?.academic_structure)) return false;
-      if (selectedExam.class_group_id && String(s.class_group_id) !== String(selectedExam.class_group_id)) return false;
-      return true;
-    } else {
-      if (!isStudentInClassOption(s, selClassId, selectedBranch?.academic_structure)) return false;
-      if (selGroupId !== "all" && String(s.class_group_id) !== String(selGroupId)) return false;
-      return true;
-    }
-  });
+  const studentsAfterBranchFilter = React.useMemo(() => {
+    if (!selBranchId || selBranchId === "all") return students;
+    return students.filter(s => String(s.branch_id) === String(selBranchId));
+  }, [students, selBranchId]);
+
+  const studentsAfterStatusFilter = React.useMemo(() => {
+    return studentsAfterBranchFilter.filter(s => {
+      const st = String(s.status || "").toLowerCase().trim();
+      return !st || st === "active" || st === "enrolled";
+    });
+  }, [studentsAfterBranchFilter]);
+
+  const studentsAfterClassFilter = React.useMemo(() => {
+    if (!selClassId || selClassId === "all") return studentsAfterStatusFilter;
+    return studentsAfterStatusFilter.filter(s => isStudentInClassOption(s, selClassId, selectedBranch?.academic_structure));
+  }, [studentsAfterStatusFilter, selClassId, selectedBranch]);
+
+  const classStudents = React.useMemo(() => {
+    if (!selGroupId || selGroupId === "all") return studentsAfterClassFilter;
+    return studentsAfterClassFilter.filter(s => {
+      const sGroupId = s.class_group_id || s.group_id || s.group || "";
+      return !sGroupId || String(sGroupId) === String(selGroupId);
+    });
+  }, [studentsAfterClassFilter, selGroupId]);
   const selectedStudent = classStudents.find(s => String(s.id) === String(selStudentId));
   const selectedSubject = subjects.find(s => String(s.id) === String(selSubjectId));
 
@@ -884,6 +1083,49 @@ function ExamResultEntry({ branches, exams, students, settings, currentUser }) {
     const resultStudentIds = new Set(existingResults.map(r => String(r.student_id)));
     return classStudents.filter(s => !resultStudentIds.has(String(s.id)));
   }, [classStudents, existingResults, selExamId]);
+
+  // Decision variables for existing results detection
+  const totalStudents = classStudents.length;
+  const countWithResults = studentsWithResults.length;
+  const countWithoutResults = studentsWithoutResults.length;
+  const allStudentsHaveResults = totalStudents > 0 && countWithResults === totalStudents && countWithoutResults === 0;
+
+  // Detailed execution flow logging for debugging
+  useEffect(() => {
+    if (selBranchId || selClassId || selGroupId || selExamId) {
+      console.log("=== EXAM RESULT ENTRY EXECUTION FLOW DEBUG ===");
+      console.log("Total students from database:", students?.length || 0);
+      console.log("After branch filter:", studentsAfterBranchFilter.length, studentsAfterBranchFilter);
+      console.log("After status filter:", studentsAfterStatusFilter.length, studentsAfterStatusFilter);
+      console.log("After class filter:", studentsAfterClassFilter.length, studentsAfterClassFilter);
+      console.log("After group filter:", classStudents.length, classStudents);
+      console.log("Selected Branch ID:", selBranchId);
+      console.log("Selected Class/Section ID (selClassId):", selClassId);
+      console.log("Selected Group ID (selGroupId):", selGroupId);
+      console.log("Selected Exam ID (selExamId):", selExamId);
+      console.log("Selected Exam Object:", selectedExam);
+      console.log("Existing Results from DB count:", existingResults.length, existingResults);
+      console.log("Students With Results count:", studentsWithResults.length, studentsWithResults);
+      console.log("Students Without Results count:", studentsWithoutResults.length, studentsWithoutResults);
+      console.log("totalStudents:", totalStudents);
+      console.log("countWithResults:", countWithResults);
+      console.log("countWithoutResults:", countWithoutResults);
+      console.log("allStudentsHaveResults:", allStudentsHaveResults);
+      console.log("isEditMode:", isEditMode);
+      console.log("==============================================");
+    }
+  }, [students, studentsAfterBranchFilter, studentsAfterStatusFilter, studentsAfterClassFilter, classStudents, selBranchId, selClassId, selGroupId, selExamId, selectedExam, existingResults, studentsWithResults, studentsWithoutResults, totalStudents, countWithResults, countWithoutResults, allStudentsHaveResults, isEditMode]);
+
+  // Auto switch to edit mode ONLY if every matching student in this class/session/group already has results saved for this exam
+  useEffect(() => {
+    if (selExamId && totalStudents > 0) {
+      if (allStudentsHaveResults) {
+        setIsEditMode(true);
+      } else if (countWithResults === 0) {
+        setIsEditMode(false);
+      }
+    }
+  }, [selExamId, totalStudents, allStudentsHaveResults, countWithResults]);
 
   useEffect(() => {
     setStudentFilterText("");
@@ -928,7 +1170,19 @@ function ExamResultEntry({ branches, exams, students, settings, currentUser }) {
     if (step === 5 && selectedFlatClass) {
       if (entryMode === "student") {
         if (existingResult && Array.isArray(existingResult.marks_details)) {
-          setMarksDetails(existingResult.marks_details);
+          // Merge existing saved marks with CURRENT class subject list.
+          // This ensures newly added subjects also appear (with blank marks)
+          // and avoids silently dropping them from the edit form and PDF.
+          const savedMap = new Map(
+            existingResult.marks_details.map(m => [String(m.subject_id), m])
+          );
+          const merged = subjects.map(sub => {
+            const saved = savedMap.get(String(sub.id));
+            return saved
+              ? { ...saved, subject_name: sub.subject_name, book_name: sub.book_name, full_marks: sub.full_marks || saved.full_marks || 100, pass_marks: sub.pass_marks || saved.pass_marks || 33 }
+              : { subject_id: sub.id, subject_name: sub.subject_name, book_name: sub.book_name, full_marks: sub.full_marks || 100, pass_marks: sub.pass_marks || 33, obtained_marks: "" };
+          });
+          setMarksDetails(merged);
           setRemarks(existingResult.remarks || "");
         } else {
           const initial = subjects.map(sub => ({
@@ -1120,7 +1374,13 @@ function ExamResultEntry({ branches, exams, students, settings, currentUser }) {
               <div class="inst-name-en">${instNameEn}</div>
               <div class="header-details">
                 Branch: <strong>${selectedBranch?.name_bn || selectedBranch?.name_en || ''}</strong> | 
-                Class: <strong>${selectedFlatClass?.label || ''}</strong> | 
+                Class: <strong>${resolveAcademicDisplayName(
+                  selClassId,
+                  null,
+                  (selectedExam?.class_group_id) || (selGroupId !== "all" ? selGroupId : null),
+                  selectedBranch?.academic_structure,
+                  'bn'
+                ) || selectedFlatClass?.label || ''}</strong> | 
                 Exam: <strong>${selectedExam?.title || ''}</strong>
               </div>
             </div>
@@ -1253,7 +1513,6 @@ function ExamResultEntry({ branches, exams, students, settings, currentUser }) {
   // Calculations in UI
   const totalFullMarks = marksDetails.reduce((sum, m) => sum + Number(m.full_marks || 0), 0);
   const totalObtainedMarks = marksDetails.reduce((sum, m) => sum + Number(m.obtained_marks || 0), 0);
-  const pct = totalFullMarks > 0 ? (totalObtainedMarks / totalFullMarks) * 100 : 0;
   
   const isFailed = marksDetails.some(m => {
     if (m.obtained_marks === "") return true;
@@ -1268,7 +1527,6 @@ function ExamResultEntry({ branches, exams, students, settings, currentUser }) {
   
   const averageGpa = marksDetails.length > 0 ? totalGpaPoints / marksDetails.length : 0;
   const overallGrade = calcOverallGrade(averageGpa, isFailed);
-  const passStatus = isFailed ? "fail" : "pass";
 
   const handleSaveMarks = async () => {
     // Validate all marks are entered
@@ -1521,7 +1779,16 @@ function ExamResultEntry({ branches, exams, students, settings, currentUser }) {
                 {classStudents.length > 0 && entryMode === "student" && (
                   <Button
                     type="button"
-                    onClick={() => printBlankMarksheet(selectedBranch, selectedFlatClass?.label || "Class", subjects, classStudents)}
+                    onClick={() => {
+                      const printClassLabel = resolveAcademicDisplayName(
+                        selClassId,
+                        null,
+                        selGroupId !== "all" ? selGroupId : null,
+                        selectedBranch?.academic_structure,
+                        'bn'
+                      ) || selectedFlatClass?.label || "Class";
+                      printBlankMarksheet(selectedBranch, printClassLabel, subjects, classStudents);
+                    }}
                     className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs h-9 rounded-xl px-4 flex items-center gap-1.5 self-start sm:self-auto"
                   >
                     <Printer className="h-3.5 w-3.5" />
@@ -1600,7 +1867,12 @@ function ExamResultEntry({ branches, exams, students, settings, currentUser }) {
                               />
                             </div>
                           )}
-                          {isEditMode ? (
+                          {totalStudents === 0 ? (
+                            <p className="text-xs text-amber-600 flex items-center gap-1 bg-amber-50 p-3 rounded-xl border border-amber-200">
+                              <AlertTriangle className="h-4 w-4 shrink-0" />
+                              No active enrolled students found for the selected Branch, Session, Class & Group.
+                            </p>
+                          ) : isEditMode ? (
                             studentsWithResults.length > 0 ? (
                               <Select value={selStudentId} onValueChange={setSelStudentId}>
                                 <SelectTrigger className="h-12 rounded-xl"><SelectValue placeholder="Select student to edit" /></SelectTrigger>
@@ -1627,8 +1899,15 @@ function ExamResultEntry({ branches, exams, students, settings, currentUser }) {
                                   )}
                                 </SelectContent>
                               </Select>
+                            ) : allStudentsHaveResults ? (
+                              <p className="text-xs text-emerald-600 flex items-center gap-1 bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+                                <ShieldCheck className="h-4 w-4 shrink-0" />
+                                All {totalStudents} students already have results for this exam. Switch to Edit Existing to update marks.
+                              </p>
                             ) : (
-                              <p className="text-xs text-emerald-600 flex items-center gap-1"><ShieldCheck className="h-3 w-3" /> All students already have results for this exam. Switch to Edit Existing to update marks.</p>
+                              <p className="text-xs text-amber-600 flex items-center gap-1">
+                                <AlertTriangle className="h-3 w-3" /> No eligible students available for new entry.
+                              </p>
                             )
                           )}
                         </>
@@ -1718,8 +1997,16 @@ function ExamResultEntry({ branches, exams, students, settings, currentUser }) {
                       <p className="text-sm font-bold text-slate-800">{selectedBranch?.name_en}</p>
                     </div>
                     <div>
-                      <p className="text-xs text-slate-400">Class / Section</p>
-                      <p className="text-sm font-bold text-slate-800">{selectedFlatClass?.class_name?.en || selectedStudent.class_name} ({selectedFlatClass?.section_name?.bn || "A"})</p>
+                      <p className="text-xs text-slate-400">Class / Section / Group</p>
+                      <p className="text-sm font-bold text-slate-800">
+                        {resolveAcademicDisplayName(
+                          selectedStudent.class_id,
+                          selectedStudent.session_id,
+                          selectedStudent.class_group_id,
+                          selectedBranch?.academic_structure,
+                          'bn'
+                        ) || selectedFlatClass?.label || selectedStudent.class_name || "N/A"}
+                      </p>
                     </div>
                   </div>
                   {existingResult && (
@@ -2082,14 +2369,6 @@ function AdminResultDashboard({ branches, exams, students, settings, currentUser
     return bMatch && cMatch;
   });
 
-  // Filter students based on selectors (supporting central class filtering and group filtering)
-  const filteredStudents = students.filter(s => {
-    const bMatch = selBranchId === "all" || String(s.branch_id) === String(selBranchId);
-    const cMatch = selClassId === "all" || isStudentInClassOption(s, selClassId, selectedBranch?.academic_structure);
-    const gMatch = selGroupId === "all" || String(s.class_group_id) === String(selGroupId);
-    return bMatch && cMatch && gMatch;
-  });
-
   // Filter and Enrich results
   const filteredResults = results.map(r => {
     const marksDetails = Array.isArray(r.marks_details) ? r.marks_details : [];
@@ -2170,7 +2449,6 @@ function AdminResultDashboard({ branches, exams, students, settings, currentUser
     }
     
     const branchObj = branches.find(b => String(b.id) === String(selBranchId));
-    const classObj = branchObj?.academic_structure?.find(c => c.id === classIdForExams);
     const examObj = exams.find(e => String(e.id) === String(selExamId));
     
     const classNameVal = (() => {
@@ -2482,7 +2760,16 @@ export default function ExamManager({ students, currentUser }) {
   const handleSaveExam = async (d) => {
     try {
       if (editExam) {
-        await updateExamMut.mutateAsync({ id: editExam.id, d });
+        try {
+          await updateExamMut.mutateAsync({ id: editExam.id, d });
+        } catch (err) {
+          if (err?.message?.includes("subject_schedules") || err?.code === "PGRST204" || err?.message?.includes("schema cache")) {
+            const { subject_schedules, ...fallbackData } = d;
+            await updateExamMut.mutateAsync({ id: editExam.id, d: fallbackData });
+          } else {
+            throw err;
+          }
+        }
         toast.success("Exam updated successfully!");
       } else {
         const branchObj = branches.find(b => String(b.id) === String(d.branch_id));
@@ -2492,7 +2779,16 @@ export default function ExamManager({ students, currentUser }) {
           ...d,
           session: classObj?.class_name?.en || classObj?.class_name?.bn || "",
         };
-        await createExamMut.mutateAsync(payload);
+        try {
+          await createExamMut.mutateAsync(payload);
+        } catch (err) {
+          if (err?.message?.includes("subject_schedules") || err?.code === "PGRST204" || err?.message?.includes("schema cache")) {
+            const { subject_schedules, ...fallbackPayload } = payload;
+            await createExamMut.mutateAsync(fallbackPayload);
+          } else {
+            throw err;
+          }
+        }
         toast.success("Exam created successfully!");
       }
       setShowExamForm(false);
@@ -2527,66 +2823,80 @@ export default function ExamManager({ students, currentUser }) {
 
       {/* Tabs list trigger */}
       <Tabs defaultValue="exams" value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 h-auto p-1 gap-1 bg-slate-100 rounded-xl max-w-lg mb-6">
+        <TabsList className="grid w-full grid-cols-2 sm:grid-cols-5 h-auto p-1 gap-1 bg-slate-100 rounded-xl max-w-2xl mb-6">
           <TabsTrigger value="exams" className="rounded-lg text-xs font-bold py-2.5">Exams List</TabsTrigger>
           <TabsTrigger value="entry" className="rounded-lg text-xs font-bold py-2.5">Result Entry</TabsTrigger>
           <TabsTrigger value="dashboard" className="rounded-lg text-xs font-bold py-2.5">Results Dashboard</TabsTrigger>
           <TabsTrigger value="admit-card" className="rounded-lg text-xs font-bold py-2.5 flex items-center gap-1"><CreditCard className="h-3.5 w-3.5" /> Admit Card</TabsTrigger>
+          <TabsTrigger value="inputs" className="rounded-lg text-xs font-bold py-2.5 flex items-center gap-1"><ImageIcon className="h-3.5 w-3.5" /> Exam Inputs</TabsTrigger>
         </TabsList>
 
         {/* ── Exam List View ── */}
         <TabsContent value="exams">
-          {examsLoading ? (
-            <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#052E2B]" /></div>
-          ) : exams.length === 0 ? (
-            <div className="text-center py-16 bg-white border border-slate-100 rounded-3xl p-8 shadow-sm">
-              <Trophy className="h-12 w-12 text-slate-300 mx-auto mb-3" />
-              <p className="text-sm font-semibold text-slate-600">No exams created yet.</p>
-              <p className="text-xs text-slate-400 mt-1">Click the &quot;Add Exam&quot; button at the top to configure your first examination.</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {exams.map(exam => {
-                const branch = branches.find(b => String(b.id) === String(exam.branch_id));
-                const classObj = branch?.academic_structure?.find(c => String(c.id) === String(exam.class_id));
-                return (
-                  <Card key={exam.id} className="border-0 shadow-sm bg-white overflow-hidden rounded-2xl hover:shadow-md transition-all duration-300">
-                    <div className="h-1.5 w-full bg-gradient-to-r from-[#052E2B] to-[#D4AF37]" />
-                    <div className="p-5 space-y-4">
-                      <div className="flex justify-between items-start">
-                        <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px] uppercase font-extrabold">{exam.exam_type}</Badge>
-                        <span className="text-[10px] font-bold text-yellow-600 font-mono">Yr: {exam.academic_year}</span>
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-sm text-slate-800 line-clamp-1">{exam.title}</h4>
-                        <p className="text-[10px] text-slate-400 mt-1">
-                          Branch: {branch?.name_en || branch?.name_bn || "All"} | Class: {classObj?.class_name?.bn || classObj?.class_name?.en || "All"}
-                        </p>
-                      </div>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-slate-500 border-t pt-3">
-                        <div>
-                          <span className="block text-slate-400 font-bold uppercase text-[8px]">Start Date</span>
-                          <span className="font-semibold">{exam.start_date || "N/A"}</span>
+          {(() => {
+            // Scope exam list: branch_admin sees only their branch's exams.
+            // Super admin sees all exams.
+            const visibleExams = currentUser?.role === "branch_admin" && currentUser?.branch_id
+              ? exams.filter(e => String(e.branch_id) === String(currentUser.branch_id))
+              : exams;
+            return examsLoading ? (
+              <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-[#052E2B]" /></div>
+            ) : visibleExams.length === 0 ? (
+              <div className="text-center py-16 bg-white border border-slate-100 rounded-3xl p-8 shadow-sm">
+                <Trophy className="h-12 w-12 text-slate-300 mx-auto mb-3" />
+                <p className="text-sm font-semibold text-slate-600">No exams created yet.</p>
+                <p className="text-xs text-slate-400 mt-1">Click the &quot;Add Exam&quot; button at the top to configure your first examination.</p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                {visibleExams.map(exam => {
+                  const branch = branches.find(b => String(b.id) === String(exam.branch_id));
+                  const fullClassLabel = resolveAcademicDisplayName(
+                    exam.class_id,
+                    exam.session_id,
+                    exam.class_group_id,
+                    branch?.academic_structure,
+                    'bn'
+                  ) || "All";
+                  return (
+                    <Card key={exam.id} className="border-0 shadow-sm bg-white overflow-hidden rounded-2xl hover:shadow-md transition-all duration-300">
+                      <div className="h-1.5 w-full bg-gradient-to-r from-[#052E2B] to-[#D4AF37]" />
+                      <div className="p-5 space-y-4">
+                        <div className="flex justify-between items-start">
+                          <Badge className="bg-emerald-50 text-emerald-700 border-emerald-100 text-[10px] uppercase font-extrabold">{exam.exam_type}</Badge>
+                          <span className="text-[10px] font-bold text-yellow-600 font-mono">Yr: {exam.academic_year}</span>
                         </div>
                         <div>
-                          <span className="block text-slate-400 font-bold uppercase text-[8px]">Publish Date</span>
-                          <span className="font-semibold text-emerald-600 font-bold">{exam.result_publish_date || "N/A"}</span>
+                          <h4 className="font-bold text-sm text-slate-800 line-clamp-1">{exam.title}</h4>
+                          <p className="text-[10px] text-slate-400 mt-1">
+                            Branch: {branch?.name_en || branch?.name_bn || "All"} | Class: {fullClassLabel}
+                          </p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-slate-500 border-t pt-3">
+                          <div>
+                            <span className="block text-slate-400 font-bold uppercase text-[8px]">Start Date</span>
+                            <span className="font-semibold">{exam.start_date || "N/A"}</span>
+                          </div>
+                          <div>
+                            <span className="block text-slate-400 font-bold uppercase text-[8px]">Publish Date</span>
+                            <span className="font-semibold text-emerald-600">{exam.result_publish_date || "N/A"}</span>
+                          </div>
+                        </div>
+                        <div className="flex justify-end gap-1 border-t pt-3">
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-100" onClick={() => { setEditExam(exam); setShowExamForm(true); }}>
+                            <Pencil className="h-4 w-4 text-slate-600" />
+                          </Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-50 text-red-500" onClick={() => handleDeleteExam(exam)}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="flex justify-end gap-1 border-t pt-3">
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-slate-100" onClick={() => { setEditExam(exam); setShowExamForm(true); }}>
-                          <Pencil className="h-4 w-4 text-slate-600" />
-                        </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-red-50 text-red-500" onClick={() => handleDeleteExam(exam)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </Card>
-                );
-              })}
-            </div>
-          )}
+                    </Card>
+                  );
+                })}
+              </div>
+            );
+          })()}
         </TabsContent>
 
         {/* ── Wizard Result Entry View ── */}
@@ -2602,6 +2912,11 @@ export default function ExamManager({ students, currentUser }) {
         {/* ── Admit Card ── */}
         <TabsContent value="admit-card">
           <AdmitCardManager branches={branches} exams={exams} currentUser={currentUser} settings={settingsObj} />
+        </TabsContent>
+
+        {/* ── Exam Inputs ── */}
+        <TabsContent value="inputs">
+          <ExamInputsManager exams={exams} />
         </TabsContent>
       </Tabs>
 

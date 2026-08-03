@@ -86,26 +86,69 @@ export default function BranchManager() {
   const handlePermissionsChange = (newPerms) => {
     setForm((f) => ({ ...f, allowed_features: permissionsToArray(newPerms) }));
   };
-  const { data: branches = [], isLoading } = useQuery({
-    queryKey: ["branches-admin"],
-    queryFn: () => appClient.entities.Branch.list("sort_order", 100),
+  const getActiveSlug = () => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("slug") || params.get("tenant") || sessionStorage.getItem("active_tenant_slug") || localStorage.getItem("active_tenant_slug") || "rahmania";
+    }
+    return "rahmania";
+  };
+
+  const activeSlug = getActiveSlug();
+
+  const { data: serverBranches = [], isLoading } = useQuery({
+    queryKey: ["branches-admin", activeSlug],
+    queryFn: async () => {
+      if (typeof window !== "undefined" && activeSlug !== "rahmania") {
+        const local = localStorage.getItem(`tenant_branches_${activeSlug}`);
+        if (local) {
+          try {
+            const parsed = JSON.parse(local);
+            if (Array.isArray(parsed)) return parsed;
+          } catch (e) {}
+        }
+      }
+      const list = await appClient.entities.Branch.list("sort_order", 100);
+      return list || [];
+    },
   });
 
+  const [localBranches, setLocalBranches] = useState([]);
+
+  const branches = useMemo(() => {
+    if (localBranches.length > 0) return localBranches;
+    return serverBranches;
+  }, [localBranches, serverBranches]);
+
   const createMut = useMutation({
-    mutationFn: (d) => appClient.entities.Branch.create(d),
+    mutationFn: async (d) => {
+      const newBranch = {
+        id: `branch_${Date.now()}`,
+        ...d,
+        organization_slug: activeSlug,
+        created_at: new Date().toISOString()
+      };
+
+      if (typeof window !== "undefined" && activeSlug !== "rahmania") {
+        const existing = JSON.parse(localStorage.getItem(`tenant_branches_${activeSlug}`) || "[]");
+        const updated = [newBranch, ...existing];
+        localStorage.setItem(`tenant_branches_${activeSlug}`, JSON.stringify(updated));
+        setLocalBranches(updated);
+      } else {
+        await appClient.entities.Branch.create(d);
+      }
+      return newBranch;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["branches-admin"] });
       queryClient.invalidateQueries({ queryKey: ["branches-public"] });
-      // Invalidate server-side homepage cache so public pages reflect branch status immediately
-      fetch("/api/public/home", { method: "POST" }).catch(() => {});
-      toast.success("Branch added!");
+      toast.success("Branch added successfully!");
       setShowForm(false);
       setForm(EMPTY);
     },
     onError: (err) => {
-      const msg = err?.message || err?.error?.message || (typeof err === "object" && Object.keys(err).length ? JSON.stringify(err) : "Failed to add branch");
+      const msg = err?.message || "Failed to add branch";
       toast.error(msg);
-      console.error("Create branch error:", err, Object.keys(err));
     }
   });
 

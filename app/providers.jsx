@@ -7,6 +7,7 @@ import { queryClientInstance } from '@/lib/query-client'
 import { AuthProvider } from '@/lib/AuthContext'
 import { LanguageProvider } from '@/lib/LanguageContext'
 import { VisitorAuthProvider } from '@/lib/VisitorAuthContext'
+import { TenantProvider } from '@/lib/tenant/ClientTenantContext'
 
 const NavigationTracker = dynamic(() => import('@/lib/NavigationTracker'), { ssr: false })
 const Toaster = dynamic(() => import('@/components/ui/toaster').then(m => ({ default: m.Toaster })), { ssr: false })
@@ -15,6 +16,7 @@ const SonnerToaster = dynamic(() => import('sonner').then(m => ({ default: m.Toa
 export default function Providers({ children, initialLang = 'bn' }) {
   return (
     <LanguageProvider initialLang={initialLang}>
+      <TenantProvider>
       <AuthProvider>
         <VisitorAuthProvider>
           <QueryClientProvider client={queryClientInstance}>
@@ -29,6 +31,7 @@ export default function Providers({ children, initialLang = 'bn' }) {
           </QueryClientProvider>
         </VisitorAuthProvider>
       </AuthProvider>
+      </TenantProvider>
     </LanguageProvider>
   )
 }
