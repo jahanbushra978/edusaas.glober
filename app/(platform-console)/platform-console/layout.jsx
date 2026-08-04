@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import ConsoleSidebar from "@/features/platform-console/components/ConsoleSidebar";
+import ConsoleTopBar from "@/features/platform-console/components/ConsoleTopBar";
 import { appClient } from "@/api/appClient";
 import { Loader2, Lock, ArrowLeft, PhoneCall, Mail, MessageSquare, MapPin } from "lucide-react";
 import Link from "next/link";
@@ -127,11 +128,17 @@ export default function PlatformConsoleLayout({ children }) {
 
   // 3. Render Platform Console when authorized
   return (
-    <div className="h-[100dvh] flex bg-slate-50 text-slate-900 overflow-hidden">
-      <ConsoleSidebar currentUser={user} />
-      <main className="flex-1 overflow-y-auto w-full transition-all duration-300">
-        <div className="max-w-7xl mx-auto px-6 py-8">{children}</div>
-      </main>
+    <div className="h-[100dvh] flex flex-col bg-slate-50 text-slate-900 overflow-hidden">
+      {/* Top Navigation Bar */}
+      <ConsoleTopBar user={user} />
+
+      {/* Sidebar + Main Content */}
+      <div className="flex flex-1 overflow-hidden">
+        <ConsoleSidebar currentUser={user} />
+        <main className="flex-1 overflow-y-auto w-full transition-all duration-300">
+          <div className="max-w-7xl mx-auto px-6 py-8">{children}</div>
+        </main>
+      </div>
     </div>
   );
 }
