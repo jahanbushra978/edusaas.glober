@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,8 +10,123 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
-import { Globe, Layers, ShieldCheck, Trash2, AlertTriangle, CheckCircle2, Ban, Bell, DollarSign } from "lucide-react";
+import {
+  Globe, Layers, ShieldCheck, Trash2, AlertTriangle, CheckCircle2,
+  Ban, Bell, DollarSign, MoreVertical, Eye, Pencil, ExternalLink, X
+} from "lucide-react";
 
+// ─── ⋮ Kebab Dropdown Menu ───────────────────────────────────────────
+function KebabMenu({ org, onSuspend, onDelete, onWarn }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (ref.current && !ref.current.contains(e.target)) setOpen(false);
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const slug = org.slug || org.subdomain || "rahmania";
+  const isSuspended = org.status === "suspended";
+
+  const actions = [
+    {
+      label: "View Details",
+      icon: Eye,
+      href: `/platform-console/organizations/${org.id}`,
+      color: "text-slate-700",
+    },
+    {
+      label: "ERP Admin Panel",
+      icon: ShieldCheck,
+      href: `/AdminDashboard?slug=${slug}`,
+      color: "text-teal-700",
+    },
+    {
+      label: "Page Builder",
+      icon: Layers,
+      href: `/admin/website/page-builder?slug=${slug}`,
+      color: "text-indigo-700",
+    },
+    {
+      label: "Live Site",
+      icon: Globe,
+      href: `/site/${slug}`,
+      target: "_blank",
+      color: "text-sky-700",
+    },
+    { divider: true },
+    {
+      label: "Send Alert Notice",
+      icon: Bell,
+      onClick: () => { onWarn(org); setOpen(false); },
+      color: "text-amber-700",
+    },
+    {
+      label: isSuspended ? "Reactivate Account" : "Suspend Account",
+      icon: isSuspended ? CheckCircle2 : Ban,
+      onClick: () => { onSuspend(org.id, org.status); setOpen(false); },
+      color: isSuspended ? "text-emerald-700" : "text-orange-600",
+    },
+    { divider: true },
+    {
+      label: "Delete Organization",
+      icon: Trash2,
+      onClick: () => { onDelete(org); setOpen(false); },
+      color: "text-red-600",
+      danger: true,
+    },
+  ];
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="h-8 w-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all border border-transparent hover:border-slate-200"
+        title="Actions"
+      >
+        <MoreVertical size={16} />
+      </button>
+
+      {open && (
+        <div className="absolute right-0 top-9 z-50 w-52 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 overflow-hidden">
+          {actions.map((action, idx) => {
+            if (action.divider) return <div key={idx} className="my-1 border-t border-slate-100" />;
+            const Icon = action.icon;
+            const content = (
+              <span
+                className={`flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold transition-colors w-full text-left cursor-pointer ${
+                  action.danger
+                    ? "hover:bg-red-50 text-red-600"
+                    : `${action.color} hover:bg-slate-50`
+                }`}
+              >
+                <Icon size={14} className="shrink-0" />
+                {action.label}
+              </span>
+            );
+            if (action.href) {
+              return (
+                <Link key={idx} href={action.href} target={action.target} onClick={() => setOpen(false)}>
+                  {content}
+                </Link>
+              );
+            }
+            return (
+              <button key={idx} onClick={action.onClick} className="w-full">
+                {content}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─── Main Table Component ─────────────────────────────────────────────
 export default function OrganizationsTable({ organizations: initialOrgs }) {
   const [orgs, setOrgs] = useState(initialOrgs || []);
   const [deleteModalOrg, setDeleteModalOrg] = useState(null);
@@ -39,7 +154,7 @@ export default function OrganizationsTable({ organizations: initialOrgs }) {
     setOrgs((prev) =>
       prev.map((o) => (o.id === id ? { ...o, status: nextStatus } : o))
     );
-    showToast(`প্রতিষ্ঠানের অ্যাকাউন্ট অবস্থা '${nextStatus.toUpperCase()}' করা হয়েছে!`);
+    showToast(`প্রতিষ্ঠানের অ্যাকাউন্ট অবস্থা '${nextStatus.toUpperCase()}' করা হয়েছে!`);
   };
 
   // Toggle Billing Payment Status
@@ -48,7 +163,7 @@ export default function OrganizationsTable({ organizations: initialOrgs }) {
     setOrgs((prev) =>
       prev.map((o) => (o.id === id ? { ...o, payment_status: nextPayment } : o))
     );
-    showToast(`বিলিং পরিশোধ অবস্থা '${nextPayment.toUpperCase()}' করা হয়েছে!`);
+    showToast(`বিলিং পরিশোধ অবস্থা '${nextPayment.toUpperCase()}' করা হয়েছে!`);
   };
 
   // Execute Safe Permanent Delete
@@ -66,7 +181,7 @@ export default function OrganizationsTable({ organizations: initialOrgs }) {
 
     setDeleteModalOrg(null);
     setTypedSlugConfirm("");
-    showToast(`'${deleteModalOrg.name}' প্রতিষ্ঠানটি স্থায়ীভাবে ডিলিট করা হয়েছে।`);
+    showToast(`'${deleteModalOrg.name}' প্রতিষ্ঠানটি স্থায়ীভাবে ডিলিট করা হয়েছে।`);
   };
 
   // Send Warning Alert Notice to School Admin
@@ -83,7 +198,7 @@ export default function OrganizationsTable({ organizations: initialOrgs }) {
 
     setWarningModalOrg(null);
     setWarningText("");
-    showToast(`'${warningModalOrg.name}'-এর ড্যাশবোর্ডে ওয়ার্নিং মেসেজ পাঠানো হয়েছে!`);
+    showToast(`'${warningModalOrg.name}'-এর ড্যাশবোর্ডে ওয়ার্নিং মেসেজ পাঠানো হয়েছে!`);
   };
 
   return (
@@ -102,8 +217,8 @@ export default function OrganizationsTable({ organizations: initialOrgs }) {
               <TableHead className="font-bold">Organization & Domain</TableHead>
               <TableHead className="font-bold">Plan & Billing</TableHead>
               <TableHead className="font-bold">Status</TableHead>
-              <TableHead className="font-bold text-center">Warning Notice</TableHead>
-              <TableHead className="font-bold text-right">Actions & Controls</TableHead>
+              <TableHead className="font-bold text-center">Warning</TableHead>
+              <TableHead className="font-bold text-right w-12">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -120,11 +235,12 @@ export default function OrganizationsTable({ organizations: initialOrgs }) {
               const feeVal = savedCustomFee || org.custom_fee || (org.subscription_plan?.includes("Enterprise") ? "5000" : (slug === "mehedi-hasan" ? "1050" : "1000"));
               const planName = org.subscription_plan === "Free Tier Access" ? "Free Tier Access" : (org.subscription_plan?.includes("Enterprise") ? "Enterprise Plan" : "Standard Plan");
               const formattedPlanBadge = planName === "Free Tier Access"
-                ? "🎁 Free Tier (বিনামূল্যে)"
+                ? "🎁 Free Tier"
                 : `${planName} (৳${parseInt(feeVal, 10).toLocaleString("bn-BD")}/মাস)`;
 
               return (
                 <TableRow key={org.id} className="hover:bg-slate-50/80 transition-colors">
+                  {/* Organization & Domain */}
                   <TableCell>
                     <div className="flex items-center gap-3">
                       <span
@@ -142,31 +258,29 @@ export default function OrganizationsTable({ organizations: initialOrgs }) {
                     </div>
                   </TableCell>
 
-                  {/* Billing Ledger Column */}
+                  {/* Billing Column */}
                   <TableCell>
                     <div className="space-y-1">
                       <Badge variant="outline" className="capitalize text-[11px] font-bold text-slate-800 bg-slate-100 border-slate-300">
                         {formattedPlanBadge}
                       </Badge>
-                      <div>
-                        <button
-                          onClick={() => handleTogglePayment(org.id, org.payment_status || "paid")}
-                          title="ক্লিক করে বিল পরিশোধিত বা বকেয়া করুন"
-                          className={`text-xs font-bold px-3 py-1 rounded-xl transition-all flex items-center gap-1.5 w-fit ${
-                            isPaid ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100" : "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
-                          }`}
-                        >
-                          <DollarSign size={12} /> {isPaid ? "PAID (পরিশোধিত)" : "DUE (বকেয়া আছে)"}
-                        </button>
-                      </div>
+                      <button
+                        onClick={() => handleTogglePayment(org.id, org.payment_status || "paid")}
+                        title="ক্লিক করে বিল পরিশোধিত বা বকেয়া করুন"
+                        className={`text-xs font-bold px-3 py-1 rounded-xl transition-all flex items-center gap-1.5 w-fit ${
+                          isPaid ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100" : "bg-red-50 text-red-700 border border-red-200 hover:bg-red-100"
+                        }`}
+                      >
+                        <DollarSign size={12} /> {isPaid ? "PAID" : "DUE ⚠️"}
+                      </button>
                     </div>
                   </TableCell>
 
-                  {/* Suspension Status Column */}
+                  {/* Status Column */}
                   <TableCell>
                     <button
                       onClick={() => handleToggleStatus(org.id, org.status)}
-                      title="ক্লিক করে একাউন্ট সাময়িকভাবে স্থগিত বা চালু করুন"
+                      title="ক্লিক করে একাউন্ট সাময়িকভাবে স্থগিত বা চালু করুন"
                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm ${
                         isSuspended
                           ? "bg-red-600 hover:bg-red-700 text-white animate-pulse"
@@ -174,11 +288,11 @@ export default function OrganizationsTable({ organizations: initialOrgs }) {
                       }`}
                     >
                       {isSuspended ? <Ban size={13} /> : <CheckCircle2 size={13} />}
-                      {isSuspended ? "SUSPENDED (সাময়িক স্থগিত)" : "ACTIVE (সক্রিয়)"}
+                      {isSuspended ? "SUSPENDED" : "ACTIVE"}
                     </button>
                   </TableCell>
 
-                  {/* Warning Dispatcher Button */}
+                  {/* Warning Button */}
                   <TableCell className="text-center">
                     <Button
                       variant="ghost"
@@ -186,44 +300,18 @@ export default function OrganizationsTable({ organizations: initialOrgs }) {
                       className="h-7 text-[11px] text-amber-700 hover:bg-amber-50 border border-amber-200"
                       onClick={() => setWarningModalOrg(org)}
                     >
-                      <Bell size={12} className="mr-1 text-amber-600" /> Send Alert
+                      <Bell size={12} className="mr-1 text-amber-600" /> Alert
                     </Button>
                   </TableCell>
 
-                  {/* Action Buttons */}
+                  {/* ⋮ Kebab Action Menu */}
                   <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1.5">
-                      <Link href={`/admin/website/page-builder?slug=${slug}`}>
-                        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2 text-teal-700 border-teal-200 bg-teal-50/50 hover:bg-teal-100">
-                          <Layers size={12} className="mr-1" /> Page Builder
-                        </Button>
-                      </Link>
-
-                      <Link href={`/AdminDashboard?slug=${slug}`}>
-                        <Button variant="outline" size="sm" className="h-7 text-[11px] px-2 text-slate-700 hover:bg-slate-100">
-                          <ShieldCheck size={12} className="mr-1" /> ERP Admin
-                        </Button>
-                      </Link>
-
-                      <Link href={`/site/${slug}`} target="_blank">
-                        <Button size="sm" className="h-7 text-[11px] px-2 bg-slate-900 hover:bg-slate-800 text-white">
-                          <Globe size={12} className="mr-1" /> Live Site
-                        </Button>
-                      </Link>
-
-                      {/* SAFE DELETE BUTTON */}
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 text-red-500 hover:bg-red-50 hover:text-red-700"
-                        onClick={() => {
-                          setDeleteModalOrg(org);
-                          setTypedSlugConfirm("");
-                        }}
-                      >
-                        <Trash2 size={13} />
-                      </Button>
-                    </div>
+                    <KebabMenu
+                      org={org}
+                      onSuspend={handleToggleStatus}
+                      onDelete={(o) => { setDeleteModalOrg(o); setTypedSlugConfirm(""); }}
+                      onWarn={setWarningModalOrg}
+                    />
                   </TableCell>
                 </TableRow>
               );
@@ -238,16 +326,16 @@ export default function OrganizationsTable({ organizations: initialOrgs }) {
           <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="text-red-600 flex items-center gap-2 text-base font-bold">
-                <AlertTriangle size={20} /> স্থায়ীভাবে ডিলিট নিশ্চিতকরণ
+                <AlertTriangle size={20} /> স্থায়ীভাবে ডিলিট নিশ্চিতকরণ
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-600 pt-2 space-y-2">
-                <p>ভুলক্রমে ডিলিট হওয়া রোধ করতে নিচের বক্সে হুবহু এই স্কুলের স্লাগ <b>{(deleteModalOrg.slug || deleteModalOrg.subdomain || "").toLowerCase()}</b> টাইপ করুন।</p>
+                <p>ভুলক্রমে ডিলিট হওয়া রোধ করতে নিচের বক্সে হুবহু এই স্কুলের স্লাগ <b>{(deleteModalOrg.slug || deleteModalOrg.subdomain || "").toLowerCase()}</b> টাইপ করুন।</p>
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 pt-2">
               <div className="p-3 bg-red-50 rounded-xl border border-red-200 text-xs text-red-900">
-                ⚠️ নিশ্চিত হোন: <b>{deleteModalOrg.name}</b> ডিলিট করলে তাদের সমস্ত তথ্য স্থায়ীভাবে মুছে যাবে।
+                ⚠️ নিশ্চিত হোন: <b>{deleteModalOrg.name}</b> ডিলিট করলে তাদের সমস্ত তথ্য স্থায়ীভাবে মুছে যাবে।
               </div>
 
               <Input
@@ -267,7 +355,7 @@ export default function OrganizationsTable({ organizations: initialOrgs }) {
                   disabled={typedSlugConfirm.trim().toLowerCase() !== (deleteModalOrg.slug || deleteModalOrg.subdomain || "").toLowerCase()}
                   onClick={handleConfirmDelete}
                 >
-                  <Trash2 size={14} className="mr-1" /> স্থায়ীভাবে ডিলিট করুন
+                  <Trash2 size={14} className="mr-1" /> স্থায়ীভাবে ডিলিট করুন
                 </Button>
               </div>
             </div>
@@ -281,16 +369,16 @@ export default function OrganizationsTable({ organizations: initialOrgs }) {
           <DialogContent className="max-w-md bg-white">
             <DialogHeader>
               <DialogTitle className="text-amber-700 flex items-center gap-2 text-base font-bold">
-                <Bell size={18} /> ওয়ার্নিং নোটিশ পাঠান ({warningModalOrg.name})
+                <Bell size={18} /> ওয়ার্নিং নোটিশ পাঠান ({warningModalOrg.name})
               </DialogTitle>
               <DialogDescription className="text-xs text-slate-600 pt-1">
-                এই মেসেজটি শুধুমাত্র <b>{warningModalOrg.name}</b>-এর সুপার এডমিন প্যানেলের উপরে লাল ওয়ার্নিং ব্যানার হিসেবে প্রদর্শিত হবে।
+                এই মেসেজটি শুধুমাত্র <b>{warningModalOrg.name}</b>-এর সুপার এডমিন প্যানেলের উপরে লাল ওয়ার্নিং ব্যানার হিসেবে প্রদর্শিত হবে।
               </DialogDescription>
             </DialogHeader>
 
             <div className="space-y-4 pt-2">
               <Textarea
-                placeholder="যেমন: আপনার চলতি মাসের বিলের মেয়াদ আগামী ৩০ জুলাই শেষ হবে। অনুগ্রহ করে বকেয়া পরিশোধ করুন।"
+                placeholder="যেমন: আপনার চলতি মাসের বিলের মেয়াদ আগামী ৩০ জুলাই শেষ হবে। অনুগ্রহ করে বকেয়া পরিশোধ করুন।"
                 value={warningText}
                 onChange={(e) => setWarningText(e.target.value)}
                 className="text-xs min-h-[90px]"

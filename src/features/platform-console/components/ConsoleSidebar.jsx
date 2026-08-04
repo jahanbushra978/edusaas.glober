@@ -5,39 +5,102 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { appClient } from "@/api/appClient";
 import {
-  LayoutDashboard, Building2, Layers, CreditCard, Settings, LogOut, PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, PlusCircle, ShieldAlert
+  LayoutDashboard, Building2, Layers, CreditCard, Settings, LogOut,
+  PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, PlusCircle,
+  ShieldAlert, Inbox, MessageSquare, CalendarCheck, LifeBuoy, Lightbulb,
+  Bug, TrendingUp, Globe, HardDrive, Handshake, Puzzle, ShieldCheck,
+  FileText, Archive
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/platform-console", label: "Dashboard (ড্যাশবোর্ড)", icon: LayoutDashboard, exact: true },
+  {
+    href: "/platform-console",
+    label: "Dashboard (ড্যাশবোর্ড)",
+    icon: LayoutDashboard,
+    exact: true,
+  },
+  {
+    href: "/platform-console/inbox",
+    label: "Central Inbox (ইনবক্স)",
+    icon: Inbox,
+    children: [
+      { href: "/platform-console/inbox?tab=applications", label: "📝 Organization Applications", icon: Building2 },
+      { href: "/platform-console/inbox?tab=messages",     label: "💬 Contact Messages",          icon: MessageSquare },
+      { href: "/platform-console/inbox?tab=demo",         label: "📅 Demo Requests",             icon: CalendarCheck },
+      { href: "/platform-console/inbox?tab=support",      label: "🎫 Support Tickets",           icon: LifeBuoy },
+      { href: "/platform-console/inbox?tab=features",     label: "💡 Feature Requests",          icon: Lightbulb },
+      { href: "/platform-console/inbox?tab=bugs",         label: "🐞 Bug Reports",               icon: Bug },
+      { href: "/platform-console/inbox?tab=upgrades",     label: "💳 Upgrade Requests",          icon: TrendingUp },
+      { href: "/platform-console/inbox?tab=domains",      label: "🌐 Domain Requests",           icon: Globe },
+      { href: "/platform-console/inbox?tab=storage",      label: "📦 Storage Requests",          icon: HardDrive },
+      { href: "/platform-console/inbox?tab=partners",     label: "🤝 Partner Requests",          icon: Handshake },
+    ],
+  },
   {
     href: "/platform-console/organizations",
     label: "Organizations (প্রতিষ্ঠানের তালিকা)",
     icon: Building2,
     children: [
-      { href: "/platform-console/organizations", label: "সকল প্রতিষ্ঠান", icon: Building2 },
-      { href: "/platform-console/organizations?action=new", label: "নতুন স্কুল যোগ করুন", icon: PlusCircle },
-      { href: "/platform-console/organizations?filter=suspended", label: "স্থগিতকৃত একাউন্টসমূহ", icon: ShieldAlert },
-    ]
+      { href: "/platform-console/organizations",                  label: "সকল প্রতিষ্ঠান",           icon: Building2 },
+      { href: "/platform-console/organizations?action=new",       label: "নতুন স্কুল যোগ করুন",      icon: PlusCircle },
+      { href: "/platform-console/organizations?filter=suspended", label: "স্থগিতকৃত একাউন্টসমূহ",   icon: ShieldAlert },
+    ],
   },
   {
     href: "/platform-console/billing",
-    label: "Billing & Subscriptions (বিলিং ও প্যাকেজ)",
+    label: "Billing & Revenue (বিলিং ও রাজস্ব)",
     icon: CreditCard,
     children: [
-      { href: "/platform-console/billing", label: "সাবস্ক্রিপশন ও বিলিং হিসাব", icon: CreditCard },
-      { href: "/platform-console/billing?tab=plans", label: "প্যাকেজ রেট কন্ট্রোল", icon: Layers },
-    ]
+      { href: "/platform-console/billing",              label: "সাবস্ক্রিপশন ও বিলিং হিসাব", icon: CreditCard },
+      { href: "/platform-console/billing?tab=plans",   label: "প্যাকেজ রেট কন্ট্রোল",       icon: Layers },
+    ],
   },
-  { href: "/admin/website/page-builder?slug=rahmania", label: "Visual Website Builder (পেজ বিল্ডার)", icon: Layers },
-  { href: "/platform-console/settings", label: "Platform Settings & Security (সেটিংস)", icon: Settings },
+  {
+    href: "/platform-console/modules",
+    label: "Modules & Marketplace",
+    icon: Puzzle,
+    exact: true,
+  },
+  {
+    href: "/admin/website/page-builder?slug=rahmania",
+    label: "Website Builder (পেজ বিল্ডার)",
+    icon: Layers,
+    exact: true,
+  },
+  {
+    href: "/platform-console/security",
+    label: "Security & Access (নিরাপত্তা)",
+    icon: ShieldCheck,
+    exact: true,
+  },
+  {
+    href: "/platform-console/audit-logs",
+    label: "Audit Logs (অডিট লগ)",
+    icon: FileText,
+    exact: true,
+  },
+  {
+    href: "/platform-console/backups",
+    label: "Backups (ব্যাকআপ)",
+    icon: Archive,
+    exact: true,
+  },
+  {
+    href: "/platform-console/settings",
+    label: "Platform Settings (সেটিংস)",
+    icon: Settings,
+    exact: true,
+  },
 ];
 
 export default function ConsoleSidebar({ parentCollapsed, onToggleCollapse }) {
   const pathname = usePathname();
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
-  const [openSubMenus, setOpenSubMenus] = useState({ "/platform-console/organizations": true });
+  const [openSubMenus, setOpenSubMenus] = useState({
+    "/platform-console/organizations": true,
+    "/platform-console/inbox": true,
+  });
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -80,7 +143,7 @@ export default function ConsoleSidebar({ parentCollapsed, onToggleCollapse }) {
 
         <button
           onClick={toggleSidebar}
-          title={isCollapsed ? "সাইডবার বড় করুন (Expand Sidebar)" : "সাইডবার ছোট করুন (Collapse Sidebar)"}
+          title={isCollapsed ? "সাইডবার বড় করুন (Expand Sidebar)" : "সাইডবার ছোট করুন (Collapse Sidebar)"}
           className="h-9 w-9 rounded-xl bg-slate-800/90 hover:bg-teal-600 text-slate-300 hover:text-white flex items-center justify-center transition-all shrink-0 border border-slate-700 shadow-sm mx-auto"
         >
           {isCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
@@ -88,7 +151,7 @@ export default function ConsoleSidebar({ parentCollapsed, onToggleCollapse }) {
       </div>
 
       {/* Navigation Links with Sub-Menu Dropdown Support */}
-      <nav className="flex-1 px-2 py-4 space-y-1.5 overflow-y-auto">
+      <nav className="flex-1 px-2 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-track-slate-900 scrollbar-thumb-slate-700">
         {NAV_ITEMS.map((item) => {
           const { href, label, icon: Icon, exact, children } = item;
           const active = exact ? pathname === href : pathname?.startsWith(href);
@@ -96,7 +159,7 @@ export default function ConsoleSidebar({ parentCollapsed, onToggleCollapse }) {
           const isSubOpen = openSubMenus[href];
 
           return (
-            <div key={href} className="space-y-1">
+            <div key={href} className="space-y-0.5">
               <div className="flex items-center">
                 <Link
                   href={href}
@@ -109,7 +172,7 @@ export default function ConsoleSidebar({ parentCollapsed, onToggleCollapse }) {
                       : "text-slate-400 hover:bg-slate-800/80 hover:text-slate-200"
                   }`}
                 >
-                  <Icon size={18} className={active ? "text-teal-400 shrink-0" : "text-slate-400 shrink-0"} />
+                  <Icon size={17} className={`shrink-0 ${active ? "text-teal-400" : "text-slate-400"}`} />
                   {!isCollapsed && <span className="truncate flex-1">{label}</span>}
                 </Link>
 
@@ -119,7 +182,7 @@ export default function ConsoleSidebar({ parentCollapsed, onToggleCollapse }) {
                       e.preventDefault();
                       toggleSubMenu(href);
                     }}
-                    className="p-1.5 text-slate-400 hover:text-white"
+                    className="p-1.5 text-slate-500 hover:text-white transition-colors"
                   >
                     {isSubOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                   </button>
@@ -128,9 +191,9 @@ export default function ConsoleSidebar({ parentCollapsed, onToggleCollapse }) {
 
               {/* Nested Dropdown Sub-Menu Items */}
               {!isCollapsed && hasChildren && isSubOpen && (
-                <div className="ml-5 pl-3 border-l border-slate-800 space-y-1">
+                <div className="ml-5 pl-3 border-l border-slate-800 space-y-0.5 pb-1">
                   {children.map((sub) => {
-                    const subActive = pathname === sub.href;
+                    const subActive = pathname === sub.href || (pathname + "?") === sub.href.split("?")[0] + "?";
                     const SubIcon = sub.icon;
                     return (
                       <Link
@@ -142,7 +205,7 @@ export default function ConsoleSidebar({ parentCollapsed, onToggleCollapse }) {
                             : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200"
                         }`}
                       >
-                        <SubIcon size={14} className="text-teal-400 shrink-0" />
+                        <SubIcon size={13} className="text-teal-400 shrink-0" />
                         <span className="truncate">{sub.label}</span>
                       </Link>
                     );
