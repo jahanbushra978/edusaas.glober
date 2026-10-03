@@ -29,7 +29,7 @@ import {
 
   Pencil, Eye, Loader2, Download, BarChart3, Award, UserCog, DollarSign, Settings, Bell, AlertCircle,
 
-  CalendarCheck, Wallet, ArrowDownCircle, Clock, Trophy, Images, Building2, ImagePlay, LayoutDashboard, Menu, FileText, Mail, Quote, PanelLeftClose, PanelLeftOpen, Sparkles, Home, Calendar, Shield, Monitor, Layers, Palette
+  CalendarCheck, Wallet, ArrowDownCircle, Clock, Trophy, Images, Building2, ImagePlay, LayoutDashboard, Menu, FileText, Mail, Quote, PanelLeftClose, PanelLeftOpen, Sparkles, Home, Calendar, Shield, Monitor, Layers, Palette, Activity
 } from "lucide-react";
 
 
@@ -110,6 +110,7 @@ const CertificateManager = lazyPanel(() => import("@/components/admin/Certificat
 const AttendanceManager = lazyPanel(() => import("@/components/admin/AttendanceManager"));
 const BulkImportMapping = lazyPanel(() => import("@/components/admin/BulkImportMapping"));
 const SecurityManager = lazyPanel(() => import("@/components/admin/SecurityManager"));
+const ApplicationManager = lazyPanel(() => import("@/features/admin/components/ApplicationManager"));
 
 const BarChart = lazyNamed(() => import("recharts").then((mod) => mod.BarChart));
 const Bar = lazyNamed(() => import("recharts").then((mod) => mod.Bar));
@@ -346,6 +347,7 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
         { label: "Academic Structure", value: "academic-structure", icon: GraduationCap },
         { label: "🎓 Promote to Next Class", value: "promotion", icon: GraduationCap },
         { label: "📜 Certificates", value: "certificates", icon: FileText },
+        { label: "📝 Applications & Approvals", value: "applications", icon: FileText },
       ],
     },
     {
@@ -353,6 +355,7 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
       items: [
         { label: "Student Attendance", value: "student-attendance", icon: CalendarCheck },
         { label: "Teacher Attendance", value: "teacher-attendance", icon: Clock },
+        { label: "Live Hajira Monitor", value: "live-attendance", icon: Activity, href: "/live-attendance" },
         { label: "Biometric Attendance", value: "attendance", icon: Monitor },
         { label: "Biometric Import", value: "biometric-import", icon: Upload },
         // { label: "Daily Quran Tracker", value: "daily-lesson-tracker", icon: BookOpen },
@@ -1248,6 +1251,7 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
   const isFeatureAllowed = (value) => {
     if (!currentUser) return false;
     if (currentUser.role === "admin") return true;
+    if (value === "live-attendance") return true;
     if (value === "analytics") {
       if (currentUser.role === "boarding_manager") return false;
       return true;
@@ -1272,6 +1276,10 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
 
   const handleSidebarItemClick = (item) => {
     setSidebarOpen(false);
+    if (item.value === "live-attendance") {
+      window.open("/live-attendance", "_blank");
+      return;
+    }
     if (["page-builder", "themes", "menus", "forms", "media"].includes(item.value)) {
       window.location.href = `/admin/website/page-builder?slug=${activeSchoolSlug}`;
       return;
@@ -1398,6 +1406,23 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
                   <Layers size={14} className="mr-1.5" /> ⚡ Page Builder
                 </Button>
               </Link>
+
+              {/* Quick AI Assistant Trigger */}
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                className="border-emerald-600/30 text-emerald-800 hover:bg-emerald-50 text-xs font-semibold shadow-sm h-8 px-2.5 gap-1.5 cursor-pointer"
+                onClick={() => {
+                  if (typeof window !== "undefined") {
+                    window.dispatchEvent(new CustomEvent("toggle-ai-chat"));
+                  }
+                }}
+                title="এআই সহকারী খুলুন (Alt+A)"
+              >
+                <Sparkles size={14} className="text-amber-500 animate-pulse" />
+                <span className="hidden sm:inline">এআই সহকারী</span>
+              </Button>
 
               <ThemeToggle />
 
@@ -1803,6 +1828,14 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
 
               <TabsContent value="attendance">
                 <AttendanceManager currentUser={currentUser} />
+              </TabsContent>
+
+              <TabsContent value="applications">
+                <ApplicationManager
+                  currentUser={currentUser}
+                  branches={branches}
+                  settings={dashData?.settings || {}}
+                />
               </TabsContent>
 
               <TabsContent value="biometric-import">

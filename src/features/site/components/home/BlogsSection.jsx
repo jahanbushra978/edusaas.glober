@@ -6,7 +6,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { sanitizeHtml } from "@/lib/sanitize-html";
 import { Dialog, DialogContent, DialogTitle, DialogClose } from "@/components/ui/dialog";
 
-export default function BlogsSection({ blogs: propBlogs }) {
+export default function BlogsSection({ blogs: propBlogs, sectionData: propSectionData }) {
   const { lang } = useLanguage();
   const isBn = lang === "bn";
   const isAr = lang === "ar";
@@ -20,6 +20,29 @@ export default function BlogsSection({ blogs: propBlogs }) {
     enabled: propBlogs === undefined,
   });
 
+  const { data: sectionQueryData } = useQuery({
+    queryKey: ["page-section-blogs"],
+    queryFn: async () => {
+      const list = await appClient.entities.PageSection.filter({ section_key: "blogs" });
+      return list[0] || null;
+    },
+    enabled: propSectionData === undefined,
+  });
+
+  const sectionData = propSectionData || sectionQueryData;
+
+  const sectionTitle = isAr
+    ? (sectionData?.title_ar || "المدونة والمقالات")
+    : lang === "en"
+    ? (sectionData?.title_en || "Blogs & Articles")
+    : (sectionData?.title_bn || "ব্লগ ও প্রবন্ধসমূহ");
+
+  const sectionSubtitle = isAr
+    ? (sectionData?.subtitle_ar || "المعرفة الإسلامية والأفكار")
+    : lang === "en"
+    ? (sectionData?.subtitle_en || "Islamic Wisdom & Guidance")
+    : (sectionData?.subtitle_bn || "দ্বীনি জ্ঞান, প্রবন্ধ ও দিকনির্দেশনা");
+
   const blogs = propBlogs || fetchedBlogs;
   const activeBlogs = blogs.filter((b) => b.is_published);
 
@@ -31,7 +54,7 @@ export default function BlogsSection({ blogs: propBlogs }) {
         month: "long",
         year: "numeric",
       });
-    } catch (e) {
+    } catch {
       return dateStr;
     }
   };
@@ -85,10 +108,10 @@ export default function BlogsSection({ blogs: propBlogs }) {
         <div className="text-center mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-3 uppercase tracking-widest bg-[#006241]/10 text-[#006241] border border-[#006241]/20 shadow-sm">
             <BookOpen className="h-3.5 w-3.5 text-[#006241]" />
-            {isBn ? "ব্লগ ও প্রবন্ধসমূহ" : isAr ? "المدونة والمقالات" : "Blogs & Articles"}
+            {sectionTitle}
           </div>
           <h2 className="text-3xl md:text-4xl font-extrabold italic text-[#006241] mb-3 leading-tight tracking-tight">
-            {isBn ? "দ্বীনি জ্ঞান, প্রবন্ধ ও দিকনির্দেশনা" : isAr ? "المعرفة الإسلامية والأفكار" : "Islamic Wisdom & Guidance"}
+            {sectionSubtitle}
           </h2>
           <div className="flex items-center justify-center gap-3">
             <div className="h-px w-16 bg-gradient-to-r from-transparent to-[#D4AF37]/80" />

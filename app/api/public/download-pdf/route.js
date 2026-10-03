@@ -25,35 +25,55 @@ export async function GET(request) {
     // If initial fetch failed or returned 401/403/404, try Cloudinary URL fallbacks
     if (!response || !response.ok) {
       if (/res\.cloudinary\.com/i.test(fileUrl)) {
-        let fallbackUrl = fileUrl;
-        if (/\/image\/upload\//i.test(fileUrl)) {
-          // 1. Try fl_attachment
-          fallbackUrl = fileUrl.replace(/\/image\/upload\/(?!fl_attachment)/, "/image/upload/fl_attachment/");
-          response = await fetch(fallbackUrl).catch(() => null);
+        const candidateUrls = [
+          fileUrl + ".pdf",
+          fileUrl.replace(/\/raw\/upload\//i, "/raw/upload/fl_attachment/"),
+          fileUrl.replace(/\/raw\/upload\//i, "/image/upload/"),
+          fileUrl.replace(/\/raw\/upload\//i, "/image/upload/") + ".pdf",
+          fileUrl.replace(/\/raw\/upload\//i, "/image/upload/fl_attachment/"),
+          fileUrl.replace(/\/raw\/upload\//i, "/image/upload/fl_attachment/") + ".pdf",
+          fileUrl.replace(/\/image\/upload\/(?!fl_attachment)/i, "/image/upload/fl_attachment/"),
+          fileUrl.replace(/\/image\/upload\/(?!fl_attachment)/i, "/image/upload/fl_attachment/") + ".pdf",
+          fileUrl.replace(/\/image\/upload\//i, "/raw/upload/"),
+          fileUrl.replace(/\/image\/upload\//i, "/raw/upload/") + ".pdf",
+        ];
 
-          // 2. Try raw upload
-          if (!response || !response.ok) {
-            fallbackUrl = fileUrl.replace(/\/image\/upload\//, "/raw/upload/");
-            response = await fetch(fallbackUrl).catch(() => null);
-          }
-        } else if (/\/raw\/upload\//i.test(fileUrl)) {
-          // 3. Try converting raw to image with fl_attachment
-          fallbackUrl = fileUrl.replace(/\/raw\/upload\//, "/image/upload/fl_attachment/");
-          response = await fetch(fallbackUrl).catch(() => null);
+        for (const candidate of candidateUrls) {
+          try {
+            const res = await fetch(candidate);
+            if (res && res.ok) {
+              response = res;
+              break;
+            }
+          } catch (_) {}
         }
       }
     }
 
-    if (!response || !response.ok) {
+    let buffer = null;
+
+    if (response && response.ok) {
+      const arrayBuffer = await response.arrayBuffer();
+      buffer = Buffer.from(arrayBuffer);
+    } else {
+      // Fall back to local official admission-form.pdf
+      try {
+        const fs = await import("fs");
+        const path = await import("path");
+        const localPath = path.join(process.cwd(), "public", "admission-form.pdf");
+        if (fs.existsSync(localPath)) {
+          buffer = fs.readFileSync(localPath);
+        }
+      } catch (_) {}
+    }
+
+    if (!buffer) {
       console.error(`[download-pdf-proxy] Unable to fetch file from remote server: ${fileUrl}`);
       return new NextResponse("Form file not found or restricted. Please re-upload the form in Admin Panel.", {
         status: 404,
         headers: { "Content-Type": "text/plain; charset=utf-8" },
       });
     }
-
-    const arrayBuffer = await response.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
 
     let filename = "admission-form.pdf";
     try {

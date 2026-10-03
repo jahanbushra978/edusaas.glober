@@ -36,16 +36,18 @@ const getNotoSansBengaliFont = async () => {
   } catch { return null; }
 };
 
+const isComplexUnicode = (text) => /[^\u0000-\u007F]/.test(String(text || ""));
+
 const renderBengaliText = (text, fontSize, color = "#1e293b", isBold = false) => {
   if (typeof window === "undefined" || !text) return null;
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   const scale = 4;
-  const fontSpec = `${isBold ? "bold" : "normal"} ${fontSize * scale}px "Noto Sans Bengali", sans-serif`;
+  const fontSpec = `${isBold ? "bold" : "normal"} ${fontSize * scale}px "Hind Siliguri", "Noto Sans Bengali", "Noto Sans Arabic", "Amiri", "Segoe UI", Arial, sans-serif`;
   ctx.font = fontSpec;
   const metrics = ctx.measureText(text);
   const textWidth = Math.max(metrics.width, 1);
-  const textHeight = fontSize * scale * 1.35;
+  const textHeight = fontSize * scale * 1.4;
   canvas.width = textWidth;
   canvas.height = textHeight;
   ctx.font = fontSpec;
@@ -60,11 +62,16 @@ const renderBengaliText = (text, fontSize, color = "#1e293b", isBold = false) =>
   };
 };
 
-const containsBengali = (text) => /[\u0980-\u09FF]/.test(text);
-
 const drawBengaliText = (doc, text, x, y, fontSize, color = "#1e293b", isBold = false, align = "left") => {
   const str = String(text || "");
-  if (!str || str === "N/A" || str === "—" || !containsBengali(str)) {
+  if (!str || str === "N/A" || str === "—") {
+    doc.setFont("helvetica", isBold ? "bold" : "normal");
+    doc.setFontSize(fontSize);
+    doc.setTextColor(30, 30, 30);
+    doc.text(str, x, y, { align });
+    return;
+  }
+  if (!isComplexUnicode(str)) {
     doc.setFont("helvetica", isBold ? "bold" : "normal");
     doc.setFontSize(fontSize);
     doc.setTextColor(30, 30, 30);
@@ -79,12 +86,7 @@ const drawBengaliText = (doc, text, x, y, fontSize, color = "#1e293b", isBold = 
     } else if (align === "right") {
       drawX = x - result.width;
     }
-    doc.addImage(result.dataUrl, "PNG", drawX, y - result.height * 0.72, result.width, result.height);
-  } else {
-    doc.setFont("NotoSansBengali", "normal");
-    doc.setFontSize(fontSize);
-    doc.setTextColor(30, 30, 30);
-    doc.text(str, x, y, { align });
+    doc.addImage(result.dataUrl, "PNG", drawX, y - result.height * 0.70, result.width, result.height);
   }
 };
 
@@ -93,9 +95,9 @@ const wrapBengaliText = (text, maxWidth, fontSize, isBold = false) => {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   const scale = 4;
-  ctx.font = `${isBold ? "bold" : "normal"} ${fontSize * scale}px "Noto Sans Bengali", sans-serif`;
+  ctx.font = `${isBold ? "bold" : "normal"} ${fontSize * scale}px "Hind Siliguri", "Noto Sans Bengali", "Noto Sans Arabic", "Amiri", "Segoe UI", Arial, sans-serif`;
   
-  const words = text.split(" ");
+  const words = String(text).split(" ");
   const lines = [];
   let currentLine = "";
   
@@ -118,9 +120,11 @@ const wrapBengaliText = (text, maxWidth, fontSize, isBold = false) => {
   return lines;
 };
 
+const containsBengali = isComplexUnicode;
+
 const drawBengaliTextWrapped = (doc, text, x, y, fontSize, maxWidth, lineHeight = 4.5, color = "#1e293b", isBold = false) => {
   const str = String(text || "");
-  if (!str || str === "N/A" || str === "—" || !containsBengali(str)) {
+  if (!str || str === "N/A" || str === "—" || !isComplexUnicode(str)) {
     doc.setFont("helvetica", isBold ? "bold" : "normal");
     doc.setFontSize(fontSize);
     doc.setTextColor(80, 80, 80);
@@ -239,7 +243,7 @@ export default function TeacherPDFButton({ teacher, assignedStudents = [] }) {
       if (teacher.photo_url || teacher.image_url) {
         try {
           doc.addImage(teacher.photo_url || teacher.image_url, "JPEG", pX + 0.5, pY + 0.5, 25, 31);
-        } catch (e) {
+        } catch {
           doc.setFontSize(7);
           doc.setTextColor(150, 150, 150);
           doc.text("Photo", pX + 13, pY + 16, { align: "center" });

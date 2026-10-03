@@ -80,7 +80,7 @@ export async function POST(request) {
       ? getCloudinaryVideoConfig() 
       : getCloudinaryConfig();
 
-    const resourceType = isVideo ? "video" : (isPdf ? "raw" : (file.type.startsWith("image/") ? "image" : "auto"));
+    const resourceType = isVideo ? "video" : (isPdf ? "auto" : (file.type.startsWith("image/") ? "image" : "auto"));
 
     const timestamp = Math.floor(Date.now() / 1000);
     
@@ -106,6 +106,8 @@ export async function POST(request) {
     uploadForm.append("api_key", apiKey);
     uploadForm.append("signature", signature);
     uploadForm.append("access_mode", "public");
+    uploadForm.append("use_filename", "true");
+    uploadForm.append("unique_filename", "true");
     
     if (eagerParams) {
       uploadForm.append("eager", eagerParams);

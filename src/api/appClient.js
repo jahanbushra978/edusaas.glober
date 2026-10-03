@@ -59,6 +59,12 @@ const ENTITY_TABLES = {
   ActiveSession: "active_sessions",
   TrustedDevice: "trusted_devices",
   SecurityEvent: "security_events",
+  // Application Management System
+  Application: "applications",
+  ApplicationAction: "application_actions",
+  ApplicationWorkflowRule: "application_workflow_rules",
+  ApplicationNotification: "application_notifications",
+  ApplicationPermission: "application_permissions",
 };
 
 const ENTITY_TO_PERMISSION_MODULE = {
@@ -92,6 +98,11 @@ const ENTITY_TO_PERMISSION_MODULE = {
   BoardingExpense: "boarding",
   Promotion: "promotion",
   Period: "period",
+  Application: "applications",
+  ApplicationAction: "applications",
+  ApplicationNotification: "applications",
+  ApplicationPermission: "applications",
+  ApplicationWorkflowRule: "applications",
 };
 
 const MANAGED_AUTH_ENTITIES = {
@@ -164,15 +175,45 @@ async function syncManagedAuthUser(payload) {
   });
 }
 
+const SENSITIVE_SETTINGS_KEYS = new Set([
+  "admin_login_password",
+  "admin_password",
+  "jwt_secret",
+  "encryption_key",
+  "secret_key",
+  "service_role_key",
+  "smtp_password",
+  "resend_api_key",
+]);
+
+export function isSensitiveSettingKey(key) {
+  if (!key || typeof key !== "string") return false;
+  if (SENSITIVE_SETTINGS_KEYS.has(key)) return true;
+  return /(password|secret|private_key)/i.test(key);
+}
+
 function sanitizeManagedEntityRecord(entityName, record) {
-  if (!record || !MANAGED_AUTH_ENTITIES[entityName]) {
-    return record;
+  if (!record) return record;
+
+  if (entityName === "Branch") {
+    const { admin_password, boarding_manager_password, ...safeBranch } = record;
+    return safeBranch;
   }
 
-  return {
-    ...record,
-    password: sanitizePasswordMarker(record.password),
-  };
+  if (entityName === "AppSettings") {
+    if (isSensitiveSettingKey(record.key)) {
+      return null;
+    }
+  }
+
+  if (MANAGED_AUTH_ENTITIES[entityName]) {
+    return {
+      ...record,
+      password: sanitizePasswordMarker(record.password),
+    };
+  }
+
+  return record;
 }
 
 const PUBLIC_CACHE_TTL = 2 * 60 * 1000;
@@ -228,7 +269,9 @@ const TABLES_WITH_BRANCH_ID = new Set([
   'boarding_expenses',
   'exams',
   'boarding_daily_reports',
-  'gallery_items'
+  'gallery_items',
+  'applications',
+  'application_notifications',
 ]);
 
 const TABLES_WITH_STUDENT_ID = new Set([
@@ -319,6 +362,11 @@ function applyTenantFiltersSync(query, tableName, user, filters) {
   return query;
 }
 
+async function applyTenantFilters(query, tableName, user) {
+  const filters = await getTenantFilterValues(tableName, user);
+  return applyTenantFiltersSync(query, tableName, user, filters);
+}
+
 async function getBranchFilterValue(tableName, user) {
   if (!user || user.role === "student" || user.role === "teacher") return null;
 
@@ -386,6 +434,9 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
     const result = await dedup(cacheKey, async () => {
       const db = isPublic ? supabaseAnon : supabaseAdmin;
       let query = db.from(tableName).select(select);
+      if (tableName === "app_settings") {
+        query = query.not("key", "in", '("admin_login_password","admin_password","jwt_secret")');
+      }
       if (!isPublic) {
         const filters = await getTenantFilterValues(tableName, user);
         query = applyTenantFiltersSync(query, tableName, user, filters);
@@ -411,7 +462,7 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
         }
         throw error;
       }
-      return (data || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item));
+      return (data || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item)).filter(Boolean);
     });
     if (isPublic) setCache(cacheKey, result);
     return result;
@@ -431,6 +482,9 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
     const result = await dedup(cacheKey, async () => {
       const db = isPublic ? supabaseAnon : supabaseAdmin;
       let query = db.from(tableName).select(select).eq("id", id);
+      if (tableName === "app_settings") {
+        query = query.not("key", "in", '("admin_login_password","admin_password","jwt_secret")');
+      }
       if (!isPublic) {
         const filters = await getTenantFilterValues(tableName, user);
         query = applyTenantFiltersSync(query, tableName, user, filters);
@@ -459,13 +513,16 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
     const result = await dedup(cacheKey, async () => {
       const db = isPublic ? supabaseAnon : supabaseAdmin;
       let query = db.from(tableName).select(select).in("id", uniqueIds);
+      if (tableName === "app_settings") {
+        query = query.not("key", "in", '("admin_login_password","admin_password","jwt_secret")');
+      }
       if (!isPublic) {
         const filters = await getTenantFilterValues(tableName, user);
         query = applyTenantFiltersSync(query, tableName, user, filters);
       }
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item));
+      return (data || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item)).filter(Boolean);
     });
     if (isPublic) setCache(cacheKey, result);
     return result;
@@ -477,7 +534,8 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       cachedUserPromise = null;
       user = await getSessionUser();
     }
-    if (!user) {
+    const isPublicCreate = isPublic || entityName === "AdmissionApplication" || entityName === "ContactMessage";
+    if (!user && !isPublicCreate) {
       throw { status: 401, message: "Authentication required: User not found." };
     }
     if (user.role !== "admin") {
@@ -498,7 +556,7 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       ? normalizeLoginId(data?.[managedConfig.loginField])
       : "";
 
-    const isNoUpdatedDate = tableName === "teacher_hadiya" || tableName === "teacher_payments" || tableName === "contact_messages";
+    const isNoUpdatedDate = tableName === "teacher_hadiya" || tableName === "teacher_payments" || tableName === "contact_messages" || tableName.startsWith("application");
     const payload = {
       ...withLifecycleDefaults(entityName, data),
       ...(managedConfig
@@ -516,7 +574,7 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
     };
 
     const orgVal = getOrgFilterValue(user);
-    if (orgVal && !payload.organization_id) {
+    if (orgVal) {
       payload.organization_id = orgVal.value;
     }
 
@@ -588,7 +646,7 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       }
     }
     const managedConfig = MANAGED_AUTH_ENTITIES[entityName];
-    const isNoUpdatedDate = tableName === "teacher_hadiya" || tableName === "teacher_payments" || tableName === "contact_messages";
+    const isNoUpdatedDate = tableName === "teacher_hadiya" || tableName === "teacher_payments" || tableName === "contact_messages" || tableName.startsWith("application");
     let payload = { 
       ...data, 
       ...(!isNoUpdatedDate ? { updated_date: new Date().toISOString() } : {})
@@ -742,6 +800,9 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
     const result = await dedup(cacheKey, async () => {
       const db = isPublic ? supabaseAnon : supabaseAdmin;
       let query = db.from(tableName).select(select);
+      if (tableName === "app_settings") {
+        query = query.not("key", "in", '("admin_login_password","admin_password","jwt_secret")');
+      }
       if (!isPublic) {
         query = await applyTenantFilters(query, tableName, user);
       }
@@ -777,7 +838,7 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
 
       const { data, error } = await query;
       if (error) throw error;
-      return (data || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item));
+      return (data || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item)).filter(Boolean);
     });
     if (isPublic) setCache(cacheKey, result);
     return result;
@@ -786,6 +847,9 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
   count: async (filterObj = {}, options = {}) => {
     const user = await getSessionUser();
     let query = supabaseAdmin.from(tableName).select("*", { count: "exact", head: true });
+    if (tableName === "app_settings") {
+      query = query.not("key", "in", '("admin_login_password","admin_password","jwt_secret")');
+    }
     query = await applyTenantFilters(query, tableName, user);
     if (TABLES_WITH_ARCHIVE.has(tableName) && !options?.includeArchived && !isPublic) {
       query = query.eq("is_archived", false);
@@ -826,6 +890,10 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       const db = isPublic ? supabaseAnon : supabaseAdmin;
       let countQuery = db.from(tableName).select("*", { count: "exact", head: true });
       let dataQuery = db.from(tableName).select(select, { count: "exact" });
+      if (tableName === "app_settings") {
+        countQuery = countQuery.not("key", "in", '("admin_login_password","admin_password","jwt_secret")');
+        dataQuery = dataQuery.not("key", "in", '("admin_login_password","admin_password","jwt_secret")');
+      }
       if (!isPublic) {
         countQuery = await applyTenantFilters(countQuery, tableName, user);
         dataQuery = await applyTenantFilters(dataQuery, tableName, user);
@@ -845,7 +913,7 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       const [countResult, dataResult] = await Promise.all([countQuery, dataQuery]);
       if (dataResult.error) throw dataResult.error;
       const total = countResult.count ?? dataResult.count ?? 0;
-      const rows = (dataResult.data || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item));
+      const rows = (dataResult.data || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item)).filter(Boolean);
       return { rows, total, page: safePage, pageSize: safeSize, totalPages: Math.ceil(total / safeSize) };
     });
     if (isPublic) setCache(cacheKey, result);
@@ -867,6 +935,10 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       const db = isPublic ? supabaseAnon : supabaseAdmin;
       let countQuery = db.from(tableName).select("*", { count: "exact", head: true });
       let dataQuery = db.from(tableName).select(select, { count: "exact" });
+      if (tableName === "app_settings") {
+        countQuery = countQuery.not("key", "in", '("admin_login_password","admin_password","jwt_secret")');
+        dataQuery = dataQuery.not("key", "in", '("admin_login_password","admin_password","jwt_secret")');
+      }
       if (!isPublic) {
         countQuery = await applyTenantFilters(countQuery, tableName, user);
         dataQuery = await applyTenantFilters(dataQuery, tableName, user);
@@ -881,7 +953,7 @@ const createEntityAPI = (entityName, tableName, isPublic = false) => ({
       const [countResult, dataResult] = await Promise.all([countQuery, dataQuery]);
       if (dataResult.error) throw dataResult.error;
       const total = countResult.count ?? dataResult.count ?? 0;
-      const rows = (dataResult.data || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item));
+      const rows = (dataResult.data || []).map(withId).map((item) => sanitizeManagedEntityRecord(entityName, item)).filter(Boolean);
       return { rows, total, page: safePage, pageSize: safeSize, totalPages: Math.ceil(total / safeSize) };
     });
     if (isPublic) setCache(cacheKey, result);

@@ -8,7 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, Loader2, Eye, EyeOff, Image, X, Upload, FileText } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2, Eye, EyeOff, Image, X, Upload, FileText, ChevronDown } from "lucide-react";
 import { toast } from "sonner";
 import { DEPARTMENT_SELECTION_OPTIONS } from "@/lib/departmentData";
 
@@ -58,6 +58,7 @@ function NoticeForm({ notice, onSave, onCancel }) {
   const [uploading, setUploading] = useState(false);
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const [activeLang, setActiveLang] = useState("bn");
+  const [showDeptDropdown, setShowDeptDropdown] = useState(false);
   const f = (k, v) => setForm(p => ({ ...p, [k]: v }));
   const firstFilled = (...values) => values.find((value) => value?.trim()) || "";
 
@@ -226,16 +227,76 @@ function NoticeForm({ notice, onSave, onCancel }) {
         </div>
       </div>
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-        <div>
-          <label className="text-xs font-bold text-primary mb-1 block">Department</label>
-          <Select value={form.department} onValueChange={v => f("department", v)}>
-            <SelectTrigger><SelectValue /></SelectTrigger>
-            <SelectContent>
-              {DEPARTMENT_SELECTION_OPTIONS.map((item) => (
-                <SelectItem key={item} value={item}>{item}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="relative">
+          <label className="text-xs font-bold text-primary mb-1 block">Department (বিভাগ / একাধিক শ্রেণি)</label>
+          <button
+            type="button"
+            onClick={() => setShowDeptDropdown(!showDeptDropdown)}
+            className="w-full flex items-center justify-between text-left font-normal h-10 px-3 bg-white border border-input rounded-md text-xs hover:bg-slate-50 transition-colors"
+          >
+            <span className="truncate font-semibold text-slate-800">
+              {form.department || "সকল"}
+            </span>
+            <ChevronDown className="h-4 w-4 opacity-50 flex-shrink-0 ml-2" />
+          </button>
+
+          {showDeptDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-1 z-50 bg-white border border-slate-200 shadow-xl rounded-xl p-2.5 space-y-1 max-h-64 overflow-y-auto">
+              <div className="flex items-center justify-between border-b pb-1.5 mb-1 px-1">
+                <span className="text-[11px] font-bold text-primary">বিভাগ/শ্রেণি নির্বাচন করুন:</span>
+                <button
+                  type="button"
+                  onClick={() => setShowDeptDropdown(false)}
+                  className="text-[10px] font-bold text-white bg-primary hover:bg-primary/90 px-2 py-0.5 rounded-md"
+                >
+                  সম্পন্ন ✓
+                </button>
+              </div>
+              {DEPARTMENT_SELECTION_OPTIONS.map((item) => {
+                const selectedList = (form.department || "সকল")
+                  .split(",")
+                  .map((s) => s.trim())
+                  .filter(Boolean);
+                const isAll = item === "সকল";
+                const isChecked = isAll
+                  ? selectedList.includes("সকল") || selectedList.length === 0
+                  : selectedList.includes(item) && !selectedList.includes("সকল");
+
+                return (
+                  <label
+                    key={item}
+                    className={`flex items-center gap-2.5 px-2 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${
+                      isChecked ? "bg-primary/10 font-bold text-primary" : "hover:bg-slate-100 text-slate-700"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isChecked}
+                      onChange={() => {
+                        if (isAll) {
+                          f("department", "সকল");
+                        } else {
+                          let current = selectedList.filter((d) => d !== "সকল");
+                          if (current.includes(item)) {
+                            current = current.filter((d) => d !== item);
+                          } else {
+                            current.push(item);
+                          }
+                          if (current.length === 0) {
+                            f("department", "সকল");
+                          } else {
+                            f("department", current.join(", "));
+                          }
+                        }
+                      }}
+                      className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                    />
+                    <span>{item}</span>
+                  </label>
+                );
+              })}
+            </div>
+          )}
         </div>
         <div>
           <label className="text-xs font-bold text-primary mb-1 block">Priority</label>
@@ -518,7 +579,9 @@ export default function NoticeManager({ currentUser }) {
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <p className="font-bold text-primary">{n.title}</p>
                             <Badge className={`text-xs ${t.bg}`}>{n.type}</Badge>
-                            <Badge variant="outline" className="text-xs">{n.department || "সকল"}</Badge>
+                            {(n.department || "সকল").split(",").map((d) => d.trim()).filter(Boolean).map((deptItem, idx) => (
+                              <Badge key={idx} variant="outline" className="text-xs bg-emerald-50/50 text-emerald-800 border-emerald-200">{deptItem}</Badge>
+                            ))}
                             {n.notice_number && <Badge variant="outline" className="text-xs">{n.notice_number}</Badge>}
                             {n.priority && <Badge variant="outline" className="text-xs">{n.priority}</Badge>}
                             {n.category && <Badge variant="outline" className="bg-purple-50 text-purple-700 text-xs border-purple-200">{n.category}</Badge>}

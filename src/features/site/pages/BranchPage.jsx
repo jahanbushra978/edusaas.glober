@@ -385,7 +385,34 @@ export default function BranchPage() {
       )}
 
       {/* ── 4. CLASSES / DEPARTMENTS SECTION ── */}
-      {branch.content_settings?.show_academy_structure !== "N" && branch.academic_structure && branch.academic_structure.length > 0 && (
+      {branch.content_settings?.show_academy_structure !== "N" && branch.academic_structure && branch.academic_structure.length > 0 && (() => {
+        // Build visible classes list FIRST — only show section if at least one is visible
+        const flattenedClasses = [];
+        branch.academic_structure.forEach(cls => {
+          if (cls.sections && cls.sections.length > 0) {
+            cls.sections.forEach(sec => {
+              if (sec.show_on_web !== false) {
+                flattenedClasses.push({
+                  ...cls,
+                  section: sec.section_name,
+                  shift: sec.shift,
+                  subjects: sec.subjects,
+                  unique_key: `${cls.id}_${sec.id}`
+                });
+              }
+            });
+          } else {
+            // Classes without sections: check show_on_web at the class level
+            if (cls.show_on_web !== false) {
+              flattenedClasses.push({ ...cls, unique_key: cls.id });
+            }
+          }
+        });
+
+        // If no visible classes, render nothing (no empty heading)
+        if (flattenedClasses.length === 0) return null;
+
+        return (
         <div className="max-w-7xl mx-auto px-4 mt-16">
           <div className="text-center mb-8">
             <h2 className="text-2xl font-black text-[#052E2B] dark:text-emerald-400">
@@ -399,60 +426,41 @@ export default function BranchPage() {
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {(() => {
-              const flattenedClasses = [];
-              branch.academic_structure.forEach(cls => {
-                if (cls.sections && cls.sections.length > 0) {
-                  cls.sections.forEach(sec => {
-                    if (sec.show_on_web !== false) {
-                      flattenedClasses.push({
-                        ...cls,
-                        section: sec.section_name,
-                        shift: sec.shift,
-                        subjects: sec.subjects,
-                        unique_key: `${cls.id}_${sec.id}`
-                      });
-                    }
-                  });
-                } else {
-                  flattenedClasses.push({ ...cls, unique_key: cls.id });
-                }
-              });
-
-              return flattenedClasses.map((cls, idx) => (
-                <div
-                  key={cls.unique_key || idx}
-                  onClick={() => {
-                    router.push(`/branch-gallery?branch_id=${branch.id}&class_id=${cls.id}`);
-                  }}
-                  className={`group relative overflow-hidden rounded-2xl p-5 border border-slate-100 dark:border-green-900 bg-white dark:bg-[#0d1f17] transition-all duration-300 shadow-sm ${
-                    branch.content_settings?.show_class_details !== 'N' ? 'cursor-pointer hover:shadow-md hover:-translate-y-1' : ''
-                  }`}
-                >
-                  <div className="h-1.5 w-full absolute top-0 left-0 bg-gradient-to-r from-emerald-600 to-yellow-500" />
-                  <div className="flex items-center justify-between mb-4 mt-2">
-                    <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-950 border dark:border-green-900">
-                      <GraduationCap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-                    </div>
-                    {cls.subjects && (
-                      <span className="text-[10px] font-bold bg-amber-50 dark:bg-emerald-900/30 text-amber-700 dark:text-emerald-400 border border-amber-100 dark:border-green-800 px-2 py-0.5 rounded-full">
-                        {cls.subjects.length} {isBn ? 'বিষয়' : isAr ? 'مواد' : 'Subjects'}
-                      </span>
-                    )}
+            {flattenedClasses.map((cls, idx) => (
+              <div
+                key={cls.unique_key || idx}
+                onClick={() => {
+                  setSelectedClass(cls);
+                  setShowClassModal(true);
+                }}
+                className={`group relative overflow-hidden rounded-2xl p-5 border border-slate-100 dark:border-green-900 bg-white dark:bg-[#0d1f17] transition-all duration-300 shadow-sm ${
+                  branch.content_settings?.show_class_details !== 'N' ? 'cursor-pointer hover:shadow-md hover:-translate-y-1' : ''
+                }`}
+              >
+                <div className="h-1.5 w-full absolute top-0 left-0 bg-gradient-to-r from-emerald-600 to-yellow-500" />
+                <div className="flex items-center justify-between mb-4 mt-2">
+                  <div className="w-10 h-10 rounded-xl flex items-center justify-center bg-emerald-50 dark:bg-emerald-950 border dark:border-green-900">
+                    <GraduationCap className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
                   </div>
-                  <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
-                    {getLocalizedField(cls.class_name)}
-                  </h3>
-                  <div className="flex gap-4 mt-3 text-xs text-slate-500 dark:text-slate-400 font-semibold border-t pt-2 border-slate-100 dark:border-green-900">
-                    <p>🏷️ {getLocalizedField(cls.section)}</p>
-                    <p>⏰ {getLocalizedField(cls.shift)}</p>
-                  </div>
+                  {cls.subjects && (
+                    <span className="text-[10px] font-bold bg-amber-50 dark:bg-emerald-900/30 text-amber-700 dark:text-emerald-400 border border-amber-100 dark:border-green-800 px-2 py-0.5 rounded-full">
+                      {cls.subjects.length} {isBn ? 'বিষয়' : isAr ? 'مواد' : 'Subjects'}
+                    </span>
+                  )}
                 </div>
-              ));
-            })()}
+                <h3 className="text-base font-bold text-slate-800 dark:text-slate-200">
+                  {getLocalizedField(cls.class_name)}
+                </h3>
+                <div className="flex gap-4 mt-3 text-xs text-slate-500 dark:text-slate-400 font-semibold border-t pt-2 border-slate-100 dark:border-green-900">
+                  <p>🏷️ {getLocalizedField(cls.section)}</p>
+                  <p>⏰ {getLocalizedField(cls.shift)}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* ── 5. NOTICE SECTION ── */}
       {notices.length > 0 && (

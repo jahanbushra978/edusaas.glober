@@ -53,6 +53,7 @@ export default function StudentForm({ student, onSave, onCancel, currentUser }) 
     hadiya_amount: "",
     hadiya_note: "",
     branch_id: currentUser?.role === "branch_admin" ? currentUser.branch_id : "",
+    assigned_teacher_id: "",
   });
 
   // Local academic dropdown states
@@ -88,6 +89,17 @@ export default function StudentForm({ student, onSave, onCancel, currentUser }) 
 
   const selectedBranch = branches.find(b => String(b.id) === String(data.branch_id));
   const rawClasses = selectedBranch && Array.isArray(selectedBranch.academic_structure) ? selectedBranch.academic_structure : [];
+
+  // Fetch all teachers for assigned teacher selection
+  const { data: allTeachers = [] } = useQuery({
+    queryKey: ["admin-teachers-list-for-form"],
+    queryFn: () => appClient.entities.Teacher.listAll(),
+  });
+
+  const branchTeachers = React.useMemo(() => {
+    if (!data.branch_id) return [];
+    return allTeachers.filter(t => String(t.branch_id) === String(data.branch_id));
+  }, [allTeachers, data.branch_id]);
 
   // Fetch app settings for dynamic fee types
   const { data: appSettings = [] } = useQuery({
@@ -130,7 +142,7 @@ export default function StudentForm({ student, onSave, onCancel, currentUser }) 
           try {
             const parsed = fullStudent.custom_fields ? JSON.parse(fullStudent.custom_fields) : {};
             setStudentFees(parsed.fees_setup || {});
-          } catch (e) {
+          } catch {
             setStudentFees({});
           }
 
@@ -163,6 +175,7 @@ export default function StudentForm({ student, onSave, onCancel, currentUser }) 
             password: "",
             hadiya_amount: fullStudent.hadiya_amount || "",
             hadiya_note: fullStudent.hadiya_note || "",
+            assigned_teacher_id: fullStudent.assigned_teacher_id || "",
           };
 
           if (!cancelled) {
@@ -432,7 +445,7 @@ export default function StudentForm({ student, onSave, onCancel, currentUser }) 
           if (typeof existingCustomFields !== "object" || existingCustomFields === null) {
             existingCustomFields = {};
           }
-        } catch (err) {
+        } catch {
           existingCustomFields = { legacy_text: data.custom_fields };
         }
       }
@@ -646,6 +659,28 @@ export default function StudentForm({ student, onSave, onCancel, currentUser }) 
                       const label = c.class_name?.bn || c.class_name?.en || c.class_name?.ar || "";
                       return <SelectItem key={c.id} value={String(c.id)}>{label}</SelectItem>;
                     })}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Assigned Teacher Dropdown */}
+              <div>
+                <Label className="text-xs text-slate-500 font-bold">Assigned Teacher (দায়িত্বপ্রাপ্ত শিক্ষক)</Label>
+                <Select
+                  value={data.assigned_teacher_id ? String(data.assigned_teacher_id) : "none"}
+                  onValueChange={(v) => update("assigned_teacher_id", v === "none" ? null : v)}
+                  disabled={!data.branch_id}
+                >
+                  <SelectTrigger className="mt-1">
+                    <SelectValue placeholder="শিক্ষক নির্বাচন করুন..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">-- কোনো শিক্ষক নির্দিষ্ট নেই --</SelectItem>
+                    {branchTeachers.map(t => (
+                      <SelectItem key={t.id} value={String(t.id)}>
+                        {t.full_name_bn || t.full_name_en} ({t.designation || "Teacher"})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

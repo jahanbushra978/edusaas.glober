@@ -761,11 +761,21 @@ export default function AttendanceManager({ currentUser }) {
               </SelectContent>
             </Select>
           )}
+          <Button
+            variant="default"
+            size="sm"
+            className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold gap-1.5 text-xs h-8 rounded-lg"
+            onClick={() => window.open("/live-attendance", "_blank")}
+          >
+            <Activity className="w-3.5 h-3.5" />
+            লাইভ মনিটর (TV Wall)
+          </Button>
           <Button variant="outline" size="sm" onClick={loadData}>
             <RefreshCw className="w-4 h-4 mr-1" /> Refresh
           </Button>
         </div>
       </div>
+
 
       <TabsContent value="dashboard">
         {activeTab === "dashboard" && (

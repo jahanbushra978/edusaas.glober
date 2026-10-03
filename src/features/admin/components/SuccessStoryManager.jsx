@@ -55,6 +55,8 @@ export default function SuccessStoryManager() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["success-stories-admin"] });
       queryClient.invalidateQueries({ queryKey: ["success-stories-public"] });
+      queryClient.invalidateQueries({ queryKey: ["home-page-data"] });
+      fetch('/api/public/home', { method: 'POST' }).catch(() => {});
       toast.success(editingItem ? "Success story updated!" : "Success story added!");
       setIsOpen(false);
       resetForm();
@@ -69,6 +71,8 @@ export default function SuccessStoryManager() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["success-stories-admin"] });
       queryClient.invalidateQueries({ queryKey: ["success-stories-public"] });
+      queryClient.invalidateQueries({ queryKey: ["home-page-data"] });
+      fetch('/api/public/home', { method: 'POST' }).catch(() => {});
       toast.success("Success story deleted!");
     },
   });
@@ -78,6 +82,8 @@ export default function SuccessStoryManager() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["success-stories-admin"] });
       queryClient.invalidateQueries({ queryKey: ["success-stories-public"] });
+      queryClient.invalidateQueries({ queryKey: ["home-page-data"] });
+      fetch('/api/public/home', { method: 'POST' }).catch(() => {});
     },
   });
 

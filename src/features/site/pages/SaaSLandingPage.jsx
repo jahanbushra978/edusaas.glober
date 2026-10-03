@@ -12,7 +12,7 @@ import {
   Lock, UserCheck, Star, PhoneCall, Mail, MapPin, 
   ChevronDown, ExternalLink, Clock, Cpu, MessageSquare,
   HelpCircle, ChevronUp, Globe, Shield, Smartphone,
-  BarChart3, Fingerprint, FileText, BellRing, X, Send, CheckCircle, AlertCircle, BookOpen, School, Award, FileSpreadsheet, Sparkles
+  BarChart3, Fingerprint, FileText, BellRing, X, Send, CheckCircle, AlertCircle, BookOpen, FileSpreadsheet, Sparkles
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { generateFaqSchema, generateEducationalOrgSchema } from "@/lib/seo";

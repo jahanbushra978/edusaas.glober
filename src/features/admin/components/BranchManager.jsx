@@ -27,6 +27,8 @@ const EMPTY = {
   established_year: "",
   establishment_date: "",
   logo: "",
+  image_url: "",
+  card_image_url: "",
   slider_images: [],
   map_embed_link: "",
   sort_order: 0,
@@ -509,6 +511,16 @@ export default function BranchManager() {
                   <div className="space-y-2">
                     <ImageUpload value={form.logo} onChange={val => setForm(f => ({ ...f, logo: val }))} label="Branch Logo" />
                   </div>
+                  <div className="space-y-2">
+                    <ImageUpload 
+                      value={form.card_image_url || form.image_url || ""} 
+                      onChange={val => setForm(f => ({ ...f, card_image_url: val, image_url: val }))} 
+                      label="Branch Cover / Card Photo" 
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <label className="text-xs font-bold text-muted-foreground block">Establishment Date / Year</label>
                     <Input value={form.established_year || ""} onChange={e => setForm(f => ({ ...f, established_year: e.target.value, establishment_date: e.target.value }))} placeholder="e.g. 2024" />

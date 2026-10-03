@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { appClient } from "@/api/appClient";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,22 +14,13 @@ import Link from "next/link";
 
 const AttendanceMarker = dynamic(() => import("@/components/teacher/AttendanceMarker"), { ssr: false });
 const DailyLessonEntry = dynamic(() => import("@/components/teacher/DailyLessonEntry"), { ssr: false });
-const StudentProgressCard = dynamic(() => import("@/components/teacher/StudentProgressCard"), { ssr: false });
 const TeacherStudentDetail = dynamic(() => import("@/components/teacher/TeacherStudentDetail"), { ssr: false });
-
-const TabLoader = () => (
-  <div className="flex items-center justify-center py-12">
-    <Loader2 className="h-6 w-6 animate-spin text-primary" />
-  </div>
-);
 
 export default function TeacherDashboard() {
   const [user, setUser] = useState(null);
   const [teacher, setTeacher] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedStudent, setSelectedStudent] = useState(null);
-  const queryClient = useQueryClient();
-
   useEffect(() => {
     const checkAuth = async () => {
       try {
@@ -54,7 +45,7 @@ export default function TeacherDashboard() {
           teacherProfile = { id: currentUser.profileId || 1, teacher_id: currentUser.loginId || "" };
         }
         setTeacher(teacherProfile);
-      } catch (error) {
+      } catch {
         appClient.auth.redirectToLogin("teacher");
       } finally {
         setLoading(false);
@@ -93,13 +84,27 @@ export default function TeacherDashboard() {
   const myStudents = useMemo(() => {
     if (!teacher) return [];
     const unique = Array.from(new Map(allStudents.map((s) => [String(s.id), s])).values());
-    const teacherBatches = assignedBatches.map(b => b.toLowerCase());
+    const teacherBatches = assignedBatches.map(b => b.toLowerCase()).filter(Boolean);
     return unique.filter((s) => {
-      const matchesTeacherId = String(s.assigned_teacher_id) === String(teacher.id) || String(s.assigned_teacher_id) === String(teacher.teacher_id);
-      const matchesBatch = teacherBatches.includes("all classes") || (s.batch && teacherBatches.includes(s.batch.toLowerCase()));
-      return matchesTeacherId || matchesBatch;
+      const studentTeacherId = s.assigned_teacher_id !== null && s.assigned_teacher_id !== undefined ? String(s.assigned_teacher_id) : "";
+      const matchesTeacherId = studentTeacherId !== "" && (
+        studentTeacherId === String(teacher.id) || 
+        (teacher.teacher_id && studentTeacherId === String(teacher.teacher_id))
+      );
+
+      const studentBatch = s.batch ? s.batch.toLowerCase() : "";
+      const studentDept = s.department ? s.department.toLowerCase() : "";
+
+      const matchesBatch = teacherBatches.length > 0 && (
+        teacherBatches.includes("all classes") || 
+        teacherBatches.some(tb => tb && (studentBatch.includes(tb) || studentDept.includes(tb)))
+      );
+
+      const isActive = !s.status || s.status.toLowerCase() === "active";
+
+      return (matchesTeacherId || matchesBatch) && isActive;
     });
-  }, [allStudents, assignedBatches, teacher]);
+  }, [teacher, allStudents, assignedBatches]);
 
   if (loading) {
     return (

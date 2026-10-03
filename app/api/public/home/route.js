@@ -31,7 +31,13 @@ export async function GET() {
 }
 
 
-export async function POST() {
+export async function POST(request) {
+  // Require a secret token to prevent unauthorized cache purge if secret is configured
+  const expectedSecret = process.env.CACHE_PURGE_SECRET || process.env.CRON_SECRET;
+  const authHeader = request?.headers?.get("authorization");
+  if (expectedSecret && authHeader !== `Bearer ${expectedSecret}`) {
+    return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+  }
   revalidateTag(HOME_PAGE_CACHE_TAG);
   return NextResponse.json({ ok: true, message: "Home page cache cleared" });
 }

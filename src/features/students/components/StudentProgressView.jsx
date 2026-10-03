@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import dynamic from "next/dynamic";
 import { appClient } from "@/api/appClient";
 import { useQuery } from "@tanstack/react-query";
@@ -11,16 +11,6 @@ import {
   LogOut, BarChart3, TrendingUp, ClipboardList, Loader2, Download, DollarSign, CheckCircle2, XCircle, Printer
 } from "lucide-react";
 
-const GRADE_COLORS = {
-  "A+": { bg: "rgba(0,192,96,0.12)", text: "#00a060", border: "rgba(0,192,96,0.25)" },
-  "A":  { bg: "rgba(77,166,255,0.12)", text: "#0080ff", border: "rgba(77,166,255,0.25)" },
-  "A-": { bg: "rgba(186,104,200,0.12)", text: "#ab47bc", border: "rgba(186,104,200,0.25)" },
-  "B":  { bg: "rgba(212,175,55,0.12)", text: "#b8960a", border: "rgba(212,175,55,0.25)" },
-  "C":  { bg: "rgba(255,136,0,0.12)", text: "#cc6600", border: "rgba(255,136,0,0.25)" },
-  "D":  { bg: "rgba(255,100,0,0.12)", text: "#cc4400", border: "rgba(255,100,0,0.25)" },
-  "F":  { bg: "rgba(255,50,50,0.12)", text: "#cc0000", border: "rgba(255,50,50,0.25)" },
-};
-
 import {
   format, startOfWeek, endOfWeek, startOfMonth, endOfMonth,
   startOfYear, endOfYear, subMonths
@@ -28,6 +18,8 @@ import {
 
 const Logo = dynamic(() => import("@/components/home/Logo"), { ssr: false });
 const AIReadingSuggestions = dynamic(() => import("@/components/student/AIReadingSuggestions"), { ssr: false });
+import ApplicationPortal from "@/features/applications/components/ApplicationPortal";
+import { filterActiveMarksDetails } from "@/lib/academic";
 
 const ChartLoader = () => (
   <div className="h-56 flex items-center justify-center">
@@ -130,7 +122,7 @@ function StatBox({ label, value, icon: Icon, color }) {
 
 export default function StudentProgressView({ student, instNameEn, onLogout }) {
 
-  const printRef = useRef();
+
 
   const { data: lessons = [], isLoading: lessonsLoading } = useQuery({
     queryKey: ["student-lessons", student.id],
@@ -208,8 +200,7 @@ export default function StudentProgressView({ student, instNameEn, onLogout }) {
     try {
       const parsed = JSON.parse(student.custom_fields);
       monthlyFeeSetting = parsed.fees_setup?.["Monthly Tuition Fee"] || 0;
-    } catch (e) {
-      console.error("Error parsing fees_setup:", e);
+    } catch {
     }
   }
 
@@ -225,7 +216,7 @@ export default function StudentProgressView({ student, instNameEn, onLogout }) {
         return format(new Date(year, month, day), 'dd MMM yyyy');
       }
       return format(new Date(dateStr), 'dd MMM yyyy');
-    } catch (e) {
+    } catch {
       return dateStr;
     }
   };
@@ -350,12 +341,13 @@ export default function StudentProgressView({ student, instNameEn, onLogout }) {
 
         {/* Tabs */}
         <Tabs defaultValue="progress">
-          <TabsList className="grid w-full grid-cols-5 bg-white/10">
+          <TabsList className="grid w-full grid-cols-6 bg-white/10">
             <TabsTrigger value="progress" className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 text-xs italic">📈 Progress</TabsTrigger>
             <TabsTrigger value="attendance" className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 text-xs italic">📅 Attendance</TabsTrigger>
             <TabsTrigger value="fees" className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 text-xs italic">💰 Fees</TabsTrigger>
             <TabsTrigger value="results" className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 text-xs italic">🏆 Results</TabsTrigger>
             <TabsTrigger value="profile" className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 text-xs italic">👤 Profile</TabsTrigger>
+            <TabsTrigger value="applications" className="text-white/70 data-[state=active]:text-white data-[state=active]:bg-white/20 text-xs italic">📝 আবেদন</TabsTrigger>
           </TabsList>
 
           {/* Progress Tab */}
@@ -538,11 +530,12 @@ export default function StudentProgressView({ student, instNameEn, onLogout }) {
                 {examResults.map(res => {
                   const exam = exams.find(e => String(e.id) === String(res.exam_id));
                   if (!exam) return null;
-                  const isFailed = res.status === "fail";
-                  const gc = GRADE_COLORS[isFailed ? "F" : res.grade] || GRADE_COLORS["F"];
+                  
+                  const activeMarks = filterActiveMarksDetails(res.marks_details, student, branchObj?.academic_structure);
+                  const isFailed = activeMarks.some(sub => Number(sub.obtained_marks) < Number(sub.pass_marks));
                   
                   const handlePrint = () => {
-                    const html = getPrintableMarksheetHTML(student, branchObj, className, exam, res, settingsObj);
+                    const html = getPrintableMarksheetHTML(student, branchObj, className, exam, { ...res, marks_details: activeMarks }, settingsObj);
                     const printWindow = window.open("", "_blank");
                     printWindow.document.write(html);
                     printWindow.document.close();
@@ -595,7 +588,7 @@ export default function StudentProgressView({ student, instNameEn, onLogout }) {
                               </tr>
                             </thead>
                             <tbody className="divide-y">
-                              {(res.marks_details || []).map(sub => {
+                              {activeMarks.map(sub => {
                                 const isSubFailed = sub.obtained_marks < sub.pass_marks;
                                 const { grade } = calcSubjectGradeAndGPA(sub.obtained_marks, sub.full_marks);
                                 return (
@@ -621,6 +614,23 @@ export default function StudentProgressView({ student, instNameEn, onLogout }) {
                 })}
               </div>
             )}
+          </TabsContent>
+
+          {/* Applications Tab */}
+          <TabsContent value="applications" className="mt-4">
+            <Card style={{ background: "rgba(255,255,255,0.97)" }}>
+              <CardHeader className="px-5 py-4 pb-3 border-b">
+                <CardTitle className="text-sm font-bold text-primary flex items-center gap-2">
+                  📝 আমার আবেদনসমূহ (My Applications)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="px-5 py-4">
+                <ApplicationPortal
+                  user={{ id: student.id, role: "student", name: student.full_name_en, full_name_en: student.full_name_en }}
+                  applicant={{ id: student.id, name: student.full_name_en, type: "student", branch_id: student.branch_id }}
+                />
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

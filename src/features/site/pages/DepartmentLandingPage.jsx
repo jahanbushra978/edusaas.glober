@@ -633,9 +633,10 @@ export default function DepartmentLandingPage({ department }) {
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
                 {filteredNotices.slice(0, 6).map((notice) => (
-                  <article
+                  <Link
                     key={notice.id}
-                    className="rounded-[24px] p-5 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-lg dark:bg-gray-800/50"
+                    href={`/notices/${notice.id}`}
+                    className="block rounded-[24px] p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl cursor-pointer group dark:bg-gray-800/50"
                     style={{ background: c.surface, border: `1px solid ${c.border}` }}
                   >
                     <div className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-wider"
@@ -644,11 +645,15 @@ export default function DepartmentLandingPage({ department }) {
                       <Bell className="h-3 w-3" />
                       {notice.department || "সকল"}
                     </div>
-                    <h2 className="mt-3 text-lg font-bold text-slate-900 dark:text-gray-100">{notice.title}</h2>
+                    <h2 className="mt-3 text-lg font-bold text-slate-900 dark:text-gray-100 group-hover:underline decoration-1 underline-offset-2" style={{ color: c.primary }}>{notice.title}</h2>
                     {notice.body ? (
                       <p className="mt-2 line-clamp-4 text-sm leading-7 text-slate-600 dark:text-gray-300">{notice.body}</p>
                     ) : null}
-                  </article>
+                    <div className="mt-3 flex items-center gap-1 text-xs font-semibold" style={{ color: c.primary }}>
+                      {lang === 'bn' ? 'বিস্তারিত পড়ুন' : lang === 'ar' ? 'اقرأ المزيد' : 'Read more'}
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </div>
+                  </Link>
                 ))}
               </div>
             )}

@@ -4,6 +4,7 @@ import React, { useMemo } from "react";
 import dynamic from "next/dynamic";
 
 import { appClient } from "@/api/appClient";
+import { isAdminUser } from "@/lib/permissions";
 import { SHOW_READING_PROGRESS } from "@/config/features";
 
 import { useQuery } from "@tanstack/react-query";
@@ -28,6 +29,7 @@ const ReadingLogTable = dynamic(() => import("@/components/ui-custom/ReadingLogT
 const PDFReportButton = dynamic(() => import("@/components/ui-custom/PDFReportButton"), { ssr: false });
 const DownloadResultButton = dynamic(() => import("@/components/ui-custom/DownloadResultButton"), { ssr: false });
 const StudentExamResults = dynamic(() => import("@/components/student/StudentExamResults"), { ssr: false });
+const ApplicationPortal = dynamic(() => import("@/features/applications/components/ApplicationPortal"), { ssr: false });
 
 
 
@@ -47,7 +49,7 @@ export default function StudentProfile() {
   React.useEffect(() => {
     if (!studentId) return;
     appClient.auth.me().then((user) => {
-      const allowed = user.role === "admin" || user.role === "branch_admin" || user.role === "teacher" || (user.role === "student" && String(user.profileId) === String(studentId));
+      const allowed = isAdminUser(user) || user.role === "branch_admin" || user.role === "teacher" || (user.role === "student" && String(user.profileId) === String(studentId));
       setAuthState({ loading: false, allowed, role: user.role });
 
       if (!allowed) {
@@ -77,13 +79,13 @@ export default function StudentProfile() {
           );
           if (foundInTeacherApi) return foundInTeacherApi;
         }
-      } catch (e) {}
+      } catch {}
 
       // 2. Direct ID lookup via appClient
       try {
         const byId = await appClient.entities.Student.get(studentId);
         if (byId) return byId;
-      } catch (e) {}
+      } catch {}
 
       // 3. Filter by numeric ID or roll_number if numeric
       if (!isNaN(Number(studentId))) {
@@ -91,12 +93,12 @@ export default function StudentProfile() {
           const num = Number(studentId);
           const byNum = await appClient.entities.Student.get(num);
           if (byNum) return byNum;
-        } catch (e) {}
+        } catch {}
 
         try {
           const byRoll = await appClient.entities.Student.filter({ roll_number: Number(studentId) });
           if (byRoll && byRoll.length > 0) return byRoll[0];
-        } catch (e) {}
+        } catch {}
       }
 
       // 4. Fallback: Search all students list for matching id, roll_number, or roll
@@ -109,7 +111,7 @@ export default function StudentProfile() {
           String(s.student_id) === String(studentId)
         );
         if (found) return found;
-      } catch (e) {}
+      } catch {}
 
       return null;
     },
@@ -289,24 +291,6 @@ export default function StudentProfile() {
   const monthPages = thisMonth.reduce((s, l) => s + (l.pages_read || 0), 0);
 
   const weekPages = thisWeek.reduce((s, l) => s + (l.pages_read || 0), 0);
-
-
-
-  const thisMonthAttendance = attendance.filter(a => {
-
-    const d = new Date(a.date);
-
-    return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
-
-  });
-
-  const monthPresentCount = thisMonthAttendance.filter(a => a.status === "present" || a.status === "Present").length;
-
-  const monthAttendancePct = thisMonthAttendance.length > 0
-
-    ? Math.round((monthPresentCount / thisMonthAttendance.length) * 100) : null;
-
-
 
   const recentLesson = lessons[0];
 
@@ -523,10 +507,11 @@ export default function StudentProfile() {
         <StudentExamResults student={student} />
 
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3 rounded-2xl h-auto sm:h-12 bg-white dark:bg-slate-800 p-1 border shadow-sm max-w-sm">
-            <TabsTrigger value="profile" className="rounded-xl h-10 font-bold text-[10px] sm:text-sm">📋 Profile</TabsTrigger>
-            <TabsTrigger value="fees" className="rounded-xl h-10 font-bold text-[10px] sm:text-sm">💰 Fees</TabsTrigger>
-            <TabsTrigger value="hajira" className="rounded-xl h-10 font-bold text-[10px] sm:text-sm">✅ Hajira</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 rounded-2xl h-auto sm:h-12 bg-white dark:bg-slate-800 p-1 border shadow-sm max-w-md">
+            <TabsTrigger value="profile" className="rounded-xl h-10 font-bold text-[10px] sm:text-xs">📋 Profile</TabsTrigger>
+            <TabsTrigger value="fees" className="rounded-xl h-10 font-bold text-[10px] sm:text-xs">💰 Fees</TabsTrigger>
+            <TabsTrigger value="hajira" className="rounded-xl h-10 font-bold text-[10px] sm:text-xs">✅ Hajira</TabsTrigger>
+            <TabsTrigger value="applications" className="rounded-xl h-10 font-bold text-[10px] sm:text-xs">📝 দরখাস্ত</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile" className="space-y-6">
@@ -826,6 +811,16 @@ export default function StudentProfile() {
                   </div>
                 )}
               </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Applications / দরখাস্ত Tab */}
+          <TabsContent value="applications" className="space-y-4">
+            <Card className="rounded-2xl border-0 shadow-sm p-4 sm:p-6 bg-white dark:bg-slate-900">
+              <ApplicationPortal
+                user={{ id: student.id, role: "student", name: student.full_name_en, full_name_en: student.full_name_en }}
+                applicant={{ id: student.id, name: student.full_name_en, type: "student", branch_id: student.branch_id }}
+              />
             </Card>
           </TabsContent>
         </Tabs>

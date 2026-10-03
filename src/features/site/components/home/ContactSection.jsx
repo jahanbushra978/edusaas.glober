@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import { Phone, Mail, MapPin, Clock, Loader2, CheckCircle } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useTranslation } from "@/lib/translations";
-import { appClient } from "@/api/appClient";
 
 export default function ContactSection() {
   const { lang } = useLanguage();
@@ -20,13 +19,20 @@ export default function ContactSection() {
     if (!form.name.trim() || !form.message.trim()) return;
     setSending(true);
     try {
-      await appClient.entities.ContactMessage.create({
-        name: form.name.trim(),
-        email: form.contact.trim(),
-        subject: form.subject.trim(),
-        message: form.contact.trim() + "\n\n" + form.message.trim(),
-        is_read: false,
+      const res = await fetch("/api/public/contact", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name.trim(),
+          email: form.contact.trim(),
+          subject: form.subject.trim(),
+          message: form.contact.trim() + "\n\n" + form.message.trim(),
+        }),
       });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data?.message || "Failed to send message");
+      }
       setSent(true);
       setForm({ name: "", contact: "", subject: "", message: "" });
       setTimeout(() => setSent(false), 5000);

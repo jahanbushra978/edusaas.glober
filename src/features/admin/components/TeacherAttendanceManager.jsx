@@ -248,7 +248,7 @@ export default function TeacherAttendanceManager({ teachers, branches, currentUs
         link.setAttribute("download", `Teacher_Attendance_${selectedDate}.csv`);
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        if (link.parentNode) link.parentNode.removeChild(link);
       } else {
         const rangeLimits = { weekly: 2000, monthly: 5000, yearly: 6000 };
         const rangeAttendance = await fetchTeacherAttendanceByDateRange(startDate, endDate, rangeLimits[reportMode] || 2000);
@@ -308,7 +308,7 @@ export default function TeacherAttendanceManager({ teachers, branches, currentUs
         link.setAttribute("download", `Teacher_Attendance_${modeLabel}_${startDate}_to_${endDate}.csv`);
         document.body.appendChild(link);
         link.click();
-        document.body.removeChild(link);
+        if (link.parentNode) link.parentNode.removeChild(link);
       }
     } catch (e) {
       toast.error("Failed to export CSV: " + e.message);

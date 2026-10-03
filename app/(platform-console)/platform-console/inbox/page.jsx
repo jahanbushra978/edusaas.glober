@@ -5,7 +5,7 @@ import {
   Building2, MessageSquare, CalendarCheck, LifeBuoy, Lightbulb,
   Bug, TrendingUp, Globe, HardDrive, Handshake,
   Search, RefreshCw, CheckCircle, Clock, XCircle, Eye, Sparkles,
-  Inbox, ChevronRight, AlertCircle
+  Inbox, ChevronRight
 } from "lucide-react";
 
 // ─── Tab definitions ────────────────────────────────────────────────

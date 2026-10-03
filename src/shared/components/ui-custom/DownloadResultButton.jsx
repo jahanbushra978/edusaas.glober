@@ -6,6 +6,7 @@ import { Award, Loader2, FileText } from "lucide-react";
 import { format } from "date-fns";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { filterActiveMarksDetails } from "@/lib/academic";
 
 const loadImage = (src) => {
   return new Promise((resolve) => {
@@ -17,6 +18,21 @@ const loadImage = (src) => {
 };
 
 let cachedFontBase64 = null;
+let fontPreloaded = false;
+
+const preloadBengaliFont = async () => {
+  if (fontPreloaded) return;
+  try {
+    // Ensure font is loaded in browser before canvas rendering
+    if (typeof document !== 'undefined' && document.fonts) {
+      await document.fonts.load('400 16px "Noto Sans Bengali"');
+      await document.fonts.load('700 16px "Noto Sans Bengali"');
+    }
+    fontPreloaded = true;
+  } catch (_) {
+    fontPreloaded = true; // proceed even if preload fails
+  }
+};
 
 const getNotoSansBengaliFont = async () => {
   if (cachedFontBase64) return cachedFontBase64;
@@ -41,7 +57,7 @@ const renderBengaliText = (text, fontSize, color = "#1e293b", isBold = false) =>
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   const scale = 4;
-  const fontSpec = `${isBold ? "bold" : "normal"} ${fontSize * scale}px "Noto Sans Bengali", sans-serif`;
+  const fontSpec = `${isBold ? "bold" : "normal"} ${fontSize * scale}px "Noto Sans Bengali", "Hind Siliguri", sans-serif`;
   ctx.font = fontSpec;
   const metrics = ctx.measureText(text);
   const textWidth = Math.max(metrics.width, 1);
@@ -60,18 +76,50 @@ const renderBengaliText = (text, fontSize, color = "#1e293b", isBold = false) =>
   };
 };
 
-const containsBengali = (text) => /[\u0980-\u09FF]/.test(text);
+
+const isComplexUnicode = (text) => /[^\u0000-\u007F]/.test(String(text || ""));
+
+const renderMultilingualText = (text, fontSize, color = "#1e293b", isBold = false) => {
+  if (typeof window === "undefined" || !text) return null;
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  const scale = 4;
+  const fontSpec = `${isBold ? "bold" : "normal"} ${fontSize * scale}px "Hind Siliguri", "Noto Sans Bengali", "Noto Sans Arabic", "Amiri", "Segoe UI", Arial, sans-serif`;
+  ctx.font = fontSpec;
+  const metrics = ctx.measureText(text);
+  const textWidth = Math.max(metrics.width, 1);
+  const textHeight = fontSize * scale * 1.4;
+  canvas.width = textWidth;
+  canvas.height = textHeight;
+  ctx.font = fontSpec;
+  ctx.textBaseline = "middle";
+  ctx.fillStyle = color;
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillText(text, 0, canvas.height / 2);
+  return {
+    dataUrl: canvas.toDataURL("image/png"),
+    width: textWidth * (0.352777 / scale),
+    height: textHeight * (0.352777 / scale)
+  };
+};
 
 const drawBengaliText = (doc, text, x, y, fontSize, color = "#1e293b", isBold = false, align = "left") => {
   const str = String(text || "");
-  if (!str || str === "N/A" || str === "—" || !containsBengali(str)) {
+  if (!str || str === "N/A" || str === "—") {
     doc.setFont("helvetica", isBold ? "bold" : "normal");
     doc.setFontSize(fontSize);
     doc.setTextColor(30, 30, 30);
     doc.text(str, x, y, { align });
     return;
   }
-  const result = renderBengaliText(str, fontSize, color, isBold);
+  if (!isComplexUnicode(str)) {
+    doc.setFont("helvetica", isBold ? "bold" : "normal");
+    doc.setFontSize(fontSize);
+    doc.setTextColor(30, 30, 30);
+    doc.text(str, x, y, { align });
+    return;
+  }
+  const result = renderMultilingualText(str, fontSize, color, isBold);
   if (result) {
     let drawX = x;
     if (align === "center") {
@@ -79,12 +127,7 @@ const drawBengaliText = (doc, text, x, y, fontSize, color = "#1e293b", isBold = 
     } else if (align === "right") {
       drawX = x - result.width;
     }
-    doc.addImage(result.dataUrl, "PNG", drawX, y - result.height * 0.72, result.width, result.height);
-  } else {
-    doc.setFont("NotoSansBengali", "normal");
-    doc.setFontSize(fontSize);
-    doc.setTextColor(30, 30, 30);
-    doc.text(str, x, y, { align });
+    doc.addImage(result.dataUrl, "PNG", drawX, y - result.height * 0.70, result.width, result.height);
   }
 };
 
@@ -93,9 +136,9 @@ const wrapBengaliText = (text, maxWidth, fontSize, isBold = false) => {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   const scale = 4;
-  ctx.font = `${isBold ? "bold" : "normal"} ${fontSize * scale}px "Noto Sans Bengali", sans-serif`;
+  ctx.font = `${isBold ? "bold" : "normal"} ${fontSize * scale}px "Hind Siliguri", "Noto Sans Bengali", "Noto Sans Arabic", "Amiri", "Segoe UI", Arial, sans-serif`;
   
-  const words = text.split(" ");
+  const words = String(text).split(" ");
   const lines = [];
   let currentLine = "";
   
@@ -120,7 +163,14 @@ const wrapBengaliText = (text, maxWidth, fontSize, isBold = false) => {
 
 const drawBengaliTextWrapped = (doc, text, x, y, fontSize, maxWidth, lineHeight = 4.5, color = "#1e293b", isBold = false) => {
   const str = String(text || "");
-  if (!str || str === "N/A" || str === "—" || !containsBengali(str)) {
+  if (!str || str === "N/A" || str === "—") {
+    doc.setFont("helvetica", isBold ? "bold" : "normal");
+    doc.setFontSize(fontSize);
+    doc.setTextColor(80, 80, 80);
+    doc.text(str, x, y, { maxWidth });
+    return 1;
+  }
+  if (!isComplexUnicode(str)) {
     doc.setFont("helvetica", isBold ? "bold" : "normal");
     doc.setFontSize(fontSize);
     doc.setTextColor(80, 80, 80);
@@ -183,14 +233,19 @@ export default function DownloadResultButton({ student, attendance = [] }) {
       const activeExam = examsList.find(e => e.id === result.exam_id);
       const examTitle = activeExam ? activeExam.title : "Exam Result";
       
+      // Pre-load Bengali font in browser so Canvas renders correctly
+      await preloadBengaliFont();
+
       const jsPDF = (await import("jspdf")).default;
       const doc = new jsPDF({ unit: "mm", format: "a4" });
       
       try {
         const fontBase64 = await getNotoSansBengaliFont();
-        doc.addFileToVFS("NotoSansBengali.ttf", fontBase64);
-        doc.addFont("NotoSansBengali.ttf", "NotoSansBengali", "normal");
-        doc.setFont("NotoSansBengali");
+        if (fontBase64) {
+          doc.addFileToVFS("NotoSansBengali.ttf", fontBase64);
+          doc.addFont("NotoSansBengali.ttf", "NotoSansBengali", "normal");
+          doc.setFont("NotoSansBengali");
+        }
       } catch (err) {
         console.error("Failed to load Noto Sans Bengali font:", err);
       }
@@ -295,7 +350,7 @@ export default function DownloadResultButton({ student, attendance = [] }) {
       if (student.photo_url) {
         try {
           doc.addImage(student.photo_url, "JPEG", pX + 0.5, pY + 0.5, 21, 25);
-        } catch (e) {
+        } catch {
           doc.setFontSize(6);
           doc.setTextColor(150, 150, 150);
           doc.text("Photo", pX + 11, pY + 14, { align: "center" });
@@ -391,7 +446,9 @@ export default function DownloadResultButton({ student, attendance = [] }) {
       let totalObtainedMarks = 0;
       let calculatedGPA = 0;
 
-      const marks = Array.isArray(result.marks_details) ? result.marks_details : [];
+      const studentBranch = branches.find(b => String(b.id) === String(student.branch_id)) || branches.find(b => String(b.id) === String(result.branch_id)) || branches[0];
+      const marks = filterActiveMarksDetails(result.marks_details, student, studentBranch?.academic_structure);
+
       marks.forEach((m) => {
         const subj = typeof m.subject_name === "object" && m.subject_name !== null
           ? (m.subject_name?.bn || m.subject_name?.en || Object.values(m.subject_name).find(v => v) || "Subject")
@@ -415,7 +472,7 @@ export default function DownloadResultButton({ student, attendance = [] }) {
         totalObtainedMarks += obtained;
       });
 
-      // GPA calculation
+      // GPA calculation based strictly on active subjects
       const isFailed = marks.some(m => m.obtained_marks === "" || Number(m.obtained_marks) < Number(m.pass_marks));
       const totalGpaPoints = marks.reduce((sum, m) => {
         if (m.obtained_marks === "") return sum;

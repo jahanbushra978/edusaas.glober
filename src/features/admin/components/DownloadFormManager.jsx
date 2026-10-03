@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Loader2, Upload, FileText, Download, CheckCircle2, Save } from "lucide-react";
 import { toast } from "sonner";
+import uploadToCloudinary from "@/lib/cloudinary";
 
 export default function DownloadFormManager() {
   const queryClient = useQueryClient();
@@ -20,6 +21,7 @@ export default function DownloadFormManager() {
 
   const [urlVal, setUrlVal] = useState(currentUrl);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const saveMut = useMutation({
     mutationFn: async ({ key, value }) => {
@@ -44,15 +46,28 @@ export default function DownloadFormManager() {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadProgress(0);
     try {
-      const { file_url } = await appClient.integrations.Core.UploadFile({ file });
+      const { file_url } = await uploadToCloudinary({
+        file,
+        folder: "rahmania/forms",
+        label: "document",
+        onProgress: (p) => setUploadProgress(p),
+      });
       setUrlVal(file_url);
       await saveMut.mutateAsync({ key: "admission_form_url", value: file_url });
       toast.success("Form uploaded & saved!");
-    } catch {
-      toast.error("Upload failed. Try again.");
+    } catch (err) {
+      toast.error(err?.message || "Upload failed. Try again.");
     }
     setUploading(false);
+    setUploadProgress(0);
+  };
+
+  // Use proxy API for reliable PDF download (avoids Cloudinary auth/CORS issues)
+  const getDownloadUrl = (url) => {
+    if (!url) return "#";
+    return `/api/public/download-pdf?url=${encodeURIComponent(url)}`;
   };
 
   return (
@@ -76,8 +91,12 @@ export default function DownloadFormManager() {
                 <p className="text-sm font-medium text-emerald-800">Form uploaded</p>
                 <p className="text-xs text-emerald-600 truncate">{currentUrl}</p>
               </div>
-              <a href={currentUrl} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-all">
+              <a
+                href={getDownloadUrl(currentUrl)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-medium hover:bg-emerald-700 transition-all"
+              >
                 <Download className="h-3.5 w-3.5" /> Download
               </a>
             </div>
@@ -86,17 +105,38 @@ export default function DownloadFormManager() {
           <div className="space-y-2">
             <label className="text-xs font-bold text-primary uppercase tracking-wide">Upload Form File</label>
             <p className="text-xs text-muted-foreground">PDF, DOC, or Image file</p>
-            <label className="cursor-pointer inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all shadow-md">
-              {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-              {uploading ? "Uploading..." : "Choose File & Upload"}
-              <input type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp" className="hidden" onChange={handleFileUpload} disabled={uploading} />
+            <label className="cursor-pointer inline-flex flex-col gap-1">
+              <span className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-primary text-white text-sm font-bold hover:bg-primary/90 transition-all shadow-md">
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                {uploading ? `Uploading... ${uploadProgress}%` : "Choose File & Upload"}
+              </span>
+              {uploading && (
+                <div className="w-full h-1.5 bg-primary/10 rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-all duration-300 rounded-full"
+                    style={{ width: `${uploadProgress}%` }}
+                  />
+                </div>
+              )}
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png,.webp"
+                className="hidden"
+                onChange={handleFileUpload}
+                disabled={uploading}
+              />
             </label>
           </div>
 
           <div className="space-y-2">
             <label className="text-xs font-bold text-primary uppercase tracking-wide">Or paste file URL</label>
             <div className="flex gap-2">
-              <Input placeholder="https://example.com/form.pdf" value={urlVal} onChange={(e) => setUrlVal(e.target.value)} className="flex-1" />
+              <Input
+                placeholder="https://example.com/form.pdf"
+                value={urlVal}
+                onChange={(e) => setUrlVal(e.target.value)}
+                className="flex-1"
+              />
               <Button onClick={handleUrlSave} className="gap-1.5">
                 <Save className="h-4 w-4" /> Save
               </Button>

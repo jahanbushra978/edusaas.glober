@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import { appClient } from "@/api/appClient";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import ApplicationPortal from "@/features/applications/components/ApplicationPortal";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -18,6 +19,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { format } from "date-fns";
 
 const TeacherPDFButton = dynamic(() => import("@/components/ui-custom/TeacherPDFButton"), { ssr: false });
+
+import { isAdminUser } from "@/lib/permissions";
 
 export default function TeacherProfile() {
   const [authState, setAuthState] = useState({ loading: true, allowed: false, role: null, userId: null });
@@ -34,7 +37,7 @@ export default function TeacherProfile() {
     if (!teacherId) return;
     
     appClient.auth.me().then((user) => {
-      const allowed = user.role === "admin" || 
+      const allowed = isAdminUser(user) || 
                       user.role === "branch_admin" || 
                       (user.role === "teacher" && String(user.profileId) === String(teacherId));
       
@@ -56,7 +59,11 @@ export default function TeacherProfile() {
 
   const { data: teacher, isLoading: loadingTeacher } = useQuery({
     queryKey: ["teacher-profile-detail", teacherId],
-    queryFn: () => appClient.entities.Teacher.get(teacherId),
+    queryFn: async () => {
+      const res = await appClient.entities.Teacher.get(Number(teacherId) || teacherId).catch(() => null);
+      if (res) return res;
+      return await appClient.entities.Teacher.get(teacherId);
+    },
     enabled: !!teacherId && authState.allowed,
   });
 
@@ -233,11 +240,12 @@ export default function TeacherProfile() {
 
         {/* Dynamic Tabs */}
         <Tabs defaultValue="profile" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-2 sm:grid-cols-4 rounded-2xl h-auto sm:h-12 bg-white dark:bg-slate-800 p-1 border shadow-sm max-w-lg">
+          <TabsList className="grid w-full grid-cols-3 sm:grid-cols-5 rounded-2xl h-auto sm:h-12 bg-white dark:bg-slate-800 p-1 border shadow-sm max-w-2xl">
             <TabsTrigger value="profile" className="rounded-xl h-10 font-bold text-[10px] sm:text-sm">Profile</TabsTrigger>
             <TabsTrigger value="students" className="rounded-xl h-10 font-bold text-[10px] sm:text-sm">Students</TabsTrigger>
             <TabsTrigger value="salary" className="rounded-xl h-10 font-bold text-[10px] sm:text-sm">Salary</TabsTrigger>
             <TabsTrigger value="biometric" className="rounded-xl h-10 font-bold text-[10px] sm:text-sm">Biometric</TabsTrigger>
+            <TabsTrigger value="applications" className="rounded-xl h-10 font-bold text-[10px] sm:text-sm">📝 Applications</TabsTrigger>
           </TabsList>
 
           {/* Profile Tab */}
@@ -708,6 +716,16 @@ export default function TeacherProfile() {
                 </Card>
               </div>
             </div>
+          </TabsContent>
+
+          {/* Applications Tab */}
+          <TabsContent value="applications">
+            <Card className="rounded-2xl border-slate-100 shadow-sm p-4 sm:p-6 bg-white">
+              <ApplicationPortal
+                user={{ id: teacher.id, role: "teacher", name: teacher.full_name_en || teacher.full_name_bn, full_name_en: teacher.full_name_en, teacher_id: teacher.teacher_id }}
+                applicant={{ id: teacher.id, name: teacher.full_name_en || teacher.full_name_bn, type: "teacher", branch_id: teacher.branch_id, teacher_id: teacher.teacher_id }}
+              />
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

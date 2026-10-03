@@ -1,16 +1,17 @@
 export function containsBengali(text) {
-  return /[\u0980-\u09FF]/.test(text);
+  return /[^\u0000-\u007F]/.test(String(text || ""));
 }
 
 export function renderBengaliText(text, fontSize, color = "#1e293b", isBold = false) {
+  if (typeof window === "undefined" || !text) return null;
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
   const scale = 4;
-  const fontSpec = `${isBold ? "bold" : "normal"} ${fontSize * scale}px "Noto Sans Bengali", "Siyam Rupali", "Nikosh", sans-serif`;
+  const fontSpec = `${isBold ? "bold" : "normal"} ${fontSize * scale}px "Hind Siliguri", "Noto Sans Bengali", "Noto Sans Arabic", "Amiri", "Segoe UI", Arial, sans-serif`;
   ctx.font = fontSpec;
   const metrics = ctx.measureText(text);
   const textWidth = Math.max(metrics.width, 1);
-  const textHeight = fontSize * scale * 1.35;
+  const textHeight = fontSize * scale * 1.4;
   canvas.width = textWidth;
   canvas.height = textHeight;
   ctx.font = fontSpec;
@@ -39,13 +40,13 @@ export function drawBengaliText(doc, text, x, y, fontSize, color = "#1e293b", al
     let drawX = x;
     if (align === "center") drawX = x - result.width / 2;
     else if (align === "right") drawX = x - result.width;
-    doc.addImage(result.dataUrl, "PNG", drawX, y - result.height * 0.72, result.width, result.height);
+    doc.addImage(result.dataUrl, "PNG", drawX, y - result.height * 0.70, result.width, result.height);
   }
 }
 
-export function drawBengaliTextWrapped(doc, text, maxWidth, fontSize, color = "#1e293b", align = "center") {
+export function drawBengaliTextWrapped(doc, text, maxWidth, fontSize, color = "#1e293b", _align = "center") {
   doc.setFontSize(fontSize);
-  const words = text.split(/(?<=\u200B)|\s+/);
+  const words = String(text || "").split(/(?<=\u200B)|\s+/);
   const lines = [];
   let line = "";
   for (const w of words) {
@@ -60,12 +61,13 @@ export function drawBengaliTextWrapped(doc, text, maxWidth, fontSize, color = "#
         line = testStr;
       }
     } else {
-      const test = line ? `${line} ${w}` : w;
-      if (doc.getTextWidth(test) > maxWidth && line) {
+      const testLine = line ? `${line} ${w}` : w;
+      const width = doc.getTextWidth(testLine);
+      if (line && width > maxWidth) {
         lines.push(line);
         line = w;
       } else {
-        line = test;
+        line = testLine;
       }
     }
   }
@@ -74,6 +76,10 @@ export function drawBengaliTextWrapped(doc, text, maxWidth, fontSize, color = "#
 }
 
 function hexToRgb(hex) {
-  const v = parseInt(hex.replace("#", ""), 16);
-  return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+  const clean = hex.replace("#", "");
+  return [
+    parseInt(clean.substring(0, 2), 16),
+    parseInt(clean.substring(2, 4), 16),
+    parseInt(clean.substring(4, 6), 16)
+  ];
 }

@@ -99,9 +99,37 @@ async function fetchHomePageDataUncached() {
     const facilities = !facilitiesRes.error ? facilitiesRes.data || [] : [];
 
     if (rpcData && (!rpcErr || rpcErr.code !== "PGRST202")) {
+      const [pinRes, branchImgRes] = await Promise.all([
+        safeQuery(supabase.from("notices").select("id,pin_to_top").eq("is_active", true)),
+        safeQuery(supabase.from("branches").select("id,logo,slider_images,image_url,card_image_url").not("is_active", "is", false))
+      ]);
+
+      const pinMap = new Map((pinRes?.data || []).map(n => [n.id, n.pin_to_top]));
+      const branchImgMap = new Map((branchImgRes?.data || []).map(b => [b.id, b]));
+
+      const enrichedNotices = (rpcData.notices || []).map(n => ({
+        ...n,
+        pin_to_top: n.pin_to_top ?? pinMap.get(n.id) ?? false,
+      }));
+
+      const enrichedBranches = (rpcData.branches || []).map(b => {
+        const imgData = branchImgMap.get(b.id) || {};
+        const sliderImgs = Array.isArray(imgData.slider_images) ? imgData.slider_images : (Array.isArray(b.slider_images) ? b.slider_images : []);
+        const coverImg = imgData.card_image_url || imgData.image_url || b.card_image_url || b.image_url || (sliderImgs.length > 0 ? sliderImgs[0] : "") || imgData.logo || b.logo || "";
+        return {
+          ...b,
+          logo: imgData.logo || b.logo || "",
+          slider_images: sliderImgs,
+          image_url: coverImg,
+          card_image_url: imgData.card_image_url || b.card_image_url || coverImg,
+        };
+      });
+
       return {
         ...rpcData,
         facilities,
+        notices: enrichedNotices,
+        branches: enrichedBranches,
       };
     }
     if (rpcErr) {
@@ -119,14 +147,14 @@ async function fetchHomePageDataUncached() {
     facilitiesRes,
   ] = await Promise.all([
     safeQuery(supabase.from("notices")
-      .select("id,title,body,type,is_active,sort_order,image,description,file_url,is_published,created_date")
+      .select("id,title,body,type,is_active,sort_order,image,description,file_url,is_published,created_date,pin_to_top")
       .eq("is_active", true).not("is_published", "is", false)
       .order("created_date", { ascending: false }).limit(50)),
-    safeQuery(supabase.from("app_settings").select("key,value")),
+    safeQuery(supabase.from("app_settings").select("key,value").not("key", "in", '("admin_login_password","admin_password","jwt_secret")')),
     safeQuery(supabase.from("hero_slides").select("id,title,subtitle,image_url,caption_en,caption_bn,is_active,sort_order,created_date").eq("is_active", true).order("sort_order").limit(100)),
     fetchEventsWithFallback(supabase),
     safeQuery(supabase.from("gallery").select("id,title,image_url,category,created_at").order("created_at", { ascending: false }).limit(200)),
-    safeQuery(supabase.from("branches").select("id,name_bn,name_en,branch_name,address_bn,address_en,phone,head_teacher,established_year,is_active,sort_order,created_date").not("is_active", "is", false).order("sort_order").limit(50)),
+    safeQuery(supabase.from("branches").select("id,name_bn,name_en,branch_name,address_bn,address_en,phone,head_teacher,established_year,is_active,sort_order,created_date,logo,image_url,card_image_url,slider_images").not("is_active", "is", false).order("sort_order").limit(50)),
     fetchBlogsWithFallback(supabase),
     safeQuery(supabase.from("page_sections").select("id,section_key,title_bn,title_en,subtitle_bn,subtitle_en,body_bn,body_en,is_visible,created_date,updated_date")),
     safeQuery(supabase.from("faqs").select("id,question,answer,sort_order,created_date").order("sort_order").limit(50)),

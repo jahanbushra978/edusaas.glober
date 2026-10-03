@@ -12,6 +12,8 @@ import { useTranslation } from "@/lib/translations";
 import { pagesConfig } from "@/pages.config";
 import { useNavbarItems } from "@/hooks/useNavbarItems";
 import ProgressiveSection from "@/shared/components/progressive/ProgressiveSection";
+import { useQuery } from "@tanstack/react-query";
+import { appClient } from "@/api/appClient";
 
 import Footer from "@/components/layout/Footer";
 
@@ -51,6 +53,21 @@ export default function Layout({ children, currentPageName: currentPageNameProp 
   const instNameEn = "Rahmania Institute";
 
   const MENU_ITEMS = useNavbarItems(user);
+
+  // Fetch contact info from app_settings so phone/email stay in sync with admin panel
+  const { data: siteSettings = [] } = useQuery({
+    queryKey: ["app-settings-public"],
+    queryFn: () => appClient.entities.AppSettings.list(),
+    staleTime: 60 * 60 * 1000,
+  });
+  const getSetting = (key) => (Array.isArray(siteSettings) ? siteSettings : []).find((s) => s.key === key)?.value;
+  const contactPhone = getSetting("contact_phone") || "+8801906898939";
+  const contactEmail = getSetting("email") || "rahmaniainstitute.org@gmail.com";
+  const contactFacebook = getSetting("facebook") || "https://www.facebook.com/RahmaniaInstituteHifzMadrasagazipur";
+  const contactYoutube = getSetting("youtube") || "https://www.youtube.com/@RahmaniaInstitute1700";
+  // Normalize phone for tel: and wa.me: links (strip non-digits then add country code)
+  const rawPhone = contactPhone.replace(/[^\d]/g, "");
+  const waPhone = rawPhone.startsWith("88") ? rawPhone : `88${rawPhone.replace(/^0/, "")}`;
 
   useEffect(() => {
     base44.auth.me().then(setUser).catch(() => setUser(null));
@@ -174,20 +191,20 @@ export default function Layout({ children, currentPageName: currentPageNameProp 
             <div className="flex items-center gap-2 sm:gap-4 min-w-0">
               <div className="flex items-center gap-1 sm:gap-1.5 min-w-0">
                 <span className="text-yellow-400 font-bold whitespace-nowrap">{t.nav.call}:</span>
-                <a href="tel:+8801906898939" className="hover:text-green-200 transition-colors truncate">+8801906898939</a>
+                <a href={`tel:${contactPhone}`} className="hover:text-green-200 transition-colors truncate">{contactPhone}</a>
               </div>
               <div className="hidden sm:flex items-center gap-1.5">
                 <span className="text-yellow-400 font-bold">{t.nav.email}:</span>
-                <a href="https://mail.google.com/mail/?view=cm&fs=1&to=rahmaniainstitute.org@gmail.com" target="_blank" rel="noopener noreferrer" className="hover:text-green-200 transition-colors">rahmaniainstitute.org@gmail.com</a>
+                <a href={`https://mail.google.com/mail/?view=cm&fs=1&to=${contactEmail}`} target="_blank" rel="noopener noreferrer" className="hover:text-green-200 transition-colors">{contactEmail}</a>
               </div>
             </div>
 
             {/* Right: Social & Login */}
             <div className="flex items-center gap-1 sm:gap-2 lg:gap-4 min-w-0">
               <div className={`flex items-center gap-1 sm:gap-2 lg:gap-3 pr-2 sm:pr-4 ${lang === 'ar' ? 'border-l' : 'border-r'} border-green-600/50`}>
-                <a href="https://www.facebook.com/RahmaniaInstituteHifzMadrasagazipur" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full border border-green-400/50 flex items-center justify-center text-green-100 hover:bg-green-700 hover:opacity-80 transition-all duration-200 shrink-0" aria-label="Facebook"><Facebook className="w-3.5 h-3.5" /></a>
-                <a href="https://wa.me/8801906898939" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full border border-green-400/50 flex items-center justify-center text-green-100 hover:bg-green-700 hover:opacity-80 transition-all duration-200 shrink-0" aria-label="WhatsApp"><Phone className="w-3.5 h-3.5" /></a>
-                <a href="https://www.youtube.com/@RahmaniaInstitute1700" target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full border border-green-400/50 flex items-center justify-center text-green-100 hover:bg-green-700 hover:opacity-80 transition-all duration-200 shrink-0" aria-label="YouTube"><Youtube className="w-3.5 h-3.5" /></a>
+                <a href={contactFacebook} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full border border-green-400/50 flex items-center justify-center text-green-100 hover:bg-green-700 hover:opacity-80 transition-all duration-200 shrink-0" aria-label="Facebook"><Facebook className="w-3.5 h-3.5" /></a>
+                <a href={`https://wa.me/${waPhone}`} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full border border-green-400/50 flex items-center justify-center text-green-100 hover:bg-green-700 hover:opacity-80 transition-all duration-200 shrink-0" aria-label="WhatsApp"><Phone className="w-3.5 h-3.5" /></a>
+                <a href={contactYoutube} target="_blank" rel="noopener noreferrer" className="w-7 h-7 rounded-full border border-green-400/50 flex items-center justify-center text-green-100 hover:bg-green-700 hover:opacity-80 transition-all duration-200 shrink-0" aria-label="YouTube"><Youtube className="w-3.5 h-3.5" /></a>
               </div>
               
               <ThemeToggle />

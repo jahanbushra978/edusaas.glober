@@ -1427,17 +1427,17 @@ ${cardsHtml}
       const photoSize = tpl.studentPhotoSize / 3;
       const col1 = tpl.cardMargin;
 
-      if (tpl.showFields.studentPhoto && previewStudent?.photo_url) {
+      if (tpl.showFields.studentPhoto && student?.photo_url) {
         try {
-          const photoImg = await loadImageElement(previewStudent.photo_url);
+          const photoImg = await loadImageElement(student.photo_url);
           if (photoImg) {
             doc.addImage(photoImg, "JPEG", col1, y, photoSize, photoSize);
           }
         } catch {}
       }
 
-      const photoOffset = (tpl.showFields.studentPhoto && previewStudent?.photo_url) ? photoSize + 5 : 0;
-      const infoX = tpl.showFields.studentPhoto && previewStudent?.photo_url ? col1 + photoSize + 3 : col1;
+      const photoOffset = (tpl.showFields.studentPhoto && student?.photo_url) ? photoSize + 5 : 0;
+      const infoX = tpl.showFields.studentPhoto && student?.photo_url ? col1 + photoSize + 3 : col1;
       const infoW = W - infoX - tpl.cardMargin;
 
       const renderInfo = (label, value, x, _w) => {
@@ -1459,13 +1459,13 @@ ${cardsHtml}
 
       const startY = y;
       const classNameVal = resolveAcademicDisplayName(
-        previewStudent?.class_id, previewStudent?.session_id, previewStudent?.class_group_id, branch?.academic_structure, 'bn'
-      ) || previewStudent?.class_name || "";
-      if (tpl.showFields.studentName) renderInfo("Student Name:", previewStudent?.full_name_bn || previewStudent?.full_name_en, infoX, infoW);
-      if (tpl.showFields.fatherName) renderInfo("Father's Name:", previewStudent?.father_name, infoX, infoW);
-      if (tpl.showFields.motherName) renderInfo("Mother's Name:", previewStudent?.mother_name, infoX, infoW);
-      if (tpl.showFields.studentId) renderInfo("Student ID:", String(previewStudent?.id), infoX, infoW);
-      if (tpl.showFields.roll) renderInfo("Roll:", previewStudent?.roll_number, infoX, infoW);
+        student?.class_id, student?.session_id, student?.class_group_id, branch?.academic_structure, 'bn'
+      ) || student?.class_name || "";
+      if (tpl.showFields.studentName) renderInfo("Student Name:", student?.full_name_bn || student?.full_name_en, infoX, infoW);
+      if (tpl.showFields.fatherName) renderInfo("Father's Name:", student?.father_name, infoX, infoW);
+      if (tpl.showFields.motherName) renderInfo("Mother's Name:", student?.mother_name, infoX, infoW);
+      if (tpl.showFields.studentId) renderInfo("Student ID:", String(student?.id), infoX, infoW);
+      if (tpl.showFields.roll) renderInfo("Roll:", student?.roll_number, infoX, infoW);
       if (tpl.showFields.className) renderInfo("Class:", classNameVal, infoX, infoW);
       if (tpl.showFields.session) renderInfo("Session:", exam?.session || exam?.academic_year, infoX, infoW);
       if (tpl.showFields.examDate) renderInfo("Exam Date:", exam?.exam_date || exam?.start_date, infoX, infoW);
@@ -1511,7 +1511,7 @@ ${cardsHtml}
 
       if (tpl.showFields.qrCode) {
         try {
-          const qrDataUrl = await QRCode.toDataURL(`https://rahmaniainstitute.org/verify?student=${previewStudent?.id}`, { width: 30, margin: 0 });
+          const qrDataUrl = await QRCode.toDataURL(`https://rahmaniainstitute.org/verify?student=${student?.id}`, { width: 30, margin: 0 });
           doc.addImage(qrDataUrl, "PNG", W - tpl.cardMargin - 12, H - 28, 10, 10);
         } catch {}
       }
@@ -1526,7 +1526,7 @@ ${cardsHtml}
       const url = URL.createObjectURL(pdfBlob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `admit-card-${previewStudent?.roll_number || previewStudent?.id}.pdf`;
+      link.download = `admit-card-${student?.roll_number || student?.id}.pdf`;
       link.click();
       URL.revokeObjectURL(url);
       toast.success("PDF downloaded");

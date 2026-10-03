@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { appClient } from '@/api/appClient';
 import {
-  Search, Bell, ChevronDown, LogOut, Settings, User,
+  Search, Bell, ChevronDown, LogOut, Settings,
   Building2, Inbox, X, ExternalLink, ShieldCheck, Loader2
 } from 'lucide-react';
 

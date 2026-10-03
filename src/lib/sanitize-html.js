@@ -17,8 +17,11 @@ const SANITIZE_OPTIONS = {
 };
 
 let DOMPurify = null;
+let purifyLoading = false;
 
-if (typeof globalThis !== "undefined") {
+// Eagerly attempt to load DOMPurify once (non-blocking)
+if (typeof globalThis !== "undefined" && !purifyLoading) {
+  purifyLoading = true;
   import("isomorphic-dompurify").then((mod) => {
     DOMPurify = mod.default || mod;
   }).catch(() => {
@@ -28,7 +31,9 @@ if (typeof globalThis !== "undefined") {
 
 export function sanitizeHtml(html) {
   if (!html || typeof html !== "string") return "";
-  if (!DOMPurify) return html;
+  // SECURITY: If DOMPurify hasn't loaded, return empty string instead of raw HTML
+  // to prevent XSS. The content will show briefly empty but this is safer.
+  if (!DOMPurify) return "";
   return DOMPurify.sanitize(html, SANITIZE_OPTIONS);
 }
 

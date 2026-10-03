@@ -1,8 +1,13 @@
 import { arrayToPermissions } from "./permissions-definitions";
 
+export function isAdminUser(user) {
+  if (!user) return false;
+  return user.role === "admin" || user.role === "super_admin" || user.role === "superadmin";
+}
+
 export function hasPermission(user, module, action = "view") {
   if (!user) return false;
-  if (user.role === "admin") return true;
+  if (isAdminUser(user)) return true;
 
   let allowed = user.allowed_features;
   if (!Array.isArray(allowed)) {
@@ -32,7 +37,7 @@ export function hasPermission(user, module, action = "view") {
 
 export function hasAnyPermission(user, module) {
   if (!user) return false;
-  if (user.role === "admin") return true;
+  if (isAdminUser(user)) return true;
   const allowed = user.allowed_features;
   if (!Array.isArray(allowed)) return false;
   if (allowed.includes(module)) return true;
@@ -41,7 +46,7 @@ export function hasAnyPermission(user, module) {
 
 export function canManageAllBranches(user, module) {
   if (!user) return false;
-  if (user.role === "admin") return true;
+  if (isAdminUser(user)) return true;
   const allowed = user.allowed_features;
   if (!Array.isArray(allowed)) return false;
   return allowed.includes(module) || allowed.includes(`${module}:manage_all_branches`);
@@ -49,7 +54,7 @@ export function canManageAllBranches(user, module) {
 
 export function canManageOwnBranch(user, module) {
   if (!user) return false;
-  if (user.role === "admin") return true;
+  if (isAdminUser(user)) return true;
   const allowed = user.allowed_features;
   if (!Array.isArray(allowed)) return false;
   if (canManageAllBranches(user, module)) return true;

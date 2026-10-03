@@ -22,7 +22,12 @@ const ResultsPage = dynamic(() => import('./src/features/site/pages/ResultsPage'
 const GalleryPage = dynamic(() => import('./src/features/site/pages/GalleryPage'), { ssr: true });
 const VideoGalleryPage = dynamic(() => import('./src/features/site/pages/VideoGalleryPage'), { ssr: true });
 const BranchGalleryPage = dynamic(() => import('./src/features/site/pages/BranchGalleryPage'), { ssr: true });
-
+const BranchPage = dynamic(() => import('./src/features/site/pages/BranchPage'), { ssr: true });
+const DepartmentLandingPage = dynamic(() => import('./src/features/site/pages/DepartmentLandingPage'), { ssr: true });
+const FacilitiesPage = dynamic(() => import('./src/features/site/pages/FacilitiesPage'), { ssr: true });
+const NooraniPage = dynamic(() => import('./src/features/site/pages/NooraniPage'), { ssr: true });
+const TeachersPage = dynamic(() => import('./src/features/site/pages/TeachersPage'), { ssr: true });
+const LiveAttendancePage = dynamic(() => import('./src/features/site/pages/LiveAttendancePage'), { ssr: false });
 
 export const PAGES = {
     "AdminDashboard": AdminDashboard,
@@ -46,6 +51,12 @@ export const PAGES = {
     "GalleryPage": GalleryPage,
     "VideoGalleryPage": VideoGalleryPage,
     "BranchGalleryPage": BranchGalleryPage,
+    "BranchPage": BranchPage,
+    "DepartmentLandingPage": DepartmentLandingPage,
+    "FacilitiesPage": FacilitiesPage,
+    "NooraniPage": NooraniPage,
+    "TeachersPage": TeachersPage,
+    "LiveAttendancePage": LiveAttendancePage,
 }
 
 export const pagesConfig = {

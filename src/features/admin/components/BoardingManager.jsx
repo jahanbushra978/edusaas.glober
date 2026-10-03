@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { appClient } from "@/api/appClient";
+import { isAdminUser } from "@/lib/permissions";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,6 +63,7 @@ const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8", "#82ca9d"
 
 export default function BoardingManager({ currentUser }) {
   const queryClient = useQueryClient();
+  const isAdmin = isAdminUser(currentUser);
   const [selectedBranchId, setSelectedBranchId] = useState("");
   const [activeSubTab, setActiveSubTab] = useState("dashboard"); // dashboard, entry, history, gallery, analytics, approvals
   const [viewMode, setViewMode] = useState("daily"); // 'daily', 'monthly', 'all'
@@ -163,7 +165,7 @@ export default function BoardingManager({ currentUser }) {
     if (currentUser) {
       if (currentUser.role === "branch_admin" || currentUser.role === "boarding_manager") {
         setSelectedBranchId(String(currentUser.branch_id));
-      } else if (currentUser.role === "admin" && branches.length > 0 && !selectedBranchId) {
+      } else if (isAdmin && branches.length > 0 && !selectedBranchId) {
         // Select first boarding-enabled branch by default
         const enabledBranch = branches.find(b => b.boarding_enabled);
         if (enabledBranch) {
@@ -178,7 +180,7 @@ export default function BoardingManager({ currentUser }) {
   // Derived filtered data
   const filteredReports = useMemo(() => {
     let list = allReports;
-    if (currentUser.role !== "admin") {
+    if (!isAdmin) {
       list = list.filter(r => String(r.branch_id) === String(currentUser.branch_id));
     } else if (selectedBranchId) {
       list = list.filter(r => String(r.branch_id) === String(selectedBranchId));
@@ -188,7 +190,7 @@ export default function BoardingManager({ currentUser }) {
 
   const filteredExpenses = useMemo(() => {
     let list = allExpenses;
-    if (currentUser.role !== "admin") {
+    if (!isAdmin) {
       list = list.filter(e => String(e.branch_id) === String(currentUser.branch_id));
     } else if (selectedBranchId) {
       list = list.filter(e => String(e.branch_id) === String(selectedBranchId));
@@ -251,7 +253,7 @@ export default function BoardingManager({ currentUser }) {
 
   // Super Admin Overall Summary Metrics
   const superAdminStats = useMemo(() => {
-    if (currentUser.role !== "admin") return null;
+    if (!isAdmin) return null;
     const todayStr = new Date().toISOString().split("T")[0];
     const firstDayOfMonth = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
 
@@ -592,7 +594,7 @@ export default function BoardingManager({ currentUser }) {
     link.setAttribute("download", `boarding_report_${selectedBranchId || "all"}_${historyFilter}.csv`);
     document.body.appendChild(link);
     link.click();
-    document.body.removeChild(link);
+    if (link.parentNode) link.parentNode.removeChild(link);
   };
 
   // Charts data derivation
@@ -648,7 +650,7 @@ export default function BoardingManager({ currentUser }) {
       branches.filter(b => b.boarding_enabled).forEach(b => {
         const hasTodayReport = allReports.some(r => r.date === todayStr && String(r.branch_id) === String(b.id));
         if (!hasTodayReport) {
-          if (currentUser.role === "admin") {
+          if (isAdmin) {
             list.push({
               id: `no-entry-${b.id}`,
               type: "warning",
@@ -666,7 +668,7 @@ export default function BoardingManager({ currentUser }) {
     }
 
     // Check pending approvals
-    if (currentUser.role === "admin" || currentUser.role === "branch_admin") {
+    if (isAdmin || currentUser.role === "branch_admin") {
       const pendingCount = filteredReports.filter(r => r.status === "Pending").length;
       if (pendingCount > 0) {
         list.push({
@@ -697,7 +699,7 @@ export default function BoardingManager({ currentUser }) {
           <span className="text-xs bg-emerald-950/80 border border-emerald-700/80 px-3.5 py-1.5 rounded-xl font-bold text-amber-300 shadow-inner flex items-center gap-2">
             <span>📅 আজ: {new Date().toISOString().split("T")[0]}</span>
           </span>
-          {currentUser.role === "admin" && (
+          {isAdmin && (
             <div className="flex items-center gap-2">
               <Building2 className="h-4 w-4 text-[#D4AF37]" />
               <select
@@ -782,7 +784,7 @@ export default function BoardingManager({ currentUser }) {
           Boarding Analytics
         </Button>
 
-        {(currentUser.role === "admin" || currentUser.role === "branch_admin") && (
+        {(isAdmin || currentUser.role === "branch_admin") && (
           <Button 
             variant={activeSubTab === "approvals" ? "gold" : "outline"}
             onClick={() => setActiveSubTab("approvals")}
@@ -802,7 +804,7 @@ export default function BoardingManager({ currentUser }) {
       {activeSubTab === "dashboard" && (
         <div className="space-y-6">
           {/* Super Admin Dashboard Cards */}
-          {currentUser.role === "admin" && superAdminStats && (
+          {isAdmin && superAdminStats && (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <Card className="border-gray-100 rounded-[20px] bg-white p-5 shadow-sm">
                 <span className="text-[10px] font-extrabold text-[#12715B] uppercase block">Total Boarding Branches</span>
@@ -864,7 +866,7 @@ export default function BoardingManager({ currentUser }) {
             <h3 className="text-sm font-extrabold text-[#052E2B] uppercase tracking-wider flex items-center justify-between">
               <span className="flex items-center gap-1.5">
                 <Building2 className="h-4 w-4 text-[#D4AF37]" />
-                {currentUser.role === "admin" ? "Selected Branch Boarding Status" : "Your Branch Boarding Status"}
+                {isAdmin ? "Selected Branch Boarding Status" : "Your Branch Boarding Status"}
               </span>
               <span className="text-xs font-bold text-emerald-700 bg-emerald-100/80 px-2.5 py-0.5 rounded-full">
                 {viewMode === "daily" ? "আজকের ফিল্টার (Daily View)" : viewMode === "monthly" ? "চলতি মাসের ফিল্টার (Monthly View)" : "সব ডেটা ফিল্টার"}
@@ -943,7 +945,7 @@ export default function BoardingManager({ currentUser }) {
           </div>
 
           {/* Super Admin comparison panel */}
-          {currentUser.role === "admin" && superAdminStats && (
+          {isAdmin && superAdminStats && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 bg-slate-50 p-5 rounded-[24px] border border-slate-100">
               <div className="bg-white p-4 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-between">
                 <div>
@@ -1453,7 +1455,7 @@ export default function BoardingManager({ currentUser }) {
               <thead className="bg-slate-50/50 text-xs font-bold text-slate-500 uppercase select-none">
                 <tr>
                   <th className="py-3 px-4">Date</th>
-                  {currentUser.role === "admin" && <th className="py-3 px-4">Branch</th>}
+                  {isAdmin && <th className="py-3 px-4">Branch</th>}
                   <th className="py-3 px-4">Manager Name</th>
                   <th className="py-3 px-4 text-right">Grand Total</th>
                   <th className="py-3 px-4 text-right">Saved Amount</th>
@@ -1465,7 +1467,7 @@ export default function BoardingManager({ currentUser }) {
                 {dateFilteredReports.map((report) => (
                   <tr key={report.id} className="hover:bg-slate-50/50">
                     <td className="py-3 px-4 font-black">{report.date}</td>
-                    {currentUser.role === "admin" && (
+                    {isAdmin && (
                       <td className="py-3 px-4">
                         {branches.find(b => String(b.id) === String(report.branch_id))?.name_bn || "Branch"}
                       </td>
@@ -1492,7 +1494,7 @@ export default function BoardingManager({ currentUser }) {
                         <Eye className="h-3.5 w-3.5" /> View
                       </Button>
                       
-                      {(currentUser.role === "admin" || currentUser.role === "branch_admin" || report.status === "Pending") && (
+                      {(isAdmin || currentUser.role === "branch_admin" || report.status === "Pending") && (
                         <>
                           <Button 
                             variant="ghost" 
@@ -1677,7 +1679,7 @@ export default function BoardingManager({ currentUser }) {
       )}
 
       {/* Tab Contents: 6. APPROVALS QUEUE */}
-      {activeSubTab === "approvals" && (currentUser.role === "admin" || currentUser.role === "branch_admin") && (
+      {activeSubTab === "approvals" && (isAdmin || currentUser.role === "branch_admin") && (
         <div className="bg-white p-6 rounded-[24px] border border-slate-100 space-y-6 shadow-md">
           <div>
             <h3 className="text-lg font-black text-slate-800 font-serif">

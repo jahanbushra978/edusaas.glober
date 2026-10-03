@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Loader2, Upload, Image, Globe, Save, Eye, EyeOff, FileText, Download, Lock } from "lucide-react";
+import { Loader2, Upload, Image as ImageIcon, Globe, Save, Eye, EyeOff, FileText, Download, Lock, Users, Power, CheckCircle2, XCircle } from "lucide-react";
 import { toast } from "sonner";
 
 function SettingRow({ label, settingKey, value, onSave, type = "text", hint }) {
@@ -35,7 +35,7 @@ function SettingRow({ label, settingKey, value, onSave, type = "text", hint }) {
       }
       const reader = new FileReader();
       reader.onload = (e) => {
-        const img = new Image();
+        const img = new window.Image();
         img.onload = () => {
           const canvas = document.createElement('canvas');
           let { width, height } = img;
@@ -67,7 +67,7 @@ function SettingRow({ label, settingKey, value, onSave, type = "text", hint }) {
       setVal(file_url);
       await onSave(settingKey, file_url);
       toast.success("Uploaded & saved!");
-    } catch (err) {
+    } catch {
       toast.error("Upload failed. Please try again.");
     }
     setUploading(false);
@@ -130,6 +130,169 @@ function SettingRow({ label, settingKey, value, onSave, type = "text", hint }) {
         </div>
       )}
     </div>
+  );
+}
+
+function DepartmentCountsForm({ appSettings, onSave }) {
+  const getSettingVal = (key) => {
+    const list = Array.isArray(appSettings) ? appSettings : [];
+    const item = list.find((s) => (s.key || s.setting_key) === key);
+    return item ? (item.value ?? item.setting_value ?? "") : "";
+  };
+
+  const [enabled, setEnabled] = useState(() => getSettingVal("dept_counts_override_enabled") === "Y");
+  const [saving, setSaving] = useState(false);
+  const [toggling, setToggling] = useState(false);
+
+  const departments = [
+    { label: "নূরানী বিভাগ", icon: "📗", activeKey: "dept_active_noorani", inactiveKey: "dept_inactive_noorani" },
+    { label: "নাজেরা বিভাগ", icon: "📙", activeKey: "dept_active_nazera", inactiveKey: "dept_inactive_nazera" },
+    { label: "হিফয বিভাগ", icon: "📘", activeKey: "dept_active_hifz", inactiveKey: "dept_inactive_hifz" },
+    { label: "হিফয শুনানি বিভাগ", icon: "🎧", activeKey: "dept_active_hifz_shunani", inactiveKey: "dept_inactive_hifz_shunani" },
+    { label: "কিন্ডারগার্টেন বিভাগ", icon: "🏫", activeKey: "dept_active_kindergarten", inactiveKey: "dept_inactive_kindergarten" },
+    { label: "কিতাবখানা / কিতাব বিভাগ", icon: "📚", activeKey: "dept_active_kitabkhana", inactiveKey: "dept_inactive_kitabkhana" },
+    { label: "ইংলিশ ভার্সন বিভাগ", icon: "🇬🇧", activeKey: "dept_active_english_version", inactiveKey: "dept_inactive_english_version" },
+  ];
+
+  const [formValues, setFormValues] = useState(() => {
+    const init = {};
+    departments.forEach((d) => {
+      init[d.activeKey] = getSettingVal(d.activeKey);
+      init[d.inactiveKey] = getSettingVal(d.inactiveKey);
+    });
+    return init;
+  });
+
+  // Sync state if appSettings query refetches
+  React.useEffect(() => {
+    setEnabled(getSettingVal("dept_counts_override_enabled") === "Y");
+    const updated = {};
+    departments.forEach((d) => {
+      updated[d.activeKey] = getSettingVal(d.activeKey);
+      updated[d.inactiveKey] = getSettingVal(d.inactiveKey);
+    });
+    setFormValues(updated);
+  }, [appSettings]);
+
+  const handleToggleEnable = async () => {
+    const nextState = !enabled;
+    setToggling(true);
+    try {
+      await onSave("dept_counts_override_enabled", nextState ? "Y" : "N");
+      setEnabled(nextState);
+      toast.success(nextState ? "কাস্টম শিক্ষার্থী সংখ্যা চালু করা হয়েছে!" : "কাস্টম শিক্ষার্থী সংখ্যা বন্ধ করা হয়েছে! (ডাটাবেস থেকে ডাইনামিক দেখাবে)");
+    } catch {
+      toast.error("সেটিং পরিবর্তন ব্যর্থ হয়েছে");
+    } finally {
+      setToggling(false);
+    }
+  };
+
+  const handleSaveAll = async () => {
+    setSaving(true);
+    try {
+      const promises = Object.entries(formValues).map(([key, val]) => onSave(key, val || ""));
+      await Promise.all(promises);
+      toast.success("বিভাগভিত্তিক শিক্ষার্থী সংখ্যা সফলভাবে সেভ করা হয়েছে!");
+    } catch {
+      toast.error("সেভ করতে সমস্যা হয়েছে, আবার চেষ্টা করুন");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Card className="border-primary/10 shadow-sm overflow-hidden">
+      <CardHeader className="pb-4 bg-slate-50/50 border-b">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <CardTitle className="text-base flex items-center gap-2 text-[#052E2B]">
+              <Users className="h-5 w-5 text-primary" /> বিভাগভিত্তিক শিক্ষার্থী সংখ্যা কাস্টমাইজেশন (Department Student Counts)
+            </CardTitle>
+            <p className="text-xs text-slate-500 mt-1">
+              হোমপেজের "ক্লাস সেকশন" কার্ডে দেখানো সংখ্যা এখান থেকে সেট করতে পারবেন। চালু থাকলে কাস্টম সংখ্যা এবং বন্ধ থাকলে ডাটাবেসের আসল সংখ্যা দেখাবে।
+            </p>
+          </div>
+
+          {/* Toggle Button */}
+          <Button
+            type="button"
+            variant={enabled ? "default" : "outline"}
+            size="sm"
+            onClick={handleToggleEnable}
+            disabled={toggling}
+            className={`gap-2 h-9 rounded-xl font-bold transition-all ${
+              enabled
+                ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm"
+                : "bg-red-50 text-red-600 border-red-200 hover:bg-red-100"
+            }`}
+          >
+            {toggling ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : enabled ? (
+              <CheckCircle2 className="h-4 w-4 text-white" />
+            ) : (
+              <XCircle className="h-4 w-4 text-red-600" />
+            )}
+            {enabled ? "কাস্টম সংখ্যা: চালু (ON)" : "কাস্টম সংখ্যা: বন্ধ (OFF)"}
+          </Button>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-4 sm:p-6 space-y-6">
+        {!enabled && (
+          <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center gap-2">
+            <Power className="h-4 w-4 text-amber-600 flex-shrink-0" />
+            <span>বর্তমানে কাস্টম সংখ্যা <b>বন্ধ (OFF)</b> রয়েছে। হোমপেজে ডাটাবেসের আসল ছাত্র সংখ্যা দেখানো হচ্ছে। কাস্টম সংখ্যা দেখাতে উপরের বাটন চেপে <b>চালু (ON)</b> করুন।</span>
+          </div>
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {departments.map((dept) => (
+            <div key={dept.activeKey} className="p-4 border border-slate-200 rounded-2xl bg-white shadow-xs space-y-3 hover:border-primary/30 transition-all">
+              <div className="flex items-center gap-2 border-b pb-2">
+                <span className="text-xl">{dept.icon}</span>
+                <p className="text-xs font-bold text-[#052E2B]">{dept.label}</p>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold text-slate-500 block mb-1">সক্রিয় ছাত্র</label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={formValues[dept.activeKey] ?? ""}
+                    onChange={(e) => setFormValues((prev) => ({ ...prev, [dept.activeKey]: e.target.value }))}
+                    className="h-9 text-xs rounded-xl border-slate-200 focus:border-[#052E2B]"
+                  />
+                </div>
+                <div>
+                  <label className="text-[11px] font-bold text-slate-500 block mb-1">নিষ্ক্রিয় ছাত্র</label>
+                  <Input
+                    type="number"
+                    placeholder="0"
+                    value={formValues[dept.inactiveKey] ?? ""}
+                    onChange={(e) => setFormValues((prev) => ({ ...prev, [dept.inactiveKey]: e.target.value }))}
+                    className="h-9 text-xs rounded-xl border-slate-200 focus:border-[#052E2B]"
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="pt-2 flex justify-end">
+          <Button
+            type="button"
+            onClick={handleSaveAll}
+            disabled={saving}
+            className="w-full sm:w-auto bg-[#052E2B] hover:bg-[#031c1a] text-white font-bold h-10 px-6 rounded-xl gap-2 text-xs shadow-md"
+          >
+            {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            বিভাগভিত্তিক শিক্ষার্থী সংখ্যা সেভ করুন
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -238,7 +401,7 @@ export default function BrandingSettings() {
       <Card className="border-primary/10">
         <CardHeader className="pb-3">
           <CardTitle className="text-base flex items-center gap-2">
-            <Image className="h-4 w-4 text-primary" /> Logo Management
+            <ImageIcon className="h-4 w-4 text-primary" /> Logo Management
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-5">
@@ -343,6 +506,9 @@ export default function BrandingSettings() {
           )}
         </CardContent>
       </Card>
+
+      {/* Department Student Counts Customization */}
+      <DepartmentCountsForm appSettings={settings} onSave={handleSave} />
 
       {/* Admin Password Settings */}
       <Card className="border-primary/10">

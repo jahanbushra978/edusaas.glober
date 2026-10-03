@@ -6,6 +6,7 @@ import Link from "next/link";
 import { createPageUrl } from "@/utils";
 import { FileText, Globe } from "lucide-react";
 import { toast } from "sonner";
+import { printMadrasahAdmissionDirect } from "@/features/applications/utils/printMadrasahAdmissionForm";
 
 export default function AdmissionChoicePage() {
   const { lang } = useLanguage();
@@ -19,22 +20,32 @@ export default function AdmissionChoicePage() {
   const getSetting = key => (Array.isArray(settings) ? settings : []).find(s => s.key === key)?.value;
   const rawFormUrl = getSetting("admission_form_url");
 
-  const handleDownload = () => {
+  const handleDownload = async () => {
     if (rawFormUrl && rawFormUrl.trim().length > 0 && /^https?:\/\//i.test(rawFormUrl.trim())) {
       const downloadProxyUrl = `/api/public/download-pdf?url=${encodeURIComponent(rawFormUrl.trim())}`;
-      const a = document.createElement("a");
-      a.href = downloadProxyUrl;
-      a.download = "admission-form.pdf";
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      toast.success(isBn ? "ভর্তি ফরম ডাউনলোড শুরু হয়েছে!" : "Admission form download started!");
+      try {
+        toast.info(isBn ? "ভর্তি ফরম ফাইল চেক করা হচ্ছে..." : "Checking admission form file...");
+        const res = await fetch(downloadProxyUrl);
+        if (!res.ok) {
+          throw new Error("File not found or restricted");
+        }
+        const blob = await res.blob();
+        const blobUrl = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = blobUrl;
+        a.download = "admission-form.pdf";
+        document.body.appendChild(a);
+        a.click();
+        if (a.parentNode) a.parentNode.removeChild(a);
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+        toast.success(isBn ? "ভর্তি ফরম সফলভাবে ডাউনলোড হয়েছে!" : "Admission form downloaded successfully!");
+      } catch (err) {
+        printMadrasahAdmissionDirect({ admission: {}, settings });
+        toast.info(isBn ? "অফিসিয়াল ভর্তি ফরম প্রিন্ট ভিউ ওপেন করা হয়েছে।" : "Official admission form print view opened.");
+      }
     } else {
-      toast.info(
-        isBn
-          ? "এডমিন প্যানেল থেকে ভর্তি ফরম ফাইল আপলোড করা হলে এখান থেকে সরাসরি ডাউনলোড করা যাবে। আপাতত পাশের 'Online আবেদন করুন' অপশন ব্যবহার করে আবেদন করুন।"
-          : "Admission form file will be downloadable once uploaded by admin. Please use the 'Online Apply' option to apply."
-      );
+      printMadrasahAdmissionDirect({ admission: {}, settings });
+      toast.info(isBn ? "অফিসিয়াল ভর্তি ফরম প্রিন্ট ভিউ ওপেন করা হয়েছে।" : "Official admission form print view opened.");
     }
   };
 

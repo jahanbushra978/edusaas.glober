@@ -1,0 +1,11 @@
+{
+  "extends": "./jsconfig.json",
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": false,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "moduleResolution": "bundler"
+  },
+  "include": ["src/**/*", "app/**/*", "Layout.jsx", "pages.config.js", "next.config.mjs"]
+}

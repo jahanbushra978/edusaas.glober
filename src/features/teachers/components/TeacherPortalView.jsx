@@ -10,12 +10,12 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   LogOut, Users, BookOpen, ClipboardList, Loader2, User,
-  Phone, CheckCircle, Circle, Save
+  Phone, CheckCircle, Circle, Save, FileText
 } from "lucide-react";
 import Logo from "@/components/home/Logo";
 import { format } from "date-fns";
-
 import { toast } from "sonner";
+import ApplicationPortal from "@/features/applications/components/ApplicationPortal";
 
 export default function TeacherPortalView({ teacher, instNameEn, onLogout }) {
 
@@ -24,10 +24,45 @@ export default function TeacherPortalView({ teacher, instNameEn, onLogout }) {
   const [selectedStudent, setSelectedStudent] = useState(null);
   const [lessonForm, setLessonForm] = useState({ subject: "", lesson_content: "", pages_covered: "", quality_score: "", memorization: "good", teacher_notes: "" });
 
-  const { data: students = [], isLoading: studentsLoading } = useQuery({
-    queryKey: ["teacher-students", teacher.id],
-    queryFn: () => appClient.entities.Student.filter({ assigned_teacher_id: teacher.id }),
+  const { data: rawStudents = [] } = useQuery({
+    queryKey: ["teacher-students-portal", teacher.id, teacher.teacher_id],
+    queryFn: async () => {
+      const res = await fetch("/api/teacher/students");
+      const json = await res.json().catch(() => ({}));
+      if (json.ok && Array.isArray(json.students) && json.students.length > 0) {
+        return json.students;
+      }
+      return appClient.entities.Student.listAll().catch(() => []);
+    },
   });
+
+  const students = React.useMemo(() => {
+    if (!teacher || !rawStudents.length) return [];
+    const unique = Array.from(new Map(rawStudents.map((s) => [String(s.id), s])).values());
+    const teacherBatches = teacher.assigned_batches
+      ? teacher.assigned_batches.split(",").map(b => b.trim().toLowerCase()).filter(Boolean)
+      : [];
+
+    return unique.filter((s) => {
+      const studentTeacherId = s.assigned_teacher_id !== null && s.assigned_teacher_id !== undefined ? String(s.assigned_teacher_id) : "";
+      const matchesTeacherId = studentTeacherId !== "" && (
+        studentTeacherId === String(teacher.id) || 
+        (teacher.teacher_id && studentTeacherId === String(teacher.teacher_id))
+      );
+
+      const studentBatch = s.batch ? s.batch.toLowerCase() : "";
+      const studentDept = s.department ? s.department.toLowerCase() : "";
+
+      const matchesBatch = teacherBatches.length > 0 && (
+        teacherBatches.includes("all classes") || 
+        teacherBatches.some(tb => tb && (studentBatch.includes(tb) || studentDept.includes(tb)))
+      );
+
+      const isActive = !s.status || s.status.toLowerCase() === "active";
+
+      return (matchesTeacherId || matchesBatch) && isActive;
+    });
+  }, [teacher, rawStudents]);
 
   const { data: attendance = [] } = useQuery({
     queryKey: ["teacher-attendance", teacher.id, selectedDate],
@@ -131,7 +166,7 @@ export default function TeacherPortalView({ teacher, instNameEn, onLogout }) {
 
         {/* Tabs */}
         <Tabs defaultValue="attendance" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3 bg-white/10">
+          <TabsList className="grid w-full grid-cols-4 bg-white/10">
             <TabsTrigger value="attendance" className="text-white data-[state=active]:bg-white data-[state=active]:text-primary text-xs gap-1 italic">
               <ClipboardList className="h-3.5 w-3.5" /> Attendance
             </TabsTrigger>
@@ -140,6 +175,9 @@ export default function TeacherPortalView({ teacher, instNameEn, onLogout }) {
             </TabsTrigger>
             <TabsTrigger value="students" className="text-white data-[state=active]:bg-white data-[state=active]:text-primary text-xs gap-1 italic">
               <Users className="h-3.5 w-3.5" /> My Students
+            </TabsTrigger>
+            <TabsTrigger value="applications" className="text-white data-[state=active]:bg-white data-[state=active]:text-primary text-xs gap-1 italic">
+              <FileText className="h-3.5 w-3.5" /> আবেদন
             </TabsTrigger>
           </TabsList>
 
@@ -299,8 +337,155 @@ export default function TeacherPortalView({ teacher, instNameEn, onLogout }) {
               </CardContent>
             </Card>
           </TabsContent>
+
+          {/* Applications Tab */}
+          <TabsContent value="applications">
+            <Tabs defaultValue="my-apps" className="w-full">
+              <TabsList className="bg-slate-100 p-1 mb-4 border rounded-xl">
+                <TabsTrigger value="my-apps" className="text-xs font-semibold">আমার আবেদন (My Apps)</TabsTrigger>
+                <TabsTrigger value="student-reviews" className="text-xs font-semibold">ছাত্রদের আবেদন পর্যালোচনা (Student Reviews)</TabsTrigger>
+              </TabsList>
+              <TabsContent value="my-apps">
+                <Card style={{ background: "rgba(255,255,255,0.97)" }}>
+                  <CardHeader className="px-5 py-4 pb-3 border-b">
+                    <CardTitle className="text-sm font-bold text-primary flex items-center gap-2">
+                      <FileText className="h-4 w-4" /> আমার আবেদনসমূহ (My Applications)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-5 py-4">
+                    <ApplicationPortal
+                      user={{ id: teacher.id, role: "teacher", name: teacher.full_name_en, full_name_en: teacher.full_name_en }}
+                      applicant={{ id: teacher.id, name: teacher.full_name_en, type: "teacher", branch_id: teacher.branch_id }}
+                    />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+              <TabsContent value="student-reviews">
+                <Card style={{ background: "rgba(255,255,255,0.97)" }}>
+                  <CardHeader className="px-5 py-4 pb-3 border-b">
+                    <CardTitle className="text-sm font-bold text-primary flex items-center gap-2">
+                      <Users className="h-4 w-4" /> ছাত্রদের আবেদন রিভিউ (Assigned Student Applications)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="px-5 py-4">
+                    <TeacherStudentApplicationsReview teacher={teacher} students={students} />
+                  </CardContent>
+                </Card>
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
         </Tabs>
       </div>
+    </div>
+  );
+}
+
+function TeacherStudentApplicationsReview({ teacher, students }) {
+  const queryClient = useQueryClient();
+  const [reviewModal, setReviewModal] = useState(null);
+  const [comment, setComment] = useState("");
+
+  const { data: pendingApps = [], isLoading } = useQuery({
+    queryKey: ["teacher-student-pending-apps", teacher.id],
+    queryFn: async () => {
+      const all = await appClient.entities.Application.filter({
+        current_reviewer_role: "teacher",
+        applicant_type: "student",
+      });
+      const assignedIds = new Set(students.map(s => String(s.id)));
+      return all.filter(app => assignedIds.has(String(app.applicant_id)));
+    },
+  });
+
+  const actionMut = useMutation({
+    mutationFn: async ({ action, appId, comment }) => {
+      const { takeAction } = await import("@/features/applications/engines/applicationService");
+      return takeAction({
+        applicationId: appId,
+        action,
+        actorId: teacher.id,
+        actorName: teacher.full_name_en || teacher.full_name_bn || "Teacher",
+        actorRole: "teacher",
+        comment,
+      });
+    },
+    onSuccess: () => {
+      toast.success("আবেদনের রিভিউ সফলভাবে সংরক্ষিত হয়েছে ✓");
+      queryClient.invalidateQueries(["teacher-student-pending-apps"]);
+      setReviewModal(null);
+      setComment("");
+    },
+    onError: (err) => {
+      toast.error(err?.message || "কার্যক্রম সম্পন্ন করা সম্ভব হয়নি");
+    },
+  });
+
+  if (isLoading) {
+    return <div className="flex justify-center py-8"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
+  }
+
+  if (pendingApps.length === 0) {
+    return <p className="text-center italic text-muted-foreground text-xs py-8">কোনো অপেক্ষমাণ ছাত্র আবেদন নেই।</p>;
+  }
+
+  return (
+    <div className="space-y-3">
+      {pendingApps.map(app => (
+        <Card key={app.id} className="border p-3 text-xs space-y-2 bg-slate-50/50">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="bg-emerald-50 text-emerald-800 border-emerald-200">
+                {app.application_number}
+              </Badge>
+              <span className="font-bold text-slate-800">{app.applicant_name}</span>
+            </div>
+            <Badge variant="secondary" className="capitalize">{app.type}</Badge>
+          </div>
+          <p className="text-slate-600"><strong>কারণ:</strong> {app.reason || "কোনো কারণ লেখা নেই"}</p>
+          <div className="text-[11px] text-slate-500 flex gap-4">
+            <span>তারিখ: {app.from_date || "N/A"} - {app.to_date || "N/A"} ({app.days_count} দিন)</span>
+            <span>অগ্রাধিকার: <strong className="uppercase">{app.priority}</strong></span>
+          </div>
+          <div className="flex justify-end gap-2 pt-2 border-t">
+            <Button size="sm" variant="outline" className="text-xs text-red-600 hover:bg-red-50" onClick={() => setReviewModal({ type: "reject", app })}>
+              প্রত্যাখ্যান
+            </Button>
+            <Button size="sm" className="text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => setReviewModal({ type: "recommend", app })}>
+              সুপারিশ করুন
+            </Button>
+          </div>
+        </Card>
+      ))}
+
+      {reviewModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white p-4 rounded-xl max-w-sm w-full space-y-3 shadow-lg">
+            <h4 className="text-sm font-bold text-slate-800">
+              {reviewModal.type === "recommend" ? "আবেদন সুপারিশ করুন" : "আবেদন প্রত্যাখ্যান করুন"}
+            </h4>
+            <p className="text-xs text-slate-500">
+              আবেদন নম্বর: <strong>{reviewModal.app.application_number}</strong>
+            </p>
+            <Textarea
+              placeholder="মন্তব্য লিখুন (ঐচ্ছিক)..."
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              className="text-xs h-20"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={() => setReviewModal(null)}>বাতিল</Button>
+              <Button
+                size="sm"
+                className={reviewModal.type === "recommend" ? "bg-emerald-600 text-white" : "bg-red-600 text-white"}
+                disabled={actionMut.isPending}
+                onClick={() => actionMut.mutate({ action: reviewModal.type, appId: reviewModal.app.id, comment })}
+              >
+                নিশ্চিত করুন
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

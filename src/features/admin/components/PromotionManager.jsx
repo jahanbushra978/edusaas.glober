@@ -36,13 +36,7 @@ async function apiPromotion(action, data) {
   return json.data;
 }
 
-const SESSION_OPTIONS = [
-  "২০২৪", "২০২৫", "২০২৬", "২০২৭", "২০২৮",
-  "2024", "2025", "2026", "2027", "2028"
-];
-
 export default function PromotionManager({ currentUser }) {
-  const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState("promote");
 
   return (
@@ -87,7 +81,8 @@ function PromoteStudents({ currentUser }) {
     session: "",
     branchId: "",
     classId: "",
-    section: "all"
+    section: "all",
+    group: "all"
   });
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [searchQuery, setSearchQuery] = useState("");
@@ -95,7 +90,8 @@ function PromoteStudents({ currentUser }) {
     session: "",
     branchId: "__same__",
     classId: "",
-    section: "__same__"
+    section: "__same__",
+    group: "__same__"
   });
   const [showConfirm, setShowConfirm] = useState(false);
   const [result, setResult] = useState(null);
@@ -121,27 +117,26 @@ function PromoteStudents({ currentUser }) {
       name: c.class_name?.bn || c.class_name?.en || c.class_name?.ar || String(c.id),
       nameEn: c.class_name?.en || "",
       nameBn: c.class_name?.bn || "",
-      sections: c.sections || []
+      sections: c.sections || [],
+      groups: c.groups || []
     }));
   }, [selectedBranch]);
 
   const selectedClass = classes.find(c => String(c.id) === String(filters.classId));
 
+  const nextClassObj = useMemo(() => {
+    if (!promoteTo.classId) return null;
+    const targetBranchId = promoteTo.branchId !== "__same__" ? promoteTo.branchId : filters.branchId;
+    const targetBranch = branches.find(b => String(b.id) === String(targetBranchId));
+    if (!targetBranch?.academic_structure) return null;
+    return targetBranch.academic_structure.find(c => String(c.id) === String(promoteTo.classId));
+  }, [branches, promoteTo.branchId, promoteTo.classId, filters.branchId]);
+
   const { data: students = [], isLoading: studentsLoading } = useQuery({
     queryKey: ["promotion-students", filters.branchId, filters.classId],
     queryFn: async () => {
       if (!filters.branchId) return [];
-      let res;
-      try {
-        res = await appClient.entities.Student.filter({
-          branch_id: branchIdNum,
-          status: "active"
-        });
-        if (Array.isArray(res)) return res;
-      } catch (e) {
-        console.warn("[Promotion] filter failed, falling back to list:", e.message);
-      }
-      res = await appClient.entities.Student.listAll({ sort: "-created_date" });
+      const res = await appClient.entities.Student.listAll({ sort: "-created_date" });
       return res.filter(s => {
         if (String(s.branch_id) !== String(branchIdNum)) return false;
         if (s.status !== "active") return false;
@@ -157,6 +152,16 @@ function PromoteStudents({ currentUser }) {
     if (filters.classId) {
       result = result.filter(s => isStudentInClassOption(s, filters.classId, selectedBranch?.academic_structure));
     }
+    if (filters.section && filters.section !== "all") {
+      result = result.filter(s => isStudentInClassOption(s, filters.section, selectedBranch?.academic_structure));
+    }
+    if (filters.group && filters.group !== "all") {
+      result = result.filter(s => String(s.class_group_id || s.group_id || "") === String(filters.group));
+    }
+    if (filters.session && filters.session.trim()) {
+      const sessQ = filters.session.toLowerCase().trim();
+      result = result.filter(s => (s.session || "").toLowerCase().includes(sessQ));
+    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       result = result.filter(s =>
@@ -167,7 +172,20 @@ function PromoteStudents({ currentUser }) {
       );
     }
     return result;
-  }, [students, filters.classId, selectedBranch, searchQuery]);
+  }, [students, filters.classId, filters.section, filters.group, filters.session, selectedBranch, searchQuery]);
+
+  const PAGE_SIZE = 30;
+  const [currentPage, setCurrentPage] = useState(1);
+
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [filters, searchQuery]);
+
+  const totalPages = Math.ceil(filteredStudents.length / PAGE_SIZE) || 1;
+  const displayedStudents = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return filteredStudents.slice(start, start + PAGE_SIZE);
+  }, [filteredStudents, currentPage]);
 
   const toggleSelectAll = useCallback(() => {
     if (selectedIds.size === filteredStudents.length) {
@@ -207,12 +225,12 @@ function PromoteStudents({ currentUser }) {
     setPromoting(true);
     try {
       const batchNumber = `PROMO-${format(new Date(), "yyyyMMdd-HHmmss")}`;
-      const newClassName = classes.find(c => String(c.id) === String(promoteTo.classId))?.name || promoteTo.classId;
-      const oldClassName = selectedClass?.name || filters.classId;
       const targetBranchId = promoteTo.branchId !== "__same__" ? promoteTo.branchId : String(filters.branchId);
+      const targetBranchObj = branches.find(b => String(b.id) === String(targetBranchId));
+      const targetClassObj = targetBranchObj?.academic_structure?.find(c => String(c.id) === String(promoteTo.classId));
+      const newClassName = targetClassObj?.class_name?.bn || targetClassObj?.class_name?.en || targetClassObj?.class_name?.ar || classes.find(c => String(c.id) === String(promoteTo.classId))?.name || promoteTo.classId;
+      const oldClassName = selectedClass?.name || filters.classId;
       const targetSection = promoteTo.section !== "__same__" ? promoteTo.section : filters.section;
-      const newBranchName = branches.find(b => String(b.id) === String(targetBranchId))?.name_en || "";
-
       const promoRes = await apiPromotion("create_promotion", {
         batch_number: batchNumber,
         academic_session: promoteTo.session || filters.session || "",
@@ -220,7 +238,7 @@ function PromoteStudents({ currentUser }) {
         previous_class: oldClassName,
         new_class: newClassName,
         previous_section: filters.section !== "all" ? filters.section : "",
-        new_section: targetSection !== "all" ? targetSection : "",
+        new_section: targetSection !== "all" && targetSection !== "none" ? targetSection : "",
         total_students: selectedStudents.length,
         performed_by: currentUser?.name || currentUser?.email || currentUser?.loginId || "admin",
         status: "completed",
@@ -233,12 +251,22 @@ function PromoteStudents({ currentUser }) {
 
       for (const student of selectedStudents) {
         try {
-          await appClient.entities.Student.update(student.id, {
+          const updatePayload = {
             class_id: String(promoteTo.classId),
             class_name: newClassName,
             branch_id: Number(targetBranchId),
             session: promoteTo.session || student.session || "",
-          });
+          };
+
+          if (promoteTo.section !== "__same__") {
+            updatePayload.session_id = (promoteTo.section === "none" || promoteTo.section === "all") ? null : String(promoteTo.section);
+          }
+
+          if (promoteTo.group !== "__same__") {
+            updatePayload.class_group_id = promoteTo.group === "none" ? null : String(promoteTo.group);
+          }
+
+          await apiPromotion("update_student", { id: student.id, ...updatePayload });
 
           await apiPromotion("create_promotion_student", {
             promotion_id: promoRes.id,
@@ -294,7 +322,7 @@ function PromoteStudents({ currentUser }) {
         onDone={() => {
           setResult(null);
           setSelectedIds(new Set());
-          setPromoteTo({ session: "", branchId: "", classId: "", section: "" });
+          setPromoteTo({ session: "", branchId: "__same__", classId: "", section: "__same__", group: "__same__" });
         }}
         selectedStudents={selectedStudents}
         promoteTo={promoteTo}
@@ -313,7 +341,7 @@ function PromoteStudents({ currentUser }) {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4">
             <div className="space-y-2">
               <Label>Academic Session</Label>
               <Input
@@ -325,7 +353,7 @@ function PromoteStudents({ currentUser }) {
             <div className="space-y-2">
               <Label>Branch</Label>
               <Select value={filters.branchId} onValueChange={v => {
-                setFilters(f => ({ ...f, branchId: v, classId: "", section: "all" }));
+                setFilters(f => ({ ...f, branchId: v, classId: "", section: "all", group: "all" }));
                 setSelectedIds(new Set());
               }}>
                 <SelectTrigger><SelectValue placeholder="Select branch" /></SelectTrigger>
@@ -339,7 +367,7 @@ function PromoteStudents({ currentUser }) {
             <div className="space-y-2">
               <Label>Class</Label>
               <Select value={filters.classId} onValueChange={v => {
-                setFilters(f => ({ ...f, classId: v, section: "all" }));
+                setFilters(f => ({ ...f, classId: v, section: "all", group: "all" }));
                 setSelectedIds(new Set());
               }} disabled={!filters.branchId}>
                 <SelectTrigger><SelectValue placeholder={!filters.branchId ? "Select branch first" : "Select class"} /></SelectTrigger>
@@ -363,6 +391,24 @@ function PromoteStudents({ currentUser }) {
                   {selectedClass?.sections?.map(sec => (
                     <SelectItem key={sec.id} value={String(sec.id)}>
                       {sec.section_name?.bn || sec.section_name?.en || sec.id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Group</Label>
+              <Select value={filters.group} onValueChange={v => setFilters(f => ({ ...f, group: v }))} disabled={!selectedClass?.groups?.length}>
+                <SelectTrigger>
+                  <SelectValue placeholder={
+                    !selectedClass?.groups?.length ? "No groups" : "All groups"
+                  } />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Groups</SelectItem>
+                  {selectedClass?.groups?.map(grp => (
+                    <SelectItem key={grp.id} value={String(grp.id)}>
+                      {grp.group_name?.bn || grp.group_name?.en || String(grp.id)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -408,10 +454,9 @@ function PromoteStudents({ currentUser }) {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              <ScrollArea className="max-h-[500px]">
-                <div className="overflow-x-auto">
+              <div className="overflow-x-auto overflow-y-auto max-h-[550px] border-t border-emerald-900/10 rounded-b-xl">
                 <table className="w-full">
-                  <thead className="bg-emerald-900/5 sticky top-0">
+                  <thead className="bg-emerald-900/5 sticky top-0 z-10 backdrop-blur-sm">
                     <tr>
                       <th className="p-3 text-left w-10">
                         <Checkbox
@@ -430,7 +475,7 @@ function PromoteStudents({ currentUser }) {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredStudents.map((s, idx) => (
+                    {displayedStudents.map((s) => (
                       <tr
                         key={s.id}
                         className={`border-t border-emerald-900/5 hover:bg-emerald-50/50 transition-colors cursor-pointer ${selectedIds.has(s.id) ? "bg-emerald-50/80" : ""}`}
@@ -482,8 +527,35 @@ function PromoteStudents({ currentUser }) {
                     )}
                   </tbody>
                 </table>
+              </div>
+              {filteredStudents.length > PAGE_SIZE && (
+                <div className="flex items-center justify-between px-4 py-2.5 border-t bg-slate-50/50 text-xs text-muted-foreground flex-wrap gap-2">
+                  <div>
+                    Showing {(currentPage - 1) * PAGE_SIZE + 1} - {Math.min(currentPage * PAGE_SIZE, filteredStudents.length)} of {filteredStudents.length} students
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage(p => Math.max(p - 1, 1))}
+                      className="h-7 text-xs px-2.5"
+                    >
+                      Previous
+                    </Button>
+                    <span className="font-medium text-slate-700">Page {currentPage} of {totalPages}</span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={currentPage >= totalPages}
+                      onClick={() => setCurrentPage(p => Math.min(p + 1, totalPages))}
+                      className="h-7 text-xs px-2.5"
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
-              </ScrollArea>
+              )}
             </CardContent>
           </Card>
 
@@ -497,7 +569,7 @@ function PromoteStudents({ currentUser }) {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-4 mb-4">
                   <div className="space-y-2">
                     <Label>Next Academic Session</Label>
                     <Input
@@ -508,7 +580,7 @@ function PromoteStudents({ currentUser }) {
                   </div>
                   <div className="space-y-2">
                     <Label>Next Branch</Label>
-                    <Select value={promoteTo.branchId} onValueChange={v => setPromoteTo(p => ({ ...p, branchId: v }))}>
+                    <Select value={promoteTo.branchId} onValueChange={v => setPromoteTo(p => ({ ...p, branchId: v, groupId: "__same__" }))}>
                       <SelectTrigger><SelectValue placeholder="Same branch" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="__same__">Same Branch</SelectItem>
@@ -520,24 +592,51 @@ function PromoteStudents({ currentUser }) {
                   </div>
                   <div className="space-y-2">
                     <Label>Next Class</Label>
-                    <Select value={promoteTo.classId} onValueChange={v => setPromoteTo(p => ({ ...p, classId: v }))}>
+                    <Select value={promoteTo.classId} onValueChange={v => setPromoteTo(p => ({ ...p, classId: v, section: "__same__", group: "__same__" }))}>
                       <SelectTrigger><SelectValue placeholder="Select next class" /></SelectTrigger>
                       <SelectContent>
-                        {classes.filter(c => c.id !== filters.classId).map(c => (
-                          <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                        {(() => {
+                          const targetBranchId = promoteTo.branchId !== "__same__" ? promoteTo.branchId : filters.branchId;
+                          const targetBranch = branches.find(b => String(b.id) === String(targetBranchId));
+                          const targetClasses = targetBranch?.academic_structure?.map(c => ({
+                            id: c.id,
+                            name: c.class_name?.bn || c.class_name?.en || c.class_name?.ar || String(c.id),
+                          })) || [];
+                          return targetClasses.map(c => (
+                            <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                          ));
+                        })()}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Next Section</Label>
+                    <Select value={promoteTo.section} onValueChange={v => setPromoteTo(p => ({ ...p, section: v }))} disabled={!nextClassObj?.sections?.length}>
+                      <SelectTrigger><SelectValue placeholder={!nextClassObj?.sections?.length ? "No sections" : "Same section"} /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__same__">Same Section</SelectItem>
+                        <SelectItem value="none">No Section</SelectItem>
+                        {nextClassObj?.sections?.map(sec => (
+                          <SelectItem key={sec.id} value={String(sec.id)}>
+                            {sec.section_name?.bn || sec.section_name?.en || sec.id}
+                          </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </div>
                   <div className="space-y-2">
-                    <Label>Next Section</Label>
-                    <Select value={promoteTo.section} onValueChange={v => setPromoteTo(p => ({ ...p, section: v }))}>
-                      <SelectTrigger><SelectValue placeholder="Same section" /></SelectTrigger>
+                    <Label>Next Group</Label>
+                    <Select value={promoteTo.group} onValueChange={v => setPromoteTo(p => ({ ...p, group: v }))} disabled={!nextClassObj?.groups?.length}>
+                      <SelectTrigger>
+                        <SelectValue placeholder={!nextClassObj?.groups?.length ? "No groups" : "Same group"} />
+                      </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__same__">Same Section</SelectItem>
-                        {selectedClass?.sections?.map(sec => (
-                          <SelectItem key={sec.id} value={String(sec.id)}>
-                            {sec.section_name?.bn || sec.section_name?.en || sec.id}
+                        <SelectItem value="__same__">Same Group</SelectItem>
+                        <SelectItem value="none">No Group</SelectItem>
+                        {nextClassObj?.groups?.map(grp => (
+                          <SelectItem key={grp.id} value={String(grp.id)}>
+                            {grp.group_name?.bn || grp.group_name?.en || String(grp.id)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -579,6 +678,12 @@ function PromoteStudents({ currentUser }) {
                 <div><p className="text-muted-foreground text-xs">Branch</p><p className="font-medium">{promoteTo.branchId !== "__same__" ? (branches.find(b => String(b.id) === String(promoteTo.branchId))?.name_en || "—") : "Same Branch"}</p></div>
                 <div><p className="text-muted-foreground text-xs">Class</p><p className="font-medium">{selectedClass?.name || "—"}</p></div>
                 <div><p className="text-muted-foreground text-xs">Class</p><p className="font-medium">{classes.find(c => String(c.id) === String(promoteTo.classId))?.name || "—"}</p></div>
+                {selectedClass?.groups?.length > 0 && (
+                  <>
+                    <div><p className="text-muted-foreground text-xs">Group</p><p className="font-medium">{selectedClass?.groups?.find(g => String(g.id) === String(filters.group))?.group_name?.bn || "All Groups"}</p></div>
+                    <div><p className="text-muted-foreground text-xs">Group</p><p className="font-medium">{promoteTo.group !== "__same__" ? (nextClassObj?.groups?.find(g => String(g.id) === String(promoteTo.group))?.group_name?.bn || (promoteTo.group === "none" ? "None" : promoteTo.group)) : "Same Group"}</p></div>
+                  </>
+                )}
                 <div><p className="text-muted-foreground text-xs">Session</p><p className="font-medium">{filters.session || "—"}</p></div>
                 <div><p className="text-muted-foreground text-xs">Session</p><p className="font-medium">{promoteTo.session || filters.session || "—"}</p></div>
               </div>
@@ -616,7 +721,7 @@ function PromoteStudents({ currentUser }) {
   );
 }
 
-function SuccessReport({ result, onDone, selectedStudents, promoteTo, filters }) {
+function SuccessReport({ result, onDone }) {
   const queryClient = useQueryClient();
 
   return (
@@ -799,7 +904,8 @@ function PromotionHistory({ currentUser }) {
   );
 }
 
-function CertificateGenerator({ currentUser }) {
+// eslint-disable-next-line unused-imports/no-unused-vars
+function CertificateGenerator({ currentUser: _currentUser }) {
   const [selectedPromotion, setSelectedPromotion] = useState("");
   const [selectedBranchFilter, setSelectedBranchFilter] = useState("");
   const [selectedStudentIds, setSelectedStudentIds] = useState(new Set());
@@ -1222,12 +1328,12 @@ function CertificateGenerator({ currentUser }) {
   );
 }
 
+// eslint-disable-next-line unused-imports/no-unused-vars
 function CertificateSettings() {
-  const queryClient = useQueryClient();
   const [saving, setSaving] = useState(false);
   const [previewMode, setPreviewMode] = useState(false);
 
-  const { data: settings = {}, isLoading } = useQuery({
+  const { data: settings = {} } = useQuery({
     queryKey: ["app-settings-all"],
     queryFn: () => appClient.entities.AppSettings.list().then(res =>
       Object.fromEntries(res.map(s => [s.key, s.value]))

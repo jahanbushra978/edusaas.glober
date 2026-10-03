@@ -2,8 +2,11 @@ import { NextResponse } from 'next/server'
 import fs from 'fs'
 import path from 'path'
 
+export const dynamic = 'force-dynamic'
+
 export async function GET() {
-  const projectRoot = path.resolve(process.cwd())
+  // turbopackIgnore: true — intentional filesystem scan, not a bundler issue
+  const projectRoot = path.resolve(/* turbopackIgnore: true */ process.cwd())
   let count = 0
 
   function walk(dir) {

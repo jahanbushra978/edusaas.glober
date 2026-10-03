@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import Script from "next/script";
 import { GraduationCap, UserCheck, Lock, Quote } from "lucide-react";
 import HeroSection from "@/components/home/HeroSection";
 import { HomeDataProvider, useHomeData } from "@/lib/HomeDataContext";
@@ -138,7 +139,9 @@ function HomeContent() {
   const isVisible = (key) => {
     const section = pageSections[key];
     if (!section) return true;
-    return section.is_visible !== false;
+    const v = section.is_visible;
+    if (v === false || v === "false" || v === 0 || v === "0" || v === "off" || v === "f" || v === "hidden") return false;
+    return true;
   };
 
   const instNameEn = settings.institute_name_en || "Rahmania Institute (রহমানিয়া ইনস্টিটিউট)";
@@ -274,7 +277,7 @@ function HomeContent() {
 
   return (
     <div className="min-h-screen bg-white overflow-x-hidden">
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <Script id="ld-home-json" type="application/ld+json" strategy="afterInteractive" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
       {isVisible('hero_slider') && <AnimatedSection idx={0}>
         <HeroSection notices={homeData?.notices} />
@@ -343,7 +346,7 @@ function HomeContent() {
       </AnimatedSection>}
 
       {isVisible('gallery') && <AnimatedSection idx={8} bg="#F0FDFA">
-        <DepartmentGallery />
+        <DepartmentGallery gallery={homeData?.gallery} />
       </AnimatedSection>}
 
       <AnimatedSection idx={9} bg="#F5F3FF">
@@ -360,15 +363,15 @@ function HomeContent() {
       </AnimatedSection>}
 
       {isVisible('success_stories') && <AnimatedSection idx={13} bg="#FFFFFF">
-        <SuccessStoriesSection stories={homeData?.successStories} />
+        <SuccessStoriesSection stories={homeData?.successStories} sectionData={homeData?.pageSections?.success_stories} />
       </AnimatedSection>}
 
       {isVisible('blogs') && <AnimatedSection idx={14} bg="#FFF8FA">
-        <BlogsSection blogs={homeData?.blogs} />
+        <BlogsSection blogs={homeData?.blogs} sectionData={homeData?.pageSections?.blogs} />
       </AnimatedSection>}
 
       {isVisible('events') && <AnimatedSection idx={15} bg="#F8F9FF">
-        <EventsSection events={homeData?.events} />
+        <EventsSection events={homeData?.events} sectionData={homeData?.pageSections?.events} />
       </AnimatedSection>}
 
 

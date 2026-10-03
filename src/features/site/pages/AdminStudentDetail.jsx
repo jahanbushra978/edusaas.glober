@@ -19,6 +19,8 @@ import { createPageUrl } from "@/utils";
 import { ArrowLeft, Plus, Pencil, Loader2, User, BookOpen, CheckCircle2, XCircle, DollarSign, TrendingUp, BarChart3, ClipboardList, GraduationCap } from "lucide-react";
 import { toast } from "sonner";
 
+import ApplicationPortal from "@/features/applications/components/ApplicationPortal";
+
 import { Badge } from "@/components/ui/badge";
 
 import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths } from "date-fns";
@@ -62,7 +64,12 @@ export default function AdminStudentDetail() {
 
   useEffect(() => {
     appClient.auth.me().then((u) => {
-      if (u.role === "admin" || u.role === "branch_admin") {
+      if (
+        u.role === "admin" ||
+        u.role === "superadmin" ||
+        u.role === "super_admin" ||
+        u.role === "branch_admin"
+      ) {
         setIsAdmin(true);
         return;
       }
@@ -560,16 +567,12 @@ export default function AdminStudentDetail() {
 
         <Tabs defaultValue={SHOW_READING_PROGRESS ? "reading" : "attendance"}>
 
-          <TabsList className={`grid w-full ${SHOW_READING_PROGRESS ? "grid-cols-4" : "grid-cols-3"}`}>
-
+          <TabsList className={`grid w-full grid-cols-5`}>
             {SHOW_READING_PROGRESS && <TabsTrigger value="reading" className="text-xs sm:text-sm">📚 পড়ার হিসাব</TabsTrigger>}
-
             <TabsTrigger value="attendance" className="text-xs sm:text-sm">📅 উপস্থিতি</TabsTrigger>
-
             <TabsTrigger value="fees" className="text-xs sm:text-sm">💰 বেতন</TabsTrigger>
-
             <TabsTrigger value="promotion" className="text-xs sm:text-sm">🎓 উন্নতি</TabsTrigger>
-
+            <TabsTrigger value="applications" className="text-xs sm:text-sm">📝 আবেদন</TabsTrigger>
           </TabsList>
 
 
@@ -840,6 +843,16 @@ export default function AdminStudentDetail() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Applications Tab */}
+          <TabsContent value="applications" className="space-y-4 mt-4">
+            <Card className="rounded-2xl border-slate-100 shadow-sm p-4 sm:p-6 bg-white">
+              <ApplicationPortal
+                user={{ id: 1, role: "admin", name: "Administrator" }}
+                applicant={{ id: student.id, name: student.full_name_en || student.full_name_bn, type: "student", branch_id: student.branch_id }}
+              />
+            </Card>
           </TabsContent>
 
         </Tabs>

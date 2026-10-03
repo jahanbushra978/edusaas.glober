@@ -7,8 +7,9 @@ import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
-import { Loader2, Eye, CheckCircle2, XCircle, Clock, Phone, Trash2 } from "lucide-react";
+import { Loader2, Eye, CheckCircle2, XCircle, Clock, Phone, Trash2, Printer } from "lucide-react";
 import { toast } from "sonner";
+import { printMadrasahAdmissionDirect } from "@/features/applications/utils/printMadrasahAdmissionForm";
 
 const SESSIONS = ["সকল", "নূরানী", "নাজেরা", "হিফয", "হিফয শুনানি", "কিন্ডারগার্টেন", "কিতাবখানা", "English Version"];
 const STATUS_FILTER = ["সকল", "pending", "approved", "rejected"];
@@ -25,6 +26,21 @@ export default function AdmissionApplicationManager({ currentUser }) {
   const [adminNote, setAdminNote] = useState("");
   const [filterSession, setFilterSession] = useState("সকল");
   const [filterStatus, setFilterStatus] = useState("সকল");
+
+  const { data: appSettings = {} } = useQuery({
+    queryKey: ["app-settings-admin-adm"],
+    queryFn: async () => {
+      const list = await appClient.entities.AppSettings.listAll().catch(() => []);
+      return list[0] || {};
+    },
+    staleTime: 300000,
+  });
+
+  const { data: branches = [] } = useQuery({
+    queryKey: ["branches-admin-adm"],
+    queryFn: () => appClient.entities.Branch.listAll().catch(() => []),
+    staleTime: 300000,
+  });
 
   const { data: rawApps = [], isLoading } = useQuery({
     queryKey: ["admission-applications"],
@@ -130,8 +146,22 @@ export default function AdmissionApplicationManager({ currentUser }) {
                         <span>{new Date(app.created_date).toLocaleDateString("bn-BD")}</span>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setSelected(app); setAdminNote(app.notes || app.admin_notes || ""); }}>
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="gap-1 text-emerald-700 border-emerald-300 hover:bg-emerald-50 h-8 text-xs font-bold"
+                        onClick={() => printMadrasahAdmissionDirect({
+                          admission: app,
+                          settings: appSettings,
+                          branch: branches.find(b => String(b.id) === String(app.branch_id)),
+                        })}
+                        title="ভর্তি ফরম প্রিন্ট করুন"
+                      >
+                        <Printer className="h-3.5 w-3.5" />
+                        <span className="hidden sm:inline">প্রিন্ট</span>
+                      </Button>
+                      <Button size="sm" variant="outline" className="gap-1.5 h-8 text-xs" onClick={() => { setSelected(app); setAdminNote(app.notes || app.admin_notes || ""); }}>
                         <Eye className="h-3.5 w-3.5" /> বিস্তারিত
                       </Button>
                       <Button 
@@ -159,11 +189,25 @@ export default function AdmissionApplicationManager({ currentUser }) {
       {/* Detail Dialog */}
       <Dialog open={!!selected} onOpenChange={() => setSelected(null)}>
         <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl">
-          <DialogHeader>
+          <DialogHeader className="flex flex-row items-center justify-between border-b pb-3">
             <DialogTitle>আবেদনের বিস্তারিত</DialogTitle>
+            {selected && (
+              <Button
+                type="button"
+                size="sm"
+                className="bg-[#004D3A] hover:bg-[#003829] text-white gap-1.5 h-8 text-xs font-bold mr-6"
+                onClick={() => printMadrasahAdmissionDirect({
+                  admission: selected,
+                  settings: appSettings,
+                  branch: branches.find(b => String(b.id) === String(selected.branch_id)),
+                })}
+              >
+                <Printer className="h-3.5 w-3.5" /> 🖨️ ফরম প্রিন্ট
+              </Button>
+            )}
           </DialogHeader>
           {selected && (
-            <div className="space-y-4">
+            <div className="space-y-4 pt-2">
               {selected.photo_url && (
                 <div className="flex justify-center">
                   <img src={selected.photo_url} loading="lazy" alt={selected.full_name_bn} className="w-24 h-24 rounded-full object-cover border-2" style={{ borderColor: "rgba(0,100,60,0.3)" }} />

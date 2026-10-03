@@ -6,6 +6,7 @@ import { useLanguage } from "@/lib/LanguageContext";
 import { useTranslation } from "@/lib/translations";
 import { ChevronRight, Users } from "lucide-react";
 
+
 const getSeasons = (t) => {
   const baseTheme = {
     gradient: "linear-gradient(135deg,#004D2A,#006241)",
@@ -76,10 +77,34 @@ const getSeasons = (t) => {
   ];
 };
 
-function SeasonCard({ season, students, t, lang }) {
+function SeasonCard({ season, students, t, lang, settingsMap }) {
   const isAr = lang === "ar";
-  const count = students.length;
-  const active = students.filter((student) => student.status === "active").length;
+  const realDbCount = students.length;
+  const realDbActive = students.filter((student) => student.status === "active").length;
+  const realDbInactive = realDbCount - realDbActive;
+
+  const keySuffix = 
+    season.key === "নূরানী" ? "noorani" :
+    season.key === "নাজেরা" ? "nazera" :
+    season.key === "হিফয" ? "hifz" :
+    season.key === "হিফয শুনানি" ? "hifz_shunani" :
+    season.key === "কিন্ডারগার্টেন" ? "kindergarten" :
+    season.key === "কিতাবখানা" ? "kitabkhana" :
+    season.key === "English Version" ? "english_version" : "";
+
+  const customActiveStr = settingsMap?.[`dept_active_${keySuffix}`];
+  const customInactiveStr = settingsMap?.[`dept_inactive_${keySuffix}`];
+  const isOverrideEnabled = settingsMap?.["dept_counts_override_enabled"] === "Y";
+
+  const active = isOverrideEnabled && customActiveStr !== undefined && customActiveStr !== "" && !isNaN(Number(customActiveStr))
+    ? Number(customActiveStr)
+    : realDbActive;
+
+  const inactive = isOverrideEnabled && customInactiveStr !== undefined && customInactiveStr !== "" && !isNaN(Number(customInactiveStr))
+    ? Number(customInactiveStr)
+    : realDbInactive;
+
+  const count = active + inactive;
 
   return (
     <Link
@@ -135,7 +160,7 @@ function SeasonCard({ season, students, t, lang }) {
             <p className="mt-0.5 text-[10px] text-slate-400">{t.active}</p>
           </div>
           <div className="flex-1 rounded-lg p-2 text-center" style={{ background: "rgba(255,255,255,0.05)" }}>
-            <p className="text-lg font-bold leading-none text-white">{count - active}</p>
+            <p className="text-lg font-bold leading-none text-white">{inactive}</p>
             <p className="mt-0.5 text-[10px] text-slate-400">{t.inactive}</p>
           </div>
         </div>
@@ -167,7 +192,25 @@ export default function SeasonPanels({ students: propStudents }) {
     enabled: propStudents === undefined,
   });
 
+  const { data: appSettingsArr = [] } = useQuery({
+    queryKey: ["app-settings-public"],
+    queryFn: () => appClient.entities.AppSettings.list(),
+  });
+
+  const settingsMap = React.useMemo(() => {
+    const map = {};
+    if (Array.isArray(appSettingsArr)) {
+      appSettingsArr.forEach((s) => {
+        const k = s.key || s.setting_key;
+        const v = s.value ?? s.setting_value;
+        if (k) map[k] = v;
+      });
+    }
+    return map;
+  }, [appSettingsArr]);
+
   const students = propStudents || queryStudents;
+
   const seasons = getSeasons(trans);
   const getSeasonStudents = (season) => students.filter((student) => season.match(student.session || ""));
 
@@ -204,6 +247,7 @@ export default function SeasonPanels({ students: propStudents }) {
               students={getSeasonStudents(season)}
               t={trans}
               lang={lang}
+              settingsMap={settingsMap}
             />
           ))}
         </div>

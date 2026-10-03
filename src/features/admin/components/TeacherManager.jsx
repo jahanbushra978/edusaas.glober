@@ -923,84 +923,86 @@ function AssignStudentsDialog({ teacher, students, teachers = [], branches, onCl
     },
   });
 
-  const assigned = students.filter(s => String(s.assigned_teacher_id) === String(teacher.id));
+  const [selectedClassFilter, setSelectedClassFilter] = useState("all");
+  const assigned = students.filter(s => String(s.assigned_teacher_id) === String(teacher.id) || (teacher.teacher_id && String(s.assigned_teacher_id) === String(teacher.teacher_id)));
   const { search: studentSearch, setSearch: setStudentSearch, query } = useSearch({ data: [], debounceMs: 300 });
 
-  // Resolve teacher's assigned batch names to class_ids from the branch's academic structure
-  const teacherClassIds = React.useMemo(() => {
-    if (!teacher.branch_id) return null;
-    const branch = branches.find(b => String(b.id) === String(teacher.branch_id));
-    if (!branch?.academic_structure) return null;
-
-    const batchNames = (teacher.assigned_batches || "")
-      .split(",")
-      .map(b => b.replace(/\s+/g, ' ').trim().toLowerCase())
-      .filter(Boolean);
-
-    if (batchNames.length === 0 || batchNames.includes("all classes")) return null;
-
-    const ids = new Set();
-    branch.academic_structure.forEach(cls => {
-      const clsName = typeof cls.class_name === "string"
-        ? cls.class_name
-        : (cls.class_name?.en || cls.class_name?.bn || cls.class_name?.ar || "");
-      const cleanClsName = clsName.replace(/\s+/g, ' ').trim().toLowerCase();
-      if (cleanClsName && batchNames.includes(cleanClsName)) {
-        ids.add(String(cls.id));
-        if (cls.sections) {
-          cls.sections.forEach(sec => ids.add(String(sec.id)));
-        }
-      }
+  const branchObj = branches.find(b => String(b.id) === String(teacher.branch_id));
+  const classOptions = React.useMemo(() => {
+    const struct = branchObj?.academic_structure || [];
+    const list = [];
+    struct.forEach(c => {
+      const name = typeof c.class_name === "string" ? c.class_name : (c.class_name?.bn || c.class_name?.en || "");
+      if (name) list.push({ id: String(c.id), label: name });
     });
-    return ids;
-  }, [teacher, branches]);
+    return list;
+  }, [branchObj]);
 
   const filteredStudents = students.filter(student => {
-    // 1. Must belong to the same branch (or teacher teaches in All Branches)
+    // 1. Branch match
     const isAllBranches = !teacher.branch_id || teacher.branch === "All Branches";
-    const sameBranch = isAllBranches || String(student.branch_id) === String(teacher.branch_id);
+    const sameBranch = isAllBranches || !student.branch_id || String(student.branch_id) === String(teacher.branch_id);
     if (!sameBranch) return false;
 
-    // 2. Must belong to one of the teacher's assigned classes (or teacher teaches in All Classes)
-    const sameClass = !teacherClassIds || teacherClassIds.has(String(student.class_id));
-    if (!sameClass) return false;
+    // 2. Class dropdown filter
+    if (selectedClassFilter !== "all") {
+      const clsObj = classOptions.find(c => c.id === selectedClassFilter);
+      const cLabel = (clsObj?.label || "").toLowerCase();
+      const sCls = (student.class_name || "").toLowerCase();
+      const sBatch = (student.batch || "").toLowerCase();
+      const matchCls = String(student.class_id) === selectedClassFilter || (cLabel && (sCls.includes(cLabel) || sBatch.includes(cLabel)));
+      if (!matchCls) return false;
+    }
 
-    // 3. Must be active student
-    if (student.status !== "active") return false;
-
-    // 4. Search query filter
+    // 3. Search query filter
     if (query) {
       const nameEn = (student.full_name_en || "").toLowerCase();
       const nameBn = (student.full_name_bn || "").toLowerCase();
       const roll = (student.roll_number || "").toLowerCase();
-      const sid = String(student.id || "");
-      if (!nameEn.includes(query) && !nameBn.includes(query) && !roll.includes(query) && !sid.includes(query)) return false;
+      const sid = String(student.id || "").toLowerCase();
+      const stCode = String(student.student_id || "").toLowerCase();
+      if (!nameEn.includes(query) && !nameBn.includes(query) && !roll.includes(query) && !sid.includes(query) && !stCode.includes(query)) return false;
     }
 
     return true;
   });
 
-
-
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2 p-3 rounded-xl bg-primary/5">
-        <Users className="h-4 w-4 text-primary" />
-        <p className="text-sm font-semibold text-primary">{teacher.full_name_en} — {assigned.length} students assigned</p>
+      <div className="flex items-center justify-between p-3 rounded-xl bg-primary/5 border border-primary/10">
+        <div className="flex items-center gap-2">
+          <Users className="h-4 w-4 text-primary" />
+          <p className="text-sm font-semibold text-primary">{teacher.full_name_en} — <span className="underline font-bold">{assigned.length} students assigned</span></p>
+        </div>
       </div>
       <p className="text-xs text-muted-foreground">Click a student to assign or unassign from this teacher.</p>
 
-      <SearchInput
-        value={studentSearch}
-        onChange={setStudentSearch}
-        placeholder="Search by ID, Name, or Roll..."
-        className="h-10 text-xs bg-slate-50"
-      />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+        <SearchInput
+          value={studentSearch}
+          onChange={setStudentSearch}
+          placeholder="Search by ID, Name, or Roll..."
+          className="h-10 text-xs bg-slate-50"
+        />
+        {classOptions.length > 0 && (
+          <Select value={selectedClassFilter} onValueChange={setSelectedClassFilter}>
+            <SelectTrigger className="h-10 text-xs bg-slate-50">
+              <SelectValue placeholder="Filter by Class" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Classes (সব ক্লাস)</SelectItem>
+              {classOptions.map(c => (
+                <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        )}
+      </div>
 
       <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
         {filteredStudents.length === 0 ? (
           <p className="text-xs text-muted-foreground text-center py-8">
-            No students found matching this teacher's branch and assigned classes.
+            No students found in this branch/class.
           </p>
         ) : (
           filteredStudents.map(student => {
@@ -1062,11 +1064,18 @@ export default function TeacherManager({ students, currentUser }) {
 
   const { data: rawTeachers = [], isLoading } = useQuery({
     queryKey: ["admin-teachers", currentUser?.branch_id, visibleLimit],
-    queryFn: () => {
-      if (currentUser?.role === "branch_admin" && currentUser?.branch_id) {
-        return appClient.entities.Teacher.filter({ branch_id: Number(currentUser.branch_id) }, "-created_date", visibleLimit);
+    queryFn: async () => {
+      try {
+        if (currentUser?.role === "branch_admin" && currentUser?.branch_id) {
+          return await appClient.entities.Teacher.filter({ branch_id: Number(currentUser.branch_id) }, "-id", visibleLimit);
+        }
+        const res = await appClient.entities.Teacher.list("-id", visibleLimit);
+        if (Array.isArray(res)) return res;
+        return [];
+      } catch (err) {
+        console.warn("Notice loading teachers:", err?.message || err);
+        return [];
       }
-      return appClient.entities.Teacher.list("-created_date", visibleLimit);
     },
   });
 
@@ -1251,13 +1260,26 @@ export default function TeacherManager({ students, currentUser }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredTeachers.map(teacher => {
             const teacherBatches = teacher.assigned_batches
-              ? teacher.assigned_batches.split(",").map(b => b.trim().toLowerCase())
+              ? teacher.assigned_batches.split(",").map(b => b.trim().toLowerCase()).filter(Boolean)
               : [];
             const assignedCount = students.filter((s) => {
-              const matchesTeacherId = String(s.assigned_teacher_id) === String(teacher.id);
-              const matchesBatch = teacherBatches.includes("all classes") || 
-                                   (s.batch && teacherBatches.includes(s.batch.toLowerCase()));
-              return (matchesTeacherId || matchesBatch) && s.status === "active";
+              const studentTeacherId = s.assigned_teacher_id !== null && s.assigned_teacher_id !== undefined ? String(s.assigned_teacher_id) : "";
+              const matchesTeacherId = studentTeacherId !== "" && (
+                studentTeacherId === String(teacher.id) || 
+                (teacher.teacher_id && studentTeacherId === String(teacher.teacher_id))
+              );
+
+              const studentBatch = s.batch ? s.batch.toLowerCase() : "";
+              const studentDept = s.department ? s.department.toLowerCase() : "";
+
+              const matchesBatch = teacherBatches.length > 0 && (
+                teacherBatches.includes("all classes") || 
+                teacherBatches.some(tb => tb && (studentBatch.includes(tb) || studentDept.includes(tb)))
+              );
+
+              const isActive = !s.status || s.status.toLowerCase() === "active";
+
+              return (matchesTeacherId || matchesBatch) && isActive;
             }).length;
             return (
               <Card key={teacher.id} className={`border-slate-100 rounded-2xl hover:shadow-md transition-all duration-300 ${teacher.status === "inactive" ? "opacity-60 bg-slate-50/50" : ""}`}>

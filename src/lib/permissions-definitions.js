@@ -41,6 +41,19 @@ export const PERMISSION_MODULES = {
       { key: "print", label: { en: "Print Applications", bn: "আবেদন প্রিন্ট" } },
     ],
   },
+  applications: {
+    label: { en: "Applications & Approvals", bn: "আবেদন ও অনুমোদন" },
+    actions: [
+      { key: "view", label: { en: "View Applications", bn: "আবেদন দেখা" } },
+      { key: "submit", label: { en: "Submit Application", bn: "আবেদন জমা দান" } },
+      { key: "recommend", label: { en: "Recommend Application", bn: "আবেদন সুপারিশ" } },
+      { key: "approve", label: { en: "Approve Application", bn: "আবেদন অনুমোদন" } },
+      { key: "reject", label: { en: "Reject Application", bn: "আবেদন প্রত্যাখ্যান" } },
+      { key: "cancel", label: { en: "Cancel Application", bn: "আবেদন বাতিল" } },
+      { key: "export", label: { en: "Export Applications", bn: "আবেদন এক্সপোর্ট" } },
+      { key: "print", label: { en: "Print Application PDF", bn: "আবেদন পিডিএফ প্রিন্ট" } },
+    ],
+  },
   "student-attendance": {
     label: { en: "Student Attendance", bn: "শিক্ষার্থীর উপস্থিতি" },
     actions: [
@@ -411,3 +424,33 @@ export function arrayToPermissions(arr) {
   }
   return perms;
 }
+
+// ── Application Management System permissions ───────────────────
+export const APPLICATION_TYPES_LIST = [
+  { value: "leave",               label: { en: "Leave Application",      bn: "ছুটির আবেদন" } },
+  { value: "home_leave",          label: { en: "Home Leave",             bn: "বাড়ি যাওয়ার ছুটি" } },
+  { value: "late_entry",          label: { en: "Late Entry Permission",  bn: "দেরিতে প্রবেশ" } },
+  { value: "early_leave",         label: { en: "Early Leave",            bn: "আগেভাগে যাওয়া" } },
+  { value: "certificate",         label: { en: "Certificate Request",    bn: "সনদ আবেদন" } },
+  { value: "character_certificate", label: { en: "Character Certificate", bn: "চারিত্রিক সনদ" } },
+  { value: "transfer_certificate",  label: { en: "Transfer Certificate",  bn: "ট্রান্সফার সনদ" } },
+  { value: "fee_waiver",          label: { en: "Fee Waiver",             bn: "ফি মওকুফ" } },
+  { value: "hostel_permission",   label: { en: "Hostel Permission",      bn: "হোস্টেল অনুমতি" } },
+  { value: "exam_permission",     label: { en: "Exam Permission",        bn: "পরীক্ষার অনুমতি" } },
+  { value: "other",               label: { en: "Other / Custom Application", bn: "অন্যান্য আবেদন" } },
+];
+
+export const APPLICATION_STATUS_CONFIG = {
+  draft:        { label: "Draft",        bn: "খসড়া",       color: "#64748b", bg: "#f1f5f9" },
+  submitted:    { label: "Submitted",    bn: "দাখিল",       color: "#2563eb", bg: "#eff6ff" },
+  under_review: { label: "Under Review", bn: "পর্যালোচনাধীন", color: "#d97706", bg: "#fffbeb" },
+  recommended:  { label: "Recommended", bn: "সুপারিশকৃত",  color: "#7c3aed", bg: "#f5f3ff" },
+  approved:     { label: "Approved",     bn: "অনুমোদিত",    color: "#16a34a", bg: "#f0fdf4" },
+  rejected:     { label: "Rejected",     bn: "প্রত্যাখ্যাত", color: "#dc2626", bg: "#fef2f2" },
+  cancelled:    { label: "Cancelled",    bn: "বাতিল",       color: "#9ca3af", bg: "#f9fafb" },
+};
+
+export const APPLICATION_PRIORITY_CONFIG = {
+  normal: { label: "Normal", bn: "সাধারণ", color: "#64748b" },
+  urgent: { label: "Urgent", bn: "জরুরি",  color: "#dc2626" },
+};

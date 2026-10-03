@@ -3,8 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
-  Building2, CheckCircle2, ShieldAlert, Globe, MapPin, Search, Edit3, 
-  ExternalLink, CheckCircle, Clock, Trash2, Eye, Sparkles, Save, X
+  Building2, CheckCircle2, MapPin, Search, Edit3, 
+  Sparkles, Save, X
 } from "lucide-react";
 
 export default function OnboardingRequestsPage() {
