@@ -15,9 +15,20 @@ export const getTenantContext = cache(async () => {
       const { headers } = await import("next/headers");
       const reqHeaders = await headers();
       const host = reqHeaders.get("host") || "";
-      const cleanHost = host.split(":")[0];
+      const cleanHost = host.split(":")[0].toLowerCase().trim();
 
-      if (cleanHost && !cleanHost.includes("localhost") && !cleanHost.includes("127.0.0.1")) {
+      const isDefaultHost =
+        !cleanHost ||
+        cleanHost === "localhost" ||
+        cleanHost === "127.0.0.1" ||
+        cleanHost === "0.0.0.0" ||
+        cleanHost === "::1" ||
+        cleanHost === "rahmaniainstitute.org" ||
+        cleanHost === "www.rahmaniainstitute.org" ||
+        (process.env.NEXT_PUBLIC_APP_DOMAIN && cleanHost === process.env.NEXT_PUBLIC_APP_DOMAIN.toLowerCase().trim()) ||
+        cleanHost.endsWith(".vercel.app");
+
+      if (!isDefaultHost) {
         const { data: org } = await supabase
           .from("organizations")
           .select("id, name, slug, domain, subdomain, status, theme_config, modules_config")
@@ -30,16 +41,28 @@ export const getTenantContext = cache(async () => {
             organizationId: org.id,
             org,
             isDefault: false,
+            notFound: false,
+            isUnknownDomain: false,
             resolvedFrom: "domain",
           };
         }
+
+        // Unknown domain fallback: Unrecognized custom domains MUST NOT serve default tenant data!
+        return {
+          organizationId: null,
+          org: null,
+          isDefault: false,
+          notFound: true,
+          isUnknownDomain: true,
+          resolvedFrom: "unknown_domain",
+        };
       }
     }
   } catch (error) {
     console.error("Error resolving tenant context:", error);
   }
 
-  // Fallback to Rahmania Institute default tenant
+  // Fallback to Rahmania Institute default tenant for recognized default hosts
   return {
     organizationId: DEFAULT_TENANT_ID,
     org: {
@@ -51,6 +74,8 @@ export const getTenantContext = cache(async () => {
       status: "active",
     },
     isDefault: true,
-    resolvedFrom: "fallback",
+    notFound: false,
+    isUnknownDomain: false,
+    resolvedFrom: "default_host",
   };
 });

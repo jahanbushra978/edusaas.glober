@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 
 const AUTH_COOKIE_NAME = 'rahmania_session'
+const PLATFORM_SESSION_COOKIE = 'edu_platform_session'
 
 const PUBLIC_ROUTES = [
   '/',
@@ -30,6 +31,7 @@ const PUBLIC_ROUTES = [
   '/StudentProfile',
   '/TeacherProfile',
   '/TeacherDashboard',
+  '/platform-console/login',
 ]
 
 const PUBLIC_API_ROUTES = [
@@ -37,6 +39,7 @@ const PUBLIC_API_ROUTES = [
   '/api/health',
   '/api/cron',
   '/api/uploads',
+  '/api/platform/auth',
 ]
 
 function isPublicRoute(pathname) {
@@ -75,6 +78,18 @@ export async function proxy(request) {
   response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
   response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()')
   response.headers.set('X-XSS-Protection', '0')
+
+  // 1. Platform Console Super Admin Boundary (Isolated from school auth)
+  if (pathname.startsWith('/platform-console')) {
+    if (pathname === '/platform-console/login') {
+      return response;
+    }
+    if (!request.cookies.has(PLATFORM_SESSION_COOKIE)) {
+      const loginUrl = new URL('/platform-console/login', request.url);
+      return NextResponse.redirect(loginUrl);
+    }
+    return response;
+  }
 
   if (isPublicRoute(pathname)) {
     return response

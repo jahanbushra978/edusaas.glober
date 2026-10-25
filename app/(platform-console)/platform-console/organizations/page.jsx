@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { listOrganizations } from "@/features/platform-console/lib/platformConsoleClient";

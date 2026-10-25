@@ -14,7 +14,6 @@ import {
   FileImage,
   GraduationCap,
   ImageIcon,
-  Sparkles,
   Trophy,
   CheckCircle,
   Star,
@@ -279,7 +278,7 @@ export default function DepartmentLandingPage({ department }) {
                 className="inline-flex items-center gap-2 rounded-full px-5 py-1.5 text-xs font-bold uppercase tracking-[0.24em]"
                 style={{ background: c.chip, color: c.chipText }}
               >
-                <Sparkles className="h-3.5 w-3.5" />
+                <Award className="h-3.5 w-3.5" />
                 {pageBadge}
               </div>
             </div>
@@ -445,7 +444,7 @@ export default function DepartmentLandingPage({ department }) {
                     className="inline-flex items-center gap-2 rounded-full px-5 py-1.5 text-xs font-bold uppercase tracking-[0.24em] mb-4"
                     style={{ background: c.chip, color: c.chipText }}
                   >
-                    <Sparkles className="h-3.5 w-3.5" />
+                    <Award className="h-3.5 w-3.5" />
                     {t.englishVersionPage.headingAbout}
                   </div>
                   <p className="text-sm leading-7 text-slate-600 dark:text-gray-300 md:text-base md:leading-8 max-w-4xl mx-auto">
@@ -588,7 +587,7 @@ export default function DepartmentLandingPage({ department }) {
                   <p className="text-sm leading-7 text-slate-600 dark:text-gray-300 mb-6">{t.englishVersionPage.facilitiesText}</p>
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {t.englishVersionPage.facilitiesList.map((item, idx) => {
-                      const IconFac = [Star, BookOpen, Heart, Shield, Monitor, Lightbulb, Compass, Sun, Moon, GraduationCap, Sparkles, CheckCircle, TreePine][idx % 13];
+                      const IconFac = [Star, BookOpen, Heart, Shield, Monitor, Lightbulb, Compass, Sun, Moon, GraduationCap, Award, CheckCircle, TreePine][idx % 13];
                       return (
                         <div key={idx}
                           className="flex items-center gap-3 rounded-2xl px-4 py-3 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"

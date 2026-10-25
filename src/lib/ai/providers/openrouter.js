@@ -2,7 +2,7 @@
  * OpenRouter AI Provider Adapter with Tool Calling Support
  */
 
-import { sanitizeAIResponse } from "../sanitizer";
+import { sanitizeAIResponse } from "../sanitizer.js";
 
 const DEFAULT_MODEL = "meta-llama/llama-3.3-70b-instruct:free";
 

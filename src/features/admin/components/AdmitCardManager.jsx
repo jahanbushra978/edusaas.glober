@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
 import { supabaseAdmin } from "@/lib/supabase-admin-client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { resolveAcademicDisplayName } from "@/lib/academic";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,12 +11,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { DEFAULT_LOGO } from "@/utils";
 import ImageUpload from "./ImageUpload";
-import { drawBengaliText, drawBengaliTextWrapped, containsBengali } from "@/lib/pdf-utils";
-import QRCode from "qrcode";
 import {
-  Search, Printer, Download, Eye, ChevronLeft, ChevronRight,
+  Search, Printer, Download, Eye,
   CreditCard, Grid3X3, Settings, Palette, ZoomIn, ZoomOut,
   Maximize2, Minimize2, Loader2, User, X, Check, Save,
   CheckSquare, Square, ArrowUpDown, Trash2, Copy, Plus,
@@ -24,8 +21,10 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import { drawBengaliText, drawBengaliTextWrapped, containsBengali } from "@/lib/pdf-utils";
+import SeatingArrangementManager from "./seating/SeatingArrangementManager";
 
-const PAGE_SIZE = 30;
+const PAGE_SIZE = 20;
 const TEMPLATE_STORAGE_KEY = "admit_card_templates";
 const DEFAULT_TEMPLATE_KEY = "admit_card_default_template";
 const SEATING_CONFIG_STORAGE_KEY = "admit_card_seating_config";
@@ -38,7 +37,7 @@ function getStoredSeatingConfig() {
   } catch { return getDefaultSeatingConfig(); }
 }
 
-function saveSeatingConfig(cfg) {
+function _saveSeatingConfig(cfg) {
   try {
     localStorage.setItem(SEATING_CONFIG_STORAGE_KEY, JSON.stringify(cfg));
   } catch {}
@@ -60,6 +59,91 @@ function getDefaultSeatingConfig() {
 function hexToRgb(hex) {
   const v = parseInt(hex.replace("#", ""), 16);
   return [(v >> 16) & 255, (v >> 8) & 255, v & 255];
+}
+
+function escapeHtmlForMarkup(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#39;");
+}
+
+function getExamScheduleRows(exam, fallbackSubjects = []) {
+  let schedules = exam?.subject_schedules || [];
+  if (typeof schedules === "string") {
+    try {
+      schedules = JSON.parse(schedules);
+    } catch {
+      schedules = [];
+    }
+  }
+  if (!Array.isArray(schedules)) schedules = [];
+
+  const getSubjectName = subject => {
+    const name = subject?.subject_name ?? subject?.name_bn ?? subject?.name_en ?? subject;
+    if (typeof name === "string") return name;
+    return name?.bn || name?.en || "";
+  };
+  const getFallbackSubject = schedule => fallbackSubjects.find((subject, index) =>
+    String(subject?.id ?? index) === String(schedule?.subject_id) ||
+    getSubjectName(subject) === getSubjectName(schedule)
+  );
+
+  const sourceRows = schedules.length
+    ? schedules
+    : fallbackSubjects.map((subject, index) => ({
+        subject_id: subject?.id ?? index,
+        subject_name: getSubjectName(subject),
+      }));
+
+  return sourceRows.map(schedule => {
+    const fallbackSubject = getFallbackSubject(schedule);
+    return {
+      subjectName: getSubjectName(schedule) || getSubjectName(fallbackSubject) || "—",
+      date: schedule?.date || exam?.start_date || "—",
+      time: schedule?.time || exam?.exam_time || "9:00 AM - 12:00 PM",
+    };
+  });
+}
+
+function drawSubjectSchedulePdf(doc, rows, x, y, width, bottom, primaryColor) {
+  if (!rows.length || y + 14 > bottom) return y;
+
+  const rowHeight = 6;
+  const headerHeight = 6;
+  const maxRows = Math.max(0, Math.floor((bottom - y - 11) / rowHeight));
+  if (maxRows === 0) return y;
+  const visibleRows = rows.slice(0, maxRows);
+  const colWidths = [8, width * 0.46, width * 0.23, width * 0.31 - 8];
+  const colX = [x, x + colWidths[0], x + colWidths[0] + colWidths[1], x + colWidths[0] + colWidths[1] + colWidths[2]];
+
+  drawBengaliText(doc, "বিষয়ভিত্তিক পরীক্ষার রুটিন", x, y + 3, 7, primaryColor, "left");
+  y += 5;
+  doc.setFillColor(...hexToRgb(primaryColor));
+  doc.rect(x, y, width, headerHeight, "F");
+  doc.setFontSize(6);
+  drawBengaliText(doc, "#", colX[0] + 1, y + 4, 6, "#ffffff", "left");
+  drawBengaliText(doc, "বিষয়", colX[1] + 1, y + 4, 6, "#ffffff", "left");
+  drawBengaliText(doc, "তারিখ", colX[2] + 1, y + 4, 6, "#ffffff", "left");
+  drawBengaliText(doc, "সময়", colX[3] + 1, y + 4, 6, "#ffffff", "left");
+  y += headerHeight;
+
+  visibleRows.forEach((row, index) => {
+    doc.setDrawColor(220, 226, 232);
+    doc.line(x, y + rowHeight, x + width, y + rowHeight);
+    drawBengaliText(doc, String(index + 1), colX[0] + 1, y + 4, 6, "#222222", "left");
+    drawBengaliText(doc, row.subjectName, colX[1] + 1, y + 4, 6, "#222222", "left");
+    drawBengaliText(doc, row.date, colX[2] + 1, y + 4, 5.5, "#222222", "left");
+    drawBengaliText(doc, row.time, colX[3] + 1, y + 4, 5.5, "#222222", "left");
+    y += rowHeight;
+  });
+  if (visibleRows.length < rows.length && y + 4 <= bottom) {
+    drawBengaliText(doc, `আরও ${rows.length - visibleRows.length}টি বিষয়`, x, y + 3, 5, "#666666", "left");
+    y += 4;
+  }
+  return y + 2;
 }
 
 function loadImageElement(src) {
@@ -200,7 +284,7 @@ function saveSerialTemplate(tpl) {
   } catch {}
 }
 
-const STUDENT_AVATAR_SVG = `<svg viewBox="0 0 24 24" width="36" height="36" fill="#94a3b8" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
+const _STUDENT_AVATAR_SVG = `<svg viewBox="0 0 24 24" width="36" height="36" fill="#94a3b8" xmlns="http://www.w3.org/2000/svg"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>`;
 
 function getDefaultSerialSheetTemplate() {
   return {
@@ -224,8 +308,126 @@ function getDefaultSerialSheetTemplate() {
   };
 }
 
+function StudentSeatingOverrideDialog({
+  student,
+  existingOverride,
+  studentAlloc,
+  globalIdx,
+  seatingConfig,
+  onSave,
+  onClear,
+  onClose,
+}) {
+  const safeIdx = Math.max(0, globalIdx);
+  const autoSeat = studentAlloc?.exam_serial || `${seatingConfig.seatPrefix || ""}${String(Number(seatingConfig.startingSeat || 1) + safeIdx).padStart(Number(seatingConfig.seatDigits || 3), "0")}`;
+  const autoRoom = (studentAlloc?.room_number ? `${studentAlloc.hall_name || "Room"} (${studentAlloc.room_number})` : studentAlloc?.hall_name) || String(Number(seatingConfig.startingRoom || 1) + Math.floor(safeIdx / Math.max(1, Number(seatingConfig.studentsPerRoom || 20))));
+  const autoCenter = studentAlloc?.hall_name || seatingConfig.centerName || "";
+  const autoSet = studentAlloc?.set || "";
+
+  const [seat, setSeat] = useState(existingOverride.seatNumber !== undefined && existingOverride.seatNumber !== null ? existingOverride.seatNumber : (studentAlloc?.exam_serial || ""));
+  const [room, setRoom] = useState(existingOverride.roomNumber !== undefined && existingOverride.roomNumber !== null ? existingOverride.roomNumber : (studentAlloc?.room_number || studentAlloc?.hall_name || ""));
+  const [center, setCenter] = useState(existingOverride.centerName !== undefined && existingOverride.centerName !== null ? existingOverride.centerName : (autoCenter || ""));
+  const [setVal, setSetVal] = useState(existingOverride.set !== undefined && existingOverride.set !== null ? existingOverride.set : (autoSet || ""));
+
+  return (
+    <Dialog open={true} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent className="max-w-md rounded-2xl p-6">
+        <DialogHeader>
+          <DialogTitle className="text-base font-bold text-[#052E2B] flex items-center gap-2">
+            <Pencil className="h-4 w-4 text-purple-600" />
+            আসন ও তথ্য পরিবর্তন — {student.full_name_en || student.full_name_bn || `Student #${student.id}`}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-2">
+          <div className="text-[11px] text-slate-500 bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-wrap gap-x-4 gap-y-1">
+            <span>রোল: <strong className="text-slate-800">{student.roll_number || "—"}</strong></span>
+            <span>আইডি: <strong className="text-slate-800">{student.id}</strong></span>
+            <span>স্বয়ংক্রিয় আসন: <strong className="text-emerald-700">#{autoSeat}</strong></span>
+            <span>স্বয়ংক্রিয় কক্ষ: <strong className="text-amber-700">{autoRoom}</strong></span>
+          </div>
+
+          <div className="space-y-3">
+            <div>
+              <label className="text-xs text-slate-700 block mb-1 font-semibold">
+                আসন নম্বর / Seat Number <span className="text-purple-600 font-bold">*</span>
+              </label>
+              <Input
+                value={seat}
+                onChange={e => setSeat(e.target.value)}
+                placeholder={`যেমন: ${autoSeat}`}
+                className="h-9 text-xs rounded-xl"
+              />
+              <span className="text-[10px] text-slate-400">খালি রাখলে স্বয়ংক্রিয় আসন নম্বর ({autoSeat}) ব্যবহার হবে</span>
+            </div>
+            <div>
+              <label className="text-xs text-slate-700 block mb-1 font-semibold">
+                প্রশ্নপত্রের সেট / Question Set (যেমন: Set A, Set B)
+              </label>
+              <Input
+                value={setVal}
+                onChange={e => setSetVal(e.target.value)}
+                placeholder="যেমন: Set A বা Set B"
+                className="h-9 text-xs rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-700 block mb-1 font-semibold">
+                কক্ষ নম্বর / Room Number
+              </label>
+              <Input
+                value={room}
+                onChange={e => setRoom(e.target.value)}
+                placeholder={`যেমন: ${autoRoom}`}
+                className="h-9 text-xs rounded-xl"
+              />
+            </div>
+            <div>
+              <label className="text-xs text-slate-700 block mb-1 font-semibold">
+                পরীক্ষা কেন্দ্র / Center Name
+              </label>
+              <Input
+                value={center}
+                onChange={e => setCenter(e.target.value)}
+                placeholder={seatingConfig.centerName || "পরীক্ষা কেন্দ্রের নাম"}
+                className="h-9 text-xs rounded-xl"
+              />
+            </div>
+          </div>
+
+          <div className="flex gap-2 pt-2">
+            <Button
+              className="flex-1 h-9 text-xs rounded-xl bg-[#052E2B] hover:bg-[#031c1a] text-white font-bold shadow-sm"
+              onClick={() => {
+                onSave({
+                  seatNumber: seat.trim() || null,
+                  roomNumber: room.trim() || null,
+                  centerName: center.trim() || null,
+                  set: setVal.trim() || null,
+                });
+              }}
+            >
+              সংরক্ষণ করুন (Save)
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1 h-9 text-xs rounded-xl text-red-600 border-red-200 hover:bg-red-50 font-medium"
+              onClick={onClear}
+            >
+              রিসেট (Reset to Plan)
+            </Button>
+            <Button variant="ghost" className="h-9 text-xs rounded-xl" onClick={onClose}>
+              বাতিল
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function AdmitCardManager({ branches, exams, currentUser, settings }) {
   const isBranchAdmin = currentUser?.role === "branch_admin" || currentUser?.role === "boarding_manager";
+  const queryClient = useQueryClient();
 
   const [activeModule, setActiveModule] = useState("admit-card");
 
@@ -253,8 +455,15 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
   const [activeTemplateId, setActiveTemplateId] = useState(null);
   const [serialTemplate, setSerialTemplate] = useState(() => getStoredSerialTemplate());
   const [seatingConfig, setSeatingConfig] = useState(() => getStoredSeatingConfig());
-  const [studentOverrides, setStudentOverrides] = useState({});
+  const [studentOverrides, setStudentOverrides] = useState(() => {
+    if (typeof window === "undefined") return {};
+    try {
+      const raw = localStorage.getItem("admit_card_student_overrides");
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  });
   const [editingStudentSeating, setEditingStudentSeating] = useState(null);
+  const [showSeatingModal, setShowSeatingModal] = useState(false);
 
   const [generating, setGenerating] = useState({ admitCard: false, serialSheet: false, preview: false, bulkDownload: false });
 
@@ -311,18 +520,68 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
     setSelectAll(false);
   }, [filters.branchId, filters.examId, filters.classId, filters.sectionId, filters.group]);
 
-  // When exam selection changes, load seating_config from that exam (if available)
+  // When exam selection changes or on mount, load seating_config from selected exam, any sibling exam, or localStorage
   useEffect(() => {
-    if (filters.examId === "all") return;
-    const selectedExam = exams.find(e => String(e.id) === String(filters.examId));
-    if (!selectedExam?.seating_config) return;
-    const cfg = typeof selectedExam.seating_config === "string"
-      ? (() => { try { return JSON.parse(selectedExam.seating_config); } catch { return null; } })()
-      : selectedExam.seating_config;
-    if (cfg && typeof cfg === "object") {
-      setSeatingConfig(prev => ({ ...prev, ...cfg }));
+    const parseCfg = (raw) => {
+      if (!raw) return null;
+      if (typeof raw === "object") return raw;
+      try { return JSON.parse(raw); } catch { return null; }
+    };
+
+    let targetCfg = null;
+    // 1. If an exam is selected, check its seating_config
+    if (filters.examId !== "all") {
+      const selectedExam = exams.find(e => String(e.id) === String(filters.examId));
+      const cfg = parseCfg(selectedExam?.seating_config);
+      if (cfg && typeof cfg === "object" && Array.isArray(cfg.allocations) && cfg.allocations.length > 0) {
+        targetCfg = cfg;
+      }
     }
-  }, [filters.examId, exams]);
+
+    // 2. Check related exams for a shared multi-exam plan, limited to the selected branch.
+    if (!targetCfg) {
+      const relatedExams = exams.filter(e => (
+        filters.branchId === "all" || String(e.branch_id) === String(filters.branchId)
+      ));
+      for (const e of relatedExams) {
+        const cfg = parseCfg(e?.seating_config);
+        const includesSelectedExam = filters.examId === "all" ||
+          cfg?.selected_exam_ids?.map(String).includes(String(filters.examId));
+        if (includesSelectedExam && cfg && Array.isArray(cfg.allocations) && cfg.allocations.length > 0) {
+          targetCfg = cfg;
+          break;
+        }
+      }
+    }
+
+    // 3. Fallback to localStorage latest_seating_config
+    if (!targetCfg) {
+      try {
+        const local = localStorage.getItem("latest_seating_config");
+        if (local) {
+          const parsed = parseCfg(local);
+          if (parsed && typeof parsed === "object") {
+            targetCfg = parsed;
+          }
+        }
+      } catch {}
+    }
+
+    setSeatingConfig(prev => {
+      const {
+        custom_exam_title: _customExamTitle,
+        selected_exam_ids: _selectedExamIds,
+        halls: _halls,
+        rules: _rules,
+        allocations: _allocations,
+        qualityScore: _qualityScore,
+        conflictReport: _conflictReport,
+        last_generated_at: _lastGeneratedAt,
+        ...cardSettings
+      } = prev || {};
+      return targetCfg ? { ...cardSettings, ...targetCfg } : cardSettings;
+    });
+  }, [filters.examId, filters.branchId, exams]);
 
   const activeTemplate = useMemo(() => templates.find(t => t.id === activeTemplateId) || templates[0], [templates, activeTemplateId]);
 
@@ -335,6 +594,20 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
     const bMatch = filters.branchId === "all" || String(e.branch_id) === String(filters.branchId);
     return bMatch;
   });
+
+  const handlePlanSaved = useCallback((savedConfig, savedExamIds = []) => {
+    if (!savedConfig) return;
+    setSeatingConfig(prev => ({ ...prev, ...savedConfig }));
+    const savedIds = new Set(savedExamIds.map(String));
+    queryClient.setQueryData(["admin-exams"], currentExams => (
+      Array.isArray(currentExams)
+        ? currentExams.map(exam => savedIds.has(String(exam.id))
+          ? { ...exam, seating_config: savedConfig }
+          : exam)
+        : currentExams
+    ));
+    queryClient.invalidateQueries({ queryKey: ["admin-exams"] });
+  }, [queryClient]);
 
   const groupOptions = useMemo(() => {
     if (!selectedFlatClass) return [];
@@ -404,11 +677,38 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
     },
     // Students load as soon as branch + class are selected; exam is optional
     enabled: filters.branchId !== "all" && filters.classId !== "all",
+    staleTime: 5 * 60 * 1000,
+    keepPreviousData: true,
   });
 
+  const [accumulatedStudents, setAccumulatedStudents] = useState([]);
+
+  // Reset accumulated students when filtering or search changes
+  useEffect(() => {
+    setPage(1);
+    setAccumulatedStudents([]);
+    setSelectedIds(new Set());
+    setSelectAll(false);
+  }, [filters.branchId, filters.examId, filters.classId, filters.sectionId, filters.group, debouncedSearch]);
+
+  // Append new page rows smoothly without page reload
+  useEffect(() => {
+    if (studentData?.rows) {
+      if (page === 1) {
+        setAccumulatedStudents(studentData.rows);
+      } else {
+        setAccumulatedStudents(prev => {
+          const existingIds = new Set(prev.map(s => String(s.id)));
+          const newRows = studentData.rows.filter(s => !existingIds.has(String(s.id)));
+          return [...prev, ...newRows];
+        });
+      }
+    }
+  }, [studentData, page]);
+
   const totalStudents = studentData?.total || 0;
-  const totalPages = studentData?.totalPages || 0;
-  const students = studentData?.rows || [];
+  const students = accumulatedStudents;
+  const hasMoreStudents = students.length < totalStudents;
 
   const allCurrentPageSelected = useMemo(() => {
     if (students.length === 0) return false;
@@ -447,6 +747,12 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
       const updated = { ...prev, [key]: value };
       if (key === "branchId") { updated.classId = "all"; updated.sectionId = "all"; updated.examId = "all"; }
       if (key === "classId") { updated.sectionId = "all"; updated.group = "all"; }
+      if (key === "examId" && value !== "all") {
+        const selectedEx = exams.find(e => String(e.id) === String(value));
+        if (selectedEx?.class_id && prev.classId === "all") {
+          updated.classId = String(selectedEx.class_id);
+        }
+      }
       return updated;
     });
   };
@@ -499,6 +805,77 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
     });
   };
 
+  // Resolve allocations from the selected exam or another exam in a saved multi-exam plan.
+  const resolveStudentAllocation = useCallback((student, currentExam) => {
+    if (!student) return null;
+    const sId = String(student.id || "");
+    const sRoll = String(student.roll_number || student.roll || "").trim();
+
+    const matchById = (list) => {
+      if (!Array.isArray(list) || list.length === 0) return null;
+      return sId ? list.find(a => String(a.student_id) === sId) || null : null;
+    };
+
+    const matchByRoll = (list) => {
+      if (!Array.isArray(list) || list.length === 0 || !sRoll) return null;
+      return list.find(a => a.roll && String(a.roll).trim() === sRoll) || null;
+    };
+
+    const parseAllocations = (cfg) => {
+      if (!cfg) return null;
+      if (typeof cfg === "object") return Array.isArray(cfg.allocations) ? cfg.allocations : null;
+      try {
+        const p = JSON.parse(cfg);
+        return Array.isArray(p?.allocations) ? p.allocations : null;
+      } catch {
+        return null;
+      }
+    };
+
+    // 1. Direct from current exam's seating_config (supports object or JSON string) - HIGHEST PRIORITY!
+    let match = matchById(parseAllocations(currentExam?.seating_config));
+    if (match) return match;
+
+    // Prefer exact student IDs across saved plans before considering legacy roll matches.
+    if (Array.isArray(exams)) {
+      for (const ex of exams) {
+        match = matchById(parseAllocations(ex?.seating_config));
+        if (match) return match;
+      }
+    }
+
+    match = matchByRoll(parseAllocations(currentExam?.seating_config));
+    if (match) return match;
+
+    if (currentExam && Array.isArray(exams)) {
+      for (const ex of exams) {
+        const config = typeof ex?.seating_config === "string"
+          ? (() => { try { return JSON.parse(ex.seating_config); } catch { return null; } })()
+          : ex?.seating_config;
+        const configExamIds = config?.selected_exam_ids?.map(String) || [];
+        if (configExamIds.includes(String(currentExam.id))) {
+          match = matchByRoll(parseAllocations(config));
+          if (match) return match;
+        }
+      }
+    }
+
+    // A local backup is only valid for the exam it explicitly includes.
+    try {
+      const storedCfg = localStorage.getItem("latest_seating_config");
+      if (storedCfg) {
+        const parsedConfig = JSON.parse(storedCfg);
+        const configExamIds = parsedConfig?.selected_exam_ids?.map(String) || [];
+        if (currentExam && configExamIds.includes(String(currentExam.id))) {
+          match = matchById(parseAllocations(parsedConfig)) || matchByRoll(parseAllocations(parsedConfig));
+          if (match) return match;
+        }
+      }
+    } catch {}
+
+    return null;
+  }, [exams]);
+
   const generateAdmitCardHTML = useCallback((student, branch, exam, tpl, options = { fullDocument: true }, idx = 0) => {
     const logoUrl = resolveLogoUrl(tpl, branch, settings);
     const instNameBn = settings?.institute_name_bn || branch?.name_bn || "রহমানিয়া ইনস্টিটিউট";
@@ -511,22 +888,40 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
 
     const override = studentOverrides[student?.id] || {};
     const resolvedExamTitle = seatingConfig.examTitle || exam?.title || "Exam";
-    const resolvedCenterName = override.centerName || seatingConfig.centerName || branchName || settings?.institute_name_bn || "";
+
+    // Read real allocation from exam or seatingConfig (from the Constraint-Based Seating Engine)
+    const studentAlloc = resolveStudentAllocation(student, exam);
+
+    const resolvedCenterName = override.centerName || (studentAlloc?.hall_name ? `${studentAlloc.hall_name}` : null) || seatingConfig.centerName || branchName || settings?.institute_name_bn || "";
 
     let resolvedSeatNumber = override.seatNumber;
     if (!resolvedSeatNumber) {
-      const rawNum = Number(seatingConfig.startingSeat || 1) + (idx || 0);
-      const padded = String(rawNum).padStart(Number(seatingConfig.seatDigits || 3), "0");
-      resolvedSeatNumber = `${seatingConfig.seatPrefix || ""}${padded}`;
+      if (studentAlloc?.exam_serial) {
+        resolvedSeatNumber = studentAlloc.exam_serial;
+      } else if (studentAlloc?.seat) {
+        resolvedSeatNumber = `B-${studentAlloc.bench} S-${studentAlloc.seat}`;
+      } else {
+        const rawNum = Number(seatingConfig.startingSeat || 1) + (idx || 0);
+        const padded = String(rawNum).padStart(Number(seatingConfig.seatDigits || 3), "0");
+        resolvedSeatNumber = `${seatingConfig.seatPrefix || ""}${padded}`;
+      }
     }
 
     let resolvedRoomNumber = override.roomNumber;
     if (!resolvedRoomNumber) {
-      const startRm = Number(seatingConfig.startingRoom) || 1;
-      const perRm = Math.max(1, Number(seatingConfig.studentsPerRoom) || 20);
-      const rmOffset = Math.floor((idx || 0) / perRm);
-      resolvedRoomNumber = String(startRm + rmOffset);
+      if (studentAlloc?.room_number || studentAlloc?.hall_name) {
+        resolvedRoomNumber = studentAlloc.room_number 
+          ? (studentAlloc.hall_name ? `${studentAlloc.hall_name} (${studentAlloc.room_number})` : `Room ${studentAlloc.room_number}`) 
+          : studentAlloc.hall_name;
+      } else {
+        const startRm = Number(seatingConfig.startingRoom) || 1;
+        const perRm = Math.max(1, Number(seatingConfig.studentsPerRoom) || 20);
+        const rmOffset = Math.floor((idx || 0) / perRm);
+        resolvedRoomNumber = String(startRm + rmOffset);
+      }
     }
+
+    const resolvedStudentSet = override.set || studentAlloc?.set || "";
 
     const classNameVal = (() => {
       const structure = branch?.academic_structure || [];
@@ -555,21 +950,14 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
       return "";
     })();
 
-    // Build subject rows
-    let schedulesArr = exam?.subject_schedules || [];
-    if (typeof schedulesArr === "string") { try { schedulesArr = JSON.parse(schedulesArr); } catch { schedulesArr = []; } }
-    const subjectRows = (selectedFlatClass?.subjects || []).map((sub, i) => {
-      const subjectName = typeof sub.subject_name === "string" ? sub.subject_name : sub.subject_name?.bn || sub.subject_name?.en || sub.name_bn || sub.name_en || String(sub);
-      const subId = sub.id || i;
-      const match = Array.isArray(schedulesArr) ? schedulesArr.find(s => String(s.subject_id) === String(subId) || s.subject_name === subjectName) : null;
-      const subDate = match?.date || exam?.start_date || "—";
-      const subTime = match?.time || "9:00 AM - 12:00 PM";
+    const subjectScheduleRows = getExamScheduleRows(exam, selectedFlatClass?.subjects || []);
+    const subjectRows = subjectScheduleRows.map((row, i) => {
       const bg = i % 2 === 0 ? "#f8fffe" : "#ffffff";
       return `<tr style="background:${bg};">
         <td style="padding:5px 8px;text-align:center;border-bottom:1px solid #e2eef0;font-weight:700;color:${pc};">${i + 1}</td>
-        <td style="padding:5px 8px;border-bottom:1px solid #e2eef0;font-weight:600;">${subjectName}</td>
-        <td style="padding:5px 8px;border-bottom:1px solid #e2eef0;">${subDate}</td>
-        <td style="padding:5px 8px;border-bottom:1px solid #e2eef0;">${subTime}</td>
+        <td style="padding:5px 8px;border-bottom:1px solid #e2eef0;font-weight:600;">${escapeHtmlForMarkup(row.subjectName)}</td>
+        <td style="padding:5px 8px;border-bottom:1px solid #e2eef0;">${escapeHtmlForMarkup(row.date)}</td>
+        <td style="padding:5px 8px;border-bottom:1px solid #e2eef0;">${escapeHtmlForMarkup(row.time)}</td>
       </tr>`;
     }).join("");
 
@@ -670,20 +1058,32 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
                 <div style="font-weight:600;color:#222;">${exam?.exam_time || "9:00 AM - 12:00 PM"}</div>
               </td>` : "<td></td>"}
             </tr>
+            ${resolvedStudentSet ? `<tr>
+              <td colspan="2" style="padding:4px 0 2px;vertical-align:top;">
+                <div style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:5px;background:${sc}18;border:1px solid ${sc}60;font-size:10px;font-weight:700;color:${pc};">
+                  <span>প্রশ্নপত্রের সেট (Set):</span>
+                  <span style="font-weight:900;font-size:12px;color:${pc};letter-spacing:0.5px;">${resolvedStudentSet}</span>
+                </div>
+              </td>
+            </tr>` : ""}
           </tbody>
         </table>
       </div>
     </div>
     <!-- SEATING BOX -->
-    <div style="width:110px;flex-shrink:0;border:2px solid ${pc};border-radius:7px;overflow:hidden;align-self:flex-start;">
+    <div style="width:115px;flex-shrink:0;border:2px solid ${pc};border-radius:7px;overflow:hidden;align-self:flex-start;">
       <div style="background:${pc};color:#fff;font-size:9px;font-weight:700;text-align:center;padding:5px 4px;letter-spacing:0.5px;">পরীক্ষার তথ্য</div>
       <div style="padding:6px 8px;border-bottom:1px dashed #ddd;text-align:center;">
         <div style="font-size:8px;color:#888;margin-bottom:2px;">Seat No / আসন</div>
-        <div style="font-size:22px;font-weight:900;color:${pc};line-height:1.1;">${resolvedSeatNumber}</div>
+        <div style="font-size:20px;font-weight:900;color:${pc};line-height:1.1;">${resolvedSeatNumber}</div>
       </div>
+      ${resolvedStudentSet ? `<div style="padding:4px 8px;border-bottom:1px dashed #ddd;text-align:center;background:${sc}18;">
+        <div style="font-size:7.5px;color:${pc};font-weight:700;text-transform:uppercase;margin-bottom:1px;">Question Set / সেট</div>
+        <div style="font-size:12.5px;font-weight:900;color:${pc};letter-spacing:1px;">${resolvedStudentSet}</div>
+      </div>` : ""}
       <div style="padding:5px 8px;border-bottom:1px dashed #ddd;text-align:center;">
         <div style="font-size:8px;color:#888;margin-bottom:1px;">Room / কক্ষ</div>
-        <div style="font-size:12px;font-weight:700;color:#222;">${resolvedRoomNumber}</div>
+        <div style="font-size:11px;font-weight:700;color:#222;">${resolvedRoomNumber}</div>
       </div>
       <div style="padding:5px 8px;text-align:center;">
         <div style="font-size:8px;color:#888;margin-bottom:1px;">Center / কেন্দ্র</div>
@@ -693,7 +1093,7 @@ export default function AdmitCardManager({ branches, exams, currentUser, setting
   </div>
   <!-- SUBJECT TABLE -->
   ${fields.subjectList !== false && subjectRows ? `<div style="padding:0 18px 10px;">
-    <div style="font-size:9px;font-weight:700;color:${pc};text-transform:uppercase;margin-bottom:4px;border-left:3px solid ${sc};padding-left:5px;">Subjects / বিষয়সমূহ</div>
+    <div style="font-size:9px;font-weight:700;color:${pc};text-transform:uppercase;margin-bottom:4px;border-left:3px solid ${sc};padding-left:5px;">বিষয়ভিত্তিক পরীক্ষার রুটিন / Exam Routine</div>
     <table style="width:100%;border-collapse:collapse;font-size:9.5px;table-layout:fixed;">
       <thead><tr>
         <th style="background:${pc};color:#fff;padding:4px 7px;text-align:center;width:28px;font-size:9px;">#</th>
@@ -793,7 +1193,7 @@ body{font-family:'Noto Sans Bengali','Inter',sans-serif;background:#f0f4f8;paddi
 </head>
 <body>${cardMarkup}</body>
 </html>`;
-  }, [settings, filters.sectionId, filters.group, selectedFlatClass, seatingConfig, studentOverrides]);
+  }, [settings, filters.sectionId, filters.group, selectedFlatClass, seatingConfig, studentOverrides, resolveStudentAllocation]);
 
   const generateSerialCardHTML = useCallback((studentsList, branch, exam, tpl) => {
     const logoUrl = resolveLogoUrl(tpl, branch, settings);
@@ -807,21 +1207,38 @@ body{font-family:'Noto Sans Bengali','Inter',sans-serif;background:#f0f4f8;paddi
 
     const cardsHtml = studentsList.map((student, idx) => {
       const override = studentOverrides[student?.id] || {};
-      const resolvedCenterName = override.centerName || seatingConfig.centerName || branchName;
+
+      const studentAlloc = resolveStudentAllocation(student, exam);
+
+      const resolvedCenterName = override.centerName || (studentAlloc?.hall_name ? `${studentAlloc.hall_name}` : null) || seatingConfig.centerName || branchName;
 
       let seatNumber = override.seatNumber;
       if (!seatNumber) {
-        const rawNum = Number(seatingConfig.startingSeat || 1) + idx;
-        const padded = String(rawNum).padStart(Number(seatingConfig.seatDigits || 3), "0");
-        seatNumber = `${seatingConfig.seatPrefix || ""}${padded}`;
+        if (studentAlloc?.exam_serial) {
+          seatNumber = studentAlloc.exam_serial;
+        } else if (studentAlloc?.seat) {
+          seatNumber = `B-${studentAlloc.bench} S-${studentAlloc.seat}`;
+        } else {
+          const rawNum = Number(seatingConfig.startingSeat || 1) + idx;
+          const padded = String(rawNum).padStart(Number(seatingConfig.seatDigits || 3), "0");
+          seatNumber = `${seatingConfig.seatPrefix || ""}${padded}`;
+        }
       }
 
       let roomNumber = override.roomNumber;
       if (!roomNumber) {
-        const startRm = Number(seatingConfig.startingRoom) || 1;
-        const perRm = Math.max(1, Number(seatingConfig.studentsPerRoom) || 20);
-        roomNumber = String(startRm + Math.floor(idx / perRm));
+        if (studentAlloc?.room_number || studentAlloc?.hall_name) {
+          roomNumber = studentAlloc.room_number 
+            ? (studentAlloc.hall_name ? `${studentAlloc.hall_name} (${studentAlloc.room_number})` : `Room ${studentAlloc.room_number}`) 
+            : studentAlloc.hall_name;
+        } else {
+          const startRm = Number(seatingConfig.startingRoom) || 1;
+          const perRm = Math.max(1, Number(seatingConfig.studentsPerRoom) || 20);
+          roomNumber = String(startRm + Math.floor(idx / perRm));
+        }
       }
+
+      const resolvedStudentSet = override.set || studentAlloc?.set || "";
 
       const classNameVal = (() => {
         const structure = branch?.academic_structure || [];
@@ -857,6 +1274,7 @@ body{font-family:'Noto Sans Bengali','Inter',sans-serif;background:#f0f4f8;paddi
           <div style="background:${pc};color:#fff;border-radius:5px;padding:2px 6px;text-align:center;flex-shrink:0;">
             <div style="font-size:6.5px;font-weight:600;opacity:0.85;">আসন</div>
             <div style="font-size:14px;font-weight:900;line-height:1;">${seatNumber}</div>
+            ${resolvedStudentSet ? `<div style="font-size:7.5px;font-weight:800;color:${sc};margin-top:1px;">${resolvedStudentSet}</div>` : ""}
           </div>
         </div>
 
@@ -964,7 +1382,7 @@ ${cardsHtml}
 </div>
 </body>
 </html>`;
-  }, [settings, filters, seatingConfig, studentOverrides]);
+  }, [settings, filters, seatingConfig, studentOverrides, resolveStudentAllocation]);
 
   const handlePrintAdmitCards = useCallback(async (studentIds) => {
     if (!studentIds || studentIds.length === 0) {
@@ -1258,7 +1676,19 @@ ${cardsHtml}
     if (tpl.showFields.session) renderInfo("Session:", exam?.session || exam?.academic_year, infoX);
     if (tpl.showFields.examDate) renderInfo("Exam Date:", exam?.exam_date || exam?.start_date, infoX);
 
+    // Seating allocation integration (Seat No, Room, Set)
+    const studentAlloc = resolveStudentAllocation(student, exam);
+    const resolvedSeatNumber = studentOverrides[student?.id]?.seatNumber || studentAlloc?.exam_serial;
+    if (resolvedSeatNumber) renderInfo("Seat No / আসন:", resolvedSeatNumber, infoX);
+    const resolvedRoomNumber = studentOverrides[student?.id]?.roomNumber || (studentAlloc?.room_number ? `${studentAlloc.hall_name || "Room"} (${studentAlloc.room_number})` : studentAlloc?.hall_name);
+    if (resolvedRoomNumber) renderInfo("Room / কক্ষ:", resolvedRoomNumber, infoX);
+    if (studentAlloc?.set) renderInfo("Question Set / সেট:", studentAlloc.set, infoX);
+
     y = Math.max(y + 3, y + photoOffset + 5);
+
+    if (tpl.showFields.subjectList !== false) {
+      y = drawSubjectSchedulePdf(doc, getExamScheduleRows(exam), tpl.cardMargin, y, W - tpl.cardMargin * 2, H - 34, pc);
+    }
 
     if (tpl.showFields.instructions && tpl.customInstructions) {
       y += 3;
@@ -1472,6 +1902,10 @@ ${cardsHtml}
 
       y = Math.max(startY + photoOffset + 5, y + 3);
 
+      if (tpl.showFields.subjectList !== false) {
+        y = drawSubjectSchedulePdf(doc, getExamScheduleRows(exam), tpl.cardMargin, y, W - tpl.cardMargin * 2, H - 34, pc);
+      }
+
       if (tpl.showFields.instructions && tpl.customInstructions) {
         y += 3;
         doc.setDrawColor(...hexToRgb(sc));
@@ -1552,7 +1986,7 @@ ${cardsHtml}
     }
   };
 
-  const handleIndividualAction = async (student, action, type) => {
+  const _handleIndividualAction = async (student, action, type) => {
     if (type === "preview") {
       handlePreviewStudent(student);
     } else if (type === "print") {
@@ -1657,7 +2091,19 @@ ${cardsHtml}
           if (tpl.showFields.session) renderInfo("Session:", exam?.session || exam?.academic_year);
           if (tpl.showFields.examDate) renderInfo("Exam Date:", exam?.exam_date || exam?.start_date);
 
+          // Seating allocation integration (Seat No, Room, Set)
+          const studentAlloc = resolveStudentAllocation(student, exam);
+          const resolvedSeatNumber = studentOverrides[student?.id]?.seatNumber || studentAlloc?.exam_serial;
+          if (resolvedSeatNumber) renderInfo("Seat No / আসন:", resolvedSeatNumber);
+          const resolvedRoomNumber = studentOverrides[student?.id]?.roomNumber || (studentAlloc?.room_number ? `${studentAlloc.hall_name || "Room"} (${studentAlloc.room_number})` : studentAlloc?.hall_name);
+          if (resolvedRoomNumber) renderInfo("Room / কক্ষ:", resolvedRoomNumber);
+          if (studentAlloc?.set) renderInfo("Question Set / সেট:", studentAlloc.set);
+
           y = Math.max(startY + photoOffset + 5, y + 3);
+
+          if (tpl.showFields.subjectList !== false) {
+            y = drawSubjectSchedulePdf(doc, getExamScheduleRows(exam), tpl.cardMargin, y, W - tpl.cardMargin * 2, H - 34, pc);
+          }
 
           if (tpl.showFields.instructions && tpl.customInstructions) {
             y += 3;
@@ -1755,7 +2201,24 @@ ${cardsHtml}
             <SelectTrigger className="h-10 rounded-xl"><SelectValue placeholder="Select Exam" /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Exams</SelectItem>
-              {filteredExams.map(e => <SelectItem key={e.id} value={String(e.id)}>{e.title}</SelectItem>)}
+              {filteredExams.map(e => {
+                const examBranch = (branches || []).find(br => String(br.id) === String(e.branch_id)) || selectedBranch;
+                const classLabel = resolveAcademicDisplayName(
+                  e.class_id,
+                  e.session_id,
+                  e.class_group_id,
+                  examBranch?.academic_structure || academicStructure,
+                  'bn'
+                ) || e.session || "";
+                const displayLabel = classLabel 
+                  ? `${e.title} — ${classLabel}${e.academic_year ? ` (${e.academic_year})` : ""}` 
+                  : `${e.title}${e.academic_year ? ` (${e.academic_year})` : ""}`;
+                return (
+                  <SelectItem key={e.id} value={String(e.id)}>
+                    {displayLabel}
+                  </SelectItem>
+                );
+              })}
             </SelectContent>
           </Select>
         </div>
@@ -1864,9 +2327,10 @@ ${cardsHtml}
                 <tbody className="divide-y divide-slate-100">
                   {students.map((student, idx) => {
                     const override = studentOverrides[student.id] || {};
-                    const globalIdx = (page - 1) * PAGE_SIZE + idx;
-                    const seatNum = override.seatNumber || `${seatingConfig.seatPrefix || ""}${String(Number(seatingConfig.startingSeat || 1) + globalIdx).padStart(Number(seatingConfig.seatDigits || 3), "0")}`;
-                    const roomNum = override.roomNumber || String(Number(seatingConfig.startingRoom || 1) + Math.floor(globalIdx / Math.max(1, Number(seatingConfig.studentsPerRoom || 20))));
+                    const globalIdx = idx;
+                    const studentAlloc = resolveStudentAllocation(student, exams.find(e => String(e.id) === String(filters.examId)));
+                    const seatNum = override.seatNumber || studentAlloc?.exam_serial || `${seatingConfig.seatPrefix || ""}${String(Number(seatingConfig.startingSeat || 1) + globalIdx).padStart(Number(seatingConfig.seatDigits || 3), "0")}`;
+                    const roomNum = override.roomNumber || (studentAlloc?.room_number ? `${studentAlloc.hall_name || "Room"} (${studentAlloc.room_number})` : studentAlloc?.hall_name) || String(Number(seatingConfig.startingRoom || 1) + Math.floor(globalIdx / Math.max(1, Number(seatingConfig.studentsPerRoom || 20))));
                     return (
                     <tr key={student.id} className={`hover:bg-slate-50/50 transition-colors ${selectedIds.has(String(student.id)) ? "bg-[#052E2B]/5" : ""}`}>
                       <td className="py-3 px-4">
@@ -1896,31 +2360,45 @@ ${cardsHtml}
                         ) || student.class_name || "—"}
                       </td>
                       <td className="py-3 px-4 text-center font-mono font-bold text-[#052E2B]">
-                        <Badge className="bg-[#052E2B]/10 text-[#052E2B] border-0 text-[10px]">{seatNum}</Badge>
+                        <div
+                          className="inline-flex items-center justify-center gap-1 cursor-pointer group hover:opacity-85 transition-all"
+                          onClick={() => setEditingStudentSeating(student)}
+                          title="ক্লিক করে আসন নম্বর পরিবর্তন করুন (Click to Edit Seat)"
+                        >
+                          <Badge className={`${override.seatNumber ? "bg-purple-100 text-purple-800 border-purple-200 shadow-xs" : "bg-[#052E2B]/10 text-[#052E2B]"} border-0 text-[10px]`}>
+                            #{seatNum} {override.seatNumber ? "★" : ""}
+                          </Badge>
+                          {(override.set || studentAlloc?.set) && (
+                            <Badge className="bg-sky-50 text-sky-700 border-sky-200 text-[9px] font-extrabold px-1 py-0">
+                              {override.set || studentAlloc.set}
+                            </Badge>
+                          )}
+                        </div>
                       </td>
                       <td className="py-3 px-4 text-center font-mono text-slate-600">
-                        <Badge className="bg-amber-50 text-amber-700 border-0 text-[10px]">Rm {roomNum}</Badge>
+                        <Badge
+                          className="bg-amber-50 text-amber-700 border-0 text-[10px] cursor-pointer hover:bg-amber-100 transition-colors"
+                          onClick={() => setEditingStudentSeating(student)}
+                          title="ক্লিক করে কক্ষ পরিবর্তন করুন (Click to Edit Room)"
+                        >
+                          {roomNum.startsWith("Rm") ? roomNum : `Rm ${roomNum}`}
+                        </Badge>
                       </td>
                       <td className="py-3 px-4 text-center">
                         <Badge className={`text-[10px] font-bold border-0 ${student.status === "active" ? "bg-emerald-50 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
                           {student.status || "active"}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-purple-50" onClick={() => setEditingStudentSeating(student)} title="Edit Seating (Seat/Room/Center)">
-                            <Pencil className="h-3.5 w-3.5 text-purple-600" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-blue-50" onClick={() => handleIndividualAction(student, "preview")} title="Preview">
-                            <Eye className="h-3.5 w-3.5 text-blue-600" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-emerald-50" onClick={() => handleIndividualAction(student, "print", activeModule)} title="Print">
-                            <Printer className="h-3.5 w-3.5 text-emerald-600" />
-                          </Button>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 hover:bg-amber-50" onClick={() => handleIndividualAction(student, "download")} title="Download PDF">
-                            <Download className="h-3.5 w-3.5 text-amber-600" />
-                          </Button>
-                        </div>
+                      <td className="py-3 px-4 text-center">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 hover:bg-purple-100 text-purple-700 mx-auto rounded-xl transition-colors"
+                          onClick={() => setEditingStudentSeating(student)}
+                          title="আসন ও কক্ষ পরিবর্তন করুন (Edit Seating)"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
                       </td>
                     </tr>
                     );
@@ -1929,33 +2407,38 @@ ${cardsHtml}
               </table>
             </div>
 
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between p-4 border-t border-slate-100">
-                <p className="text-[10px] text-slate-400">
-                  Page {page} of {totalPages} ({totalStudents} total)
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                    disabled={page <= 1}
-                    className="h-8 rounded-xl text-xs gap-1"
-                  >
-                    <ChevronLeft className="h-3.5 w-3.5" /> Prev
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                    disabled={page >= totalPages}
-                    className="h-8 rounded-xl text-xs gap-1"
-                  >
-                    Next <ChevronRight className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
+            <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-t border-slate-100 bg-slate-50/70 gap-3">
+              <div className="text-xs text-slate-600 font-medium flex items-center gap-2">
+                <span>প্রদর্শিত হচ্ছে: <strong className="text-[#052E2B] font-bold">{students.length}</strong> / <strong className="text-slate-800 font-bold">{totalStudents}</strong> জন শিক্ষার্থী</span>
+                {students.length >= totalStudents && totalStudents > 0 && (
+                  <Badge className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] font-bold">
+                    সবগুলো লোড সম্পন্ন ({totalStudents})
+                  </Badge>
+                )}
               </div>
-            )}
+
+              {hasMoreStudents && (
+                <Button
+                  onClick={() => setPage(p => p + 1)}
+                  disabled={studentsLoading}
+                  className="bg-[#052E2B] hover:bg-[#031c1a] text-white font-bold text-xs rounded-xl h-9 px-5 gap-2 shadow-sm transition-all active:scale-95"
+                >
+                  {studentsLoading ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-[#D4AF37]" />
+                      <span>লোড হচ্ছে...</span>
+                    </>
+                  ) : (
+                    <>
+                      <span>আরও ২০ জন দেখুন (See More)</span>
+                      <Badge className="bg-[#D4AF37] text-[#052E2B] border-0 text-[10px] font-black px-1.5 py-0">
+                        +{Math.min(PAGE_SIZE, totalStudents - students.length)}
+                      </Badge>
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
           </>
         )}
       </CardContent>
@@ -2014,14 +2497,14 @@ ${cardsHtml}
           <div className="flex gap-2 mt-4">
             <Button
               size="sm"
-              className="flex-1 bg-[#052E2B] hover:bg-[#031c1a] text-white rounded-xl h-9 text-xs font-bold gap-1.5"
-              onClick={(e) => { e.stopPropagation(); setActiveModule("serial-sheet"); setShowCustomizer(true); }}
+              className="flex-1 bg-[#052E2B] hover:bg-[#031c1a] text-white rounded-xl h-9 text-xs font-bold gap-1.5 shadow-sm"
+              onClick={(e) => { e.stopPropagation(); setShowSeatingModal(true); }}
             >
               <Settings className="h-3.5 w-3.5" /> Settings
             </Button>
             <Button
               size="sm"
-              className="flex-1 bg-[#D4AF37] hover:bg-[#b8960a] text-white rounded-xl h-9 text-xs font-bold gap-1.5"
+              className="flex-1 bg-[#D4AF37] hover:bg-[#b8960a] text-[#052E2B] rounded-xl h-9 text-xs font-bold gap-1.5 shadow-sm"
               onClick={(e) => { e.stopPropagation(); handleBulkPrint("serial-sheet"); }}
               disabled={generating.serialSheet || selectedIds.size === 0}
             >
@@ -2076,10 +2559,19 @@ ${cardsHtml}
           </div>
 
           <div className="p-5 space-y-6">
+            <Button
+              onClick={() => { setShowCustomizer(false); setShowSeatingModal(true); }}
+              className="w-full bg-[#052E2B] hover:bg-[#031c1a] text-white rounded-xl text-xs font-bold py-2.5 flex items-center justify-center gap-2 shadow-sm"
+            >
+              <Grid3X3 className="h-4 w-4 text-[#D4AF37]" />
+              Open Full Seating Arrangement System / আসন বিন্যাস
+            </Button>
+
+            {/* Seating config is now set in the Exam form (Add/Edit Exam) */}
             <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3 flex items-start gap-2">
               <Settings className="h-3.5 w-3.5 text-amber-600 mt-0.5 flex-shrink-0" />
               <p className="text-[10px] text-amber-700 leading-relaxed">
-                <strong>Seating &amp; Exam Configuration</strong> (Exam Title, Card Title, Center Name, Seat/Room numbering) is now configured when <strong>creating or editing an Exam</strong> from the <em>Exams List</em> tab.<br />
+                <strong>Seating &amp; Exam Configuration</strong> (Exam Title, Card Title, Center Name, Seat/Room numbering) is configured when <strong>creating or editing an Exam</strong> or in the <em>Seating Arrangement System</em>.<br />
                 Use the <strong>✏️ pencil icon</strong> in the student table to override values for individual students.
               </p>
             </div>
@@ -2500,6 +2992,12 @@ ${cardsHtml}
               : "Generate seating arrangement serial sheets"}
           </p>
         </div>
+        <Button
+          onClick={() => setShowSeatingModal(true)}
+          className="bg-[#052E2B] hover:bg-[#031c1a] text-white font-bold text-xs rounded-xl h-9 px-4 gap-2 shadow-sm"
+        >
+          <Grid3X3 className="h-4 w-4 text-[#D4AF37]" /> Seating Arrangement / আসন বিন্যাস
+        </Button>
       </div>
 
       {renderFilters()}
@@ -2518,95 +3016,49 @@ ${cardsHtml}
       {renderPreview()}
 
       {/* ── Per-student Seating Override Dialog ── */}
-      {editingStudentSeating && (() => {
-        const stu = editingStudentSeating;
-        const existing = studentOverrides[stu.id] || {};
-        const globalIdx = students.findIndex(s => s.id === stu.id);
-        const autoSeat = `${seatingConfig.seatPrefix || ""}${String(Number(seatingConfig.startingSeat || 1) + Math.max(0, globalIdx)).padStart(Number(seatingConfig.seatDigits || 3), "0")}`;
-        const autoRoom = String(Number(seatingConfig.startingRoom || 1) + Math.floor(Math.max(0, globalIdx) / Math.max(1, Number(seatingConfig.studentsPerRoom || 20))));
-        return (
-          <Dialog open={!!editingStudentSeating} onOpenChange={open => !open && setEditingStudentSeating(null)}>
-            <DialogContent className="max-w-md rounded-2xl">
-              <DialogHeader>
-                <DialogTitle className="text-sm font-bold text-[#052E2B] flex items-center gap-2">
-                  <Pencil className="h-4 w-4 text-purple-600" />
-                  {"Override Seating \u2014 "}{stu.full_name_en || stu.full_name_bn || `Student #${stu.id}`}
-                </DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4 pt-1">
-                <p className="text-[10px] text-slate-400">Leave a field blank to use the auto-calculated value. Auto: Seat <strong>{autoSeat}</strong>, Room <strong>{autoRoom}</strong>, Center <strong>{seatingConfig.centerName || "(global default)"}</strong></p>
-                <div className="space-y-3">
-                  <div>
-                    <label className="text-xs text-slate-500 block mb-1 font-medium">আসন নম্বর / Seat Number</label>
-                    <Input
-                      defaultValue={existing.seatNumber || ""}
-                      placeholder={`Auto: ${autoSeat}`}
-                      className="h-9 text-xs rounded-xl"
-                      id="override-seat"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-500 block mb-1 font-medium">কক্ষ নম্বর / Room Number</label>
-                    <Input
-                      defaultValue={existing.roomNumber || ""}
-                      placeholder={`Auto: ${autoRoom}`}
-                      className="h-9 text-xs rounded-xl"
-                      id="override-room"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs text-slate-500 block mb-1 font-medium">পরীক্ষা কেন্দ্র / Center Name</label>
-                    <Input
-                      defaultValue={existing.centerName || ""}
-                      placeholder={seatingConfig.centerName || "Global center name"}
-                      className="h-9 text-xs rounded-xl"
-                      id="override-center"
-                    />
-                  </div>
-                </div>
-                <div className="flex gap-2 pt-1">
-                  <Button
-                    className="flex-1 h-9 text-xs rounded-xl bg-[#052E2B] hover:bg-[#052E2B]/90 text-white"
-                    onClick={() => {
-                      const seatVal = document.getElementById("override-seat")?.value.trim() || "";
-                      const roomVal = document.getElementById("override-room")?.value.trim() || "";
-                      const centerVal = document.getElementById("override-center")?.value.trim() || "";
-                      setStudentOverrides(prev => ({
-                        ...prev,
-                        [stu.id]: {
-                          seatNumber: seatVal || null,
-                          roomNumber: roomVal || null,
-                          centerName: centerVal || null,
-                        },
-                      }));
-                      setEditingStudentSeating(null);
-                    }}
-                  >
-                    Save Override
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="flex-1 h-9 text-xs rounded-xl text-red-500 border-red-200 hover:bg-red-50"
-                    onClick={() => {
-                      setStudentOverrides(prev => {
-                        const next = { ...prev };
-                        delete next[stu.id];
-                        return next;
-                      });
-                      setEditingStudentSeating(null);
-                    }}
-                  >
-                    Clear Override
-                  </Button>
-                  <Button variant="ghost" className="h-9 text-xs rounded-xl" onClick={() => setEditingStudentSeating(null)}>
-                    Cancel
-                  </Button>
-                </div>
-              </div>
-            </DialogContent>
-          </Dialog>
-        );
-      })()}
+      {editingStudentSeating && (
+        <StudentSeatingOverrideDialog
+          student={editingStudentSeating}
+          existingOverride={studentOverrides[editingStudentSeating.id] || {}}
+          studentAlloc={resolveStudentAllocation(editingStudentSeating, exams.find(e => String(e.id) === String(filters.examId)))}
+          globalIdx={students.findIndex(s => s.id === editingStudentSeating.id)}
+          seatingConfig={seatingConfig}
+          onSave={(overrideData) => {
+            setStudentOverrides(prev => {
+              const next = { ...prev, [editingStudentSeating.id]: overrideData };
+              try { localStorage.setItem("admit_card_student_overrides", JSON.stringify(next)); } catch {}
+              return next;
+            });
+            toast.success(`শিক্ষার্থী ${editingStudentSeating.full_name_en || editingStudentSeating.id}-এর আসন সফলভাবে পরিবর্তন করা হয়েছে`);
+            setEditingStudentSeating(null);
+          }}
+          onClear={() => {
+            setStudentOverrides(prev => {
+              const next = { ...prev };
+              delete next[editingStudentSeating.id];
+              try { localStorage.setItem("admit_card_student_overrides", JSON.stringify(next)); } catch {}
+              return next;
+            });
+            toast.info("আসন ওভাররাইড রিসেট করা হয়েছে (পূর্বের সিট প্ল্যান মান বহাল)");
+            setEditingStudentSeating(null);
+          }}
+          onClose={() => setEditingStudentSeating(null)}
+        />
+      )}
+
+      {/* ── Full Exam Seating Arrangement System Master Modal ── */}
+      {showSeatingModal && (
+        <SeatingArrangementManager
+          isOpen={showSeatingModal}
+          onClose={() => setShowSeatingModal(false)}
+          exams={exams && exams.length > 0 ? exams : filteredExams}
+          branches={branches}
+          currentUser={currentUser}
+          settings={settings}
+          initialExamId={filters.examId !== "all" ? filters.examId : (filteredExams[0]?.id || exams?.[0]?.id || "")}
+          onPlanSaved={handlePlanSaved}
+        />
+      )}
     </div>
   );
 }

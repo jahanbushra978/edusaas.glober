@@ -34,6 +34,15 @@ export default function HeroNavBar() {
 
   const NAV_ITEMS = [
     { label: isBn ? "হোম" : isAr ? "الرئيسية" : "Home", to: "Home" },
+    {
+      label: isBn ? "নূর AI কুরআন শিক্ষা" : isAr ? "نور للقرآن" : "Nur AI Quran",
+      children: [
+        { label: isBn ? "🎯 এআই কোরআন শিক্ষা (Duolingo)" : "🎯 AI Quran Learning (Duolingo)", to: "/ai-quran-learning" },
+        { label: isBn ? "🎙️ লাইভ ভয়েস ক্লাসরুম" : "🎙️ Live Voice Classroom", to: "/quran-tutor/live-class" },
+        { label: isBn ? "📖 সম্পূর্ণ কুরআন" : "📖 Full Quran Reader", to: "/quran-tutor/studio?tab=reader" },
+        { label: isBn ? "নূর AI শিক্ষক স্টুডিও" : "Nur AI Tutor Studio", to: "/quran-tutor" },
+      ],
+    },
     { label: isBn ? "আমাদের পরিচিতি" : isAr ? "من نحن" : "About Us", to: "about" },
     { label: isBn ? "লক্ষ্য ও উদ্দেশ্য" : isAr ? "رسالتنا ورؤيتنا" : "Mission & Vision", to: "mission" },
     { label: isBn ? "সাধারণ জিজ্ঞাসা" : isAr ? "الأسئلة الشائعة" : "FAQ", to: "faq" },
@@ -117,7 +126,7 @@ export default function HeroNavBar() {
                 height={56}
                 priority
                 className="h-10 w-auto object-contain lg:h-14"
-                style={{ maxWidth: "240px", width: "auto" }}
+                style={{ maxWidth: "240px", width: "auto", height: "auto" }}
                 alt="Rahmania Institute"
               />
             </Link>

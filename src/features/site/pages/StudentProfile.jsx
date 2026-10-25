@@ -20,7 +20,7 @@ import Link from "next/link";
 
 import { createPageUrl } from "@/utils";
 
-import { ArrowLeft, User, Phone, MapPin, Calendar, Hash, Users as UsersIcon, Loader2, DollarSign, Fingerprint, Monitor } from "lucide-react";
+import { ArrowLeft, User, Phone, MapPin, Calendar, Hash, Users as UsersIcon, Loader2, DollarSign, Fingerprint, Monitor, BookOpen } from "lucide-react";
 
 import { format } from "date-fns";
 
@@ -443,6 +443,14 @@ export default function StudentProfile() {
 
 
             <div className="flex-shrink-0 flex gap-2 sm:gap-3 flex-wrap">
+
+              <Button
+                onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white gap-2 text-xs font-semibold shadow-md"
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                নূর AI কুরআন শিক্ষক
+              </Button>
 
               <PDFReportButton student={student} logs={logs} lessons={lessons} attendance={attendance} />
 

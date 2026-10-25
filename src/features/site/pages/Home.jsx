@@ -13,6 +13,7 @@ import { useTranslation } from "@/lib/translations";
 import AboutSection from "@/components/home/AboutSection";
 import SponsorShowcase from "@/components/home/SponsorShowcase";
 import WhyUsSection from "@/components/home/WhyUsSection";
+import NurAIBanner from "@/components/home/NurAIBanner";
 import FacilitiesSection from "@/components/home/FacilitiesSection";
 import SeasonPanels from "@/components/home/SeasonPanels";
 import DepartmentGallery from "@/components/home/DepartmentGallery";
@@ -25,6 +26,7 @@ import EventsSection from "@/components/home/EventsSection";
 import BlogsSection from "@/components/home/BlogsSection";
 import ContactSection from "@/components/home/ContactSection";
 import SaaSLandingPage from "./SaaSLandingPage";
+import AIQuranTutorPage from "./AIQuranTutorPage";
 
 // NOTE: this used to animate x:-80 / x:80 (slide in from left/right).
 // Sideways motion forces the browser to repaint horizontally on every scroll
@@ -117,14 +119,31 @@ function HomeContent() {
     setMounted(true);
     if (typeof window !== "undefined") {
       const p = new URLSearchParams(window.location.search);
-      if (p.get("view") === "school") setViewMode("school");
-      else if (p.get("view") === "saas") setViewMode("saas");
-      else {
+      if (p.get("view") === "school") {
+        setViewMode("school");
+        localStorage.setItem("home_view_mode", "school");
+      } else if (p.get("view") === "saas") {
+        setViewMode("saas");
+        localStorage.setItem("home_view_mode", "saas");
+      } else if (p.get("view") === "quran-tutor") {
+        setViewMode("quran-tutor");
+      } else {
         const saved = localStorage.getItem("home_view_mode");
-        if (saved) setViewMode(saved);
+        if (saved === "school") {
+          setViewMode("school");
+        } else {
+          setViewMode("saas");
+          if (saved === "quran-tutor") {
+            localStorage.setItem("home_view_mode", "saas");
+          }
+        }
       }
     }
   }, []);
+
+  if (viewMode === "quran-tutor") {
+    return <AIQuranTutorPage />;
+  }
 
   if (viewMode === "saas") {
     return <SaaSLandingPage />;
@@ -296,6 +315,10 @@ function HomeContent() {
       {isVisible('why_us') && <AnimatedSection idx={4} bg="#ECFDF5">
         <WhyUsSection />
       </AnimatedSection>}
+
+      <AnimatedSection idx={4.5} bg="#0a1f18">
+        <NurAIBanner />
+      </AnimatedSection>
 
       {isVisible('chairman_msg') && <AnimatedSection idx={5}>
         <section className="py-14 md:py-16 overflow-x-hidden" style={{ background: "linear-gradient(180deg, #f8fbf9 0%, #ffffff 100%)" }}>

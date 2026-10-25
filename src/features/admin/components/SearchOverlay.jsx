@@ -3,7 +3,7 @@ import { useRouter } from "next/navigation";
 import { useSearch } from "../../site/pages/SearchContext";
 import SearchResultCard from "./SearchResultCard";
 import { 
-  Search, Loader2, Sparkles, History, 
+  Search, Loader2, Layers, History, 
   Trash2, X, Command, Keyboard, ArrowDownUp,
   CornerDownLeft
 } from "lucide-react";
@@ -266,7 +266,7 @@ export default function SearchOverlay() {
               {/* Recommended Quick ERP Modules */}
               <div className="space-y-2">
                 <span className="flex items-center gap-1.5 px-1 text-[10px] font-bold text-gray-400 dark:text-emerald-600 uppercase tracking-wider">
-                  <Sparkles className="h-3 w-3" /> Quick Navigation Modules
+                  <Layers className="h-3 w-3" /> Quick Navigation Modules
                 </span>
                 <div ref={listRef} className="grid gap-2">
                   {ERP_MODULES.filter(m => category === "all" || category === "module").map((item, idx) => (

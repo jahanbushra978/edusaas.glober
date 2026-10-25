@@ -9,6 +9,14 @@ import { inter, hindSiliguri, notoSansBengali, notoSansArabic, amiri, playfairDi
 
 export const revalidate = 3600;
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  viewportFit: 'cover',
+  themeColor: '#006400',
+};
+
 export const metadata = {
   metadataBase: new URL('https://rahmaniainstitute.org'),
   title: {
@@ -83,6 +91,12 @@ export default async function RootLayout({ children }) {
     <html lang={initialLang} suppressHydrationWarning data-scroll-behavior="smooth" className={`light ${inter.variable} ${hindSiliguri.variable} ${notoSansBengali.variable} ${notoSansArabic.variable} ${amiri.variable} ${playfairDisplay.variable}`}>
       <head>
         <meta charSet="utf-8" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Scheherazade+New:wght@400;700&display=swap"
+        />
       </head>
       <body suppressHydrationWarning className="light">
         <link rel="preconnect" href="https://www.googletagmanager.com" />
@@ -149,6 +163,25 @@ export default async function RootLayout({ children }) {
             })
           }}
         />
+        <Script id="register-sw" strategy="afterInteractive">
+          {`
+            if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+              if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                  for (var i = 0; i < registrations.length; i++) {
+                    registrations[i].unregister();
+                  }
+                });
+              } else {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js').catch(function(err) {
+                    console.warn('SW registration:', err);
+                  });
+                });
+              }
+            }
+          `}
+        </Script>
         <Analytics />
         <SpeedInsights />
 

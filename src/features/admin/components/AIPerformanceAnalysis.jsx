@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { appClient } from "@/api/appClient";
 import {
-  Sparkles, Loader2, RefreshCw, TrendingUp, Minus,
+  Bot, Loader2, RefreshCw, TrendingUp, Minus,
   AlertTriangle, Star, Target, ChevronDown, ChevronUp, ShieldAlert, Award
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -204,7 +204,7 @@ Be specific, data-driven, and compassionate. Consider the Islamic academic conte
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-2.5">
-          <Sparkles className="h-4 w-4 text-yellow-400" />
+          <Bot className="h-4 w-4 text-yellow-400" />
           <span className="text-sm font-bold text-white">AI পারফরম্যান্স বিশ্লেষণ</span>
           <span className="text-xs px-2 py-0.5 rounded-full font-bengali"
             style={{ background: "rgba(212,175,55,0.25)", color: "#D4AF37", border: "1px solid rgba(212,175,55,0.35)" }}>
@@ -229,14 +229,14 @@ Be specific, data-driven, and compassionate. Consider the Islamic academic conte
             <div className="flex flex-col items-center justify-center py-8 gap-4 text-center">
               <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
                 style={{ background: "linear-gradient(135deg,#003d2b,#006241)" }}>
-                <Sparkles className="h-6 w-6 text-yellow-400" />
+                <Bot className="h-6 w-6 text-yellow-400" />
               </div>
               <div>
                 <p className="font-semibold text-slate-800 dark:text-white font-bengali">AI দিয়ে সম্পূর্ণ পারফরম্যান্স বিশ্লেষণ করুন</p>
                 <p className="text-sm text-slate-500 font-bengali mt-1">পড়া, উপস্থিতি ও বেতনের তথ্য মিলিয়ে AI একটি সামগ্রিক মূল্যায়ন তৈরি করবে</p>
               </div>
               <Button onClick={runAnalysis} className="gap-2 bg-primary hover:bg-primary/90 text-white">
-                <Sparkles className="h-4 w-4" /> বিশ্লেষণ শুরু করুন
+                <Bot className="h-4 w-4" /> বিশ্লেষণ শুরু করুন
               </Button>
             </div>
           )}
@@ -363,7 +363,7 @@ Be specific, data-driven, and compassionate. Consider the Islamic academic conte
               {analysis.motivational_note && (
                 <div className="rounded-xl p-4 border font-bengali text-center"
                   style={{ background: "linear-gradient(135deg,#fff9e6,#fffbf0)", borderColor: "#D4AF37" }}>
-                  <p className="text-xs text-amber-800 leading-relaxed italic">✨ {analysis.motivational_note}</p>
+                  <p className="text-xs text-amber-800 leading-relaxed italic">💡 {analysis.motivational_note}</p>
                 </div>
               )}
             </div>

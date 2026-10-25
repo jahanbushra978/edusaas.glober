@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { appClient } from "@/api/appClient";
-import { ChevronLeft, ChevronRight, ExternalLink, Sparkles, Building2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, ExternalLink, Tag, Building2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLanguage } from "@/lib/LanguageContext";
 
@@ -196,7 +196,7 @@ export default function SponsorShowcase({ sponsors: propSponsors }) {
                 backdropFilter: "blur(4px)",
               }}
             >
-              <Sparkles className="w-2.5 h-2.5" />
+              <Tag className="w-2.5 h-2.5" />
               {isBn ? "বিজ্ঞাপন" : "Sponsored"}
             </div>
           </div>
@@ -260,7 +260,7 @@ export default function SponsorShowcase({ sponsors: propSponsors }) {
                           <div
                             className="flex items-center gap-1 px-2 py-1 rounded-full text-[8px] sm:text-[10px] font-bold uppercase tracking-wider text-[#D4AF37] border border-[#D4AF37]/30 bg-[#002f1c]/90 backdrop-blur-sm shadow-md"
                           >
-                            <Sparkles className="w-2.5 h-2.5" />
+                            <Tag className="w-2.5 h-2.5" />
                             {isBn ? "বিজ্ঞাপন" : "Sponsored"}
                           </div>
                         </div>
@@ -317,7 +317,7 @@ export default function SponsorShowcase({ sponsors: propSponsors }) {
                         >
                           {/* Top Badge */}
                           <div className="flex items-center gap-1 px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider text-[#D4AF37] border border-[#D4AF37]/30 bg-[#002f1c] self-start">
-                            <Sparkles className="w-2.5 h-2.5" />
+                            <Tag className="w-2.5 h-2.5" />
                             {isBn ? "বিজ্ঞাপন" : "Sponsored"}
                           </div>
 
@@ -383,7 +383,7 @@ export default function SponsorShowcase({ sponsors: propSponsors }) {
                         {/* Premium badge */}
                         <div className="absolute top-2 left-2 z-20">
                           <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full text-[8px] font-bold uppercase tracking-wider text-[#D4AF37] border border-[#D4AF37]/35 bg-[#002f1c]/90 backdrop-blur-sm shadow-md">
-                            <Sparkles className="w-2 h-2" />
+                            <Tag className="w-2 h-2" />
                             {isBn ? "বিজ্ঞাপন" : "Sponsored"}
                           </div>
                         </div>

@@ -2,7 +2,7 @@
  * Anthropic Claude Provider Adapter with Tool Calling Support
  */
 
-import { sanitizeAIResponse } from "../sanitizer";
+import { sanitizeAIResponse } from "../sanitizer.js";
 
 const DEFAULT_MODEL = "claude-3-5-sonnet-20241022";
 

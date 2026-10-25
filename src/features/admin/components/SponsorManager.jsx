@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
-  Plus, Pencil, Trash2, Loader2, ExternalLink, Sparkles, Building2,
+  Plus, Pencil, Trash2, Loader2, ExternalLink, Tag, Building2,
   Eye, MousePointerClick, TrendingUp, Calendar,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -463,7 +463,7 @@ export default function SponsorManager() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h2 className="text-xl font-extrabold text-[#052E2B] flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-[#D4AF37]" />
+            <Tag className="h-5 w-5 text-[#D4AF37]" />
             Sponsor Management
           </h2>
           <p className="text-sm text-slate-500 mt-0.5">
@@ -486,7 +486,7 @@ export default function SponsorManager() {
       <div className="grid grid-cols-1 sm:grid-cols-2 sm:grid-cols-4 gap-4">
         {[
           { label: "মোট স্পনসর", value: sponsors.length, icon: Building2,         color: "#006241" },
-          { label: "সক্রিয়",      value: sponsors.filter((s) => s.is_active && isScheduleActive(s)).length, icon: Sparkles, color: "#D4AF37" },
+          { label: "সক্রিয়",      value: sponsors.filter((s) => s.is_active && isScheduleActive(s)).length, icon: Tag, color: "#D4AF37" },
           { label: "মোট ভিউ",    value: totalViews,  icon: Eye,                  color: "#1a56db" },
           { label: "মোট ক্লিক",  value: totalClicks, icon: MousePointerClick,     color: "#0e9f6e" },
         ].map((stat) => (
@@ -522,7 +522,7 @@ export default function SponsorManager() {
             </div>
           ) : sponsors.length === 0 ? (
             <div className="text-center py-16 text-slate-400">
-              <Sparkles className="h-12 w-12 mx-auto mb-3 opacity-20" />
+              <Tag className="h-12 w-12 mx-auto mb-3 opacity-20" />
               <p className="font-medium">কোনো স্পনসর নেই।</p>
               <p className="text-sm mt-1">উপরের বাটন থেকে নতুন স্পনসর যোগ করুন।</p>
             </div>
@@ -666,7 +666,7 @@ export default function SponsorManager() {
         <DialogContent className="w-[95vw] sm:max-w-xl max-h-[90vh] overflow-y-auto rounded-[24px]">
           <DialogHeader>
             <DialogTitle className="text-lg font-bold text-[#052E2B] flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-[#D4AF37]" />
+              <Tag className="h-5 w-5 text-[#D4AF37]" />
               {editing ? "স্পনসর সম্পাদনা করুন" : "নতুন স্পনসর যোগ করুন"}
             </DialogTitle>
           </DialogHeader>

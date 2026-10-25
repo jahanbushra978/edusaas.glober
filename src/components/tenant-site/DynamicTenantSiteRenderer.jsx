@@ -5,7 +5,7 @@ import WelcomeSetupScreen from "./WelcomeSetupScreen";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Bell, Sparkles, Image as ImageIcon, PhoneCall, Calendar, ShieldCheck, Mail, MapPin, ArrowRight, CheckCircle2, Menu as MenuIcon, X, GraduationCap, Users, UserCheck, Building2, ChevronDown, Send
+import { Bell, Globe, Image as ImageIcon, PhoneCall, Calendar, ShieldCheck, Mail, MapPin, ArrowRight, CheckCircle2, Menu as MenuIcon, X, GraduationCap, Users, UserCheck, Building2, ChevronDown, Send
 } from "lucide-react";
 import Link from "next/link";
 import { appClient } from "@/api/appClient";
@@ -54,7 +54,7 @@ export default function DynamicTenantSiteRenderer({
 
   const branding = whiteLabel?.branding_json || {};
   const formattedSlugName = slug ? decodeURIComponent(slug).replace(/-/g, ' ').split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ') : "";
-  const displayName = branding?.institute_name || orgName || formattedSlugName || "School";
+  const displayName = branding?.institutionName || branding?.institute_name || orgName || formattedSlugName || "School";
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -713,7 +713,7 @@ export default function DynamicTenantSiteRenderer({
 
                   <div className={`max-w-4xl mx-auto space-y-6 relative z-10 flex flex-col ${alignClass}`}>
                     <Badge className="px-3.5 py-1 text-xs text-white border-none shadow-md inline-flex items-center gap-1.5" style={{ backgroundColor: activeThemeColor }}>
-                      <Sparkles size={12} /> Official Institution Website
+                      <Globe size={12} /> Official Institution Website
                     </Badge>
 
                     {sec.title && (

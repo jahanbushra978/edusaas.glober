@@ -4,7 +4,7 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Building2, CheckCircle2, MapPin, Search, Edit3, 
-  Sparkles, Save, X
+  Save, X
 } from "lucide-react";
 
 export default function OnboardingRequestsPage() {
@@ -69,7 +69,7 @@ export default function OnboardingRequestsPage() {
       });
       const json = await res.json();
       if (json.ok) {
-        setToastMsg("✨ কাস্টমাইজেশন সংরক্ষিত হয়েছে!");
+        setToastMsg("✓ কাস্টমাইজেশন সংরক্ষিত হয়েছে!");
         setEditingItem(null);
         fetchRequests();
       }
@@ -96,7 +96,7 @@ export default function OnboardingRequestsPage() {
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b pb-5">
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold mb-2">
-            <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
+            <Building2 className="h-3.5 w-3.5 text-emerald-600" />
             <span>EduSaaS ওয়েবসাইট এপ্রুভাল প্যানেল</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 font-serif">

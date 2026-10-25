@@ -6,15 +6,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Layers, Trash2, ArrowUp, ArrowDown, Eye, Save, Sparkles, LayoutTemplate, Image as ImageIcon, Bell, HelpCircle, PhoneCall,
+  Layers, Trash2, ArrowUp, ArrowDown, Eye, Save, Users, LayoutTemplate, Image as ImageIcon, Bell, HelpCircle, PhoneCall,
   BookOpen, Calendar, Video as VideoIcon, BarChart2, MousePointerClick, PanelBottom, ExternalLink, Upload, CheckCircle2, Link as LinkIcon, PlusCircle, Code, Monitor, Menu as MenuIcon, RefreshCw, Wand2, Camera, Building2, X, Lock
 } from "lucide-react";
 import DynamicTenantSiteRenderer from "@/components/tenant-site/DynamicTenantSiteRenderer";
 
 const SECTION_TEMPLATES = [
   { type: "hero", name: "1. Hero Banner Slider", icon: LayoutTemplate, defaultTitle: "স্বাগতম আমাদের প্রতিষ্ঠানে", defaultSubtitle: "একটি আধুনিক দ্বীনি ও প্রাতিষ্ঠানিক শিক্ষাঙ্গন" },
-  { type: "about", name: "2. About Us Section", icon: Sparkles, defaultTitle: "আমাদের প্রতিষ্ঠান সম্পর্কে", defaultSubtitle: "মানসম্মত শিক্ষা ও চরিত্র গঠনের অঙ্গীকার" },
-  { type: "teachers", name: "3. Teacher Profiles Grid", icon: Sparkles, defaultTitle: "আমাদের সম্মানিত শিক্ষকবৃন্দ", defaultSubtitle: "অভিজ্ঞ ও নিবেদিতপ্রাণ শিক্ষকমণ্ডলী" },
+  { type: "about", name: "2. About Us Section", icon: Building2, defaultTitle: "আমাদের প্রতিষ্ঠান সম্পর্কে", defaultSubtitle: "মানসম্মত শিক্ষা ও চরিত্র গঠনের অঙ্গীকার" },
+  { type: "teachers", name: "3. Teacher Profiles Grid", icon: Users, defaultTitle: "আমাদের সম্মানিত শিক্ষকবৃন্দ", defaultSubtitle: "অভিজ্ঞ ও নিবেদিতপ্রাণ শিক্ষকমণ্ডলী" },
   { type: "notices", name: "4. Notice Board", icon: Bell, defaultTitle: "জরুরী নোটিশ ও সংবাদ", defaultSubtitle: "সাম্প্রতিক নোটিশ ও নোটিফিকেশন" },
   { type: "gallery", name: "5. Photo & Video Gallery", icon: ImageIcon, defaultTitle: "ফটো ও ভিডিও গ্যালারী", defaultSubtitle: "ক্যাম্পাস জীবন ও ইভেন্টসমূহ" },
   { type: "courses", name: "6. Courses & Academics", icon: BookOpen, defaultTitle: "শিক্ষা কোর্স ও বিভাগসমূহ", defaultSubtitle: "আমাদের বিভিন্ন বিভাগ ও শিক্ষা কার্যক্রম" },
@@ -269,7 +269,7 @@ export default function ElementorGradeWebsiteBuilderPage() {
     <div className="space-y-6 p-6 bg-slate-50 min-h-screen">
       {toast && (
         <div className="fixed bottom-5 right-5 z-50 rounded-xl bg-slate-900 text-white px-5 py-3 text-xs shadow-2xl border border-teal-500/30 flex items-center gap-2 animate-in fade-in slide-in-from-bottom-2">
-          <Sparkles size={16} className="text-teal-400 shrink-0" />
+          <CheckCircle2 size={16} className="text-teal-400 shrink-0" />
           <span>{toast}</span>
         </div>
       )}
@@ -439,7 +439,7 @@ export default function ElementorGradeWebsiteBuilderPage() {
             <Card className="border-teal-400 shadow-md bg-white">
               <CardHeader className="p-3.5 border-b border-slate-100 bg-slate-900 text-white rounded-t-xl flex flex-row items-center justify-between">
                 <CardTitle className="text-xs font-bold uppercase flex items-center gap-2 text-teal-400">
-                  <Sparkles size={16} /> Editing Block: {selectedSection.type}
+                  <Layers size={16} /> Editing Block: {selectedSection.type}
                 </CardTitle>
                 <div className="flex items-center gap-1">
                   <Button variant="ghost" size="icon" className="h-7 w-7 text-slate-300 hover:text-white" onClick={() => moveSection(sections.findIndex(s=>s.id===selectedSection.id), -1)}>
@@ -639,7 +639,7 @@ export default function ElementorGradeWebsiteBuilderPage() {
             <CardContent className="p-3">
               <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
                 {SECTION_TEMPLATES.map((tpl) => {
-                  const IconComponent = typeof tpl.icon === "function" || typeof tpl.icon === "object" ? tpl.icon : Sparkles;
+                  const IconComponent = typeof tpl.icon === "function" || typeof tpl.icon === "object" ? tpl.icon : Layers;
                   return (
                     <button
                       key={tpl.type}

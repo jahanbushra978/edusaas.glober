@@ -70,16 +70,46 @@
   }
 
   /* Language specific font overrides */
-  [lang="bn"], .font-bn, .font-bengali {
-    font-family: var(--font-hind-siliguri), sans-serif !important;
+  [lang="bn"], .font-bn, .font-bengali, .font-hind-siliguri, .bengali-text {
+    font-family: var(--font-hind-siliguri), 'Hind Siliguri', sans-serif !important;
   }
   [lang="ar"], .font-ar {
-    font-family: var(--font-noto-sans-arabic), sans-serif !important;
+    font-family: 'Amiri Quran', var(--font-amiri), 'Scheherazade New', 'Noto Sans Arabic', serif !important;
   }
   [lang="en"], .font-en {
     font-family: var(--font-inter), sans-serif !important;
   }
 }
+
+/* ── Authentic Hafizi Quran Calligraphy Typography ── */
+.font-hafizi-quran,
+.quran-text,
+.hafizi-script {
+  font-family: 'Amiri Quran', var(--font-amiri), 'Scheherazade New', 'KFGQPC Uthmanic Script HAFS', 'Traditional Arabic', serif !important;
+  direction: rtl;
+  text-align: right;
+  line-height: 2.3;
+  letter-spacing: 0.015em;
+  word-spacing: 0.12em;
+  font-feature-settings: "cv01" 1, "cv02" 1, "cv08" 1, "ss01" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── English Italic Typography Styling ── */
+.font-english-italic,
+.english-italic {
+  font-family: var(--font-inter), system-ui, sans-serif !important;
+  font-style: italic !important;
+}
+
+/* ── Tajweed Rule Color Coding ── */
+.tajweed-madd { color: #f43f5e; font-weight: 700; } /* Ruby Red for 4/6 Harakat Elongation */
+.tajweed-ghunnah { color: #10b981; font-weight: 700; } /* Emerald Green for Noon/Meem Mushaddad */
+.tajweed-ikhfa { color: #06b6d4; font-weight: 700; } /* Cyan / Teal for Nasal Hiding */
+.tajweed-idgham { color: #a855f7; font-weight: 700; } /* Purple for Merging */
+.tajweed-qalqalah { color: #f59e0b; font-weight: 700; } /* Amber for Echoing Letters */
+.tajweed-iqlab { color: #ec4899; font-weight: 700; } /* Pink for Noon to Meem conversion */
+.tajweed-waqf { color: #64748b; font-weight: 700; } /* Slate for Stopping Marks */
 
 /* ── Prevent faux italic on Bengali & Arabic scripts ──
    These font families lack true italic variants. Synthetic italic
@@ -88,6 +118,7 @@
 [lang="ar"] .italic,
 .font-bengali .italic,
 .font-arabic .italic,
+.font-hafizi-quran .italic,
 :where([lang="bn"], [lang="ar"]) em,
 :where([lang="bn"], [lang="ar"]) i {
   font-style: normal;
@@ -95,6 +126,7 @@
 
 /* Ensure Bengali and Arabic text never gets synthetic italic */
 .font-hind-siliguri,
+.font-hafizi-quran,
 .font-noto-sans-arabic {
   font-synthesis: none;
 }

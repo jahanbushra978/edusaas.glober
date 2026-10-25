@@ -46,8 +46,8 @@ export async function POST(request) {
     // H3 fix: previously any file type/size was forwarded straight to
     // Cloudinary. Enforce a MIME allowlist and per-category size ceiling so a
     // compromised/malicious admin account can't burn through the Cloudinary
-    // quota with oversized files or upload something like HTML/executables.
-    const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif", "image/svg+xml"]);
+    // Disallow SVG to prevent stored XSS injection attacks. Allowed safe raster formats: JPEG, PNG, WebP, GIF.
+    const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
     const ALLOWED_VIDEO_TYPES = new Set(["video/mp4", "video/quicktime", "video/x-msvideo", "video/x-matroska", "video/webm"]);
     const ALLOWED_DOCUMENT_TYPES = new Set(["application/pdf"]);
     const MAX_IMAGE_BYTES = 10 * 1024 * 1024; // 10MB

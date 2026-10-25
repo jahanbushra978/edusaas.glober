@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabase";
+import { createSupabaseAdminClient } from "@/lib/supabase-admin";
 import { notFound } from "next/navigation";
 import DynamicTenantSiteRenderer from "@/components/tenant-site/DynamicTenantSiteRenderer";
 import PublicHomePage from "../../(site)/page";
@@ -6,15 +6,38 @@ import PublicHomePage from "../../(site)/page";
 export async function generateMetadata({ params }) {
   const resolvedParams = await params;
   const slug = resolvedParams?.slug || "rahmania";
-  const formattedName = decodeURIComponent(slug)
-    .replace(/-/g, " ")
-    .split(" ")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
+
+  if (slug === "rahmania" || slug === "default") {
+    return {
+      title: "রহমানিয়া ইনস্টিটিউট | Rahmania Institute — দ্বীনি ও আধুনিক শিক্ষা প্রতিষ্ঠান",
+      description: "গাজীপুরের দ্বীনি ও আধুনিক শিক্ষা প্রতিষ্ঠান",
+    };
+  }
+
+  const cleanSlug = String(slug)
+    .toLowerCase()
+    .trim()
+    .replace(/%20|\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
+
+  const admin = createSupabaseAdminClient();
+  const { data: org } = await admin
+    .from("organizations")
+    .select("name, status")
+    .or(`slug.eq.${cleanSlug},slug.eq.${slug}`)
+    .maybeSingle();
+
+  if (!org || org.status !== "active") {
+    return {
+      title: "404 — Not Found",
+      description: "Organization or page not found.",
+      robots: { index: false, follow: false },
+    };
+  }
 
   return {
-    title: `${formattedName} — Official Website`,
-    description: `Official website and portal for ${formattedName}`,
+    title: `${org.name} — Official Website`,
+    description: `Official website and portal for ${org.name}`,
   };
 }
 
@@ -39,24 +62,23 @@ export default async function DynamicTenantSitePage({ params }) {
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
 
-  // Look up organization by slug
-  const { data: org } = await supabase
+  const admin = createSupabaseAdminClient();
+
+  // Look up organization by slug using server admin client
+  const { data: org } = await admin
     .from("organizations")
     .select("id, name, slug, status, theme_config, logo_url")
     .or(`slug.eq.${cleanSlug},slug.eq.${slug}`)
     .maybeSingle();
 
-  if (org?.status === "suspended") notFound();
+  if (!org || org.status !== "active") {
+    notFound();
+  }
 
-  const activeOrg = org || {
-    id: `org_${cleanSlug}`,
-    name: formattedName || "Educational Institution",
-    slug: cleanSlug,
-    theme_config: { primary_color: "#0f766e" },
-  };
+  const activeOrg = org;
 
   // Fetch published sections
-  const { data: sections } = await supabase
+  const { data: sections } = await admin
     .from("page_sections")
     .select("*")
     .eq("organization_id", activeOrg.id)
@@ -64,7 +86,7 @@ export default async function DynamicTenantSitePage({ params }) {
     .order("sort_order", { ascending: true });
 
   // Fetch white label config
-  const { data: whiteLabel } = await supabase
+  const { data: whiteLabel } = await admin
     .from("white_label_configs")
     .select("*")
     .eq("organization_id", activeOrg.id)

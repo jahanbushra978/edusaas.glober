@@ -30,35 +30,47 @@ export default function Footer({ user: userProp }) {
                 </div>
               </div>
               <div className={`min-w-0 flex-1 text-center sm:text-left ${lang === "ar" ? "sm:text-right" : ""}`}>
-                <p className="font-extrabold italic text-white text-sm md:text-base leading-tight tracking-tight">{lang === "bn" ? t.contactSection.title : lang === "ar" ? t.contactSection.title : instNameEn}</p>
-                <p className="text-[11px] md:text-xs italic mt-1" style={{ color: "rgba(212,175,55,0.9)" }}>{t.footer.tagline}</p>
+                <p className="font-extrabold italic text-white text-sm md:text-base leading-tight tracking-tight">{lang === "bn" ? (t?.contactSection?.title || "রহমানিয়া ইনস্টিটিউট") : lang === "ar" ? (t?.contactSection?.title || "معهد الرحمانية") : instNameEn}</p>
+                <p className="text-[11px] md:text-xs italic mt-1" style={{ color: "rgba(212,175,55,0.9)" }}>{t?.footer?.tagline || "দ্বীনি ও আধুনিক শিক্ষার সমন্বিত প্রতিষ্ঠান"}</p>
               </div>
             </div>
             <p className={`text-xs text-white/70 italic leading-relaxed ${lang === "ar" ? "text-right" : "text-left"}`}>
-              {t.footer.mission}
+              {t?.footer?.mission || "বিশুদ্ধ কুরআন শিক্ষা ও আদর্শ চরিত্র গঠনের বিশ্বস্ত প্রতিষ্ঠান।"}
             </p>
           </div>
           <div>
-            <p className="font-bold italic text-sm mb-4" style={{ color: "#D4AF37" }}>{lang === "bn" ? "দ্রুত লিঙ্ক" : t.footer.quickLinks}</p>
+            <p className="font-bold italic text-sm mb-4" style={{ color: "#D4AF37" }}>{lang === "bn" ? "দ্রুত লিঙ্ক" : (t?.footer?.quickLinks || "Quick Links")}</p>
             <div className="space-y-2">
+              <Link href="/ai-quran-learning" className={`flex items-center gap-1.5 text-xs italic text-amber-300 hover:text-amber-200 transition-colors duration-200 ${lang === "ar" ? "flex-row-reverse" : ""}`}>
+                <ChevronRight className={`h-3 w-3 shrink-0 text-[#D4AF37] ${lang === "ar" ? "rotate-180" : ""}`} />
+                {lang === "bn" ? "🎯 এআই কোরআন শিক্ষা (Duolingo)" : "🎯 AI Quran Learning"}
+              </Link>
+              <Link href="/quran-tutor/live-class" className={`flex items-center gap-1.5 text-xs italic text-emerald-300 hover:text-emerald-200 transition-colors duration-200 ${lang === "ar" ? "flex-row-reverse" : ""}`}>
+                <ChevronRight className={`h-3 w-3 shrink-0 text-[#D4AF37] ${lang === "ar" ? "rotate-180" : ""}`} />
+                {lang === "bn" ? "🎙️ লাইভ ভয়েস ক্লাসরুম" : "🎙️ Live Voice Classroom"}
+              </Link>
+              <Link href="/quran-tutor" className={`flex items-center gap-1.5 text-xs italic text-white/70 hover:text-white/90 transition-colors duration-200 ${lang === "ar" ? "flex-row-reverse" : ""}`}>
+                <ChevronRight className={`h-3 w-3 shrink-0 text-[#D4AF37] ${lang === "ar" ? "rotate-180" : ""}`} />
+                {lang === "bn" ? "নূর AI শিক্ষক স্টুডিও" : "Nur AI Quran Tutor"}
+              </Link>
               <Link href="/StudentLogin" className={`flex items-center gap-1.5 text-xs italic text-white/70 hover:text-white/90 transition-colors duration-200 ${lang === "ar" ? "flex-row-reverse" : ""}`}>
                 <ChevronRight className={`h-3 w-3 shrink-0 text-[#D4AF37] ${lang === "ar" ? "rotate-180" : ""}`} />
-                {t.portals.studentTitle}
+                {t?.portals?.studentTitle || "Student Portal"}
               </Link>
               <Link href="/TeacherLogin" className={`flex items-center gap-1.5 text-xs italic text-white/70 hover:text-white/90 transition-colors duration-200 ${lang === "ar" ? "flex-row-reverse" : ""}`}>
                 <ChevronRight className={`h-3 w-3 shrink-0 text-[#D4AF37] ${lang === "ar" ? "rotate-180" : ""}`} />
-                {t.portals.teacherTitle}
+                {t?.portals?.teacherTitle || "Teacher Portal"}
               </Link>
               {user?.role === "admin" && (
                 <Link href="/admin" className={`flex items-center gap-1.5 text-xs italic text-white/70 hover:text-white/90 transition-colors duration-200 ${lang === "ar" ? "flex-row-reverse" : ""}`}>
                   <ChevronRight className={`h-3 w-3 shrink-0 text-[#D4AF37] ${lang === "ar" ? "rotate-180" : ""}`} />
-                  {lang === "bn" ? "অ্যাডমিন ড্যাশবোর্ড" : lang === "en" ? "Admin Dashboard" : t.portals.adminTitle}
+                  {lang === "bn" ? "অ্যাডমিন ড্যাশবোর্ড" : lang === "en" ? "Admin Dashboard" : (t?.portals?.adminTitle || "Admin Dashboard")}
                 </Link>
               )}
             </div>
           </div>
           <div>
-            <p className="font-bold italic text-sm mb-4" style={{ color: "#D4AF37" }}>{t.footer.social}</p>
+            <p className="font-bold italic text-sm mb-4" style={{ color: "#D4AF37" }}>{t?.footer?.social || "সামাজিক মাধ্যম"}</p>
             <div className="flex gap-3">
               <a href="https://rahmaniainstitute.org" target="_blank" rel="noopener noreferrer" className="w-10 h-10 rounded-full flex items-center justify-center bg-transparent border border-[#D4AF37]/60 hover:border-[#D4AF37] hover:scale-110 transition-all duration-200" aria-label="Website">
                 <Globe className="h-4 w-4 text-[#D4AF37]" />
@@ -72,26 +84,26 @@ export default function Footer({ user: userProp }) {
             </div>
           </div>
           <div>
-            <p className="font-bold italic text-sm mb-4" style={{ color: "#D4AF37" }}>{t.footer.contact}</p>
+            <p className="font-bold italic text-sm mb-4" style={{ color: "#D4AF37" }}>{t?.footer?.contact || "যোগাযোগ"}</p>
             <div className="space-y-2.5">
               <div className="flex items-center gap-2 text-white/70 text-xs italic"><Phone className="h-4 w-4 shrink-0" style={{ color: "#D4AF37" }} /> +8801906898939</div>
               <div className="flex items-center gap-2 text-white/70 text-xs italic"><Mail className="h-4 w-4 shrink-0" style={{ color: "#D4AF37" }} /> rahmaniainstitute.org@gmail.com</div>
-              <div className="flex items-start gap-2 text-white/70 text-xs italic"><MapPin className="h-4 w-4 mt-0.5 shrink-0" style={{ color: "#D4AF37" }} />{lang === "bn" ? "হাড়িনাল, গাজীপুর সিটি, ঢাকা, বাংলাদেশ" : `${t.contactSection.harinal}, ${t.contactSection.dhaka}`}</div>
+              <div className="flex items-start gap-2 text-white/70 text-xs italic"><MapPin className="h-4 w-4 mt-0.5 shrink-0" style={{ color: "#D4AF37" }} />{lang === "bn" ? "হাড়িনাল, গাজীপুর সিটি, ঢাকা, বাংলাদেশ" : `${t?.contactSection?.harinal || "Harinal"}, ${t?.contactSection?.dhaka || "Dhaka"}`}</div>
             </div>
           </div>
         </div>
         <div className="py-8 border-b border-white/10 text-center px-2">
           <p className="text-sm md:text-base font-medium italic leading-relaxed break-words" style={{ color: "#D4AF37" }}>
-            {t.footer.quote.trim().replace(/^"+|"+$/g, "").trim()}
+            {(t?.footer?.quote || "জ্ঞানার্জন করা প্রত্যেক মুসলিমের উপর ফরজ।").trim().replace(/^"+|"+$/g, "").trim()}
           </p>
-          <p className="text-xs text-white/55 mt-3 italic">— {lang === "bn" ? t.contactSection.title : lang === "ar" ? t.contactSection.title : instNameEn}</p>
+          <p className="text-xs text-white/55 mt-3 italic">— {lang === "bn" ? (t?.contactSection?.title || "রহমানিয়া ইনস্টিটিউট") : lang === "ar" ? (t?.contactSection?.title || "معهد الرحمانية") : instNameEn}</p>
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 text-center sm:text-left">
           <p className="text-white/50 text-[10px] md:text-[11px] italic">
-            © 2026 {lang === "bn" ? t.contactSection.title : lang === "ar" ? t.contactSection.title : instNameEn}. {t.common.copyright}
+            © 2026 {lang === "bn" ? (t?.contactSection?.title || "রহমানিয়া ইনস্টিটিউট") : lang === "ar" ? (t?.contactSection?.title || "معهد الرحمانية") : instNameEn}. {t?.common?.copyright || "All rights reserved."}
           </p>
           <p className="text-[10px] md:text-[11px] italic flex flex-wrap items-center justify-center sm:justify-end gap-x-1 gap-y-0.5">
-            <span className="text-white/50 not-italic">{lang === "bn" ? "Created by" : t.common.createdBy}</span>
+            <span className="text-white/50 not-italic">{lang === "bn" ? "Created by" : (t?.common?.createdBy || "Created by")}</span>
             <span className="font-medium not-italic" style={{ color: "#D4AF37" }}>Rakibul Islam</span>
             <span className="font-medium not-italic" style={{ color: "#D4AF37" }}>— 01576600265</span>
           </p>

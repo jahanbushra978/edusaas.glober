@@ -7,13 +7,13 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import {
-  Layers, Plus, Trash2, ArrowUp, ArrowDown, Eye, Save, Sparkles, LayoutTemplate, Image, Bell, HelpCircle, PhoneCall
+  Layers, Plus, Trash2, ArrowUp, ArrowDown, Eye, Save, Users, LayoutTemplate, Image, Bell, HelpCircle, PhoneCall
 } from "lucide-react";
 
 const SECTION_TEMPLATES = [
   { type: "hero", name: "Hero Banner Slider", icon: LayoutTemplate, defaultTitle: "রহমানিয়া মডেল ইনস্টিটিউট", defaultSubtitle: "একটি আধুনিক দ্বীনি ও প্রাতিষ্ঠানিক শিক্ষাঙ্গন" },
   { type: "notices", name: "Notice Board", icon: Bell, defaultTitle: "জরুরী নোটিশ ও সংবাদ", defaultSubtitle: "সাম্প্রতিক নোটিশ ও নোটিফিকেশন" },
-  { type: "teachers", name: "Teacher Profiles", icon: Sparkles, defaultTitle: "আমাদের সম্মানিত শিক্ষকবৃন্দ", defaultSubtitle: "অভিজ্ঞ শিক্ষকমণ্ডলীর তালিকা" },
+  { type: "teachers", name: "Teacher Profiles", icon: Users, defaultTitle: "আমাদের সম্মানিত শিক্ষকবৃন্দ", defaultSubtitle: "অভিজ্ঞ শিক্ষকমণ্ডলীর তালিকা" },
   { type: "gallery", name: "Photo & Video Gallery", icon: Image, defaultTitle: "ফটো ও ভিডিও গ্যালারী", defaultSubtitle: "ক্যাম্পাস জীবন ও সাম্প্রতিক ইভেন্টসমূহ" },
   { type: "faq", name: "FAQ Accordion", icon: HelpCircle, defaultTitle: "সাধারণ প্রশ্নাবলী (FAQ)", defaultSubtitle: "ভর্তি ও অন্যান্য তথ্যের নিয়মিত উত্তর" },
   { type: "contact", name: "Contact & Location", icon: PhoneCall, defaultTitle: "যোগাযোগ ও ঠিকানা", defaultSubtitle: "আমাদের সাথে যোগাযোগের ঠিকানা" },

@@ -7,6 +7,12 @@ import { useAIChat } from "../hooks/useAIChat";
 import FeeConfirmationCard from "./FeeConfirmationCard";
 import ReceiptCard from "./ReceiptCard";
 import AISettingsModal from "./AISettingsModal";
+import NurTeachingEngine from "./NurTeachingEngine";
+import MakhrajVisualizer from "./MakhrajVisualizer";
+import InteractiveVoiceTutor from "./InteractiveVoiceTutor";
+import AdvancedHifzAssistant from "./AdvancedHifzAssistant";
+import AIPracticeGenerator from "./AIPracticeGenerator";
+import AIOralExamChamber from "./AIOralExamChamber";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,6 +28,13 @@ import {
   Copy,
   Check,
   ShieldCheck,
+  BookOpen,
+  Volume2,
+  Mic,
+  MicOff,
+  Award,
+  Zap,
+  GraduationCap,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -35,13 +48,19 @@ export default function AIChatDrawer({ currentUser }) {
     pathname?.startsWith("/student")
   );
   const isPublicPage = !isPortalPage;
-  const showSettings = isPortalPage && Boolean(currentUser && currentUser.role);
+  // Always permit access to AI settings & BYOK key configuration for visitors and users
+  const showSettings = true;
 
   const [isOpen, setIsOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [aiTab, setAiTab] = useState("nur-lesson"); // Default to Nur Quran Lesson
   const [input, setInput] = useState("");
-  const [isFloatingVisible, setIsFloatingVisible] = useState(false); // Default false so no intrusive icon covers tables!
+  const [isFloatingVisible, setIsFloatingVisible] = useState(true); // Default visible for instant access
+  const [highlightZone, setHighlightZone] = useState("halq");
+  const [highlightLetter, setHighlightLetter] = useState("ع");
   const [copiedId, setCopiedId] = useState(null);
+  const [isDictating, setIsDictating] = useState(false);
+  const dictationRef = useRef(null);
   const messagesEndRef = useRef(null);
 
   const {
@@ -58,11 +77,11 @@ export default function AIChatDrawer({ currentUser }) {
     setIsSettingsOpen,
   } = useAIChat({
     defaultWelcomeText: isPublicPage
-      ? "আসসালামু আলাইকুম! আমি **রহমানিয়া ইনস্টিটিউট এআই সহকারী**।\n\n🚧 **আমাদের ওয়েবসাইটের কাজ বর্তমানে চলমান রয়েছে।**\nআপাতত মাদরাসার নূরানী, নাজেরা, হিফযুল কুরআন, কিতাব ও জেনারেল বিভাগ, ভর্তি তথ্য বা যোগাযোগ সংক্রান্ত প্রয়োজনীয় তথ্যের জন্য নিচের অপশন বা হেল্পলাইন ব্যবহার করতে পারেন।"
-      : "আসসালামু আলাইকুম! আমি **রহমানিয়া এআই সহকারী (Rahmania AI Assistant)**। ফি তথ্য, হাজিরা, ছাত্র সার্চ বা অ্যাকাডেমিক সামারি সংক্রান্ত যেকোনো সাহায্য করতে আমি প্রস্তুত।",
+      ? "আসসালামু আলাইকুম! আমি **রহমানিয়া নূর এআই কুরআন শিক্ষক ও সহকারী**।\n\nমাদরাসার নূরানী, নাজেরা ও হিফযুল কুরআন তিলাওয়াত, মাখরাজ অনুশীলন, কিংবা ভর্তি ও যোগাযোগ তথ্যের জন্য নিচের অপশনগুলো ব্যবহার করতে পারেন।"
+      : "আসসালামু আলাইকুম! আমি **রহমানিয়া নূর এআই (Nur AI Teacher)**। কুরআন শিক্ষা, হিফজ ট্র্যাকিং, ফি তথ্য, কিংবা অ্যাকাডেমিক সহায়তায় প্রস্তুত।",
   });
 
-  // Load floating trigger visibility preference (default: false to keep UI completely clean)
+  // Load floating trigger visibility preference (default: true)
   useEffect(() => {
     try {
       const saved = localStorage.getItem(STORAGE_FLOATING_KEY);
@@ -74,7 +93,12 @@ export default function AIChatDrawer({ currentUser }) {
 
   // Listen for global open event and keyboard shortcut (Alt+A or Ctrl+J)
   useEffect(() => {
-    const handleOpenEvent = () => setIsOpen(true);
+    const handleOpenEvent = (e) => {
+      if (e?.detail?.tab) {
+        setAiTab(e.detail.tab);
+      }
+      setIsOpen(true);
+    };
     const handleToggleEvent = () => setIsOpen((prev) => !prev);
 
     const handleKeyDown = (e) => {
@@ -128,6 +152,41 @@ export default function AIChatDrawer({ currentUser }) {
     setTimeout(() => setCopiedId(null), 2000);
   };
 
+  const toggleDictation = () => {
+    if (typeof window === "undefined") return;
+    const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRec) {
+      toast.error("আপনার ব্রাউজারে স্পিচ রিকগনিশন সমর্থন করে না।");
+      return;
+    }
+
+    if (isDictating) {
+      if (dictationRef.current) dictationRef.current.stop();
+      setIsDictating(false);
+    } else {
+      try {
+        const recognition = new SpeechRec();
+        recognition.lang = "bn-BD";
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.onstart = () => setIsDictating(true);
+        recognition.onresult = (event) => {
+          const transcript = event.results[0][0].transcript;
+          if (transcript) {
+            setInput((prev) => (prev ? prev + " " + transcript : transcript));
+          }
+          setIsDictating(false);
+        };
+        recognition.onerror = () => setIsDictating(false);
+        recognition.onend = () => setIsDictating(false);
+        dictationRef.current = recognition;
+        recognition.start();
+      } catch {
+        setIsDictating(false);
+      }
+    }
+  };
+
   const toggleFloatingBadge = (show) => {
     setIsFloatingVisible(show);
     try {
@@ -143,6 +202,9 @@ export default function AIChatDrawer({ currentUser }) {
   // Role-specific quick prompts (Public page = always guest, Portal pages = role-based)
   const role = isPublicPage ? "guest" : (currentUser?.role || "guest");
   const quickPrompts = [
+    { label: "📖 ইখফা ও গুন্নাহর নিয়ম", query: "কুরআন তিলাওয়াতে ইখফা ও ওয়াজিব গুন্নাহর নিয়ম সহজ বাংলায় বুঝিয়ে দিন।" },
+    { label: "🔊 ১৭টি মাখরাজের গাইড", query: "আরবি হরফের ১৭টি মাখরাজ ও ৫টি প্রধান অঙ্গের বিবরণ বুঝিয়ে বলুন।" },
+    { label: "⏱️ কলকলাহ ও মাদ্দের কায়েদা", query: "কলকলাহর ৫টি হরফ এবং মাদ্দে আসলীতে কত আলিফ টানতে হয়?" },
     ...(role === "guest"
       ? [
           { label: "🎓 ভর্তি তথ্য ও নিয়মাবলী", query: "রহমানিয়া ইনস্টিটিউটে নতুন ছাত্র ভর্তির নিয়ম ও আবেদনের উপায় কী?" },
@@ -176,23 +238,35 @@ export default function AIChatDrawer({ currentUser }) {
 
   return (
     <>
-      {/* 🌟 Discreet, Non-Intrusive Floating Tab (Only shown if user explicitly enables it) */}
+      {/* 🌟 Prominent & Elegant Floating Nur AI Button */}
       {isFloatingVisible && !isOpen && (
         <div className="fixed bottom-4 right-4 z-40 flex items-center gap-1 group">
           <button
-            onClick={() => setIsOpen(true)}
-            className="flex items-center gap-2 rounded-full border border-teal-500/30 bg-white/95 px-4 py-2.5 text-xs font-semibold text-teal-800 shadow-xl backdrop-blur-md transition-all hover:scale-105 hover:bg-teal-50 hover:shadow-2xl dark:border-teal-500/30 dark:bg-slate-900/95 dark:text-teal-300 dark:hover:bg-slate-800"
+            onClick={() => {
+              setAiTab("nur-lesson");
+              setIsOpen(true);
+            }}
+            className="flex items-center gap-2 rounded-full border border-emerald-500/40 bg-slate-900/95 px-4 py-2.5 text-xs font-semibold text-white shadow-2xl backdrop-blur-md transition-all hover:scale-105 hover:bg-emerald-950/90 hover:border-emerald-400 group-hover:ring-2 group-hover:ring-emerald-500/30"
           >
-            <Bot className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-            <span>Rahmania AI</span>
-            <span className="rounded bg-teal-100 px-1 py-0.2 font-mono text-[9px] text-teal-700 dark:bg-teal-950 dark:text-teal-300">
+            <div className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-sm">
+              <BookOpen className="h-3 w-3" />
+            </div>
+            <div className="text-left">
+              <div className="text-xs font-bold font-serif leading-tight text-emerald-300">
+                নূর AI কুরআন শিক্ষক
+              </div>
+              <div className="text-[9px] text-slate-400 leading-tight">
+                তাজবীদ ও মাখরাজ গাইড
+              </div>
+            </div>
+            <span className="rounded bg-emerald-950 border border-emerald-800 px-1 py-0.2 font-mono text-[9px] text-emerald-400 ml-1">
               Alt+A
             </span>
           </button>
           <button
             onClick={() => toggleFloatingBadge(false)}
-            className="h-6 w-6 rounded-full bg-slate-200/80 hover:bg-slate-300 text-slate-600 dark:bg-slate-800 dark:text-slate-400 flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
-            title="Hide floating trigger (Press Alt+A anytime to open)"
+            className="h-6 w-6 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
+            title="লুকিয়ে রাখুন (যে কোনো সময় Alt+A চেপে খুলুন)"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -203,7 +277,7 @@ export default function AIChatDrawer({ currentUser }) {
       {isOpen && (
         <div
           translate="no"
-          className="notranslate fixed inset-0 z-50 flex items-end sm:items-center justify-end sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
+          className="notranslate fixed inset-0 z-40 flex items-end sm:items-center justify-end sm:p-4 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
         >
           <div
             className={`flex flex-col overflow-hidden bg-white dark:bg-slate-900 shadow-2xl transition-all duration-300 border border-slate-200/90 dark:border-slate-800 ${
@@ -220,40 +294,48 @@ export default function AIChatDrawer({ currentUser }) {
             {/* ── HEADER ── */}
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800/80 bg-gradient-to-r from-teal-50/70 via-white to-emerald-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-teal-950/20 px-4 py-3">
               <div className="flex items-center gap-3 min-w-0">
-                <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-teal-600 to-emerald-600 text-white shadow-md shadow-teal-600/20">
-                  <Bot className="h-5 w-5" />
-                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-400 dark:border-slate-900"></span>
+                <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-md shadow-emerald-700/20">
+                  <BookOpen className="h-5 w-5" />
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-white bg-emerald-400 dark:border-slate-900 animate-pulse"></span>
                 </div>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
-                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate">
-                      Rahmania AI Assistant
+                    <h3 className="text-sm font-bold tracking-tight text-slate-900 dark:text-slate-100 truncate font-serif">
+                      নূর — এআই কুরআন শিক্ষক ও সহকারী
                     </h3>
-                    <Badge variant="outline" className="h-4 border-teal-500/30 px-1 text-[9px] font-semibold text-teal-700 dark:text-teal-300">
-                      Zero-Trust
+                    <Badge variant="outline" className="h-4 border-emerald-500/40 bg-emerald-950/20 px-1 text-[9px] font-semibold text-emerald-700 dark:text-emerald-300">
+                      Nur AI v1.0
                     </Badge>
                   </div>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                    {showSettings
-                      ? (config.provider === "openrouter" ? "OpenRouter Multi-Model" : config.provider.toUpperCase())
-                      : "ইনস্টিটিউট গাইড ও সহায়তা"}
+                    {config.apiKey ? (
+                      <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                        🔑 BYOK সক্রিয় ({config.provider.toUpperCase()})
+                      </span>
+                    ) : (
+                      <span>তাজবীদ • মাখরাজ • হিফজ • অ্যাকাডেমিক সহায়তা</span>
+                    )}
                   </p>
                 </div>
               </div>
 
               {/* Action Icons */}
-              <div className="flex items-center gap-1">
-                {showSettings && (
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => setIsSettingsOpen(true)}
-                    className="h-7 w-7 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:hover:bg-slate-800 dark:hover:text-slate-100"
-                    title="AI Provider & Model Settings"
-                  >
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                )}
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => setIsSettingsOpen(true)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all shadow-sm cursor-pointer ${
+                    config.apiKey
+                      ? "bg-emerald-100 hover:bg-emerald-200 text-emerald-800 dark:bg-emerald-950/70 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700"
+                      : "bg-amber-100 hover:bg-amber-200 text-amber-900 dark:bg-amber-950/80 dark:text-amber-200 border border-amber-300 dark:border-amber-600 animate-pulse"
+                  }`}
+                  title="Configure AI Provider & API Key (BYOK)"
+                >
+                  <Settings className="h-3.5 w-3.5" />
+                  <span className="whitespace-nowrap">
+                    {config.apiKey ? "BYOK সেটিং" : "API Key দিন"}
+                  </span>
+                </button>
                 <Button
                   variant="ghost"
                   size="icon"
@@ -284,8 +366,240 @@ export default function AIChatDrawer({ currentUser }) {
               </div>
             </div>
 
-            {/* ── MESSAGES BODY ── */}
+            {/* ── MODE SWITCHER TABS (Nur Quran Tutor & Makhraj Inside Nur) ── */}
+            <div className="flex border-b border-slate-100 dark:border-slate-800 bg-slate-50/90 dark:bg-slate-900/90 p-1.5 gap-1 text-xs overflow-x-auto scrollbar-none">
+              <button
+                type="button"
+                onClick={() => setAiTab("nur-lesson")}
+                className={`flex-shrink-0 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-medium transition-all ${
+                  aiTab === "nur-lesson"
+                    ? "bg-emerald-600 text-white shadow-sm font-semibold"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                <span className="whitespace-nowrap">শিক্ষক লুপ</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAiTab("nur-voice")}
+                className={`flex-shrink-0 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-medium transition-all ${
+                  aiTab === "nur-voice"
+                    ? "bg-gradient-to-r from-teal-700 to-emerald-700 text-white shadow-sm font-bold ring-1 ring-emerald-400"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                <Mic className="h-3.5 w-3.5 text-emerald-300" />
+                <span className="whitespace-nowrap">মুখে কুরআন শিক্ষা</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAiTab("makhraj")}
+                className={`flex-shrink-0 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-medium transition-all ${
+                  aiTab === "makhraj"
+                    ? "bg-emerald-700 text-white shadow-sm font-semibold"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                <Volume2 className="h-3.5 w-3.5" />
+                <span className="whitespace-nowrap">মাখরাজ</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAiTab("hifz")}
+                className={`flex-shrink-0 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-medium transition-all ${
+                  aiTab === "hifz"
+                    ? "bg-amber-600 text-white shadow-sm font-semibold"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                <Award className="h-3.5 w-3.5" />
+                <span className="whitespace-nowrap">হিফজ সহযোগী</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAiTab("drill")}
+                className={`flex-shrink-0 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-medium transition-all ${
+                  aiTab === "drill"
+                    ? "bg-cyan-700 text-white shadow-sm font-semibold"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                <Zap className="h-3.5 w-3.5" />
+                <span className="whitespace-nowrap">দুর্বলতা ড্রিল</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAiTab("exam")}
+                className={`flex-shrink-0 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-medium transition-all ${
+                  aiTab === "exam"
+                    ? "bg-indigo-700 text-white shadow-sm font-semibold"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                <GraduationCap className="h-3.5 w-3.5" />
+                <span className="whitespace-nowrap">মৌখিক পরীক্ষা</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setAiTab("chat")}
+                className={`flex-shrink-0 flex items-center justify-center gap-1.5 py-1.5 px-3 rounded-lg font-medium transition-all ${
+                  aiTab === "chat"
+                    ? "bg-white dark:bg-slate-800 text-teal-700 dark:text-teal-300 shadow-sm font-semibold border border-slate-200/80 dark:border-slate-700"
+                    : "text-slate-500 hover:text-slate-900 dark:hover:text-slate-200"
+                }`}
+              >
+                <Bot className="h-3.5 w-3.5" />
+                <span className="whitespace-nowrap">সহকারী চ্যাট</span>
+              </button>
+            </div>
+
+            {/* ── NUR INTERACTIVE TEACHING ENGINE VIEW ── */}
+            {aiTab === "nur-lesson" && (
+              <div className="flex-1 overflow-y-auto p-3 scrollbar-thin">
+                {/* Nur Identity Banner */}
+                <div className="flex items-center gap-3 bg-gradient-to-r from-emerald-950/80 to-teal-950/60 border border-emerald-700/40 rounded-xl px-3 py-2 mb-3 shadow-inner">
+                  <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-md shadow-emerald-600/30 shrink-0">
+                    <Bot className="w-4.5 h-4.5 text-white" />
+                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-emerald-300 border-2 border-slate-900 animate-pulse" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-xs font-extrabold text-emerald-300 font-serif">নূর — কুরআন AI শিক্ষক</div>
+                    <div className="text-[10px] text-slate-400 truncate">ব্যাখ্যা → ডেমো → অনুশীলন → মূল্যায়ন → সংশোধন → পুনরাবৃত্তি</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsSettingsOpen(true)}
+                    className={`shrink-0 text-[10px] font-semibold px-2 py-0.5 rounded-md border transition-all cursor-pointer ${
+                      config.apiKey
+                        ? "bg-emerald-900/60 border-emerald-600/70 text-emerald-300 hover:bg-emerald-800"
+                        : "bg-amber-900/80 border-amber-500/80 text-amber-200 hover:bg-amber-800 animate-pulse"
+                    }`}
+                    title="AI API Key ও মডেল সেটিংস"
+                  >
+                    {config.apiKey ? "🔑 BYOK" : "⚙️ Key দিন"}
+                  </button>
+                </div>
+                <NurTeachingEngine
+                  studentContext={currentUser}
+                  onMakhrajHighlight={(zone, letter) => {
+                    if (zone) setHighlightZone(zone);
+                    if (letter) setHighlightLetter(letter);
+                    setAiTab("makhraj");
+                  }}
+                />
+              </div>
+            )}
+
+            {/* ── NUR INTERACTIVE VOICE TUTOR VIEW ── */}
+            {aiTab === "nur-voice" && (
+              <div className="flex-1 overflow-y-auto p-3 scrollbar-thin">
+                <InteractiveVoiceTutor
+                  onMakhrajHighlight={(zone) => {
+                    if (zone) setHighlightZone(zone);
+                    setAiTab("makhraj");
+                  }}
+                />
+              </div>
+            )}
+
+            {/* ── MAKHRAJ VISUALIZER VIEW ── */}
+            {aiTab === "makhraj" && (
+              <div className="flex-1 overflow-y-auto p-3 scrollbar-thin">
+                <MakhrajVisualizer
+                  initialZoneId={highlightZone}
+                  initialLetter={highlightLetter}
+                  onSelectLetter={(letter, zone) => {
+                    if (letter) setHighlightLetter(letter);
+                    if (zone?.id) setHighlightZone(zone.id);
+                  }}
+                />
+              </div>
+            )}
+
+            {/* ── HIFZ ASSISTANT VIEW ── */}
+            {aiTab === "hifz" && (
+              <div className="flex-1 overflow-y-auto p-3 scrollbar-thin">
+                <AdvancedHifzAssistant studentContext={currentUser} />
+              </div>
+            )}
+
+            {/* ── TAJWEED WEAKNESS DRILL GENERATOR VIEW ── */}
+            {aiTab === "drill" && (
+              <div className="flex-1 overflow-y-auto p-3 scrollbar-thin">
+                <AIPracticeGenerator studentId={currentUser?.id || "student_studio"} />
+              </div>
+            )}
+
+            {/* ── ORAL EXAM CHAMBER VIEW ── */}
+            {aiTab === "exam" && (
+              <div className="flex-1 overflow-y-auto p-3 scrollbar-thin">
+                <AIOralExamChamber studentContext={currentUser} />
+              </div>
+            )}
+
+            {/* ── NUR COMPACT FOOTER (when in Nur modes) ── */}
+            {aiTab !== "chat" && (
+              <div className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 py-2.5 flex items-center justify-between text-xs">
+                <span className="text-slate-500 text-[11px] flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
+                  <span>নূর তাজবীদ ও মাখরাজ ইঞ্জিন সক্রিয়</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setAiTab("chat")}
+                  className="text-teal-600 hover:text-teal-700 dark:text-teal-400 font-semibold text-xs transition-colors"
+                >
+                  সহকারী চ্যাটে ফিরুন ➔
+                </button>
+              </div>
+            )}
+
+            {/* ── MESSAGES BODY (when in Chat mode) ── */}
+            {aiTab === "chat" && (
+              <>
             <div className="flex-1 space-y-4 overflow-y-auto overflow-x-hidden p-4 text-sm scrollbar-thin">
+              {/* BYOK Callout Banner when no API key configured */}
+              {!config.apiKey ? (
+                <div className="rounded-xl border border-amber-300 dark:border-amber-700/60 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/20 p-3 shadow-sm">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-start gap-2">
+                      <span className="text-base">🔑</span>
+                      <div>
+                        <h4 className="text-xs font-bold text-amber-900 dark:text-amber-200">
+                          নিজস্ব AI API Key (BYOK) যুক্ত করুন
+                        </h4>
+                        <p className="text-[11px] text-amber-800/90 dark:text-amber-300/90 mt-0.5 leading-relaxed">
+                          বিনামূল্যে Google Gemini বা OpenRouter-এর API Key ব্যবহার করে দ্রুত ও আনলিমিটেড এআই রেসপন্স পান।
+                        </p>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={() => setIsSettingsOpen(true)}
+                      className="shrink-0 h-7 text-xs bg-amber-600 hover:bg-amber-700 text-white font-medium px-2.5 shadow-sm cursor-pointer"
+                    >
+                      Key দিন
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <div className="rounded-xl border border-emerald-300/60 dark:border-emerald-700/60 bg-emerald-50/50 dark:bg-emerald-950/20 px-3 py-1.5 shadow-sm flex items-center justify-between">
+                  <span className="text-[11px] text-emerald-800 dark:text-emerald-300 font-medium flex items-center gap-1.5">
+                    <Check className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
+                    <span>আপনার <strong>{config.provider.toUpperCase()}</strong> API Key সক্রিয় রয়েছে।</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="text-[10px] text-emerald-700 dark:text-emerald-400 underline font-semibold hover:text-emerald-900 cursor-pointer"
+                  >
+                    পরিবর্তন
+                  </button>
+                </div>
+              )}
+
               {messages.map((msg) => (
                 <div
                   key={msg.id}
@@ -424,6 +738,19 @@ export default function AIChatDrawer({ currentUser }) {
                 />
                 <div className="flex items-center gap-1.5 pr-2">
                   <Button
+                    type="button"
+                    size="icon"
+                    onClick={toggleDictation}
+                    title={isDictating ? "রেকর্ডিং থামান" : "মুখে বলুন (Voice Input)"}
+                    className={`h-8 w-8 rounded-lg shadow-sm transition-all ${
+                      isDictating
+                        ? "bg-red-600 text-white ring-2 ring-red-400 animate-pulse"
+                        : "bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-300 dark:hover:bg-slate-600"
+                    }`}
+                  >
+                    {isDictating ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                  </Button>
+                  <Button
                     type="submit"
                     size="icon"
                     disabled={!input.trim() || isLoading}
@@ -449,19 +776,19 @@ export default function AIChatDrawer({ currentUser }) {
                 </button>
               </div>
             </form>
+            </>
+            )}
           </div>
         </div>
       )}
 
-      {/* AISettingsModal (Only accessible inside internal portals) */}
-      {showSettings && (
-        <AISettingsModal
-          open={isSettingsOpen}
-          onOpenChange={setIsSettingsOpen}
-          config={config}
-          onSave={saveConfig}
-        />
-      )}
+      {/* AISettingsModal (Globally accessible for BYOK configuration) */}
+      <AISettingsModal
+        open={isSettingsOpen}
+        onOpenChange={setIsSettingsOpen}
+        config={config}
+        onSave={saveConfig}
+      />
     </>
   );
 }

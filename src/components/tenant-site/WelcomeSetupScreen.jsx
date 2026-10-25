@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Sparkles, ArrowRight, ShieldCheck, Layers } from "lucide-react";
+import { Globe, ArrowRight, ShieldCheck, Layers } from "lucide-react";
 
 export default function WelcomeSetupScreen({ orgName = "New Institution", slug = "school" }) {
   return (
@@ -23,7 +23,7 @@ export default function WelcomeSetupScreen({ orgName = "New Institution", slug =
         <Card className="bg-slate-900/80 border-slate-800 text-slate-300 backdrop-blur shadow-2xl">
           <CardContent className="p-6 space-y-4">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-900/40 border border-teal-700/50 text-teal-300 text-xs font-medium">
-              <Sparkles size={14} /> Website Under Setup
+              <Globe size={14} /> Website Under Setup
             </div>
 
             <p className="text-xs leading-relaxed text-slate-400">

@@ -3,7 +3,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { appClient } from '@/api/appClient';
 import {
   Search, Bell, ChevronDown, LogOut, Settings,
   Building2, Inbox, X, ExternalLink, ShieldCheck, Loader2
@@ -259,8 +258,12 @@ function ProfileDropdown({ user }) {
   const initials     = displayName.charAt(0).toUpperCase();
 
   const handleLogout = async () => {
-    await appClient.auth.logout().catch(() => {});
-    router.push('/admin');
+    try {
+      await fetch('/api/platform/auth/logout', { method: 'POST' });
+    } catch {
+      // fallback
+    }
+    router.push('/platform-console/login');
   };
 
   return (

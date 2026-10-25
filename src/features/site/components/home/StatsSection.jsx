@@ -50,7 +50,7 @@ export default function StatsSection() {
                 e.currentTarget.style.background = "transparent";
                 e.currentTarget.style.boxShadow = "none";
               }}>
-              <div className="text-3xl mb-1">{s.icon || "✨"}</div>
+              <div className="text-3xl mb-1">{s.icon || "🎯"}</div>
               <p className="text-3xl sm:text-4xl font-extrabold italic text-white"
                 style={{ textShadow: "0 2px 12px rgba(0,0,0,0.2)" }}>
                 {isBn ? (s.numBn || s.numEn) : isAr ? (s.numAr || s.numEn) : s.numEn}

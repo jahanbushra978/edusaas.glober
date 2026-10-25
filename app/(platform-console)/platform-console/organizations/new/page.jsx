@@ -23,6 +23,7 @@ export default function NewOrganizationPage() {
   const router = useRouter();
   const [form, setForm] = useState(initialState);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const update = (field) => (e) => {
     const val = e.target.value;
@@ -39,19 +40,26 @@ export default function NewOrganizationPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
-    const org = await createOrganization(form);
-    
-    // Save Initial Password & Billing Info locally for resilient instant access
-    if (typeof window !== "undefined") {
-      const cleanSlug = (form.slug || form.name).toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
-      localStorage.setItem(`org_auth_${cleanSlug}`, JSON.stringify({
-        password: form.admin_password || "admin123",
-        created_at: new Date().toISOString()
-      }));
-    }
+    setError("");
 
-    setSaving(false);
-    router.push(`/platform-console`);
+    try {
+      await createOrganization(form);
+      
+      // Save Initial Password locally for tenant quick-reference
+      if (typeof window !== "undefined") {
+        const cleanSlug = (form.slug || form.name).toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+        localStorage.setItem(`org_auth_${cleanSlug}`, JSON.stringify({
+          password: form.admin_password || "admin123",
+          created_at: new Date().toISOString()
+        }));
+      }
+
+      router.push(`/platform-console`);
+    } catch (err) {
+      setError(err?.message || "Failed to create organization in database.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -73,6 +81,11 @@ export default function NewOrganizationPage() {
           </CardTitle>
         </CardHeader>
         <CardContent className="p-6">
+          {error && (
+            <div className="mb-4 p-3 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs">
+              {error}
+            </div>
+          )}
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">

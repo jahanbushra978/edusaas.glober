@@ -9,11 +9,17 @@ export async function GET() {
     const supabaseAdmin = createSupabaseAdminClient();
     const { data, error } = await supabaseAdmin
       .from("branches")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .select("*");
 
     if (error) throw error;
-    return NextResponse.json({ ok: true, data: data || [] });
+
+    const sorted = (data || []).sort((a, b) => {
+      const timeA = new Date(a.created_at || a.created_date || 0).getTime();
+      const timeB = new Date(b.created_at || b.created_date || 0).getTime();
+      return timeB - timeA;
+    });
+
+    return NextResponse.json({ ok: true, data: sorted });
   } catch (err) {
     console.error("[GET /api/admin/onboarding-requests] Error:", err);
     return NextResponse.json({ ok: false, data: [] }, { status: 500 });

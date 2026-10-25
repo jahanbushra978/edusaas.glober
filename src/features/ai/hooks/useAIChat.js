@@ -2,8 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-
-const STORAGE_KEY_SETTINGS = "rahmania_ai_settings_v1";
+import { getSavedAIConfig, saveAIConfigToStorage } from "../lib/aiConfigHelper";
 
 export function useAIChat({ defaultWelcomeText } = {}) {
   const [messages, setMessages] = useState([
@@ -12,7 +11,7 @@ export function useAIChat({ defaultWelcomeText } = {}) {
       role: "assistant",
       content:
         defaultWelcomeText ||
-        "আসসালামু আলাইকুম! আমি **রহমানিয়া ইনস্টিটিউট এআই সহকারী**।\n\n🚧 **আমাদের ওয়েবসাইটের কাজ বর্তমানে চলমান রয়েছে।**\nআপাতত মাদরাসার নূরানী, নাজেরা, হিফযুল কুরআন, কিতাব ও জেনারেল বিভাগ, ভর্তি তথ্য বা যোগাযোগ সংক্রান্ত তথ্যের জন্য নিচের অপশন বা হেল্পলাইন ব্যবহার করতে পারেন।",
+        "আসসালামু আলাইকুম! আমি **নূর এআই** — রহমানিয়া ইনস্টিটিউটের কুরআন শিক্ষক ও অফিসিয়াল এআই সহকারী।\n\nমাদরাসার নূরানী, নাজেরা, হিফযুল কুরআন, তাজবীদ ও মাখরাজ অনুশীলন, কিংবা ভর্তি ও প্রাতিষ্ঠানিক যেকোনো তথ্যের জন্য আমাকে প্রশ্ন করতে পারেন।\n\n💡 *টিপ:* আরও দ্রুত ও জেনারেটিভ AI অভিজ্ঞতার জন্য উপরে **'API Key যোগ করুন'** বাটনে ক্লিক করে নিজস্ব ফ্রি Google Gemini বা OpenRouter Key যুক্ত করতে পারেন।",
       timestamp: new Date().toISOString(),
     },
   ]);
@@ -23,44 +22,24 @@ export function useAIChat({ defaultWelcomeText } = {}) {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // AI Configuration (BYOK / Provider / Model)
-  const [config, setConfig] = useState({
-    provider: "openrouter",
-    model: "meta-llama/llama-3.3-70b-instruct:free",
-    apiKey: "", // In-memory session key
-    baseUrl: "",
-    rememberKey: false,
-  });
+  const [config, setConfig] = useState(() => getSavedAIConfig());
 
-  // Load saved settings (if any)
+  // Load saved settings & listen for cross-component updates
   useEffect(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY_SETTINGS);
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        setConfig((prev) => ({
-          ...prev,
-          provider: parsed.provider || "openrouter",
-          model: parsed.model || "meta-llama/llama-3.3-70b-instruct:free",
-          baseUrl: parsed.baseUrl || "",
-          rememberKey: Boolean(parsed.rememberKey),
-          apiKey: parsed.rememberKey && parsed.apiKey ? parsed.apiKey : "",
-        }));
+    setConfig(getSavedAIConfig());
+
+    const handleSync = (e) => {
+      if (e?.detail) {
+        setConfig(e.detail);
       }
-    } catch {}
+    };
+    window.addEventListener("rahmania-ai-settings-updated", handleSync);
+    return () => window.removeEventListener("rahmania-ai-settings-updated", handleSync);
   }, []);
 
   const saveConfig = useCallback((newConfig) => {
     setConfig(newConfig);
-    try {
-      const toSave = {
-        provider: newConfig.provider,
-        model: newConfig.model,
-        baseUrl: newConfig.baseUrl || "",
-        rememberKey: newConfig.rememberKey,
-        apiKey: newConfig.rememberKey ? newConfig.apiKey : "",
-      };
-      localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(toSave));
-    } catch {}
+    saveAIConfigToStorage(newConfig);
   }, []);
 
   // Send message to AI Chat API

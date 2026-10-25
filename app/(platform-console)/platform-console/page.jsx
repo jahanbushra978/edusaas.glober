@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import {
   Building2, Layers, Puzzle, Activity, Plus, Zap, Bell,
   HardDrive, Settings, Inbox, Users, TrendingUp, ShieldAlert,

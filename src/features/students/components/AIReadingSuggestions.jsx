@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { appClient } from "@/api/appClient";
-import { Loader2, Sparkles, BookOpen, Target, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { Loader2, Bot, BookOpen, Target, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AIReadingSuggestions({ student, logs, latestSubjects }) {
@@ -86,7 +86,7 @@ Keep responses concise and appropriate for a young Islamic studies student.
         onClick={() => setExpanded(!expanded)}
       >
         <div className="flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-yellow-400" />
+          <Bot className="h-4 w-4 text-yellow-400" />
           <span className="text-sm font-bold text-white font-bengali">AI পাঠ পরামর্শ</span>
           <span className="text-xs px-2 py-0.5 rounded-full font-bengali"
             style={{ background: "rgba(212,175,55,0.25)", color: "#D4AF37", border: "1px solid rgba(212,175,55,0.4)" }}>
@@ -156,7 +156,7 @@ Keep responses concise and appropriate for a young Islamic studies student.
               {suggestions.motivation && (
                 <div className="rounded-xl p-3.5 bg-primary/5 border border-primary/15">
                   <p className="text-xs text-primary/80 font-bengali leading-relaxed text-center italic">
-                    ✨ {suggestions.motivation}
+                    {suggestions.motivation}
                   </p>
                 </div>
               )}

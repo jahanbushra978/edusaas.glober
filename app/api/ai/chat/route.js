@@ -4,8 +4,9 @@ import { checkAIRateLimit } from "../../../../src/lib/ai/rate-limiter";
 import { executeAICompletion } from "../../../../src/lib/ai/providers";
 import { getAvailableToolsForContext, executeAITool } from "../../../../src/lib/ai/tools";
 import { verifyCsrfOrigin } from "../../../../src/lib/security";
-import { RAHMANIA_INSTITUTE_KNOWLEDGE, OFFICIAL_FALLBACK_CONTACT_MESSAGE } from "../../../../src/lib/ai/knowledge";
+import { RAHMANIA_INSTITUTE_KNOWLEDGE } from "../../../../src/lib/ai/knowledge";
 import { sanitizeAIResponse } from "../../../../src/lib/ai/sanitizer";
+import { resolveLocalAssistantResponse } from "../../../../src/lib/ai/local-assistant";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -15,8 +16,8 @@ function buildSystemPrompt(authContext) {
   const userName = user?.name_bn || user?.name || "সম্মানিত অতিথি";
   const branchName = scope.branchName || (isSuperAdmin ? "Central Super Administration" : "Assigned Branch");
 
-  return `You are the official proprietary AI Assistant (রহমানিয়া ইনস্টিটিউট এআই সহকারী) built exclusively for Rahmania Institute (রহমানিয়া ইনস্টিটিউট), Harinal, Gazipur City.
-Your mission is to provide helpful, respectful, islamic-ethical, and strictly accurate operational and public support in Bengali (বাংলা) and English.
+  return `You are "নূর" (Nur AI) — the official proprietary AI Quran Teacher and Institutional Assistant (নূর এআই কুরআন শিক্ষক ও সহকারী) built exclusively for Rahmania Institute and its affiliated madrasas.
+Your mission is to provide helpful, respectful, islamic-ethical, and strictly accurate Quranic, educational, and operational support in Bengali (বাংলা), English, and Arabic.
 
 ${RAHMANIA_INSTITUTE_KNOWLEDGE}
 
@@ -89,11 +90,14 @@ export async function POST(request) {
       process.env.DEEPSEEK_API_KEY
     );
 
+    const latestUserQuery = [...messages].reverse().find((m) => m.role === "user")?.content || "";
+
     if (!isBYOK && !hasCentralKey && provider === "openrouter" && !process.env.OPENROUTER_API_KEY) {
+      const smartLocalResponse = resolveLocalAssistantResponse(latestUserQuery);
       return NextResponse.json({
         ok: true,
         role: "assistant",
-        content: OFFICIAL_FALLBACK_CONTACT_MESSAGE,
+        content: smartLocalResponse,
         isContactFallback: true,
         toolCalls: [],
       });
@@ -149,17 +153,21 @@ export async function POST(request) {
       });
     } catch (providerErr) {
       console.warn("AI Provider completion warning:", providerErr?.message);
-      // If no key is set or provider returned authentication error, give helpful contact fallback
+      // If no key is set or provider returned authentication error, give helpful smart local response
       if (!isBYOK && !hasCentralKey) {
+        const smartLocalResponse = resolveLocalAssistantResponse(latestUserQuery);
         return NextResponse.json({
           ok: true,
           role: "assistant",
-          content: OFFICIAL_FALLBACK_CONTACT_MESSAGE,
+          content: smartLocalResponse,
           isContactFallback: true,
           toolCalls: [],
         });
       }
-      throw providerErr;
+      return NextResponse.json({
+        ok: false,
+        message: providerErr?.message || "AI response error. Please check your API key in Settings.",
+      }, { status: 400 });
     }
 
     // 7. Handle Tool Calling Loop (if AI decided to call any tools)

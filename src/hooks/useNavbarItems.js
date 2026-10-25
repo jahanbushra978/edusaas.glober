@@ -45,6 +45,16 @@ const FALLBACK_MENU = (t) => [
       { label: t.nav.videoGallery, to: "/video-gallery" },
     ]
   },
+  {
+    label: "নূর AI শিক্ষক",
+    to: "/quran-tutor",
+    subItems: [
+      { label: "🎯 এআই কোরআন শিক্ষা (Duolingo)", to: "/ai-quran-learning" },
+      { label: "🎙️ লাইভ ভয়েস ক্লাসরুম", to: "/quran-tutor/live-class" },
+      { label: "📖 সম্পূর্ণ কুরআন", to: "/quran-tutor/studio?tab=reader" },
+      { label: "🎛️ নূর লার্নিং স্টুডিও", to: "/quran-tutor/studio" },
+    ]
+  },
 ]
 
 function resolveLabel(label, lang) {
@@ -106,5 +116,8 @@ export function useNavbarItems(user) {
   const baseItems =
     dbItems.length > 0 ? buildFromDb(dbItems, lang) : FALLBACK_MENU(t)
 
-  return [...baseItems, buildPanelItem(user)]
+  const hasNur = baseItems.some(item => item.to === '/quran-tutor' || (typeof item.label === 'string' && item.label.includes('নূর')))
+  const finalBase = hasNur ? baseItems : [...baseItems, { label: "নূর AI শিক্ষক", to: "/quran-tutor" }]
+
+  return [...finalBase, buildPanelItem(user)]
 }

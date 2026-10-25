@@ -142,7 +142,7 @@ export default function TeachersPage() {
             className={`inline-flex items-center gap-2 text-sm font-bold italic mb-10 transition-all duration-300 hover:text-white ${isAr ? 'flex-row-reverse' : ''}`}
             style={{ color: "#4afa9a" }}>
             <ArrowLeft className={`h-4 w-4 ${isAr ? 'rotate-180' : ''}`} />
-            {t.common.backHome}
+            {t?.common?.backHome || "মূল পাতায় ফিরুন"}
           </Link>
         </div>
 
@@ -150,13 +150,13 @@ export default function TeachersPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-xs font-bold mb-4 uppercase tracking-widest"
             style={{ background: "rgba(212,175,55,0.15)", border: "1px solid rgba(212,175,55,0.35)", color: "#D4AF37" }}>
-            {t.teachersPage.badge}
+            {t?.teachersPage?.badge || "আমাদের অভিজ্ঞ শিক্ষকমণ্ডলী"}
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold italic text-white mb-4">
-            {t.teachersPage.title}
+            {t?.teachersPage?.title || "দ্বীন ও আধুনিক শিক্ষার যোগ্য কারিগর"}
           </h1>
           <p className="text-sm sm:text-base text-white/60 max-w-2xl mx-auto italic leading-relaxed">
-            {t.teachersPage.subtitle}
+            {t?.teachersPage?.subtitle || "যোগ্যতাসম্পন্ন, আন্তরিক ও যত্নশীল উস্তাদবৃন্দের তত্ত্বাবধানে পরিচালিত"}
           </p>
           <div className="flex items-center justify-center gap-4 mt-8">
             <div className="h-px w-24 bg-gradient-to-r from-transparent to-yellow-400/30" />

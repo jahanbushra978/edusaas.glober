@@ -81,7 +81,7 @@ export default function ThemeMarketplacePage() {
     <div className="space-y-6">
       {toast && (
         <div className="fixed bottom-5 right-5 z-50 rounded-lg bg-teal-800 text-white px-4 py-2.5 text-sm shadow-lg border border-teal-600 animate-in fade-in slide-in-from-bottom-2">
-          ✨ {toast}
+          ✓ {toast}
         </div>
       )}
 

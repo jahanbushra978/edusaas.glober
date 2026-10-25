@@ -1,7 +1,8 @@
-import { callOpenRouter } from "./openrouter";
-import { callOpenAI } from "./openai";
-import { callGemini } from "./gemini";
-import { callAnthropic } from "./anthropic";
+import { callOpenRouter } from "./openrouter.js";
+import { callOpenAI } from "./openai.js";
+import { callGemini } from "./gemini.js";
+import { callAnthropic } from "./anthropic.js";
+
 
 export const SUPPORTED_PROVIDERS = [
   {
@@ -21,12 +22,13 @@ export const SUPPORTED_PROVIDERS = [
   {
     id: "gemini",
     name: "Google Gemini",
-    description: "Google AI Direct Key (Gemini 1.5 / 2.0)",
+    description: "Google AI Direct Key (Gemini 2.5 / Flash Latest)",
     requiresApiKey: true,
     models: [
-      { id: "gemini-1.5-flash", name: "Gemini 1.5 Flash", isToolCapable: true, badge: "Recommended Free" },
-      { id: "gemini-1.5-pro", name: "Gemini 1.5 Pro", isToolCapable: true, badge: "Smart" },
-      { id: "gemini-2.0-flash", name: "Gemini 2.0 Flash", isToolCapable: true },
+      { id: "gemini-2.5-flash", name: "Gemini 2.5 Flash", isToolCapable: true, badge: "Recommended Free" },
+      { id: "gemini-flash-latest", name: "Gemini Flash Latest", isToolCapable: true, badge: "Ultra Fast" },
+      { id: "gemini-2.5-pro", name: "Gemini 2.5 Pro", isToolCapable: true, badge: "Smart" },
+      { id: "gemini-3.5-flash", name: "Gemini 3.5 Flash", isToolCapable: true },
     ],
   },
   {

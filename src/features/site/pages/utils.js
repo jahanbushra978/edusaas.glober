@@ -45,6 +45,8 @@ const PAGE_URL_MAP = {
 };
 
 export const createPageUrl = (pageName) => {
+  if (!pageName) return "/";
+  if (pageName.startsWith("/")) return pageName;
   return PAGE_URL_MAP[pageName] || `/${pageName}`;
 };
 

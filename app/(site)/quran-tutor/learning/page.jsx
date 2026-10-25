@@ -1,0 +1,12 @@
+import DuolingoQuranLearningPage from "@/features/site/pages/DuolingoQuranLearningPage";
+
+export const metadata = {
+  title: "নূর এআই কুরআন লার্নিং — ডুওলিঙ্গো-স্টাইল কায়দা ও তাজবীদ শিক্ষা | Noor AI Quran",
+  description: "ডুওলিঙ্গো-স্টাইলে নূরানী কায়দা থেকে তাজবীদ ও হিফজ শিক্ষা। ইন্টারেক্টিভ আরবী ব্ল্যাকবোর্ড, ৩-ভাষার ইন্টারফেস (বাংলা, English, العربية) ও সততা-ভিত্তিক এআই তিলাওয়াত মূল্যায়ন।",
+  keywords: ["নূর এআই লার্নিং", "এআই কোরআন শিক্ষা", "Noorani Qaida", "Duolingo Quran", "তাজবীদ শিক্ষা", "হিফজ সহকারী", "Rahmania Institute"],
+  robots: { index: true, follow: true },
+};
+
+export default function LearningRoute() {
+  return <DuolingoQuranLearningPage />;
+}

@@ -2,7 +2,7 @@
  * OpenAI Provider Adapter with Function / Tool Calling Support
  */
 
-import { sanitizeAIResponse } from "../sanitizer";
+import { sanitizeAIResponse } from "../sanitizer.js";
 
 const DEFAULT_MODEL = "gpt-4o-mini";
 

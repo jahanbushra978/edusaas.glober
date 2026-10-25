@@ -3,13 +3,12 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { appClient } from "@/api/appClient";
 import {
   LayoutDashboard, Building2, Layers, CreditCard, Settings, LogOut,
   PanelLeftClose, PanelLeftOpen, ChevronDown, ChevronRight, PlusCircle,
   ShieldAlert, Inbox, MessageSquare, CalendarCheck, LifeBuoy, Lightbulb,
   Bug, TrendingUp, Globe, HardDrive, Handshake, Puzzle, ShieldCheck,
-  FileText, Archive
+  FileText, Archive, Activity
 } from "lucide-react";
 
 const NAV_ITEMS = [
@@ -51,14 +50,32 @@ const NAV_ITEMS = [
     label: "Billing & Revenue (বিলিং ও রাজস্ব)",
     icon: CreditCard,
     children: [
-      { href: "/platform-console/billing",              label: "সাবস্ক্রিপশন ও বিলিং হিসাব", icon: CreditCard },
-      { href: "/platform-console/billing?tab=plans",   label: "প্যাকেজ রেট কন্ট্রোল",       icon: Layers },
+      { href: "/platform-console/billing", label: "সাবস্ক্রিপশন ও বিলিং হিসাব", icon: CreditCard },
+      { href: "/platform-console/plans",   label: "প্যাকেজ ও প্ল্যান ম্যানেজমেন্ট", icon: Layers },
     ],
+  },
+  {
+    href: "/platform-console/plans",
+    label: "Plans & Tiers (প্ল্যান ও রেট)",
+    icon: Layers,
+    exact: true,
+  },
+  {
+    href: "/platform-console/domains",
+    label: "Custom Domains (ডোমেইন ও SSL)",
+    icon: Globe,
+    exact: true,
   },
   {
     href: "/platform-console/modules",
     label: "Modules & Marketplace",
     icon: Puzzle,
+    exact: true,
+  },
+  {
+    href: "/platform-console/jobs",
+    label: "Background Jobs (টাস্ক কিউ)",
+    icon: Activity,
     exact: true,
   },
   {
@@ -69,7 +86,7 @@ const NAV_ITEMS = [
   },
   {
     href: "/platform-console/security",
-    label: "Security & Access (নিরাপত্তা)",
+    label: "Security & Firewall (নিরাপত্তা)",
     icon: ShieldCheck,
     exact: true,
   },
@@ -81,13 +98,13 @@ const NAV_ITEMS = [
   },
   {
     href: "/platform-console/backups",
-    label: "Backups (ব্যাকআপ)",
+    label: "Backups (ব্যাকআপ ও রিকভারি)",
     icon: Archive,
     exact: true,
   },
   {
     href: "/platform-console/settings",
-    label: "Platform Settings (সেটিংস)",
+    label: "Platform Settings (সিস্টেম সেটিংস)",
     icon: Settings,
     exact: true,
   },
@@ -221,8 +238,12 @@ export default function ConsoleSidebar({ parentCollapsed, onToggleCollapse }) {
       <div className="px-2 py-4 border-t border-slate-800 bg-slate-950/20">
         <button
           onClick={async () => {
-            await appClient.auth.logout().catch(() => {});
-            router.push("/admin");
+            try {
+              await fetch("/api/platform/auth/logout", { method: "POST" });
+            } catch {
+              // fallback
+            }
+            router.push("/platform-console/login");
           }}
           title={isCollapsed ? "Sign out (লগআউট)" : undefined}
           className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:bg-red-500/10 hover:text-red-400 transition-all w-full ${

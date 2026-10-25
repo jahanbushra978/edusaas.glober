@@ -2,7 +2,7 @@
  * Google Gemini Provider Adapter with Automatic Dynamic Model Discovery & Multi-Version Fallback
  */
 
-import { sanitizeAIResponse } from "../sanitizer";
+import { sanitizeAIResponse } from "../sanitizer.js";
 
 let cachedWorkingModel = null;
 
@@ -43,7 +43,7 @@ async function doGeminiFetch({ apiKey, cleanModel, payload, apiVersion = "v1beta
 
 export async function callGemini({
   apiKey,
-  model = "gemini-1.5-flash",
+  model = "gemini-2.5-flash",
   messages = [],
   tools = [],
   temperature = 0.2,
@@ -104,15 +104,13 @@ export async function callGemini({
   const candidateModels = [
     cachedWorkingModel,
     userRequested,
-    "gemini-1.5-flash",
-    "gemini-1.5-flash-latest",
-    "gemini-1.5-flash-001",
-    "gemini-1.5-flash-002",
-    "gemini-1.5-flash-8b",
-    "gemini-1.5-pro",
-    "gemini-1.5-pro-latest",
-    "gemini-2.0-flash-exp",
     "gemini-2.5-flash",
+    "gemini-flash-latest",
+    "gemini-2.5-pro",
+    "gemini-3.5-flash",
+    "gemini-pro-latest",
+    "gemini-1.5-flash",
+    "gemini-1.5-pro",
   ].filter(Boolean);
 
   // Remove duplicates while preserving order

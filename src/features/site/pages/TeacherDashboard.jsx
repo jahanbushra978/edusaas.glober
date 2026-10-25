@@ -15,6 +15,7 @@ import Link from "next/link";
 const AttendanceMarker = dynamic(() => import("@/components/teacher/AttendanceMarker"), { ssr: false });
 const DailyLessonEntry = dynamic(() => import("@/components/teacher/DailyLessonEntry"), { ssr: false });
 const TeacherStudentDetail = dynamic(() => import("@/components/teacher/TeacherStudentDetail"), { ssr: false });
+const TeacherAIReviewHub = dynamic(() => import("@/features/teachers/components/TeacherAIReviewHub"), { ssr: false });
 
 export default function TeacherDashboard() {
   const [user, setUser] = useState(null);
@@ -192,11 +193,19 @@ export default function TeacherDashboard() {
               </p>
             </div>
           </div>
-          <Link href={`${createPageUrl("TeacherProfile")}?id=${teacher.id}`}>
-            <Button className="gap-2 bg-primary text-white hover:bg-primary/95 rounded-xl text-xs h-9 px-4">
-              <UserCog className="h-4 w-4" /> My Profile
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
+              className="gap-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs h-9 px-4 shadow-sm"
+            >
+              <BookOpen className="h-4 w-4" /> নূর AI শিক্ষক
             </Button>
-          </Link>
+            <Link href={`${createPageUrl("TeacherProfile")}?id=${teacher.id}`}>
+              <Button className="gap-2 bg-primary text-white hover:bg-primary/95 rounded-xl text-xs h-9 px-4">
+                <UserCog className="h-4 w-4" /> My Profile
+              </Button>
+            </Link>
+          </div>
         </div>
 
         {/* Stats Overview */}
@@ -259,9 +268,14 @@ export default function TeacherDashboard() {
           <TabsList className="flex flex-wrap sm:grid w-full h-auto p-1 gap-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl border border-slate-200">
             <TabsTrigger value="attendance" className="flex-1 min-w-[120px] py-2.5 text-xs sm:text-sm font-bold rounded-xl">📋 Attendance</TabsTrigger>
             {SHOW_READING_PROGRESS && <TabsTrigger value="lessons" className="flex-1 min-w-[120px] py-2.5 text-xs sm:text-sm font-bold rounded-xl">📖 Daily Lessons</TabsTrigger>}
+            <TabsTrigger value="ai-reviews" className="flex-1 min-w-[140px] py-2.5 text-xs sm:text-sm font-bold rounded-xl text-emerald-800 dark:text-emerald-300">🎙️ AI পরীক্ষা ও রিভিউ</TabsTrigger>
             <TabsTrigger value="students" className="flex-1 min-w-[120px] py-2.5 text-xs sm:text-sm font-bold rounded-xl">👥 My Students</TabsTrigger>
             {SHOW_READING_PROGRESS && <TabsTrigger value="analytics" className="flex-1 min-w-[120px] py-2.5 text-xs sm:text-sm font-bold rounded-xl">📊 Analytics</TabsTrigger>}
           </TabsList>
+
+          <TabsContent value="ai-reviews">
+            <TeacherAIReviewHub students={myStudents} teacherName={teacher.full_name_en} />
+          </TabsContent>
 
           <TabsContent value="attendance">
             <AttendanceMarker students={myStudents} teacherName={teacher.full_name_en} />
