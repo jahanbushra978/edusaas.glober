@@ -1,22 +1,17 @@
 import { createClient } from "@supabase/supabase-js";
 
-const requiredPublicEnv = {
-  NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
-  NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-};
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || "https://placeholder.supabase.co";
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "placeholder-anon-key";
 
-const missingPublicEnv = Object.entries(requiredPublicEnv)
-  .filter(([, value]) => !value)
-  .map(([key]) => key);
-
-if (missingPublicEnv.length > 0) {
-  throw new Error(
-    `Missing Supabase public environment variables: ${missingPublicEnv.join(", ")}.`,
-  );
+if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+  if (typeof window !== "undefined") {
+    console.warn(
+      "Missing Supabase public environment variables: NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY."
+    );
+  }
 }
-
-const supabaseUrl = requiredPublicEnv.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = requiredPublicEnv.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
 export let currentSupabaseToken = null;
 
