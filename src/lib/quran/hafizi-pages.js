@@ -401,6 +401,30 @@ export function getHafiziLocationForAyah(surahNum, ayahNum) {
   const s = Number(surahNum) || 1;
   const a = Number(ayahNum) || 1;
 
+  // Find canonical Para by (surah, ayah)
+  let canonicalParaInfo = HAFIZI_PARAS[0];
+  for (let i = HAFIZI_PARAS.length - 1; i >= 0; i--) {
+    const p = HAFIZI_PARAS[i];
+    if (s > p.startSurah || (s === p.startSurah && a >= p.startAyah)) {
+      canonicalParaInfo = p;
+      break;
+    }
+  }
+
+  // Exact start of Para check
+  if (s === canonicalParaInfo.startSurah && a === canonicalParaInfo.startAyah) {
+    return {
+      para: canonicalParaInfo.juz,
+      paraPage: 1,
+      totalPages: canonicalParaInfo.totalPages,
+      globalPage: canonicalParaInfo.startPage,
+      nameBn: canonicalParaInfo.nameBn,
+      nameAr: canonicalParaInfo.nameAr,
+      startSurah: canonicalParaInfo.startSurah,
+      startAyah: canonicalParaInfo.startAyah,
+    };
+  }
+
   // Search through UTHMANI_PAGE_REFERENCES to find the latest page that started at or before (s, a)
   let foundUthmaniPage = 1;
   for (let i = UTHMANI_PAGE_REFERENCES.length - 1; i >= 0; i--) {
@@ -411,9 +435,27 @@ export function getHafiziLocationForAyah(surahNum, ayahNum) {
     }
   }
 
-  // Convert to Hafizi 610-page coordinate
-  const globalPage = Math.min(TOTAL_HAFIZI_PAGES, Math.max(1, Math.round((foundUthmaniPage / 604) * TOTAL_HAFIZI_PAGES)));
-  return getHafiziLocation(globalPage);
+  // Convert to Hafizi 610-page coordinate, bounded within the canonical Para's pages
+  let globalPage = Math.min(TOTAL_HAFIZI_PAGES, Math.max(1, Math.round((foundUthmaniPage / 604) * TOTAL_HAFIZI_PAGES)));
+  if (globalPage < canonicalParaInfo.startPage) {
+    globalPage = canonicalParaInfo.startPage;
+  } else if (globalPage > canonicalParaInfo.endPage) {
+    globalPage = canonicalParaInfo.endPage;
+  }
+
+  const paraPage = globalPage - canonicalParaInfo.startPage + 1;
+
+  return {
+    para: canonicalParaInfo.juz,
+    paraPage,
+    totalPages: canonicalParaInfo.totalPages,
+    globalPage,
+    nameBn: canonicalParaInfo.nameBn,
+    nameAr: canonicalParaInfo.nameAr,
+    startSurah: canonicalParaInfo.startSurah,
+    startAyah: canonicalParaInfo.startAyah,
+    uthmaniPage: foundUthmaniPage,
+  };
 }
 
 /**

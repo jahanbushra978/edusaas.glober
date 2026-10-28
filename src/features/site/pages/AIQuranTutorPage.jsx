@@ -6,7 +6,7 @@ import {
   BookOpen, Mic, Award, Compass, Volume2, Headphones, 
   BarChart3, Trophy, Users, Building2, WifiOff, ShieldCheck, 
   Check, X, ChevronDown, ChevronUp, Play, Square, 
-  Star, ArrowRight, Bot, Search, Menu
+  Star, ArrowRight, Bot, Search, Menu, Baby, Gamepad2, RotateCcw, PenTool
 } from "lucide-react";
 import { toast } from "sonner";
 import QuranSemanticSearchModal from "@/features/ai/components/QuranSemanticSearchModal";
@@ -61,7 +61,7 @@ export default function AIQuranTutorPage() {
 
   const openNurTeacher = () => {
     if (typeof window !== "undefined") {
-      window.dispatchEvent(new CustomEvent("open-ai-chat"));
+      window.location.href = "/quran-tutor/teacher";
     }
   };
 
@@ -79,67 +79,167 @@ export default function AIQuranTutorPage() {
     }, 800);
   };
 
-  // 12 Feature Cards
+  // 8 Muslim App Highlight Features (Direct launch into Studio)
+  const studioQuickFeatures = [
+    {
+      id: "quran-reader",
+      title: "সম্পূর্ণ কুরআন",
+      subtitle: "১১৪ সূরা ও ৩০ জুজ মুসহাফ",
+      icon: BookOpen,
+      iconBg: "bg-emerald-100 text-emerald-800",
+      badge: "পূর্ণাঙ্গ",
+      link: "/quran-tutor/studio?feature=quran-reader"
+    },
+    {
+      id: "nur-teacher",
+      title: "নূর এআই শিক্ষক",
+      subtitle: "৬-স্তরের মাশক ও উচ্চারণ শিক্ষা",
+      icon: Users,
+      iconBg: "bg-teal-100 text-teal-800",
+      badge: "জনপ্রিয়",
+      link: "/quran-tutor/studio?feature=nur-teacher"
+    },
+    {
+      id: "live-class",
+      title: "লাইভ ক্লাস",
+      subtitle: "মুখে মুখে সরাসরি তিলাওয়াত সংশোধন",
+      icon: Mic,
+      iconBg: "bg-emerald-100 text-emerald-900",
+      badge: "ভয়েস লাইভ",
+      link: "/quran-tutor/studio?feature=live-class"
+    },
+    {
+      id: "makhraj-3d",
+      title: "১৭ মাখরাজ মানচিত্র",
+      subtitle: "মুখ ও কণ্ঠনালীর অঙ্গভিত্তিক রূপ",
+      icon: Award,
+      iconBg: "bg-amber-100 text-amber-900",
+      badge: "অ্যানাটমিক্যাল",
+      link: "/quran-tutor/studio?feature=makhraj-3d"
+    },
+    {
+      id: "kids-book",
+      title: "আমার প্রথম কুরআন",
+      subtitle: "শিশুতোষ রঙিন হরফ ও সাউন্ডবুক",
+      icon: Baby,
+      iconBg: "bg-rose-100 text-rose-800",
+      badge: "ছোটদের",
+      link: "/quran-tutor/studio?feature=kids-book"
+    },
+    {
+      id: "hifz-assistant",
+      title: "হিফজ সহকারী",
+      subtitle: "মুখস্থ লুপ ও স্মৃতি পরীক্ষা",
+      icon: Compass,
+      iconBg: "bg-amber-100 text-amber-800",
+      badge: "হিফজ সঙ্গী",
+      link: "/quran-tutor/studio?feature=hifz-assistant"
+    },
+    {
+      id: "dawr-companion",
+      title: "মুরাযাআ ও দাওর",
+      subtitle: "দাওর শোনা, ভুল ধরা ও লোকমা",
+      icon: RotateCcw,
+      iconBg: "bg-orange-100 text-orange-900",
+      badge: "দাওর",
+      link: "/quran-tutor/studio?feature=dawr-companion"
+    },
+    {
+      id: "games-hub",
+      title: "কুরআন গেমস জোন",
+      subtitle: "হরকত বেলুন পপ ও মাখরাজ খেলা",
+      icon: Gamepad2,
+      iconBg: "bg-purple-100 text-purple-900",
+      badge: "গেমস",
+      link: "/quran-tutor/studio?feature=games-hub"
+    }
+  ];
+
+  // 12 Feature Cards (Linking to Studio features)
   const featuresList = [
     {
       icon: BookOpen,
       title: "সম্পূর্ণ কুরআন রিডার",
-      desc: "১১৪ সূরা, ৩০ জুজ, অনুবাদ, তাফসির, শব্দে-শব্দে অর্থ, বুকমার্ক ও নোট।"
+      desc: "১১৪ সূরা, ৩০ জুজ, অনুবাদ, তাফসির, শব্দে-শব্দে অর্থ, বুকমার্ক ও নোট।",
+      badge: "পূর্ণাঙ্গ",
+      link: "/quran-tutor/studio?feature=quran-reader"
     },
     {
       icon: Mic,
-      title: "এআই শোনার মোড",
-      desc: "ওয়েভফর্ম, নয়েজ রিডাকশন ও লাইভ আত্মবিশ্বাস স্কোরসহ রিয়েল-টাইম মাইক্রোফোন বিশ্লেষণ।"
+      title: "এআই শোনার মোড ও লাইভ ক্লাস",
+      desc: "ওয়েভফর্ম, নয়েজ রিডাকশন ও লাইভ আত্মবিশ্বাস স্কোরসহ রিয়েল-টাইম মাইক্রোফোন বিশ্লেষণ।",
+      badge: "ভয়েস লাইভ",
+      link: "/quran-tutor/studio?feature=live-class"
     },
     {
       icon: Award,
-      title: "তাজবীদ বিশ্লেষণ",
-      desc: "মাখরাজ, সিফাত, মাদ, গুন্নাহ, ইখফা, ইদগাম, কলকলা, ওয়াকফ — প্রতিটি নিয়ম বিশ্লেষিত।"
+      title: "তাজবীদ ও ১৭ মাখরাজ বিশ্লেষণ",
+      desc: "মাখরাজ, সিফাত, মাদ, গুন্নাহ, ইখফা, ইদগাম, কলকলা, ওয়াকফ — প্রতিটি নিয়ম বিশ্লেষিত।",
+      badge: "অ্যানাটমিক্যাল",
+      link: "/quran-tutor/studio?feature=makhraj-3d"
     },
     {
       icon: Compass,
-      title: "হিফজ সহকারী",
-      desc: "স্পেসড রিপিটিশন, ভুলে যাওয়া আয়াত শনাক্তকরণ, উত্তর নয় বরং ইঙ্গিত, এবং দৈনিক মুখস্থ পরিকল্পনা।"
+      title: "হিফজ সহকারী ও স্মৃতি পরীক্ষা",
+      desc: "স্পেসড রিপিটিশন, ভুলে যাওয়া আয়াত শনাক্তকরণ, উত্তর নয় বরং ইঙ্গিত, এবং দৈনিক মুখস্থ পরিকল্পনা।",
+      badge: "হিফজ সঙ্গী",
+      link: "/quran-tutor/studio?feature=hifz-assistant"
     },
     {
       icon: Volume2,
-      title: "ভয়েস কথোপকথন",
-      desc: "এআই শিক্ষককে সশব্দে প্রশ্ন করুন এবং উত্তর শুনুন — যেন ঘরেই একজন আসল শিক্ষক।"
+      title: "ভয়েস কথোপকথন ও উস্তাদ চ্যাট",
+      desc: "এআই শিক্ষককে সশব্দে প্রশ্ন করুন এবং উত্তর শুনুন — যেন ঘরেই একজন আসল শিক্ষক।",
+      badge: "ভয়েস চ্যাট",
+      link: "/quran-tutor/studio?feature=voice-tutor"
     },
     {
       icon: Headphones,
-      title: "একাধিক কারি",
-      desc: "বিখ্যাত কারিরা, আয়াত/পৃষ্ঠা/সূরা রিপিট, প্লেব্যাক স্পিড, লুপ ও অফলাইন ক্যাশ।"
+      title: "একাধিক কারির খাঁটি অডিও",
+      desc: "বিখ্যাত কারিরা, আয়াত/পৃষ্ঠা/সূরা রিপিট, প্লেব্যাক স্পিড, লুপ ও অফলাইন ক্যাশ।",
+      badge: "ক্বারী অডিও",
+      link: "/quran-tutor/studio?feature=quran-reader"
     },
     {
       icon: BarChart3,
-      title: "অগ্রগতি অ্যানালিটিক্স",
-      desc: "সময়ের সাথে নির্ভুলতা, মাখরাজ, তাজবীদ, মুখস্থ ও প্রবাহিতার স্কোর।"
+      title: "অগ্রগতি ও তিলাওয়াত মূল্যায়ন",
+      desc: "সময়ের সাথে নির্ভুলতা, মাখরাজ, তাজবীদ, মুখস্থ ও প্রবাহিতার সততা-ভিত্তিক স্কোর।",
+      badge: "স্কোরিং",
+      link: "/quran-tutor/studio?feature=recitation-eval"
     },
     {
       icon: Trophy,
-      title: "গেমিফিকেশন",
-      desc: "কয়েন, XP, লেভেল, ব্যাজ, লিডারবোর্ড, চ্যালেঞ্জ ও লার্নিং স্ট্রিক।"
+      title: "কুরআন গেমস ও ডুওলিঙ্গো কোর্স",
+      desc: "হরকত বেলুন পপ, মাখরাজ খেলা, কয়েন, XP, লেভেল, ব্যাজ ও ৩-স্টার পাঠ।",
+      badge: "গেমিফিকেশন",
+      link: "/quran-tutor/studio?feature=games-hub"
     },
     {
       icon: Users,
-      title: "শিক্ষক ও অভিভাবক টুল",
-      desc: "ক্লাস, অ্যাসাইনমেন্ট, রেকর্ডিং রিভিউ, ফিডব্যাক, হাজিরা ও সার্টিফিকেট।"
+      title: "নূর এআই শিক্ষক (৬-স্তরের মাশক)",
+      desc: "Explain → Demonstrate → Practice → Evaluate → Correct → Repeat চক্রের পূর্ণাঙ্গ পাঠ।",
+      badge: "জনপ্রিয় শিক্ষক",
+      link: "/quran-tutor/studio?feature=nur-teacher"
     },
     {
-      icon: Building2,
-      title: "প্রতিষ্ঠান ERP",
-      desc: "শিক্ষার্থী, শিক্ষক, ব্রাঞ্চ, কোর্স, পরীক্ষা, পেমেন্ট ও সাবস্ক্রিপশন।"
+      icon: Baby,
+      title: "আমার প্রথম কুরআন শিক্ষা",
+      desc: "ছোটদের জন্য রঙিন হরফ, ছবির মাধ্যমে শিক্ষা, সাউন্ড ও শিশুতোষ ইন্টারফেস।",
+      badge: "ছোটদের",
+      link: "/quran-tutor/studio?feature=kids-book"
     },
     {
-      icon: WifiOff,
-      title: "অফলাইন মোড",
-      desc: "ইন্টারনেট ছাড়াই পড়ুন, ক্যাশ করা অডিও শুনুন এবং অনুশীলন করুন।"
+      icon: RotateCcw,
+      title: "মুরাযাআ ও দাওর সঙ্গী",
+      desc: "দ্রুত রিভিশন, দাওর অডিও পর্যবেক্ষণ, লোকমা সতর্কতা ও মুখস্থ যাচাইকরণ।",
+      badge: "দাওর সঙ্গী",
+      link: "/quran-tutor/studio?feature=dawr-companion"
     },
     {
-      icon: ShieldCheck,
-      title: "এন্টারপ্রাইজ নিরাপত্তা",
-      desc: "রোল-ভিত্তিক অ্যাক্সেস, মাল্টি-টেন্যান্ট আইসোলেশন, প্রাইভেট অডিও ও পূর্ণ অডিট লগ।"
+      icon: PenTool,
+      title: "আরবী স্লেট ও ব্ল্যাকবোর্ড",
+      desc: "স্ক্রিনে আঙুল বা মাউস দিয়ে আরবী হরফ লেখা, ট্রেসিং ও উচ্চারণ অনুশীলন।",
+      badge: "ট্রেসিং",
+      link: "/quran-tutor/studio?feature=blackboard"
     }
   ];
 
@@ -232,6 +332,13 @@ export default function AIQuranTutorPage() {
           {/* Core Feature Badges (Desktop / Large Screens) */}
           <nav className="hidden xl:flex items-center gap-3 text-xs font-bold text-slate-600">
             <Link 
+              href="/quran-tutor/kids" 
+              className="text-emerald-950 font-extrabold hover:bg-emerald-200/90 transition-colors flex items-center gap-1.5 bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300 shadow-sm shrink-0 whitespace-nowrap"
+            >
+              <span className="text-sm">👶</span>
+              <span>আমার প্রথম কুরআন</span>
+            </Link>
+            <Link 
               href="/quran-tutor/live-class" 
               className="text-emerald-900 font-extrabold hover:bg-emerald-200/80 transition-colors flex items-center gap-1.5 bg-emerald-100/90 px-3 py-1.5 rounded-xl border border-emerald-300 shadow-sm shrink-0 whitespace-nowrap"
             >
@@ -301,6 +408,14 @@ export default function AIQuranTutorPage() {
         {mobileNavOpen && (
           <div className="xl:hidden border-t border-emerald-100 bg-white/98 backdrop-blur-xl px-4 py-4 space-y-3 shadow-xl">
             <div className="grid grid-cols-2 gap-2">
+              <Link 
+                href="/quran-tutor/kids" 
+                onClick={() => setMobileNavOpen(false)}
+                className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-100 border border-emerald-300 text-xs font-bold text-emerald-950 col-span-2"
+              >
+                <span className="text-base">👶</span>
+                <span>আমার প্রথম কুরআন শিক্ষা (ছোটদের ছবি ও গেম)</span>
+              </Link>
               <Link 
                 href="/quran-tutor/live-class" 
                 onClick={() => setMobileNavOpen(false)}
@@ -382,20 +497,29 @@ export default function AIQuranTutorPage() {
               <div className="space-y-3 pt-2">
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-3">
                   <Link
+                    href="/quran-tutor/kids"
+                    className="px-6 py-3.5 text-sm sm:text-base font-black text-emerald-950 bg-gradient-to-r from-emerald-200 via-teal-200 to-amber-200 hover:from-emerald-300 hover:to-amber-300 border-2 border-emerald-500 rounded-full shadow-md shadow-emerald-900/15 active:scale-95 transition-all flex items-center gap-2 group cursor-pointer"
+                  >
+                    <span className="text-xl">👶</span>
+                    <span>আমার প্রথম কুরআন শিক্ষা</span>
+                    <ArrowRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform text-emerald-800" />
+                  </Link>
+
+                  <Link
                     href="/quran-tutor/live-class"
-                    className="px-6 py-3.5 text-sm sm:text-base font-extrabold text-white bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 rounded-xl shadow-lg shadow-emerald-700/25 active:scale-95 transition-all flex items-center gap-2.5 group ring-2 ring-emerald-400/40"
+                    className="px-6 py-3.5 text-sm sm:text-base font-extrabold text-white bg-gradient-to-r from-[#0d7a5f] to-[#0a634d] hover:opacity-95 rounded-full shadow-md shadow-emerald-900/15 active:scale-95 transition-all flex items-center gap-2.5 group cursor-pointer"
                   >
                     <Mic className="w-5 h-5 text-emerald-200 group-hover:scale-110 transition-transform" />
-                    <span>🎙️ সরাসরি মুখে মুখে কুরআন ক্লাস</span>
+                    <span>🎙️ লাইভ ক্লাস</span>
                     <ArrowRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
                   </Link>
 
                   <Link
                     href="/quran-tutor/learning"
-                    className="px-5 py-3.5 text-sm sm:text-base font-extrabold text-slate-950 bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-500 hover:to-yellow-500 rounded-xl shadow-md shadow-amber-500/25 active:scale-95 transition-all flex items-center gap-2 group ring-2 ring-amber-300"
+                    className="px-6 py-3.5 text-sm sm:text-base font-extrabold text-slate-900 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 rounded-full shadow-md shadow-amber-900/15 active:scale-95 transition-all flex items-center gap-2 group cursor-pointer"
                   >
                     <Award className="w-5 h-5 text-slate-950 group-hover:scale-110 transition-transform" />
-                    <span>🎮 গেম খেলে কুরআন শিক্ষা</span>
+                    <span>🎮 গেম খেলে শিক্ষা</span>
                     <ArrowRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>
@@ -403,7 +527,7 @@ export default function AIQuranTutorPage() {
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 pt-1">
                   <Link
                     href="/quran-tutor/studio?tab=reader"
-                    className="px-4 py-2 text-xs sm:text-sm font-bold text-emerald-950 bg-emerald-100/80 hover:bg-emerald-200 border border-emerald-300 rounded-xl transition-all flex items-center gap-1.5"
+                    className="px-5 py-2 text-xs sm:text-sm font-bold text-emerald-950 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-full transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     <BookOpen className="w-4 h-4 text-emerald-700" />
                     <span>সম্পূর্ণ কুরআন পড়ুন</span>
@@ -411,7 +535,7 @@ export default function AIQuranTutorPage() {
 
                   <button
                     onClick={togglePlayBismillah}
-                    className="px-4 py-2 text-xs sm:text-sm font-bold text-slate-700 bg-white hover:bg-emerald-50 border border-slate-200 hover:border-emerald-300 rounded-xl transition-all flex items-center gap-1.5 shadow-sm"
+                    className="px-5 py-2 text-xs sm:text-sm font-bold text-slate-700 bg-white hover:bg-emerald-50 border border-emerald-200 hover:border-emerald-300 rounded-full transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     {isPlayingAudio ? (
                       <>
@@ -428,7 +552,7 @@ export default function AIQuranTutorPage() {
 
                   <button
                     onClick={() => setIsSearchModalOpen(true)}
-                    className="px-3.5 py-2 text-xs sm:text-sm font-bold text-slate-700 bg-white hover:bg-slate-100 border border-slate-200 rounded-xl transition-all flex items-center gap-1.5 shadow-sm"
+                    className="px-4 py-2 text-xs sm:text-sm font-bold text-slate-700 bg-white hover:bg-emerald-50 border border-emerald-200 rounded-full transition-all flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
                     <Search className="w-3.5 h-3.5 text-emerald-600" />
                     <span>সূরা সার্চ</span>
@@ -525,6 +649,68 @@ export default function AIQuranTutorPage() {
         </div>
       </section>
 
+      {/* ── 📱 MUSLIM APP HIGHLIGHTED FEATURE GRID (One-Click Launch into Studio) ── */}
+      <section className="py-12 bg-[#F6FAF7] border-y border-emerald-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
+            <div>
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 text-xs font-black mb-2 border border-emerald-200">
+                <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+                <span>মুসলিম অ্যাপ অনুপ্রাণিত ফিচার হাব</span>
+              </div>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                নূর এআই প্রধান ফিচার কার্ডসমূহ
+              </h2>
+              <p className="text-sm text-slate-600 font-medium mt-1">
+                যেকোনো কার্ডে ক্লিক করলে সরাসরি দ্বিতীয় পেইজের স্টুডিওতে ফিচারটি সামনে ভেসে উঠবে
+              </p>
+            </div>
+
+            <Link
+              href="/quran-tutor/studio"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-[#0D5C43] hover:bg-[#094532] text-white text-xs font-bold shadow-md shadow-emerald-950/10 transition-all cursor-pointer group shrink-0"
+            >
+              <Bot className="w-4 h-4 text-emerald-200" />
+              <span>সম্পূর্ণ স্টুডিও কার্ড ডিরেক্টরি</span>
+              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
+            </Link>
+          </div>
+
+          {/* 8 Muslim App Quick Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4">
+            {studioQuickFeatures.map((item) => {
+              const IconComponent = item.icon;
+              return (
+                <Link
+                  key={item.id}
+                  href={item.link}
+                  className="group relative p-4 rounded-3xl bg-white border border-stone-200 hover:border-emerald-500 hover:shadow-lg transition-all duration-200 flex flex-col justify-between h-36 select-none cursor-pointer active:scale-98"
+                >
+                  <div className="flex items-start justify-between gap-1.5">
+                    <div className={`w-11 h-11 rounded-2xl ${item.iconBg} flex items-center justify-center font-bold shadow-xs group-hover:scale-105 transition-transform shrink-0`}>
+                      <IconComponent className="w-5 h-5" />
+                    </div>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 text-stone-700 border border-stone-200">
+                      {item.badge}
+                    </span>
+                  </div>
+
+                  <div className="space-y-0.5 pt-2">
+                    <h3 className="text-sm font-black text-slate-900 group-hover:text-emerald-800 transition-colors leading-tight line-clamp-1 flex items-center justify-between">
+                      <span>{item.title}</span>
+                      <ArrowRight className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all text-emerald-600 shrink-0" />
+                    </h3>
+                    <p className="text-[11px] text-slate-500 font-medium line-clamp-1">
+                      {item.subtitle}
+                    </p>
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
       {/* ── CORE VALUE FEATURES: কুরআন শিখুন যার যা দরকার, সবই ── */}
       <section id="features" className="py-20 bg-white border-t border-slate-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -541,13 +727,19 @@ export default function AIQuranTutorPage() {
             {featuresList.map((feat, idx) => {
               const IconComp = feat.icon;
               return (
-                <div 
+                <Link 
                   key={idx}
-                  className="p-6 rounded-2xl bg-white border border-slate-200/80 hover:border-emerald-300 hover:shadow-xl hover:shadow-emerald-950/5 transition-all duration-300 group flex flex-col justify-between"
+                  href={feat.link}
+                  className="p-6 rounded-3xl bg-white border border-slate-200/80 hover:border-emerald-500 hover:shadow-xl hover:shadow-emerald-950/10 transition-all duration-300 group flex flex-col justify-between cursor-pointer active:scale-[0.99]"
                 >
                   <div className="space-y-3">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300">
-                      <IconComp className="w-6 h-6" />
+                    <div className="flex items-center justify-between">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-700 flex items-center justify-center group-hover:bg-emerald-600 group-hover:text-white transition-colors duration-300 shadow-xs">
+                        <IconComp className="w-6 h-6" />
+                      </div>
+                      <span className="text-[10px] font-bold px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200">
+                        {feat.badge}
+                      </span>
                     </div>
                     <h3 className="text-lg font-bold text-slate-900 group-hover:text-emerald-800 transition-colors">
                       {feat.title}
@@ -556,7 +748,11 @@ export default function AIQuranTutorPage() {
                       {feat.desc}
                     </p>
                   </div>
-                </div>
+                  <div className="pt-4 mt-3 border-t border-slate-100 flex items-center justify-between text-xs font-bold text-emerald-700 group-hover:text-emerald-800">
+                    <span>স্টুডিওতে অনুশীলন করুন</span>
+                    <ArrowRight className="w-4 h-4 group-hover:translate-x-1.5 transition-transform" />
+                  </div>
+                </Link>
               );
             })}
           </div>

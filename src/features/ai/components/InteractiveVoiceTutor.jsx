@@ -528,87 +528,142 @@ export default function InteractiveVoiceTutor({
 
   return (
     <div
-      className={`flex flex-col h-full bg-slate-900/95 border border-emerald-900/60 rounded-2xl p-3 sm:p-5 text-slate-100 shadow-2xl font-hind-siliguri ${className}`}
+      className={`nur-theme flex flex-col h-full bg-white border border-emerald-100/90 rounded-3xl p-3 sm:p-5 text-slate-800 shadow-xl shadow-emerald-950/5 font-hind-siliguri ${className}`}
     >
       {/* ── TOP HEADER: USTADH IDENTITY & STATUS ── */}
-      <div className="flex items-center justify-between border-b border-slate-800/80 pb-3 mb-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-100 pb-3.5 mb-3.5">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600/40 to-teal-800/40 border border-emerald-500/60 flex items-center justify-center text-emerald-300 shadow-md">
-            <Bot className="w-5 h-5 text-emerald-400" />
+          <div className="relative">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 flex items-center justify-center text-[#0d7a5f] shadow-xs">
+              <Bot className="w-6 h-6 text-[#0d7a5f]" />
+            </div>
+            <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white flex items-center justify-center" title="কথা বলতে প্রস্তুত">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+            </span>
           </div>
           <div>
-            <h3 className="text-sm sm:text-base font-extrabold text-white flex items-center gap-2">
-              <span>নূর এআই কুরআন উস্তাদ</span>
-              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-600/50 text-emerald-300 font-medium">
-                {activePersona.nameBn} ({voiceConfig.gender === "male" ? "পুরুষ উস্তাদ" : "নারী শিক্ষিকা"})
+            <div className="flex items-center gap-2 flex-wrap">
+              <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                <span>{activePersona.nameBn}</span>
+                <span className="text-[11px] text-[#0d7a5f] font-semibold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  {voiceConfig.gender === "male" ? "পুরুষ উস্তাদ" : "নারী শিক্ষিকা"}
+                </span>
+              </h3>
+            </div>
+            <p className="text-xs text-slate-600 font-medium mt-0.5">
+              নূর এআই সার্বক্ষণিক কুরআন মেন্টর • <span className="text-[#0d7a5f] font-bold">প্রাকৃতিক মানুষের কণ্ঠ (২৪ kHz HD)</span>
+            </p>
+            <div className="flex items-center gap-2 text-[10px] text-slate-500 mt-1 flex-wrap">
+              <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold">
+                মুড: {activeEmotionObj.labelBn}
               </span>
-            </h3>
-            <div className="flex items-center gap-2.5 text-[11px] text-slate-400 mt-0.5">
-              <span>
-                কণ্ঠস্বর: <strong className="text-teal-300 font-semibold">{activeEmotionObj.labelBn}</strong>
-              </span>
-              <span>•</span>
-              <span className="flex items-center gap-1 text-emerald-400">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>রিয়েল-টাইম ভয়েস ইন্টারাপশন সক্রিয়</span>
+              <span className="px-2.5 py-0.5 rounded-full bg-slate-50 border border-slate-200 text-slate-700 flex items-center gap-1 font-semibold">
+                <ShieldCheck className="w-3 h-3 text-[#0d7a5f]" />
+                লাইভ ইন্টারাপশন সক্রিয়
               </span>
             </div>
           </div>
         </div>
 
         {/* Action Buttons: Reset & Settings */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 self-end sm:self-center">
           {tutorMode === "qa_dialogue" && (
             <button
               onClick={handleClearConversation}
-              className="px-2.5 py-1.5 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition-colors text-xs font-semibold flex items-center gap-1.5 cursor-pointer"
+              className="px-3.5 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
               title="নতুন কথোপকথন শুরু করুন"
             >
-              <RotateCcw className="w-3.5 h-3.5 text-slate-400" />
-              <span className="hidden sm:inline">নতুন আলোচনা</span>
+              <RotateCcw className="w-3.5 h-3.5 text-emerald-700" />
+              <span>নতুন আলোচনা</span>
             </button>
           )}
           <button
             onClick={() => setIsSettingsOpen(true)}
-            className="p-2 rounded-xl bg-slate-800/90 hover:bg-slate-700 border border-slate-700 text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="px-3.5 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-xs"
             title="ভয়েস, গতি ও পিচ সেটিংস"
           >
-            <Settings className="w-4 h-4 text-emerald-400" />
+            <Settings className="w-4 h-4 text-[#0d7a5f]" />
+            <span className="hidden sm:inline">ভয়েস সেটিংস</span>
           </button>
         </div>
       </div>
 
-      {/* ── DUAL SUBMODE SELECTOR: DIRECT VOICE TALK vs RECITATION MASHQ ── */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 p-1.5 bg-slate-950/90 border border-emerald-950/80 rounded-2xl mb-4 shadow-inner">
+      {/* ── DUAL SUBMODE SELECTOR: HIGH CLARITY 2-CARD DECK ── */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 p-1.5 bg-emerald-50/50 border border-emerald-100 rounded-2xl mb-4 shadow-inner">
         <button
           type="button"
           onClick={() => {
             if (engineRef.current) engineRef.current.interrupt();
             setTutorMode("qa_dialogue");
           }}
-          className={`py-2 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`p-3 rounded-xl transition-all duration-200 text-left border cursor-pointer flex items-center justify-between gap-3 ${
             tutorMode === "qa_dialogue"
-              ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-lg shadow-emerald-950/80 ring-1 ring-emerald-400 font-extrabold"
-              : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+              ? "bg-white border-2 border-[#0d7a5f] shadow-md text-slate-900"
+              : "bg-white/60 hover:bg-white border-transparent text-slate-600"
           }`}
         >
-          <Bot className="w-4 h-4 text-teal-300" />
-          <span>🗣️ সরাসরি উস্তাদের সাথে কথা বলুন (Voice Q&A)</span>
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+              tutorMode === "qa_dialogue"
+                ? "bg-emerald-100 text-[#0d7a5f]"
+                : "bg-slate-100 text-slate-500"
+            }`}>
+              <Bot className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className={`text-xs sm:text-sm font-extrabold ${tutorMode === "qa_dialogue" ? "text-slate-900" : "text-slate-700"}`}>
+                উস্তাদের সাথে প্রশ্নোত্তর (Voice Q&A)
+              </h4>
+              <p className={`text-[11px] leading-snug mt-0.5 ${tutorMode === "qa_dialogue" ? "text-[#0d7a5f]" : "text-slate-500"}`}>
+                মাখরাজ, তাজবীদ বা হিফজ নিয়ে মুখে মুখে প্রশ্ন করুন
+              </p>
+            </div>
+          </div>
+          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shrink-0 ${
+            tutorMode === "qa_dialogue"
+              ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+              : "bg-slate-100 text-slate-600 border-slate-200"
+          }`}>
+            ভয়েস ও চ্যাট
+          </span>
         </button>
+
         <button
           type="button"
           onClick={() => {
             if (engineRef.current) engineRef.current.interrupt();
             setTutorMode("live_class");
           }}
-          className={`py-2 px-3 rounded-xl text-xs sm:text-sm font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+          className={`p-3 rounded-xl transition-all duration-200 text-left border cursor-pointer flex items-center justify-between gap-3 ${
             tutorMode === "live_class"
-              ? "bg-gradient-to-r from-teal-700 to-emerald-700 text-white shadow-lg shadow-emerald-950/80 ring-1 ring-emerald-400 font-extrabold"
-              : "text-slate-400 hover:text-white hover:bg-slate-800/50"
+              ? "bg-white border-2 border-[#0d7a5f] shadow-md text-slate-900"
+              : "bg-white/60 hover:bg-white border-transparent text-slate-600"
           }`}
         >
-          <Mic className="w-4 h-4 text-emerald-300" />
-          <span>📖 সরাসরি মুখে মুখে কুরআন মাশক (Recitation Mashq)</span>
+          <div className="flex items-center gap-2.5">
+            <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+              tutorMode === "live_class"
+                ? "bg-teal-100 text-teal-800"
+                : "bg-slate-100 text-slate-500"
+            }`}>
+              <Mic className="w-4 h-4" />
+            </div>
+            <div>
+              <h4 className={`text-xs sm:text-sm font-extrabold ${tutorMode === "live_class" ? "text-slate-900" : "text-slate-700"}`}>
+                লাইভ কুরআন মাশক (Recitation Mashq)
+              </h4>
+              <p className={`text-[11px] leading-snug mt-0.5 ${tutorMode === "live_class" ? "text-[#0d7a5f]" : "text-slate-500"}`}>
+                উস্তাদের সামনে আয়াত পাঠ করুন, এআই ভুল ধরিয়ে দেবে
+              </p>
+            </div>
+          </div>
+          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border shrink-0 ${
+            tutorMode === "live_class"
+              ? "bg-teal-100 text-teal-800 border-teal-300"
+              : "bg-slate-100 text-slate-600 border-slate-200"
+          }`}>
+            মুখোমুখি ক্লাস
+          </span>
         </button>
       </div>
 
@@ -616,18 +671,18 @@ export default function InteractiveVoiceTutor({
       {tutorMode === "qa_dialogue" ? (
         <div className="flex flex-col flex-1 min-h-0 space-y-3">
           {/* ── CENTRAL INTERACTIVE CALL ORB & STATUS HUB ── */}
-          <div className="bg-gradient-to-br from-slate-950/90 via-[#071a13]/80 to-slate-950/90 border border-emerald-900/60 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+          <div className="bg-gradient-to-r from-emerald-50/80 via-white to-teal-50/80 border border-emerald-200/80 rounded-2xl p-4 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xs">
             {/* Left/Center: Voice Orb Button */}
             <div className="flex items-center gap-4">
               <button
                 type="button"
                 onClick={handleToggleListening}
-                className={`relative w-16 h-16 rounded-2xl flex items-center justify-center transition-all duration-300 flex-shrink-0 cursor-pointer ${
+                className={`relative w-16 h-16 rounded-full flex items-center justify-center transition-all duration-300 flex-shrink-0 cursor-pointer ${
                   voiceState === "listening"
-                    ? "bg-rose-600 text-white shadow-xl shadow-rose-600/50 ring-4 ring-rose-400/40 animate-pulse scale-105"
+                    ? "bg-rose-500 text-white shadow-xl shadow-rose-500/40 ring-4 ring-rose-200 animate-pulse scale-105"
                     : voiceState === "speaking"
-                    ? "bg-teal-600 text-white hover:bg-rose-600 ring-4 ring-teal-400/40 shadow-xl shadow-teal-700/40"
-                    : "bg-gradient-to-br from-emerald-600 to-teal-700 hover:from-emerald-500 hover:to-teal-600 text-white shadow-xl shadow-emerald-900/50 ring-4 ring-emerald-500/20 active:scale-95"
+                    ? "bg-teal-600 text-white hover:bg-rose-600 ring-4 ring-teal-200 shadow-xl shadow-teal-600/30"
+                    : "bg-gradient-to-br from-[#0d7a5f] to-[#085a45] hover:from-[#0b664f] hover:to-[#064e3b] text-white shadow-lg shadow-emerald-900/20 ring-4 ring-emerald-100 active:scale-95"
                 }`}
                 title={
                   voiceState === "listening"
@@ -646,7 +701,7 @@ export default function InteractiveVoiceTutor({
                 )}
                 {/* Ping wave effect when active */}
                 {voiceState === "listening" && (
-                  <span className="absolute inset-0 rounded-2xl border-2 border-rose-400 animate-ping opacity-75 pointer-events-none" />
+                  <span className="absolute inset-0 rounded-full border-2 border-rose-400 animate-ping opacity-75 pointer-events-none" />
                 )}
               </button>
 
@@ -655,13 +710,13 @@ export default function InteractiveVoiceTutor({
                   <span
                     className={`w-2.5 h-2.5 rounded-full ${
                       voiceState === "listening"
-                        ? "bg-rose-400 animate-ping"
+                        ? "bg-rose-500 animate-ping"
                         : voiceState === "speaking"
-                        ? "bg-teal-400 animate-pulse"
-                        : "bg-emerald-400"
+                        ? "bg-teal-500 animate-pulse"
+                        : "bg-emerald-500"
                     }`}
                   />
-                  <h4 className="text-sm font-extrabold text-white">
+                  <h4 className="text-sm font-extrabold text-slate-900">
                     {voiceState === "listening"
                       ? "🔴 আপনার কথা শুনছি..."
                       : voiceState === "speaking"
@@ -671,7 +726,7 @@ export default function InteractiveVoiceTutor({
                       : "🎙️ মাইকে সরাসরি কথা বলুন"}
                   </h4>
                 </div>
-                <p className="text-xs text-slate-300 mt-1 max-w-md leading-relaxed">
+                <p className="text-xs text-slate-600 mt-1 max-w-md leading-relaxed">
                   {voiceState === "listening"
                     ? spokenTranscript || "আপনার প্রশ্ন বা তিলাওয়াত বলুন (বলা শেষ হলে উস্তাদজি স্বয়ংক্রিয় উত্তর দেবেন)"
                     : voiceState === "speaking"
@@ -682,9 +737,9 @@ export default function InteractiveVoiceTutor({
             </div>
 
             {/* Right: Audio Waveform Frequency Visualizer */}
-            <div className="flex items-center gap-1 bg-black/40 px-3 py-2 rounded-xl border border-emerald-900/50">
-              <span className="text-[10px] text-emerald-400 font-bold mr-2 uppercase tracking-wider">
-                অডিও তরঙ্গ:
+            <div className="flex items-center gap-1.5 bg-white px-3.5 py-2 rounded-full border border-emerald-200/80 shadow-xs">
+              <span className="text-[10px] text-[#0d7a5f] font-bold mr-1 uppercase tracking-wider">
+                তরঙ্গ:
               </span>
               <div className="flex items-end gap-1 h-6">
                 {audioBars.map((height, i) => (
@@ -692,10 +747,10 @@ export default function InteractiveVoiceTutor({
                     key={i}
                     className={`w-1.5 rounded-full transition-all duration-75 ${
                       voiceState === "listening"
-                        ? "bg-rose-400"
+                        ? "bg-rose-500"
                         : voiceState === "speaking"
-                        ? "bg-teal-400"
-                        : "bg-emerald-600/60"
+                        ? "bg-teal-500"
+                        : "bg-emerald-500/70"
                     }`}
                     style={{ height: `${Math.max(15, height)}%` }}
                   />
@@ -705,7 +760,7 @@ export default function InteractiveVoiceTutor({
           </div>
 
           {/* ── CONVERSATION MESSAGE LIST ── */}
-          <div className="flex-1 overflow-y-auto space-y-3.5 pr-2 scrollbar-thin min-h-[300px] max-h-[460px] bg-slate-950/40 p-3 rounded-2xl border border-slate-800/60">
+          <div className="flex-1 overflow-y-auto space-y-3.5 pr-2 scrollbar-thin min-h-[300px] max-h-[460px] bg-emerald-50/30 p-3 sm:p-4 rounded-2xl border border-emerald-100">
             {conversationHistory.map((msg, idx) => (
               <div
                 key={idx}
@@ -714,50 +769,55 @@ export default function InteractiveVoiceTutor({
                 }`}
               >
                 <div
-                  className={`max-w-[92%] sm:max-w-[85%] p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed ${
+                  className={`max-w-[92%] sm:max-w-[85%] p-4 rounded-3xl text-xs sm:text-sm leading-relaxed ${
                     msg.role === "user"
-                      ? "bg-gradient-to-r from-emerald-700 to-teal-700 text-white rounded-br-none shadow-md"
-                      : "bg-slate-800/90 border border-slate-700/80 text-slate-200 rounded-bl-none shadow-md"
+                      ? "bg-gradient-to-r from-[#0d7a5f] to-[#085a45] text-white rounded-br-xs shadow-sm"
+                      : "bg-white border border-emerald-200/80 text-slate-800 rounded-bl-xs shadow-xs"
                   }`}
                 >
-                  <div className="flex items-center justify-between mb-1.5 opacity-80 text-[11px] font-medium border-b border-white/10 pb-1">
+                  <div className="flex items-center justify-between mb-1.5 opacity-80 text-[11px] font-medium border-b border-black/5 pb-1">
                     <span className="flex items-center gap-1.5">
                       {msg.role === "user" ? (
                         <>
-                          <User className="w-3.5 h-3.5 text-emerald-300" />
+                          <User className="w-3.5 h-3.5 text-emerald-200" />
                           <span className="font-bold">আপনি</span>
                         </>
                       ) : (
                         <>
-                          <Bot className="w-3.5 h-3.5 text-emerald-400" />
-                          <span className="font-bold text-emerald-300">{activePersona.nameBn}</span>
+                          <Bot className="w-3.5 h-3.5 text-[#0d7a5f]" />
+                          <span className="font-bold text-[#0d7a5f]">{activePersona.nameBn}</span>
                         </>
                       )}
                     </span>
                     <span className="text-[10px] text-slate-400">{msg.timestamp}</span>
                   </div>
 
-                  <p className="whitespace-pre-line text-slate-100 font-normal leading-relaxed">
+                  <p className="whitespace-pre-line font-normal leading-relaxed">
                     {msg.text}
                   </p>
 
                   {/* Actions inside assistant message */}
                   {msg.role === "assistant" && (
-                    <div className="mt-3 pt-2.5 border-t border-slate-700/60 flex flex-wrap items-center gap-2">
+                    <div className="mt-3 pt-2.5 border-t border-slate-100 flex flex-wrap items-center gap-2">
                       <button
                         onClick={() => handleSpeakSingleMessage(msg.text, idx)}
-                        className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-950 border border-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer"
-                        title="উস্তাদের কণ্ঠে শুনুন"
+                        className={`px-3.5 py-1.5 rounded-full border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${
+                          currentlySpeakingIdx === idx
+                            ? "bg-rose-50 border-rose-300 text-rose-700 ring-1 ring-rose-400"
+                            : "bg-emerald-50 hover:bg-emerald-100 border-emerald-200 text-emerald-800"
+                        }`}
+                        title="উস্তাদের প্রাকৃতিক কণ্ঠে শুনুন"
                       >
                         {currentlySpeakingIdx === idx ? (
                           <>
-                            <VolumeX className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
+                            <VolumeX className="w-3.5 h-3.5 text-rose-500 animate-pulse" />
                             <span>কথা থামান</span>
                           </>
                         ) : (
                           <>
-                            <Volume2 className="w-3.5 h-3.5 text-emerald-400" />
+                            <Volume2 className="w-3.5 h-3.5 text-[#0d7a5f]" />
                             <span>উস্তাদের কণ্ঠে শুনুন</span>
+                            <span className="text-[10px] text-emerald-700 bg-emerald-100 px-1.5 py-0.2 rounded-full font-bold">HD</span>
                           </>
                         )}
                       </button>
@@ -765,16 +825,16 @@ export default function InteractiveVoiceTutor({
                       {msg.demonstrationAudioUrl && (
                         <button
                           onClick={() => playDemoAudio(msg.demonstrationAudioUrl)}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-600/50 text-emerald-300 font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-[#0d7a5f] font-bold text-xs flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                         >
                           {isPlayingDemo ? (
                             <>
-                              <Square className="w-3.5 h-3.5 fill-emerald-400" />
+                              <Square className="w-3.5 h-3.5 fill-[#0d7a5f]" />
                               <span>ডেমো থামান</span>
                             </>
                           ) : (
                             <>
-                              <Play className="w-3.5 h-3.5 fill-emerald-400" />
+                              <Play className="w-3.5 h-3.5 fill-[#0d7a5f]" />
                               <span>বিশুদ্ধ ক্বারী তিলাওয়াত ডেমো</span>
                             </>
                           )}
@@ -786,9 +846,9 @@ export default function InteractiveVoiceTutor({
                           onClick={() =>
                             onMakhrajHighlight(msg.makhrajHighlight.toLowerCase())
                           }
-                          className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-medium flex items-center gap-1.5 transition-colors cursor-pointer"
+                          className="px-3.5 py-1.5 rounded-full bg-slate-50 hover:bg-slate-100 border border-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
                         >
-                          <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+                          <BookOpen className="w-3.5 h-3.5 text-[#0d7a5f]" />
                           <span>মাখরাজ মানচিত্রে দেখুন</span>
                         </button>
                       )}
@@ -801,8 +861,8 @@ export default function InteractiveVoiceTutor({
             {/* Analyzing State Indicator */}
             {voiceState === "analyzing" && (
               <div className="flex items-start">
-                <div className="bg-slate-800/90 border border-amber-600/50 rounded-2xl p-3 text-xs sm:text-sm text-amber-200 flex items-center gap-2.5 shadow-md">
-                  <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+                <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3 text-xs sm:text-sm text-amber-900 flex items-center gap-2.5 shadow-xs">
+                  <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
                   <span>উস্তাদজি উত্তর প্রস্তুত করছেন...</span>
                 </div>
               </div>
@@ -812,13 +872,13 @@ export default function InteractiveVoiceTutor({
           </div>
 
           {/* ── QUICK QUESTIONS STARTER CHIPS ── */}
-          <div className="bg-slate-950/60 border border-slate-800/70 rounded-xl p-2.5">
-            <div className="text-[11px] font-bold text-slate-300 mb-1.5 flex items-center justify-between">
+          <div className="bg-white border border-emerald-100 rounded-2xl p-3 shadow-xs">
+            <div className="text-[11px] font-bold text-slate-700 mb-2 flex items-center justify-between">
               <span className="flex items-center gap-1.5">
-                <HelpCircle className="w-3.5 h-3.5 text-emerald-400" />
+                <HelpCircle className="w-3.5 h-3.5 text-[#0d7a5f]" />
                 <span>সরাসরি প্রশ্ন করতে ক্লিক করুন (এক ক্লিকেই উত্তর ও কণ্ঠস্বর):</span>
               </span>
-              <span className="text-emerald-400 text-[10px]">বাংলা অডিও উত্তর</span>
+              <span className="text-[#0d7a5f] text-[10px] bg-emerald-50 px-2 py-0.5 rounded-full font-bold">বাংলা অডিও উত্তর</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {[
@@ -834,7 +894,7 @@ export default function InteractiveVoiceTutor({
                 <button
                   key={q}
                   onClick={() => submitVoiceQuery(q)}
-                  className="px-2.5 py-1 rounded-lg text-xs bg-slate-900 hover:bg-emerald-950 hover:border-emerald-500 border border-slate-800 text-slate-300 hover:text-emerald-200 transition-all text-left cursor-pointer"
+                  className="px-3 py-1.5 rounded-full text-xs bg-emerald-50/60 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-900 font-medium transition-all text-left cursor-pointer shadow-xs active:scale-95"
                 >
                   {q}
                 </button>
@@ -843,15 +903,15 @@ export default function InteractiveVoiceTutor({
           </div>
 
           {/* ── UNIFIED STICKY INPUT CONTROLLER ── */}
-          <div className="bg-slate-950/95 border border-emerald-950 rounded-2xl p-2.5 flex items-center gap-2.5 shadow-xl">
+          <div className="bg-white border border-emerald-200 rounded-full p-2 flex items-center gap-2 shadow-md">
             <button
               onClick={handleToggleListening}
-              className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-200 flex-shrink-0 cursor-pointer ${
+              className={`w-11 h-11 rounded-full flex items-center justify-center transition-all duration-200 flex-shrink-0 cursor-pointer ${
                 voiceState === "listening"
-                  ? "bg-rose-600 text-white shadow-lg shadow-rose-600/40 animate-pulse ring-2 ring-rose-400"
+                  ? "bg-rose-500 text-white shadow-lg shadow-rose-500/30 animate-pulse ring-2 ring-rose-300"
                   : voiceState === "speaking"
-                  ? "bg-teal-600 text-white hover:bg-rose-600 ring-2 ring-teal-400"
-                  : "bg-emerald-600/90 hover:bg-emerald-500 text-white shadow-md shadow-emerald-900/40 active:scale-95"
+                  ? "bg-teal-600 text-white hover:bg-rose-600 ring-2 ring-teal-300"
+                  : "bg-[#0d7a5f] hover:bg-[#0b664f] text-white shadow-md shadow-emerald-900/20 active:scale-95"
               }`}
               title={
                 voiceState === "listening"
@@ -882,13 +942,13 @@ export default function InteractiveVoiceTutor({
                 }
               }}
               placeholder="এখানে প্রশ্ন লিখুন বা সরাসরি মাইকে কথা বলুন..."
-              className="flex-1 bg-slate-900/90 border border-slate-700/80 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500"
+              className="flex-1 bg-transparent border-0 px-3 py-2 text-xs sm:text-sm text-slate-800 placeholder:text-slate-400 focus:outline-none"
             />
 
             <button
               onClick={() => submitVoiceQuery(textInput)}
               disabled={!textInput.trim() || voiceState === "analyzing"}
-              className="px-4 h-11 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-40 disabled:hover:bg-emerald-600 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all flex-shrink-0 shadow-md cursor-pointer"
+              className="px-5 h-10 rounded-full bg-[#0d7a5f] hover:bg-[#0b664f] disabled:opacity-40 disabled:hover:bg-[#0d7a5f] text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all flex-shrink-0 shadow-sm cursor-pointer"
               title="প্রশ্ন পাঠান"
             >
               {voiceState === "analyzing" ? (

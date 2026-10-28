@@ -394,7 +394,9 @@ export class VoiceAgentEngine {
     // 1. PRIMARY HIGH-QUALITY PATH: Neural TTS API (/api/ai/tts)
     try {
       const ttsUrl = `/api/ai/tts?text=${encodeURIComponent(spokenText)}&lang=${langCode}&gender=${this.gender}`;
-      const audio = new Audio(ttsUrl);
+      const audio = new Audio();
+      audio.crossOrigin = "anonymous";
+      audio.src = ttsUrl;
       this.currentAudio = audio;
 
       // Always preserve pitch naturally to prevent metallic robotic aliasing and pitch-drag artifacts

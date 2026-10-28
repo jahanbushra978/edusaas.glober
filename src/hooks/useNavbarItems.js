@@ -49,6 +49,7 @@ const FALLBACK_MENU = (t) => [
     label: "নূর AI শিক্ষক",
     to: "/quran-tutor",
     subItems: [
+      { label: "🌸 নূর এআই শিক্ষক পাঠশালা", to: "/quran-tutor/teacher" },
       { label: "🎯 এআই কোরআন শিক্ষা (Duolingo)", to: "/ai-quran-learning" },
       { label: "🎙️ লাইভ ভয়েস ক্লাসরুম", to: "/quran-tutor/live-class" },
       { label: "📖 সম্পূর্ণ কুরআন", to: "/quran-tutor/studio?tab=reader" },

@@ -161,7 +161,7 @@ export const LETTER_MAKHRAJ_DATABASE = {
     tipsBn: "আলিফ খালি অবস্থায় তার পূর্ববর্তী হরফের যবরকে ১ আলিফ টেনে স্বাভাবিক প্রবাহে পড়তে হয়।",
   },
   "ب": {
-    letter: "ব",
+    letter: "ب",
     nameBn: "বা",
     nameAr: "بَاء",
     organId: "shafatan",
@@ -832,7 +832,7 @@ export const MAKHRAJ_ZONES = [
       },
       {
         nameBn: "দুই ঠোঁটের পারস্পরিক মিলন ও গোল হওয়া",
-        letters: ["ব", "م", "و"],
+        letters: ["ب", "م", "و"],
         ruleBn:
           "বা (ب) ভিজা অংশে চেপে, মীম (م) শুকনা অংশে লেগে, এবং ওয়াও (و) ঠোঁট গোল করে বের হয়।",
       },
@@ -1273,34 +1273,34 @@ export default function MakhrajVisualizer({
   };
 
   return (
-    <div className="bg-slate-900/95 border border-emerald-900/60 rounded-2xl p-4 sm:p-5 text-slate-200 shadow-2xl backdrop-blur-md">
+    <div className="bg-white border border-emerald-100 rounded-3xl p-4 sm:p-5 text-slate-800 shadow-sm backdrop-blur-md">
       {/* ── TOP HEADER: TITLE & STATS ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-800 pb-3 mb-4 gap-2">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-emerald-100 pb-3 mb-4 gap-2">
         <div className="flex items-center gap-2.5">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-900 to-teal-900 border border-emerald-600/40 flex items-center justify-center text-emerald-400 shadow-md">
-            <BookOpen className="w-5 h-5" />
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#0d7a5f] to-[#064e3b] flex items-center justify-center text-white shadow-md shadow-emerald-900/10">
+            <BookOpen className="w-5 h-5 text-emerald-100" />
           </div>
           <div>
-            <h3 className="text-base font-bold text-white flex items-center gap-1.5">
+            <h3 className="text-base font-bold text-slate-900 flex items-center gap-1.5">
               মাখরাজ ভিজ্যুয়ালাইজার ও অঙ্গ-ভঙ্গি স্টুডিও
-              <span className="text-xs text-emerald-400 font-sans font-normal hidden md:inline">
+              <span className="text-xs text-emerald-700 font-sans font-normal hidden md:inline">
                 (Tajweed Makhraj Studio)
               </span>
             </h3>
-            <p className="text-[11px] text-slate-400 mt-0.5">
+            <p className="text-[11px] text-emerald-800 mt-0.5 font-medium">
               নিখুঁত অ্যানাটমিক্যাল চিত্র, ১৭টি মাখরাজ ও খাঁটি ক্বারীর তিলাওয়াত মশক্ব
             </p>
           </div>
         </div>
 
         {/* View Mode Toggle: Organ View vs All 29 Letters Grid */}
-        <div className="flex items-center gap-1.5 self-start sm:self-auto bg-slate-950/70 p-1 rounded-xl border border-slate-800">
+        <div className="flex items-center gap-1.5 self-start sm:self-auto bg-[#faf8f2] p-1 rounded-full border border-emerald-100">
           <button
             onClick={() => setActiveTab("organ")}
-            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1 text-xs rounded-full font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === "organ"
-                ? "bg-emerald-600 text-white shadow-md"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-[#0d7a5f] text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <Layers className="w-3.5 h-3.5" />
@@ -1308,10 +1308,10 @@ export default function MakhrajVisualizer({
           </button>
           <button
             onClick={() => setActiveTab("all29")}
-            className={`px-2.5 py-1 text-xs rounded-lg font-medium transition-all flex items-center gap-1.5 ${
+            className={`px-3 py-1 text-xs rounded-full font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
               activeTab === "all29"
-                ? "bg-emerald-600 text-white shadow-md"
-                : "text-slate-400 hover:text-slate-200"
+                ? "bg-[#0d7a5f] text-white shadow-xs"
+                : "text-slate-600 hover:text-slate-900"
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
@@ -1321,12 +1321,12 @@ export default function MakhrajVisualizer({
       </div>
 
       {/* ── QARI & AUDIO MODE SELECTOR BAR ── */}
-      <div className="bg-slate-950/80 border border-slate-800 rounded-xl p-3 mb-4">
+      <div className="bg-[#faf8f2] border border-emerald-100 rounded-2xl p-3 mb-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
           {/* Left: Qari Selection */}
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-xs font-semibold text-slate-300 flex items-center gap-1.5">
-              <User className="w-3.5 h-3.5 text-emerald-400" />
+            <span className="text-xs font-bold text-emerald-900 flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5 text-emerald-700" />
               <span>ক্বারী নির্বাচন:</span>
             </span>
             <div className="flex items-center gap-1.5 flex-wrap">
@@ -1336,15 +1336,15 @@ export default function MakhrajVisualizer({
                   <button
                     key={shaykh.id}
                     onClick={() => handleSelectShaykh(shaykh.id)}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all flex items-center gap-1.5 border ${
+                    className={`px-2.5 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 border cursor-pointer ${
                       isSelected
-                        ? "bg-emerald-950/90 border-emerald-400 text-emerald-200 shadow-md ring-1 ring-emerald-400/50"
-                        : "bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200 hover:bg-slate-800"
+                        ? "bg-gradient-to-br from-[#0d7a5f] to-[#0a634d] text-white border-2 border-[#d4af37] shadow-xs"
+                        : "bg-white text-slate-700 border-emerald-200 hover:bg-emerald-50"
                     }`}
                   >
                     <span>{shaykh.flagEmoji}</span>
                     <span className="truncate max-w-[120px]">{shaykh.displayTitleBn}</span>
-                    {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />}
+                    {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-amber-300 animate-pulse" />}
                   </button>
                 );
               })}
@@ -1352,28 +1352,28 @@ export default function MakhrajVisualizer({
           </div>
 
           {/* Right: Audio Mode Selector (Quran Mashq vs Noorani Qaida) */}
-          <div className="flex items-center gap-2 self-start lg:self-auto pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-800">
-            <span className="text-xs text-slate-400 flex items-center gap-1">
-              <Headphones className="w-3.5 h-3.5 text-amber-400" />
+          <div className="flex items-center gap-2 self-start lg:self-auto pt-2 lg:pt-0 border-t lg:border-t-0 border-emerald-200">
+            <span className="text-xs text-slate-600 font-medium flex items-center gap-1">
+              <Headphones className="w-3.5 h-3.5 text-amber-600" />
               <span className="hidden sm:inline">মোড:</span>
             </span>
-            <div className="flex items-center gap-1 bg-slate-900 p-0.5 rounded-lg border border-slate-800">
+            <div className="flex items-center gap-1 bg-white p-0.5 rounded-full border border-emerald-200">
               <button
                 onClick={() => setPlaybackMode("qari")}
-                className={`px-2 py-1 text-xs rounded-md transition-all font-medium ${
+                className={`px-3 py-1 text-xs rounded-full transition-all font-bold cursor-pointer ${
                   playbackMode === "qari"
-                    ? "bg-amber-600/90 text-white shadow-sm"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-[#0d7a5f] text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 কুরআনিক মশক্ব
               </button>
               <button
                 onClick={() => setPlaybackMode("qaida")}
-                className={`px-2 py-1 text-xs rounded-md transition-all font-medium ${
+                className={`px-3 py-1 text-xs rounded-full transition-all font-bold cursor-pointer ${
                   playbackMode === "qaida"
-                    ? "bg-teal-600/90 text-white shadow-sm"
-                    : "text-slate-400 hover:text-slate-200"
+                    ? "bg-[#0d7a5f] text-white shadow-xs"
+                    : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 নূরানী কায়েদা হরফ
@@ -1386,8 +1386,25 @@ export default function MakhrajVisualizer({
       {/* ── VIEW 1: ORGAN TABS VIEW (Anatomical Diagram + Organ Sub-zones) ── */}
       {activeTab === "organ" && (
         <>
+          {/* Onosaee Child-Friendly "মাখরাজ কি?" Educational Card */}
+          <div className="mb-4 p-3.5 sm:p-4 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 shadow-xs flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shrink-0 shadow-xs">
+                <Info className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="text-xs sm:text-sm font-black text-emerald-950 dark:text-emerald-200">
+                  মাখরাজ কি? (উচ্চারণের মূল স্থানসমূহ)
+                </h4>
+                <p className="text-[11px] text-emerald-800/90 dark:text-emerald-300/80 font-medium leading-relaxed mt-0.5">
+                  মাখরাজ হলো আরবি হরফ শুদ্ধভাবে উচ্চারণের স্থান। কণ্ঠনালী, জিহ্বা, ঠোঁট, মুখের ভেতর ও নাকের বাঁশি — এই ৫টি প্রধান অঙ্গের ১৭টি নির্দিষ্ট স্থান থেকে ২৯টি হরফ উচ্চারিত হয়।
+                </p>
+              </div>
+            </div>
+          </div>
+
           {/* 5 Major Organ Zone Tabs */}
-          <div className="grid grid-cols-5 gap-1 sm:gap-1.5 mb-4">
+          <div className="grid grid-cols-5 gap-1.5 sm:gap-2 mb-4">
             {MAKHRAJ_ZONES.map((zone) => {
               const isActive = zone.id === activeZoneId;
               return (
@@ -1398,34 +1415,32 @@ export default function MakhrajVisualizer({
                     if (onZoneChange) onZoneChange(zone.id);
                     setSelectedLetter(zone.subZones[0].letters[0]);
                   }}
-                  className={`py-2 px-1 text-center rounded-xl transition-all duration-200 text-xs border relative overflow-hidden ${
+                  className={`py-2 px-1 text-center rounded-2xl transition-all duration-200 text-xs border relative overflow-hidden cursor-pointer active:scale-95 ${
                     isActive
-                      ? "text-white font-bold shadow-lg"
-                      : "bg-slate-800/40 text-slate-400 border-slate-700/50 hover:bg-slate-800 hover:text-slate-200"
+                      ? "text-white font-extrabold shadow-md scale-102"
+                      : "bg-slate-50 dark:bg-slate-800/60 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-emerald-50 dark:hover:bg-slate-800 hover:text-emerald-900"
                   }`}
                   style={
                     isActive
                       ? {
-                          background: `linear-gradient(135deg, ${zone.color}33, ${zone.color}22)`,
+                          background: `linear-gradient(135deg, ${zone.color}, ${zone.color}dd)`,
                           borderColor: zone.color,
-                          boxShadow: `0 0 12px ${zone.glowColor}`,
+                          boxShadow: `0 4px 12px ${zone.glowColor}`,
                         }
                       : {}
                   }
                 >
                   {isActive && (
                     <div
-                      className="absolute bottom-0 left-0 right-0 h-0.5"
-                      style={{ background: zone.color }}
+                      className="absolute bottom-0 left-0 right-0 h-1 bg-white/40"
                     />
                   )}
                   <div
-                    className="text-[10px] sm:text-xs font-serif truncate"
-                    style={isActive ? { color: zone.color } : {}}
+                    className="text-xs sm:text-sm font-extrabold truncate"
                   >
                     {zone.nameBn.split("(")[0].trim()}
                   </div>
-                  <div className="text-[9px] opacity-70 font-mono hidden sm:block mt-0.5">
+                  <div className="text-[10px] sm:text-xs opacity-90 font-serif hidden sm:block mt-0.5">
                     {zone.nameAr}
                   </div>
                 </button>
@@ -1518,25 +1533,25 @@ export default function MakhrajVisualizer({
 
               {/* Dedicated Precision Articulation Posture Guide (অঙ্গ-ভঙ্গি ও স্পর্শবিন্দু) */}
               <div
-                className="rounded-xl p-2.5 border mt-2"
+                className="rounded-xl p-3 border mt-2"
                 style={{
-                  background: `${activeZone.color}10`,
-                  borderColor: `${activeZone.color}30`,
+                  background: `${activeZone.color}15`,
+                  borderColor: `${activeZone.color}35`,
                 }}
               >
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-1.5">
                   <span
-                    className="text-[11px] font-bold flex items-center gap-1"
+                    className="text-xs sm:text-sm font-bold flex items-center gap-1.5"
                     style={{ color: activeZone.color }}
                   >
-                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <CheckCircle2 className="w-4 h-4" />
                     <span>অঙ্গ-ভঙ্গি ও স্পর্শবিন্দু:</span>
                   </span>
-                  <span className="text-[10px] text-amber-300 font-serif">
+                  <span className="text-xs sm:text-sm text-amber-300 font-serif font-bold">
                     {letterDetails.contactAr}
                   </span>
                 </div>
-                <p className="text-[11px] text-slate-200 leading-relaxed font-sans">
+                <p className="text-xs sm:text-sm text-slate-100 leading-relaxed font-sans">
                   {letterDetails.postureBn}
                 </p>
               </div>
@@ -1545,67 +1560,99 @@ export default function MakhrajVisualizer({
             {/* Right: Sub-zone Letters & Articulation Details */}
             <div className="md:col-span-7 flex flex-col justify-between gap-3">
               <div>
-                <div className="text-[11px] text-slate-400 font-medium mb-2 flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-emerald-400" />
+                <div className="text-xs sm:text-sm text-emerald-900 font-bold mb-2.5 flex items-center gap-2 bg-emerald-50 border border-emerald-200 px-3.5 py-2 rounded-2xl">
+                  <Info className="w-4 h-4 text-emerald-700 flex-shrink-0" />
                   <span>হরফ নির্বাচন করুন ও ক্বারীর মশক্ব শুনুন:</span>
                 </div>
 
                 {/* Subzone Letter Pills */}
                 <div className="space-y-2.5">
-                  {activeZone.subZones.map((sz, szIdx) => (
-                    <div key={szIdx}>
-                      <div className="text-[9px] text-slate-400 font-medium mb-1 tracking-wider">
-                        {sz.nameBn}
-                      </div>
-                      <div className="flex flex-wrap gap-1.5">
-                        {sz.letters.map((letter) => {
-                          const isSelected = letter === selectedLetter;
-                          return (
-                            <button
-                              key={letter}
-                              onClick={() => handleLetterClick(letter)}
-                              className={`h-9 min-w-[38px] px-2.5 rounded-xl font-serif text-base transition-all duration-150 flex items-center justify-center border ${
-                                isSelected
-                                  ? "text-white border-opacity-80 font-bold scale-110 shadow-lg ring-2"
-                                  : "bg-slate-800/80 text-slate-200 border-slate-700 hover:bg-slate-700 hover:border-slate-500"
+                  {activeZone.subZones.map((sz, szIdx) => {
+                    const isSubZoneActive = sz.letters.includes(selectedLetter);
+                    return (
+                      <div
+                        key={szIdx}
+                        className={`p-2.5 sm:p-3 rounded-2xl transition-all duration-200 border ${
+                          isSubZoneActive
+                            ? "bg-amber-50/80 border-2 border-amber-400 shadow-xs ring-1 ring-amber-300"
+                            : "bg-[#faf8f2] border-emerald-100/80 hover:bg-white hover:border-emerald-200"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between gap-2 mb-2">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`w-2.5 h-2.5 rounded-full transition-all flex-shrink-0 ${
+                                isSubZoneActive
+                                  ? "bg-amber-500 scale-125 shadow-xs animate-pulse"
+                                  : "bg-emerald-600"
                               }`}
-                              style={
-                                isSelected
-                                  ? {
-                                      background: `linear-gradient(135deg, ${activeZone.color}cc, ${activeZone.color}88)`,
-                                      borderColor: activeZone.color,
-                                      boxShadow: `0 0 12px ${activeZone.glowColor}`,
-                                      ringColor: activeZone.color,
-                                    }
-                                  : {}
-                              }
+                            />
+                            <h5
+                              className={`text-sm sm:text-[15px] font-bold tracking-normal transition-colors ${
+                                isSubZoneActive
+                                  ? "text-amber-950 font-extrabold"
+                                  : "text-slate-800"
+                              }`}
                             >
-                              {letter}
-                            </button>
-                          );
-                        })}
+                              {sz.nameBn}
+                            </h5>
+                          </div>
+                          {isSubZoneActive && (
+                            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-bold hidden sm:inline-block">
+                              নির্বাচিত মাখরাজ
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {sz.letters.map((letter) => {
+                            const isSelected = letter === selectedLetter;
+                            return (
+                              <button
+                                key={letter}
+                                onClick={() => handleLetterClick(letter)}
+                                className={`h-11 min-w-[44px] px-3.5 rounded-2xl font-serif text-lg sm:text-xl font-bold transition-all duration-150 flex items-center justify-center border cursor-pointer ${
+                                  isSelected
+                                    ? "text-white border-opacity-90 scale-110 shadow-md ring-2"
+                                    : "bg-white text-slate-800 border-emerald-200 hover:bg-emerald-50 hover:border-emerald-400 hover:text-[#0d7a5f] shadow-xs"
+                                }`}
+                                style={
+                                  isSelected
+                                    ? {
+                                        background: `linear-gradient(135deg, ${activeZone.color}ee, ${activeZone.color}aa)`,
+                                        borderColor: activeZone.color,
+                                        boxShadow: `0 0 14px ${activeZone.glowColor}`,
+                                        ringColor: activeZone.color,
+                                      }
+                                    : {}
+                                }
+                              >
+                                {letter}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
               {/* Sub-zone Rule Description */}
               <div
-                className="rounded-xl p-3 border mt-1"
+                className="rounded-2xl p-3 sm:p-3.5 border mt-2"
                 style={{
                   background: `${activeZone.color}10`,
                   borderColor: `${activeZone.color}30`,
                 }}
               >
                 <div
-                  className="text-xs font-semibold mb-1 flex items-center gap-1.5"
+                  className="text-sm sm:text-base font-bold mb-1 flex items-center gap-2"
                   style={{ color: activeZone.color }}
                 >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  {activeSubZone?.nameBn}
+                  <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                  <span>{activeSubZone?.nameBn}</span>
                 </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
+                <p className="text-xs sm:text-sm text-slate-800 leading-relaxed font-medium">
                   {activeSubZone?.ruleBn}
                 </p>
               </div>
@@ -1667,16 +1714,17 @@ export default function MakhrajVisualizer({
               {selectedLetter}
             </div>
             <div>
-              <div className="flex items-center gap-2">
-                <h4 className="text-base font-bold text-white">
-                  হরফ: {letterDetails.nameBn} ({letterDetails.nameAr})
+              <div className="flex items-center gap-2 flex-wrap">
+                <h4 className="text-base sm:text-lg font-bold text-white">
+                  হরফ: <span className="text-amber-300">{letterDetails.nameBn}</span> ({letterDetails.nameAr})
                 </h4>
-                <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-950/80 text-emerald-300 border border-emerald-800">
+                <span className="text-xs sm:text-sm px-2.5 py-0.5 rounded-full bg-emerald-950/90 text-emerald-300 border border-emerald-700/80 font-bold">
                   মাখরাজ নং {letterDetails.makhrajNo || "—"}
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-0.5">
-                <span className="text-slate-300 font-medium">স্থান:</span> {letterDetails.makhrajNameBn}
+              <p className="text-sm sm:text-base text-slate-200 mt-1 font-medium">
+                <span className="text-emerald-400 font-bold">উচ্চারণের স্থান:</span>{" "}
+                <span className="text-amber-200 font-bold">{letterDetails.makhrajNameBn}</span>
               </p>
             </div>
           </div>

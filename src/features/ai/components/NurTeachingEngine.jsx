@@ -44,12 +44,84 @@ import { getSavedAIConfig } from "../lib/aiConfigHelper";
 export { LESSON_MODULES };
 
 const PEDAGOGICAL_STEPS = [
-  { num: 1, label: "ব্যাখ্যা", sub: "Explain", icon: BookOpen },
-  { num: 2, label: "ডেমো", sub: "Demo", icon: Volume2 },
-  { num: 3, label: "অনুশীলন", sub: "Practice", icon: Mic },
-  { num: 4, label: "মূল্যায়ন", sub: "Evaluate", icon: CheckCircle2 },
-  { num: 5, label: "সংশোধন", sub: "Correct", icon: AlertCircle },
-  { num: 6, label: "সমাপ্তি", sub: "Complete", icon: Award },
+  {
+    num: 1,
+    bnNum: "১",
+    label: "ব্যাখ্যা",
+    sub: "Explain",
+    tip: "সহজ নিয়ম",
+    icon: BookOpen,
+    activeGradient: "from-sky-500 to-blue-600",
+    borderActive: "border-sky-400",
+    shadowColor: "shadow-sky-500/30",
+    badgeBg: "bg-sky-500/20 text-sky-300 border-sky-400/40",
+    glowDot: "bg-sky-400 shadow-[0_0_8px_#38bdf8]",
+  },
+  {
+    num: 2,
+    bnNum: "২",
+    label: "ডেমো",
+    sub: "Demo",
+    tip: "ক্বারীর সুর",
+    icon: Volume2,
+    activeGradient: "from-purple-500 to-indigo-600",
+    borderActive: "border-purple-400",
+    shadowColor: "shadow-purple-500/30",
+    badgeBg: "bg-purple-500/20 text-purple-300 border-purple-400/40",
+    glowDot: "bg-purple-400 shadow-[0_0_8px_#c084fc]",
+  },
+  {
+    num: 3,
+    bnNum: "৩",
+    label: "অনুশীলন",
+    sub: "Practice",
+    tip: "মুখে বলা",
+    icon: Mic,
+    activeGradient: "from-emerald-500 to-teal-600",
+    borderActive: "border-emerald-400",
+    shadowColor: "shadow-emerald-500/30",
+    badgeBg: "bg-emerald-500/20 text-emerald-300 border-emerald-400/40",
+    glowDot: "bg-emerald-400 shadow-[0_0_8px_#34d399]",
+  },
+  {
+    num: 4,
+    bnNum: "৪",
+    label: "মূল্যায়ন",
+    sub: "Evaluate",
+    tip: "এআই পরীক্ষা",
+    icon: CheckCircle2,
+    activeGradient: "from-amber-500 to-yellow-600",
+    borderActive: "border-amber-400",
+    shadowColor: "shadow-amber-500/30",
+    badgeBg: "bg-amber-500/20 text-amber-300 border-amber-400/40",
+    glowDot: "bg-amber-400 shadow-[0_0_8px_#fbbf24]",
+  },
+  {
+    num: 5,
+    bnNum: "৫",
+    label: "সংশোধন",
+    sub: "Correct",
+    tip: "টিপস ও শুদ্ধ",
+    icon: AlertCircle,
+    activeGradient: "from-rose-500 to-pink-600",
+    borderActive: "border-rose-400",
+    shadowColor: "shadow-rose-500/30",
+    badgeBg: "bg-rose-500/20 text-rose-300 border-rose-400/40",
+    glowDot: "bg-rose-400 shadow-[0_0_8px_#fb7185]",
+  },
+  {
+    num: 6,
+    bnNum: "৬",
+    label: "সমাপ্তি",
+    sub: "Complete",
+    tip: "মাশাআল্লাহ!",
+    icon: Award,
+    activeGradient: "from-yellow-400 to-amber-500",
+    borderActive: "border-yellow-400",
+    shadowColor: "shadow-yellow-500/30",
+    badgeBg: "bg-yellow-500/20 text-yellow-300 border-yellow-400/40",
+    glowDot: "bg-yellow-400 shadow-[0_0_8px_#facc15]",
+  },
 ];
 
 export default function NurTeachingEngine({
@@ -60,7 +132,7 @@ export default function NurTeachingEngine({
   onOpenReader,
 }) {
   const triggerMakhraj = onMakhrajHighlight || onMakhrajSelect;
-  const [selectedModuleId, setSelectedModuleId] = useState("ghunnah");
+  const [selectedModuleId, setSelectedModuleId] = useState("noon_izhar");
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [currentStep, setCurrentStep] = useState(1); // 1: Explain, 2: Demo, 3: Practice, 4: Evaluate, 5: Correct, 6: Repeat
   const [attemptCount, setAttemptCount] = useState(1);
@@ -124,14 +196,17 @@ export default function NurTeachingEngine({
 
   // Filter modules based on category
   const filteredModules = useMemo(() => {
+    if (selectedCategory === "noon_meem") {
+      return LESSON_MODULES.filter((m) => m.category.includes("নূন") || m.category.includes("মীম"));
+    }
+    if (selectedCategory === "madd") {
+      return LESSON_MODULES.filter((m) => m.category.includes("মাদ্দ"));
+    }
     if (selectedCategory === "tajweed") {
       return LESSON_MODULES.filter((m) => m.category.includes("তাজবীদ"));
     }
     if (selectedCategory === "surah") {
       return LESSON_MODULES.filter((m) => m.category.includes("সূরা"));
-    }
-    if (selectedCategory === "makhraj") {
-      return LESSON_MODULES.filter((m) => m.category.includes("মাখরাজ"));
     }
     return LESSON_MODULES;
   }, [selectedCategory]);
@@ -545,48 +620,51 @@ export default function NurTeachingEngine({
   }, []);
 
   return (
-    <div className="space-y-5 text-slate-100">
-      {/* ── TOP HERO BAR: TEACHER ENGINE HEADER ── */}
-      <div className="bg-gradient-to-r from-emerald-950/80 via-slate-900 to-emerald-950/80 border border-emerald-800/50 rounded-2xl p-4 sm:p-5 shadow-xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-600/20 border border-emerald-500/40 flex items-center justify-center shrink-0 shadow-inner">
-            <GraduationCap className="w-5 h-5 text-emerald-400" />
+    <div className="space-y-5 text-slate-800">
+      {/* ── TOP HERO BAR: TEACHER ENGINE HEADER (Warm Ivory & Emerald) ── */}
+      <div className="bg-gradient-to-r from-white via-[#fcfbf7] to-white border border-emerald-100/90 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-80 h-40 bg-gradient-to-bl from-amber-200/25 via-emerald-100/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#0d7a5f] to-[#064e3b] flex items-center justify-center shrink-0 shadow-md shadow-emerald-900/10">
+            <GraduationCap className="w-7 h-7 text-white" />
           </div>
           <div>
-            <div className="flex items-center gap-2">
-              <h2 className="text-base sm:text-lg font-bold text-white font-serif tracking-tight">
-                নূর কুরআন শিক্ষক
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 font-serif tracking-tight flex items-center gap-2">
+                <span>নূর এআই কুরআন শিক্ষক</span>
+                <span className="text-2xl">🌸</span>
               </h2>
-              <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Pedagogical Engine
+              <span className="text-xs px-3 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300 font-bold shadow-xs">
+                ছোটদের পাঠশালা
               </span>
             </div>
-            <p className="text-xs text-slate-300 mt-0.5">
-              ৬ স্তরের ইন্টারেক্টিভ শিক্ষাদান চক্র: ব্যাখ্যা ➔ ডেমো ➔ অনুশীলন ➔ মূল্যায়ন ➔ সংশোধন ➔ পুনরাবৃত্তি
+            <p className="text-xs sm:text-sm text-emerald-800 mt-1 font-medium font-hind-siliguri">
+              শিশুদের মুখে মুখে সহজ ও নিখুঁত তাজবীদ, মাখরাজ ও সুর দিয়ে কুরআন শেখার আনন্দময় পাঠশালা
             </p>
           </div>
         </div>
 
-        <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto">
-          <span className="text-xs px-2.5 py-1 rounded-lg bg-slate-800/90 border border-slate-700 text-slate-300 font-mono">
-            চেষ্টা: #{attemptCount}
+        <div className="flex items-center gap-2.5 shrink-0 self-end sm:self-auto relative z-10">
+          <span className="text-xs sm:text-sm font-bold px-3.5 py-1.5 rounded-full bg-amber-50 border border-amber-300 text-amber-900 shadow-xs font-mono flex items-center gap-1.5">
+            <span>⭐ চেষ্টা নং</span>
+            <span className="text-slate-900 font-extrabold text-base">#{attemptCount}</span>
           </span>
           {onOpenReader && (
             <button
               onClick={onOpenReader}
-              className="px-3 py-1.5 rounded-xl bg-emerald-900/80 hover:bg-emerald-800 border border-emerald-600/60 text-emerald-200 text-xs font-bold transition flex items-center gap-1.5 shadow-sm"
+              className="px-4 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer"
               title="কুরআন রিডারে ফিরে যান"
             >
-              <BookOpen className="w-3.5 h-3.5 text-emerald-400" />
+              <BookOpen className="w-4 h-4 text-emerald-700" />
               <span>কুরআন রিডার</span>
             </button>
           )}
         </div>
       </div>
 
-      {/* ── 6-STEP CONNECTED PROGRESS STEPPER ── */}
-      <div className="bg-slate-900/90 border border-emerald-900/50 rounded-2xl p-3 sm:p-4 shadow-lg">
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2">
+      {/* ── 6-STEP CONNECTED PROGRESS STEPPER (Child-Friendly Elevated Cards) ── */}
+      <div className="bg-white border border-emerald-100/90 rounded-3xl p-3.5 sm:p-5 shadow-sm">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 sm:gap-2.5">
           {PEDAGOGICAL_STEPS.map((st) => {
             const isActive = currentStep === st.num;
             const isCompleted = currentStep > st.num;
@@ -600,42 +678,50 @@ export default function NurTeachingEngine({
                   stopAllPlayback();
                   setCurrentStep(st.num);
                 }}
-                className={`group relative p-2.5 rounded-xl text-left transition-all border flex flex-col justify-between ${
+                className={`group relative p-3 rounded-2xl text-left transition-all duration-200 border flex flex-col justify-between cursor-pointer ${
                   isActive
-                    ? "bg-emerald-600 text-white border-emerald-400 shadow-md shadow-emerald-950 font-bold ring-1 ring-emerald-300"
+                    ? `bg-gradient-to-br from-[#0d7a5f] to-[#0a634d] text-white border-2 border-[#d4af37] shadow-md shadow-emerald-900/20 scale-[1.02] font-bold z-10`
                     : isCompleted
-                    ? "bg-emerald-950/60 border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/60"
-                    : "bg-slate-950/50 border-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50"
+                    ? "bg-emerald-50 border-emerald-200 text-emerald-800 hover:bg-emerald-100 shadow-xs"
+                    : "bg-[#faf8f2] border-emerald-100/60 text-slate-600 hover:bg-emerald-50/50 hover:text-slate-900"
                 }`}
               >
-                <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center justify-between mb-1.5">
                   <div
-                    className={`w-6 h-6 rounded-lg flex items-center justify-center text-xs font-mono font-bold ${
+                    className={`w-7 h-7 rounded-xl flex items-center justify-center text-xs font-bold transition-transform ${
                       isActive
-                        ? "bg-slate-950 text-emerald-300"
+                        ? "bg-amber-300 text-slate-900 shadow-xs font-extrabold"
                         : isCompleted
-                        ? "bg-emerald-800 text-white"
-                        : "bg-slate-800 text-slate-400"
+                        ? "bg-emerald-700 text-white"
+                        : "bg-white text-slate-600 border border-emerald-100 group-hover:bg-emerald-50"
                     }`}
                   >
-                    {isCompleted ? <Check className="w-3.5 h-3.5" /> : st.num}
+                    {isCompleted ? <Check className="w-4 h-4 text-white stroke-[3]" /> : st.bnNum}
                   </div>
                   <Icon
-                    className={`w-4 h-4 ${
-                      isActive ? "text-yellow-300" : isCompleted ? "text-emerald-400" : "text-slate-500"
+                    className={`w-4 h-4 transition-transform ${
+                      isActive
+                        ? "text-amber-200 scale-110"
+                        : isCompleted
+                        ? "text-emerald-700"
+                        : "text-slate-400 group-hover:text-slate-600"
                     }`}
                   />
                 </div>
                 <div>
-                  <div className={`text-xs leading-tight font-serif ${isActive ? "text-white" : ""}`}>
+                  <div
+                    className={`text-xs sm:text-[13px] font-bold leading-tight font-serif ${
+                      isActive ? "text-white" : "text-slate-900"
+                    }`}
+                  >
                     {st.label}
                   </div>
                   <div
-                    className={`text-[10px] font-mono tracking-wider uppercase ${
-                      isActive ? "text-emerald-100" : "text-slate-500"
+                    className={`text-[10px] font-sans font-medium mt-0.5 ${
+                      isActive ? "text-emerald-100 font-bold" : "text-slate-500"
                     }`}
                   >
-                    {st.sub}
+                    {st.tip}
                   </div>
                 </div>
               </button>
@@ -644,30 +730,31 @@ export default function NurTeachingEngine({
         </div>
       </div>
 
-      {/* ── LESSON MODULE SELECTION (CLEAN CATEGORIES) ── */}
-      <div className="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 shadow-md space-y-3">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div className="flex items-center gap-2 text-xs font-bold text-slate-300">
-            <Layers className="w-4 h-4 text-emerald-400" />
+      {/* ── LESSON MODULE SELECTION (CLEAN ONOSAEE CATEGORIES & CARDS) ── */}
+      <div className="bg-white border border-emerald-100/90 rounded-3xl p-4 sm:p-5 shadow-sm space-y-3.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 pb-2 border-b border-emerald-100/70">
+          <div className="flex items-center gap-2 text-xs sm:text-sm font-bold text-emerald-900">
+            <Layers className="w-4 h-4 text-emerald-700" />
             <span>পাঠ ও তাজবীদ সিলেবাস:</span>
           </div>
 
           {/* Category Tabs */}
           <div className="flex flex-wrap items-center gap-1.5">
             {[
-              { id: "all", label: "সব পাঠ (১১)" },
-              { id: "tajweed", label: "তাজবীদ রুলস (৬)" },
-              { id: "surah", label: "সূরা পাঠ (৪)" },
-              { id: "makhraj", label: "কঠিন মাখরাজ (১)" },
+              { id: "all", label: `✨ সব পাঠ (${LESSON_MODULES.length})` },
+              { id: "noon_meem", label: "🟢 নূন ও মীম সাকিন (৮)" },
+              { id: "madd", label: "🟣 সকল প্রকার মাদ্দ (৭)" },
+              { id: "tajweed", label: "🎯 তাজবীদ রুলস (৪)" },
+              { id: "surah", label: "📖 সূরা পাঠ (৪)" },
             ].map((cat) => (
               <button
                 key={cat.id}
                 type="button"
                 onClick={() => setSelectedCategory(cat.id)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all ${
+                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all cursor-pointer ${
                   selectedCategory === cat.id
-                    ? "bg-emerald-600 text-white font-bold shadow-sm"
-                    : "bg-slate-800/80 text-slate-400 hover:text-white hover:bg-slate-700"
+                    ? "bg-[#0d7a5f] text-white shadow-sm shadow-emerald-900/15 ring-1 ring-emerald-600"
+                    : "bg-[#faf8f2] text-slate-700 hover:text-slate-900 hover:bg-emerald-50 border border-emerald-100"
                 }`}
               >
                 {cat.label}
@@ -677,7 +764,7 @@ export default function NurTeachingEngine({
         </div>
 
         {/* Module Cards Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-52 overflow-y-auto scrollbar-thin p-1">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 max-h-56 overflow-y-auto scrollbar-thin p-1">
           {filteredModules.map((mod) => {
             const isSelected = mod.id === selectedModuleId;
             return (
@@ -685,24 +772,24 @@ export default function NurTeachingEngine({
                 key={mod.id}
                 type="button"
                 onClick={() => handleSelectModule(mod.id)}
-                className={`p-2.5 rounded-xl text-left border transition-all flex flex-col justify-between ${
+                className={`p-3 rounded-2xl text-left border transition-all flex flex-col justify-between cursor-pointer ${
                   isSelected
-                    ? "bg-emerald-950/90 border-emerald-500 text-white shadow-md shadow-emerald-950 ring-1 ring-emerald-500/40"
-                    : "bg-slate-950/60 border-slate-800/80 text-slate-300 hover:border-slate-700 hover:bg-slate-900/80"
+                    ? "bg-gradient-to-br from-emerald-50 to-white border-2 border-[#0d7a5f] text-slate-900 shadow-md shadow-emerald-900/10 scale-[1.01]"
+                    : "bg-[#faf8f2] border-emerald-100 hover:border-emerald-300 text-slate-700 hover:bg-white hover:scale-[1.01] shadow-xs"
                 }`}
               >
-                <div className="flex items-center justify-between gap-1 mb-1">
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-800/90 text-emerald-400 font-mono">
+                <div className="flex items-center justify-between gap-1 mb-1.5">
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-white border border-emerald-200 text-emerald-800 font-bold">
                     {mod.category}
                   </span>
-                  <span className="text-[10px] text-amber-300 font-mono">
-                    টার্গেট: {mod.targetScore}%
+                  <span className="text-[11px] font-bold text-amber-700 font-mono">
+                    ⭐ টার্গেট: {mod.targetScore}%
                   </span>
                 </div>
-                <div className="text-xs font-bold text-slate-100 font-serif leading-tight">
+                <div className="text-xs sm:text-sm font-bold text-slate-900 font-serif leading-tight">
                   {mod.titleBn}
                 </div>
-                <div className="text-xs font-arabic text-emerald-300/90 text-right mt-1.5 tracking-wide truncate">
+                <div className="text-base sm:text-lg font-hafizi-quran text-[#0d7a5f] font-bold text-right mt-2 tracking-wide truncate">
                   {mod.verseAr}
                 </div>
               </button>
@@ -711,18 +798,18 @@ export default function NurTeachingEngine({
         </div>
       </div>
 
-      {/* ── GRAND ARABIC VERSE DISPLAY CARD ── */}
-      <div className="relative bg-gradient-to-b from-[#0a2318] to-[#06160f] rounded-3xl p-6 sm:p-8 border border-emerald-700/60 shadow-2xl text-center overflow-hidden">
-        {/* Background Islamic ambient glow */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-emerald-500/10 via-transparent to-transparent pointer-events-none" />
+      {/* ── GRAND ARABIC VERSE DISPLAY CARD (Onosaee Sacred Frame) ── */}
+      <div className="relative nur-quran-frame rounded-3xl p-6 sm:p-9 border-2 border-emerald-500/25 shadow-md text-center overflow-hidden">
+        {/* Subtle radial sunbeam glow */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-300/15 via-emerald-400/10 to-transparent pointer-events-none" />
 
         {/* Top Badges */}
-        <div className="relative z-10 flex flex-wrap items-center justify-between gap-2 mb-4 pb-3 border-b border-emerald-900/50 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="px-2.5 py-0.5 rounded-full bg-emerald-950 border border-emerald-600/60 text-emerald-300 font-bold">
+        <div className="relative z-10 flex flex-wrap items-center justify-between gap-2.5 mb-5 pb-3.5 border-b border-emerald-100 text-xs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="px-3.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs shadow-xs">
               {activeModule.category}
             </span>
-            <span className="px-2.5 py-0.5 rounded-full bg-amber-950/80 border border-[#D4AF37]/40 text-[#D4AF37] font-semibold">
+            <span className="px-3.5 py-1 rounded-full bg-amber-50 border border-amber-300 text-amber-900 font-bold text-xs shadow-xs">
               {activeModule.ruleTitleBn}
             </span>
           </div>
@@ -732,62 +819,62 @@ export default function NurTeachingEngine({
               <button
                 type="button"
                 onClick={() => triggerMakhraj(activeModule.targetZone, activeModule.targetLetter)}
-                className="px-2.5 py-0.5 rounded-full bg-slate-900 border border-emerald-700/60 text-emerald-300 hover:text-white hover:bg-emerald-900 transition flex items-center gap-1 font-serif text-[11px]"
+                className="px-3.5 py-1 rounded-full bg-white border border-emerald-300 text-emerald-800 hover:bg-emerald-50 transition flex items-center gap-1.5 font-serif text-xs font-bold shadow-xs cursor-pointer"
               >
-                <span>হরফ ({activeModule.targetLetter}) মাখরাজ</span>
-                <ArrowRight className="w-3 h-3" />
+                <span>🗣️ হরফ ({activeModule.targetLetter}) মাখরাজ গাইড</span>
+                <ArrowRight className="w-3.5 h-3.5 text-emerald-600" />
               </button>
             )}
-            <span className="px-2 py-0.5 rounded-full bg-slate-900/80 border border-slate-700 text-slate-300 font-mono text-[11px]">
-              টার্গেট: {activeModule.targetScore}%
+            <span className="px-3 py-1 rounded-full bg-amber-50 border border-amber-300 text-amber-900 font-mono text-xs font-bold shadow-xs">
+              লক্ষ্য: {activeModule.targetScore}%
             </span>
           </div>
         </div>
 
         {/* Large Calligraphic Quranic Verse */}
-        <div className="relative z-10 py-3 sm:py-5">
-          <p className="text-3xl sm:text-4xl md:text-5xl font-hafizi-quran text-emerald-200 tracking-wider leading-relaxed drop-shadow-md select-text">
+        <div className="relative z-10 py-4 sm:py-6">
+          <p className="text-3xl sm:text-5xl md:text-6xl font-hafizi-quran text-[#064e3b] font-bold tracking-wider leading-loose drop-shadow-xs select-text">
             {activeModule.verseAr}
           </p>
         </div>
 
         {/* Transliteration */}
-        <div className="relative z-10 pt-3 border-t border-emerald-900/50 max-w-xl mx-auto">
-          <p className="text-sm font-medium text-emerald-300 font-hind-siliguri">
-            উচ্চারণ: {activeModule.verseBn}
-          </p>
+        <div className="relative z-10 pt-4 border-t border-emerald-100/90 max-w-xl mx-auto">
+          <div className="inline-block px-5 py-2.5 rounded-2xl bg-white border border-emerald-200/90 text-slate-800 text-sm sm:text-base font-medium font-hind-siliguri shadow-xs">
+            <span className="text-[#0d7a5f] font-bold">উচ্চারণ:</span> {activeModule.verseBn}
+          </div>
         </div>
       </div>
 
-      {/* ── STEP STAGE: CLEAN FOCUSED CARD ── */}
-      <div className="bg-slate-900/90 border border-emerald-900/60 rounded-3xl p-5 sm:p-6 shadow-xl">
+      {/* ── STEP STAGE: CLEAN FOCUSED CARD (White Elevated with Emerald Accents) ── */}
+      <div className="bg-white border border-emerald-100/90 rounded-3xl p-5 sm:p-6 shadow-sm">
         {/* STEP 1: EXPLAIN (ব্যাখ্যা) */}
         {currentStep === 1 && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm tracking-wide">
-                <BookOpen className="w-4 h-4" />
+            <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
+              <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm tracking-wide">
+                <BookOpen className="w-4 h-4 text-emerald-700" />
                 <span>ধাপ ১: তাজবীদ নিয়ম ও হরফের ব্যাখ্যা (Explain)</span>
               </div>
               <button
                 type="button"
                 onClick={handlePlayTeacherVoice}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md ${
+                className={`px-4 py-2 rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-xs cursor-pointer ${
                   isExplainingVoice
                     ? "bg-amber-600 text-white animate-pulse"
-                    : "bg-emerald-800 hover:bg-emerald-700 text-emerald-100"
+                    : "bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200"
                 }`}
               >
-                {isExplainingVoice ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
+                {isExplainingVoice ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 text-emerald-700" />}
                 <span>{isExplainingVoice ? "ব্যাখ্যা থামান" : "উস্তাদের কণ্ঠে ব্যাখ্যা শুনুন"}</span>
               </button>
             </div>
 
-            <div className="bg-slate-950/70 p-4 sm:p-5 rounded-2xl border border-emerald-950 space-y-3">
-              <h4 className="text-sm font-bold text-[#D4AF37] font-serif flex items-center gap-2">
+            <div className="bg-[#faf8f2] p-4 sm:p-5 rounded-2xl border border-emerald-100 space-y-2.5">
+              <h4 className="text-sm font-bold text-[#b8860b] font-serif flex items-center gap-2">
                 <span>{activeModule.ruleTitleBn}</span>
               </h4>
-              <p className="text-sm text-slate-200 leading-relaxed font-hind-siliguri">
+              <p className="text-sm text-slate-700 leading-relaxed font-hind-siliguri">
                 {activeModule.explanationBn}
               </p>
             </div>
@@ -797,7 +884,7 @@ export default function NurTeachingEngine({
                 <button
                   type="button"
                   onClick={() => triggerMakhraj(activeModule.targetZone, activeModule.targetLetter)}
-                  className="text-xs text-emerald-400 hover:text-emerald-300 font-medium underline flex items-center gap-1"
+                  className="text-xs text-emerald-700 hover:text-emerald-900 font-bold underline flex items-center gap-1 cursor-pointer"
                 >
                   <Headphones className="w-3.5 h-3.5" />
                   <span>মাখরাজ গাইডে হরফ ({activeModule.targetLetter}) দেখুন ➔</span>
@@ -810,7 +897,7 @@ export default function NurTeachingEngine({
                   stopAllPlayback();
                   setCurrentStep(2);
                 }}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-md shadow-emerald-950 ml-auto"
+                className="px-6 py-2.5 bg-[#0d7a5f] hover:bg-[#0b6851] text-white rounded-full text-xs font-bold flex items-center gap-2 transition shadow-md shadow-emerald-900/10 ml-auto cursor-pointer"
               >
                 <span>পরবর্তী: ক্বারীর বিশুদ্ধ ডেমো শুনুন</span>
                 <ArrowRight className="w-4 h-4" />
@@ -822,27 +909,27 @@ export default function NurTeachingEngine({
         {/* STEP 2: DEMONSTRATE (ডেমো) */}
         {currentStep === 2 && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm tracking-wide">
-                <Volume2 className="w-4 h-4" />
+            <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
+              <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm tracking-wide">
+                <Volume2 className="w-4 h-4 text-emerald-700" />
                 <span>ধাপ ২: বিশুদ্ধ তিলাওয়াত ডেমো (Demonstrate)</span>
               </div>
 
-              {/* Speed toggle */}
-              <div className="flex items-center gap-1 bg-slate-950 px-2.5 py-1 rounded-xl border border-slate-800 text-xs">
-                <Sliders className="w-3.5 h-3.5 text-slate-400" />
+              {/* Speed toggle pills */}
+              <div className="flex items-center gap-1 bg-[#faf8f2] px-2.5 py-1 rounded-full border border-emerald-200 text-xs">
+                <Sliders className="w-3.5 h-3.5 text-slate-500" />
                 <button
                   onClick={() => setPlaybackSpeed(1.0)}
-                  className={`px-2 py-0.5 rounded-lg ${
-                    playbackSpeed === 1.0 ? "bg-emerald-600 text-white font-bold" : "text-slate-400"
+                  className={`px-2.5 py-0.5 rounded-full cursor-pointer transition ${
+                    playbackSpeed === 1.0 ? "bg-[#0d7a5f] text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   1.0x (স্বাভাবিক)
                 </button>
                 <button
                   onClick={() => setPlaybackSpeed(0.75)}
-                  className={`px-2 py-0.5 rounded-lg ${
-                    playbackSpeed === 0.75 ? "bg-emerald-600 text-white font-bold" : "text-slate-400"
+                  className={`px-2.5 py-0.5 rounded-full cursor-pointer transition ${
+                    playbackSpeed === 0.75 ? "bg-[#0d7a5f] text-white font-bold shadow-xs" : "text-slate-600 hover:text-slate-900"
                   }`}
                 >
                   0.75x (ধীর গতি)
@@ -858,14 +945,14 @@ export default function NurTeachingEngine({
               onPlayDemonstration={handlePlayDemonstration}
             />
 
-            <div className="flex items-center justify-between pt-3 border-t border-slate-800">
+            <div className="flex items-center justify-between pt-3 border-t border-emerald-100">
               <button
                 type="button"
                 onClick={() => {
                   stopAllPlayback();
                   setCurrentStep(1);
                 }}
-                className="px-3.5 py-2 text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>পূর্ববর্তী ধাপ (ব্যাখ্যা)</span>
@@ -877,7 +964,7 @@ export default function NurTeachingEngine({
                   stopAllPlayback();
                   setCurrentStep(3);
                 }}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-md shadow-emerald-950"
+                className="px-6 py-2.5 bg-[#0d7a5f] hover:bg-[#0b6851] text-white rounded-full text-xs font-bold flex items-center gap-2 transition shadow-md shadow-emerald-900/10 cursor-pointer"
               >
                 <span>পরবর্তী: নিজের কণ্ঠে অনুশীলন করুন</span>
                 <ArrowRight className="w-4 h-4" />
@@ -889,28 +976,34 @@ export default function NurTeachingEngine({
         {/* STEP 3: PRACTICE (অনুশীলন) */}
         {currentStep === 3 && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-emerald-400 font-bold text-sm tracking-wide">
-                <Mic className="w-4 h-4" />
+            <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
+              <div className="flex items-center gap-2 text-emerald-900 font-bold text-sm tracking-wide">
+                <Mic className="w-4 h-4 text-emerald-700" />
                 <span>ধাপ ৩: শিক্ষার্থীর সরাসরি মাইক অনুশীলন (Practice)</span>
               </div>
-              <span className="text-xs px-2.5 py-1 rounded-lg bg-slate-950 font-mono text-amber-300 border border-slate-800">
+              <span className="text-xs px-3 py-1 rounded-full bg-amber-50 font-mono text-amber-800 border border-amber-300 font-bold shadow-xs">
                 {isRecording ? `সময়: 00:0${recordingSeconds} / 00:06` : "প্রস্তুত"}
               </span>
             </div>
 
-            <p className="text-xs text-slate-300 text-center max-w-md mx-auto font-hind-siliguri">
-              মাইক্রোফোন বোতাম চেপে আয়াতটি সুন্দর মাখরাজ ও তাজবীদ বজায় রেখে পাঠ করুন:
-            </p>
+            {/* Child-friendly Onosaee Instructions Banner */}
+            <div className="bg-[#faf8f2] border border-emerald-100 p-3 sm:p-4 rounded-2xl text-center space-y-1">
+              <p className="text-xs sm:text-sm font-bold text-emerald-900 font-hind-siliguri">
+                এখন তোমার কাজ: ১. মনোযোগ দিয়ে শুনো, ২. আমার সঙ্গে পড়ো, ৩. নিজে চেষ্টা করো
+              </p>
+              <p className="text-xs text-slate-600 font-hind-siliguri">
+                মাইক্রোফোন বোতাম চেপে আয়াতটি সুন্দর মাখরাজ ও তাজবীদ বজায় রেখে পাঠ করুন
+              </p>
+            </div>
 
             {/* Live Web Audio Frequency Waveform */}
-            <div className="h-16 bg-slate-950 rounded-2xl flex items-center justify-center gap-2 px-6 border border-slate-800 shadow-inner">
+            <div className="h-16 bg-[#faf8f2] rounded-2xl flex items-center justify-center gap-2 px-6 border border-emerald-100 shadow-inner">
               {waveformBars.map((height, i) => (
                 <div
                   key={i}
                   style={{ height: `${height}%` }}
-                  className={`w-2 rounded-full transition-all duration-100 ${
-                    isRecording ? "bg-emerald-400 shadow-sm shadow-emerald-400/50" : "bg-slate-800"
+                  className={`w-2.5 rounded-full transition-all duration-100 ${
+                    isRecording ? "bg-[#0d7a5f] shadow-sm shadow-emerald-600/50" : "bg-slate-300"
                   }`}
                 />
               ))}
@@ -918,37 +1011,37 @@ export default function NurTeachingEngine({
 
             {/* Live Speech Recognition text display */}
             {transcribedText && (
-              <div className="text-center text-sm text-emerald-300 font-arabic bg-slate-950/80 py-2.5 px-4 rounded-xl border border-emerald-900/60">
+              <div className="text-center text-sm sm:text-base text-emerald-900 font-arabic font-bold bg-emerald-50 py-3 px-5 rounded-2xl border border-emerald-200 shadow-xs">
                 শনাক্তকৃত শব্দমালা: {transcribedText}
               </div>
             )}
 
-            {/* Mic Trigger */}
+            {/* Mic Trigger Button */}
             <div className="flex flex-col items-center justify-center py-3">
               <button
                 type="button"
                 onClick={handleToggleRecord}
-                className={`w-16 h-16 rounded-full flex items-center justify-center transition-transform active:scale-95 shadow-xl ${
+                className={`w-20 h-20 rounded-full flex items-center justify-center transition-transform active:scale-95 shadow-xl cursor-pointer ${
                   isRecording
-                    ? "bg-red-600 text-white ring-4 ring-red-500/40 animate-pulse"
-                    : "bg-emerald-600 hover:bg-emerald-500 text-white ring-4 ring-emerald-500/30"
+                    ? "bg-rose-600 text-white ring-8 ring-rose-400/30 animate-pulse"
+                    : "bg-gradient-to-r from-[#0d7a5f] to-[#0a634d] hover:opacity-95 text-white ring-4 ring-emerald-500/20"
                 }`}
               >
-                {isRecording ? <MicOff className="w-7 h-7" /> : <Mic className="w-7 h-7" />}
+                {isRecording ? <MicOff className="w-8 h-8" /> : <Mic className="w-8 h-8" />}
               </button>
-              <span className="text-xs text-slate-400 mt-2.5 font-mono">
+              <span className="text-xs text-slate-500 mt-2.5 font-medium">
                 {isRecording ? "রেকর্ড সম্পন্ন করতে আবার চাপুন অথবা ৬ সেকেন্ড অপেক্ষা করুন" : "রেকর্ড শুরু করতে ক্লিক করুন"}
               </span>
             </div>
 
-            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-between pt-2 border-t border-emerald-100">
               <button
                 type="button"
                 onClick={() => {
                   stopAllPlayback();
                   setCurrentStep(2);
                 }}
-                className="px-3.5 py-2 text-xs font-medium text-slate-400 hover:text-white transition flex items-center gap-1.5"
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 transition flex items-center gap-1.5 cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5" />
                 <span>পূর্ববর্তী (ডেমো)</span>
@@ -957,7 +1050,7 @@ export default function NurTeachingEngine({
               <button
                 type="button"
                 onClick={() => stopRecordingAndEvaluate()}
-                className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold transition border border-slate-700"
+                className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white rounded-full text-xs font-bold transition shadow-sm cursor-pointer"
               >
                 সরাসরি মূল্যায়ন করুন ➔
               </button>
@@ -970,32 +1063,32 @@ export default function NurTeachingEngine({
           <div className="space-y-4">
             {isEvaluating ? (
               <div className="py-12 flex flex-col items-center justify-center gap-3">
-                <Loader2 className="w-10 h-10 text-emerald-400 animate-spin" />
-                <span className="text-sm text-slate-200 font-serif">
+                <Loader2 className="w-10 h-10 text-emerald-600 animate-spin" />
+                <span className="text-sm font-semibold text-slate-800 font-serif">
                   নূর এআই আপনার তিলাওয়াতের মাখরাজ ও তাজবীদ বিশ্লেষণ করছে...
                 </span>
               </div>
             ) : evaluationResult ? (
               <>
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-emerald-100 pb-3">
                   <div className="flex items-center gap-2 font-bold text-sm">
                     {evaluationResult.passed ? (
-                      <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                     ) : (
-                      <AlertCircle className="w-5 h-5 text-amber-400" />
+                      <AlertCircle className="w-5 h-5 text-amber-600" />
                     )}
-                    <span className={evaluationResult.passed ? "text-emerald-400" : "text-amber-400"}>
+                    <span className={evaluationResult.passed ? "text-emerald-700" : "text-amber-700"}>
                       {evaluationResult.passed ? "মূল্যায়ন: উত্তীর্ণ (Passed)" : "মূল্যায়ন: সংশোধন দরকার (Needs Work)"}
                     </span>
                   </div>
 
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-slate-400">স্কোর:</span>
+                    <span className="text-xs text-slate-500 font-medium">স্কোর:</span>
                     <span
-                      className={`text-sm font-bold px-3 py-1 rounded-xl border font-mono ${
+                      className={`text-sm font-bold px-3.5 py-1 rounded-full border font-mono shadow-xs ${
                         evaluationResult.passed
-                          ? "bg-emerald-950 text-emerald-300 border-emerald-500"
-                          : "bg-amber-950 text-amber-300 border-amber-500"
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                          : "bg-amber-50 text-amber-900 border-amber-300"
                       }`}
                     >
                       {evaluationResult.score}%
@@ -1005,16 +1098,16 @@ export default function NurTeachingEngine({
 
                 {/* Word-by-word 🟢🟡🔴 Matching Cards */}
                 {Array.isArray(evaluationResult.wordMatches) && evaluationResult.wordMatches.length > 0 && (
-                  <div className="bg-slate-950/80 p-3 rounded-2xl border border-slate-800 flex flex-wrap items-center justify-center gap-2">
+                  <div className="bg-[#faf8f2] p-3 rounded-2xl border border-emerald-100 flex flex-wrap items-center justify-center gap-2">
                     {evaluationResult.wordMatches.map((wm, idx) => (
                       <span
                         key={idx}
-                        className={`px-3 py-1 rounded-xl text-base font-arabic font-bold border ${
+                        className={`px-3.5 py-1 rounded-full text-base font-arabic font-bold border shadow-xs ${
                           wm.status === "correct"
-                            ? "bg-emerald-950 text-emerald-300 border-emerald-500/70"
+                            ? "bg-emerald-50 text-emerald-900 border-emerald-300"
                             : wm.status === "near"
-                            ? "bg-amber-950 text-amber-300 border-amber-500/70"
-                            : "bg-red-950 text-red-300 border-red-500/70"
+                            ? "bg-amber-50 text-amber-900 border-amber-300"
+                            : "bg-rose-50 text-rose-900 border-rose-300"
                         }`}
                         title={
                           wm.status === "correct"
@@ -1031,21 +1124,21 @@ export default function NurTeachingEngine({
                 )}
 
                 {/* Feedback text */}
-                <div className="bg-slate-950/60 p-4 rounded-2xl border border-slate-800 space-y-1">
-                  <span className="text-xs font-bold text-slate-400 font-mono uppercase tracking-wider">
+                <div className="bg-[#faf8f2] p-4 rounded-2xl border border-emerald-100 space-y-1">
+                  <span className="text-xs font-bold text-slate-500 font-mono uppercase tracking-wider">
                     শিক্ষকের মূল্যায়ন ও পরামর্শ:
                   </span>
-                  <p className="text-sm text-slate-200 leading-relaxed font-hind-siliguri">
+                  <p className="text-sm text-slate-800 leading-relaxed font-hind-siliguri">
                     {evaluationResult.feedbackBn}
                   </p>
                 </div>
 
                 {/* Dynamic Teaching Rules Feedback */}
                 {teacherReaction && !evaluationResult.passed && (
-                  <div className="bg-amber-950/40 border border-amber-800/60 rounded-2xl p-4 text-xs text-amber-200 flex items-start gap-3">
-                    <BookOpen className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+                  <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs text-amber-900 flex items-start gap-3">
+                    <BookOpen className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
                     <div>
-                      <strong className="text-amber-300 text-sm block mb-1">
+                      <strong className="text-amber-900 text-sm block mb-1">
                         {teacherReaction.titleBn}:
                       </strong>
                       <span className="leading-relaxed">{teacherReaction.descBn}</span>
@@ -1059,27 +1152,27 @@ export default function NurTeachingEngine({
                     <button
                       type="button"
                       onClick={() => triggerMakhraj(activeModule.targetZone, activeModule.targetLetter)}
-                      className="text-xs text-amber-300 hover:text-amber-200 underline font-serif inline-flex items-center gap-1.5"
+                      className="text-xs text-amber-800 hover:text-amber-900 underline font-serif inline-flex items-center gap-1.5 cursor-pointer font-bold"
                     >
-                      <Compass className="w-4 h-4 text-amber-400" />
+                      <Compass className="w-4 h-4 text-amber-600" />
                       <span>ভুল সংশোধন করতে হরফ ({activeModule.targetLetter})-এর মাখরাজ গাইড দেখুন ➔</span>
                     </button>
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 gap-3 text-xs bg-slate-950/70 p-3 rounded-2xl border border-slate-800">
+                <div className="grid grid-cols-2 gap-3 text-xs bg-[#faf8f2] p-3 rounded-2xl border border-emerald-100">
                   <div>
-                    <span className="text-slate-400">মাখরাজ মান:</span>
-                    <span className="ml-1.5 text-slate-200 font-semibold">{evaluationResult.makhrajAccuracy}</span>
+                    <span className="text-slate-500">মাখরাজ মান:</span>
+                    <span className="ml-1.5 text-slate-800 font-bold">{evaluationResult.makhrajAccuracy}</span>
                   </div>
                   <div>
-                    <span className="text-slate-400">লুকমা (Lokma):</span>
-                    <span className="ml-1.5 text-emerald-400 font-semibold">{evaluationResult.lokmaCount} টি</span>
+                    <span className="text-slate-500">লুকমা (Lokma):</span>
+                    <span className="ml-1.5 text-emerald-800 font-bold">{evaluationResult.lokmaCount} টি</span>
                   </div>
                 </div>
 
                 {/* Actions */}
-                <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+                <div className="flex items-center justify-between pt-2 border-t border-emerald-100">
                   <button
                     type="button"
                     onClick={() => {
@@ -1087,16 +1180,16 @@ export default function NurTeachingEngine({
                       setCurrentStep(3);
                       setEvaluationResult(null);
                     }}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-bold flex items-center gap-1.5 transition border border-slate-700"
+                    className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-full text-xs font-bold flex items-center gap-1.5 transition border border-slate-300 cursor-pointer"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
+                    <RotateCcw className="w-3.5 h-3.5 text-slate-600" />
                     <span>পুনরায় অনুশীলন করুন</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => setCurrentStep(6)}
-                    className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 transition shadow-md shadow-emerald-950"
+                    className="px-6 py-2.5 bg-[#0d7a5f] hover:bg-[#0b6851] text-white rounded-full text-xs font-bold flex items-center gap-2 transition shadow-md shadow-emerald-900/10 cursor-pointer"
                   >
                     <span>পরবর্তী: পাঠ সমাপ্তি ও সংরক্ষণ</span>
                     <ArrowRight className="w-4 h-4" />
@@ -1110,11 +1203,11 @@ export default function NurTeachingEngine({
         {/* STEP 6: REPEAT & SAVE TO HIFZ (সমাপ্তি) */}
         {currentStep === 6 && (
           <div className="space-y-4 text-center py-4">
-            <Award className="w-12 h-12 text-[#D4AF37] mx-auto animate-bounce" />
-            <h4 className="text-base sm:text-lg font-bold text-white font-serif">
+            <Award className="w-14 h-14 text-[#d4af37] mx-auto animate-bounce" />
+            <h4 className="text-base sm:text-xl font-bold text-slate-900 font-serif">
               মাশাআল্লাহ! পেডাগজিক্যাল লুপ সফলভাবে সম্পন্ন
             </h4>
-            <p className="text-xs sm:text-sm text-slate-300 max-w-md mx-auto font-hind-siliguri leading-relaxed">
+            <p className="text-xs sm:text-sm text-slate-600 max-w-md mx-auto font-hind-siliguri leading-relaxed">
               নিয়মিত অনুশীলনে তাজবীদ ও মাখরাজ স্থায়ীভাবে মুখস্থ ও আয়ত্ত হয়। আজকের এই পাঠটি আপনার হিফজ ডায়েরিতে যুক্ত করতে পারেন।
             </p>
 
@@ -1123,16 +1216,16 @@ export default function NurTeachingEngine({
                 type="button"
                 onClick={handleSaveToHifz}
                 disabled={isSavingToHifz || hifzSaved}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-md ${
+                className={`px-5 py-2.5 rounded-full text-xs font-bold flex items-center gap-2 transition-all shadow-md cursor-pointer ${
                   hifzSaved
-                    ? "bg-slate-800 text-emerald-400 border border-emerald-500/40"
-                    : "bg-emerald-700 hover:bg-emerald-600 text-white"
+                    ? "bg-emerald-50 text-emerald-800 border border-emerald-300"
+                    : "bg-[#0d7a5f] hover:bg-[#0b6851] text-white"
                 }`}
               >
                 {isSavingToHifz ? (
                   <Loader2 className="w-4 h-4 animate-spin" />
                 ) : hifzSaved ? (
-                  <Check className="w-4 h-4 text-emerald-400" />
+                  <Check className="w-4 h-4 text-emerald-700" />
                 ) : (
                   <Save className="w-4 h-4" />
                 )}
@@ -1147,7 +1240,7 @@ export default function NurTeachingEngine({
                     LESSON_MODULES.length;
                   handleSelectModule(LESSON_MODULES[nextIndex].id);
                 }}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-emerald-950"
+                className="px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white rounded-full text-xs font-bold transition flex items-center gap-1.5 shadow-md shadow-amber-900/10 cursor-pointer"
               >
                 <span>পরবর্তী পাঠ শুরু করুন</span>
                 <ArrowRight className="w-4 h-4" />
@@ -1158,12 +1251,12 @@ export default function NurTeachingEngine({
       </div>
 
       {/* ── HIFZ TRACKER STATUS FOOTER ── */}
-      <div className="flex items-center justify-between text-xs text-slate-400 bg-slate-950/70 px-4 py-3 rounded-2xl border border-slate-800/80 shadow-sm">
+      <div className="flex items-center justify-between text-xs text-slate-600 bg-white px-4 py-3 rounded-2xl border border-emerald-100 shadow-xs">
         <span className="flex items-center gap-2">
-          <GraduationCap className="w-4 h-4 text-emerald-400" />
+          <GraduationCap className="w-4 h-4 text-emerald-700" />
           <span>হিফজ ট্র্যাকার কানেকশন: সবক, সাত সবক ও লোকমা রেকর্ডের সাথে সক্রিয়</span>
         </span>
-        <span className="text-emerald-400 font-mono text-[11px] font-bold">● Active</span>
+        <span className="text-emerald-700 font-mono text-[11px] font-bold">● Active</span>
       </div>
     </div>
   );

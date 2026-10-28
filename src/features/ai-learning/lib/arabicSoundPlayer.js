@@ -1064,3 +1064,7 @@ export function playMaShaAllahCelebration() {
     });
   }, 480);
 }
+
+// Alias for backwards compatibility
+export const playLifeLostSound = playHeartLostSound;
+

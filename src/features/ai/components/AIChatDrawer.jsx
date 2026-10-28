@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from "react";
+import Link from "next/link";
 import { usePathname } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { useAIChat } from "../hooks/useAIChat";
@@ -46,6 +47,11 @@ export default function AIChatDrawer({ currentUser }) {
     pathname?.startsWith("/admin") ||
     pathname?.startsWith("/teacher") ||
     pathname?.startsWith("/student")
+  );
+  const isStudioPage = Boolean(
+    pathname?.startsWith("/quran-tutor") ||
+    pathname?.startsWith("/quran-teacher") ||
+    pathname?.startsWith("/ai-quran-learning")
   );
   const isPublicPage = !isPortalPage;
   // Always permit access to AI settings & BYOK key configuration for visitors and users
@@ -238,15 +244,12 @@ export default function AIChatDrawer({ currentUser }) {
 
   return (
     <>
-      {/* 🌟 Prominent & Elegant Floating Nur AI Button */}
-      {isFloatingVisible && !isOpen && (
+      {/* 🌟 Prominent & Elegant Floating Nur AI Button - Directly Opens Full Page */}
+      {isFloatingVisible && !isOpen && !isStudioPage && (
         <div className="fixed bottom-4 right-4 z-40 flex items-center gap-1 group">
-          <button
-            onClick={() => {
-              setAiTab("nur-lesson");
-              setIsOpen(true);
-            }}
-            className="flex items-center gap-2 rounded-full border border-emerald-500/40 bg-slate-900/95 px-4 py-2.5 text-xs font-semibold text-white shadow-2xl backdrop-blur-md transition-all hover:scale-105 hover:bg-emerald-950/90 hover:border-emerald-400 group-hover:ring-2 group-hover:ring-emerald-500/30"
+          <Link
+            href="/quran-tutor/teacher"
+            className="flex items-center gap-2 rounded-full border border-emerald-500/50 bg-slate-900/95 px-4 py-2.5 text-xs font-semibold text-white shadow-2xl backdrop-blur-md transition-all hover:scale-105 hover:bg-emerald-950/90 hover:border-emerald-400 group-hover:ring-2 group-hover:ring-emerald-500/30"
           >
             <div className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-sm">
               <BookOpen className="h-3 w-3" />
@@ -256,17 +259,17 @@ export default function AIChatDrawer({ currentUser }) {
                 নূর AI কুরআন শিক্ষক
               </div>
               <div className="text-[9px] text-slate-400 leading-tight">
-                তাজবীদ ও মাখরাজ গাইড
+                তাজবীদ ও মাখরাজ পাঠশালা
               </div>
             </div>
-            <span className="rounded bg-emerald-950 border border-emerald-800 px-1 py-0.2 font-mono text-[9px] text-emerald-400 ml-1">
-              Alt+A
+            <span className="rounded-full bg-emerald-950 border border-emerald-700 px-2 py-0.5 text-[9px] text-emerald-300 ml-1 font-bold">
+              সরাসরি পেজে যান ➔
             </span>
-          </button>
+          </Link>
           <button
             onClick={() => toggleFloatingBadge(false)}
             className="h-6 w-6 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"
-            title="লুকিয়ে রাখুন (যে কোনো সময় Alt+A চেপে খুলুন)"
+            title="লুকিয়ে রাখুন"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -345,6 +348,14 @@ export default function AIChatDrawer({ currentUser }) {
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
+                <Link
+                  href="/quran-tutor/teacher"
+                  className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-colors"
+                  title="পূর্ণাঙ্গ পেজে শিক্ষক খুলুন"
+                >
+                  <Maximize2 className="h-3 w-3" />
+                  <span>পূর্ণাঙ্গ পেজ</span>
+                </Link>
                 <Button
                   variant="ghost"
                   size="icon"

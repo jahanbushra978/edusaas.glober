@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Search,
   BookOpen,
@@ -14,25 +14,24 @@ import {
 import { toast } from "sonner";
 
 const QUICK_THEMATIC_PROMPTS = [
+  { label: "সালাত ও নামায", query: "সালাত" },
+  { label: "ধৈর্য ও সবর", query: "সবর" },
+  { label: "রমজান ও রোজা", query: "রমজান" },
+  { label: "পিতা-মাতার সেবা", query: "পিতা মাতা" },
+  { label: "জান্নাত ও নিয়ামত", query: "জান্নাত" },
+  { label: "তওবা ও ক্ষমা", query: "তওবা" },
   { label: "সাজদাহর আয়াতসমূহ", query: "সাজদাহ" },
-  { label: "মূসা (আঃ) ও লাঠির অলৌকিক ঘটনা", query: "মূসা" },
-  { label: "পিতা-মাতার সম্মান ও সেবা", query: "পিতা মাতা" },
-  { label: "ধৈর্য ও সবরের প্রতিদান", query: "সবর" },
-  { label: "জান্নাত ও নেয়ামত", query: "জান্নাত" },
-  { label: "তাজবীদ: ইখফার নিয়ম", query: "ইখফা" },
-  { label: "তাজবীদ: কলকলাহর উদাহরণ", query: "কলকলাহ" }
+  { label: "মূসা (আঃ) ও অলৌকিক ঘটনা", query: "মূসা" },
 ];
 
-export default function QuranSemanticSearchModal({ isOpen, onClose, onSelectAyah }) {
-  const [query, setQuery] = useState("");
+export default function QuranSemanticSearchModal({ isOpen, onClose, onSelectAyah, initialQuery = "" }) {
+  const [query, setQuery] = useState(initialQuery || "");
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
   const [searchedTheme, setSearchedTheme] = useState(null);
   const [playingIndex, setPlayingIndex] = useState(null);
 
-  if (!isOpen) return null;
-
-  const handleSearch = async (searchQuery) => {
+  const handleSearch = useCallback(async (searchQuery) => {
     const q = searchQuery !== undefined ? searchQuery : query;
     if (!q || !q.trim()) {
       toast.error("অনুগ্রহ করে অনুসন্ধানের জন্য বিষয় বা শব্দ লিখুন।");
@@ -65,7 +64,16 @@ export default function QuranSemanticSearchModal({ isOpen, onClose, onSelectAyah
     } finally {
       setLoading(false);
     }
-  };
+  }, [query]);
+
+  useEffect(() => {
+    if (isOpen && initialQuery) {
+      setQuery(initialQuery);
+      handleSearch(initialQuery);
+    }
+  }, [isOpen, initialQuery, handleSearch]);
+
+  if (!isOpen) return null;
 
   const playVerseAudio = (text, index) => {
     if (typeof window === "undefined" || !("speechSynthesis" in window)) {

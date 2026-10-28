@@ -118,7 +118,7 @@ export default function QuranRecitationAssessment({
     } else if (ratio >= 0.4) {
       // Potential pronunciation flaw or partial match
       setAssessmentResult({
-        category: "potential_pronunciation_flaw",
+        category: "moderate",
         score: Math.round(ratio * 100),
         passed: false,
         accuracyText: t.honestAssessment?.moderate || "মাঝারি — কিছু শব্দে অস্পষ্টতা",
@@ -126,9 +126,9 @@ export default function QuranRecitationAssessment({
         recommendation: t.honestAssessment?.moderateRec || "হরফগুলোর মাখরাজ পয়েন্ট দেখে ধীরেসুস্থে মাশক করুন।",
       });
     } else {
-      // Confirmed textual mismatch
+      // Mismatch
       setAssessmentResult({
-        category: "text_mismatch",
+        category: "mismatch",
         score: Math.round(ratio * 100),
         passed: false,
         accuracyText: t.honestAssessment?.mismatch || "ভুল — শব্দের অমিল",
@@ -150,34 +150,34 @@ export default function QuranRecitationAssessment({
   return (
     <div
       dir={dir}
-      className="w-full p-5 sm:p-6 rounded-3xl bg-[#091a14] border border-emerald-900/60 shadow-xl flex flex-col space-y-4"
+      className="w-full p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c241a] border border-emerald-200 dark:border-emerald-800 shadow-md flex flex-col space-y-4 transition-all"
     >
-      <div className="flex items-center justify-between border-b border-emerald-900/40 pb-3">
-        <h4 className="text-sm font-bold text-white flex items-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-emerald-400" />
+      <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900/40 pb-3">
+        <h4 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+          <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>{t.honestAssessment?.title || "সততা-ভিত্তিক এআই তিলাওয়াত মূল্যায়ন"}</span>
         </h4>
-        <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-700 text-emerald-300">
+        <span className="text-[10px] sm:text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950 border border-emerald-200 dark:border-emerald-700 text-emerald-800 dark:text-emerald-300 font-bold">
           {t.honestAssessment?.realtime || "রিয়েল-টাইম"}
         </span>
       </div>
 
       {/* Target Verse Calligraphy */}
-      <div className="p-4 rounded-2xl bg-[#05140d] border border-emerald-700/50 text-center space-y-2">
-        <p dir="rtl" className="font-amiri text-3xl sm:text-4xl font-bold text-amber-300">
+      <div className="p-4 sm:p-5 rounded-2xl bg-emerald-50/70 dark:bg-[#05140d] border border-emerald-200 dark:border-emerald-700/50 text-center space-y-2">
+        <p dir="rtl" className="font-arabic text-3xl sm:text-4xl font-bold text-emerald-950 dark:text-amber-300 leading-relaxed">
           {verseAr}
         </p>
-        <p className="text-xs text-slate-300">{displayMeaning}</p>
+        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">{displayMeaning}</p>
       </div>
 
       {/* Actions: Reference Audio & Mic */}
-      <div className="flex flex-wrap items-center justify-center gap-3 py-2">
+      <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 py-1">
         <button
           type="button"
           onClick={playReference}
-          className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-emerald-700 text-emerald-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow"
+          className="px-4 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-emerald-700 text-slate-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs active:scale-95"
         >
-          <Volume2 className="w-4 h-4" />
+          <Volume2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
           <span>{t.honestAssessment?.listenQari || "আদর্শ ক্বারী তিলাওয়াত শুনুন"}</span>
         </button>
 
@@ -185,18 +185,18 @@ export default function QuranRecitationAssessment({
           <button
             type="button"
             onClick={startRecording}
-            className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-md"
+            className="px-5 py-2 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold flex items-center gap-2 transition-all cursor-pointer shadow-md active:scale-95"
           >
-            <Mic className="w-4 h-4" />
+            <Mic className="w-4 h-4 text-white" />
             <span>{t.honestAssessment?.recordRecitation || "তিলাওয়াত রেকর্ড করুন"}</span>
           </button>
         ) : (
           <button
             type="button"
             onClick={stopRecordingAndAssess}
-            className="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black flex items-center gap-2 transition-all cursor-pointer shadow-lg animate-pulse"
+            className="px-5 py-2 rounded-2xl bg-rose-600 hover:bg-rose-500 text-white text-xs font-black flex items-center gap-2 transition-all cursor-pointer shadow-md animate-pulse active:scale-95"
           >
-            <MicOff className="w-4 h-4" />
+            <MicOff className="w-4 h-4 text-white" />
             <span>{t.honestAssessment?.stopAndAssess || "রেকর্ডিং থামান ও মূল্যায়ন করুন"}</span>
           </button>
         )}
@@ -204,7 +204,7 @@ export default function QuranRecitationAssessment({
 
       {/* Assessment Status / Result Box */}
       {assessmentStatus === "analyzing" && (
-        <div className="text-center py-4 text-xs text-amber-300 font-bold animate-pulse">
+        <div className="text-center py-3 text-xs text-amber-600 dark:text-amber-300 font-bold animate-pulse">
           {t.honestAssessment?.analyzing || "তিলাওয়াত ধ্বনি ও মাখরাজ বিশ্লেষণ করা হচ্ছে..."}
         </div>
       )}
@@ -213,31 +213,31 @@ export default function QuranRecitationAssessment({
         <div
           className={`p-4 rounded-2xl border text-xs space-y-2 animate-fade-in ${
             assessmentResult.passed
-              ? "bg-emerald-950/60 border-emerald-500 text-emerald-100"
-              : "bg-amber-950/60 border-amber-500 text-amber-100"
+              ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-500 text-emerald-950 dark:text-emerald-100"
+              : "bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-500 text-amber-950 dark:text-amber-100"
           }`}
         >
-          <div className="flex items-center justify-between font-bold border-b border-white/10 pb-2">
+          <div className="flex items-center justify-between font-bold border-b border-black/10 dark:border-white/10 pb-2">
             <span className="flex items-center gap-1.5">
               {assessmentResult.passed ? (
-                <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
               ) : (
-                <AlertCircle className="w-4 h-4 text-amber-400" />
+                <AlertCircle className="w-4 h-4 text-amber-600 dark:text-amber-400" />
               )}
-              <span>{assessmentResult.accuracyText}</span>
+              <span className="font-extrabold">{assessmentResult.accuracyText}</span>
             </span>
-            <span className="text-amber-300 font-black text-sm">
+            <span className="text-amber-700 dark:text-amber-300 font-black text-sm">
               {t.honestAssessment?.scoreLabel || "স্কোর"}: {assessmentResult.score}%
             </span>
           </div>
 
-          <p>{assessmentResult.feedback}</p>
-          <p className="text-[11px] text-slate-300">
+          <p className="leading-relaxed font-medium">{assessmentResult.feedback}</p>
+          <p className="text-[11px] text-slate-600 dark:text-slate-300">
             💡 <strong>{t.honestAssessment?.adviceLabel || "পরামর্শ"}:</strong> {assessmentResult.recommendation}
           </p>
 
           {!assessmentResult.passed && (
-            <div className="pt-2 flex items-center justify-between text-[11px] text-slate-400 border-t border-white/10">
+            <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 border-t border-black/10 dark:border-white/10">
               <span className="flex items-center gap-1">
                 <UserCheck className="w-3.5 h-3.5" />
                 <span>{t.honestAssessment?.teacherReviewOption || "সন্দেহ হলে উস্তাদের রিভিউ চাওয়া যাবে"}</span>
@@ -245,7 +245,7 @@ export default function QuranRecitationAssessment({
               <button
                 type="button"
                 onClick={startRecording}
-                className="text-amber-300 font-bold hover:underline"
+                className="text-amber-700 dark:text-amber-300 font-bold hover:underline"
               >
                 {t.honestAssessment?.tryAgain || "আবার চেষ্টা করুন ➔"}
               </button>

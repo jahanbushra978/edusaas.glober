@@ -10,6 +10,8 @@ export { default as NuruCompanion } from "./components/NuruCompanion";
 export { default as DailyQuestsModal } from "./components/DailyQuestsModal";
 export { default as LeagueLeaderboardModal } from "./components/LeagueLeaderboardModal";
 export { default as ParentCelebrationCard } from "./components/ParentCelebrationCard";
+export { default as QuranGamesHub } from "./components/QuranGamesHub";
+export { default as QuranThematicSearch } from "./components/QuranThematicSearch";
 
 export { useLearningLanguage } from "./hooks/useLearningLanguage";
 export { useLearningProgress } from "./hooks/useLearningProgress";

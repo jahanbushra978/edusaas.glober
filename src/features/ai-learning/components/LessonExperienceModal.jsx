@@ -417,34 +417,34 @@ export default function LessonExperienceModal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-2 sm:p-4 animate-fade-in select-none overflow-y-auto">
+    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 animate-fade-in select-none overflow-y-auto">
       <div
         dir={dir}
-        className="bg-[#071912] border-2 border-emerald-700/80 rounded-3xl w-full max-w-xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden font-sans my-auto"
+        className="bg-white dark:bg-[#0c241a] border-2 border-emerald-200 dark:border-emerald-700/80 rounded-3xl w-full max-w-xl max-h-[94vh] flex flex-col shadow-2xl overflow-hidden font-sans my-auto transition-all"
       >
-        {/* ── HEADER ── */}
-        <div className="p-3.5 sm:p-4 border-b border-emerald-900/60 bg-[#05140d] flex items-center justify-between shrink-0">
+        {/* ── HEADER (Onosaee Child Friendly Design) ── */}
+        <div className="p-3.5 sm:p-4 border-b border-emerald-100 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-[#071912] flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-emerald-600/30 border border-emerald-500/50 flex items-center justify-center text-emerald-300 shrink-0">
+            <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-xs shrink-0">
               <BookOpen className="w-4 h-4" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white line-clamp-1">{title}</h3>
-              <p className="text-[11px] text-emerald-400">
+              <h3 className="text-sm font-extrabold text-slate-900 dark:text-white line-clamp-1">{title}</h3>
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">
                 {t.step} {step + 1} {t.of} 3
               </p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
             {/* 🐢 0.75x Slow-Motion Qari Audio Toggle */}
             <button
               type="button"
               onClick={() => setIsSlowMode(!isSlowMode)}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border transition-all cursor-pointer ${
                 isSlowMode
-                  ? "bg-amber-500 text-slate-950 border-amber-300 font-black shadow-amber-500/30 shadow"
-                  : "bg-emerald-950/80 text-emerald-300 border-emerald-700/60 hover:bg-emerald-900"
+                  ? "bg-amber-400 text-slate-950 border-amber-300 font-black shadow-xs"
+                  : "bg-white dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 border-emerald-200 dark:border-emerald-700/60 hover:bg-emerald-100"
               }`}
               title="ধীরগতিতে মাখরাজ শোনার জন্য 0.75x স্পিড"
             >
@@ -453,7 +453,7 @@ export default function LessonExperienceModal({
             </button>
 
             {/* Real-time Hearts / Lives Counter */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-950/70 border border-rose-600/60 text-rose-300 text-xs font-black shadow-inner">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-rose-50 dark:bg-rose-950/70 border border-rose-300 dark:border-rose-600/60 text-rose-700 dark:text-rose-300 text-xs font-black shadow-xs">
               <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500 animate-pulse" />
               <span>{lives}</span>
             </div>
@@ -464,7 +464,7 @@ export default function LessonExperienceModal({
                 stopAllPlayback();
                 onClose();
               }}
-              className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-white transition-colors cursor-pointer"
+              className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
             >
               <X className="w-4 h-4" />
             </button>
@@ -472,18 +472,18 @@ export default function LessonExperienceModal({
         </div>
 
         {/* ── PROGRESS BAR ── */}
-        <div className="w-full bg-slate-950 h-1.5 shrink-0">
+        <div className="w-full bg-slate-100 dark:bg-slate-950 h-1.5 shrink-0">
           <div
             style={{ width: `${((step + 1) / 3) * 100}%` }}
-            className="h-full bg-gradient-to-r from-emerald-500 to-amber-400 transition-all duration-300"
+            className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 transition-all duration-300"
           />
         </div>
 
         {/* ── BODY STAGES (Scrollable Content) ── */}
-        <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-emerald-800 scrollbar-track-transparent">
+        <div className="p-4 sm:p-6 flex-1 flex flex-col justify-between overflow-y-auto min-h-0 scrollbar-thin scrollbar-thumb-emerald-300 dark:scrollbar-thumb-emerald-800 scrollbar-track-transparent">
           {/* STEP 0: EXPLAIN & DEMONSTRATE */}
           {step === 0 && (
-            <div className="space-y-4 flex flex-col items-center text-center my-auto">
+            <div className="space-y-5 flex flex-col items-center text-center my-auto">
               <div className="flex flex-wrap items-center justify-center gap-3">
                 {lesson.arabicItems.map((item, idx) => (
                   <button
@@ -494,10 +494,10 @@ export default function LessonExperienceModal({
                       playArabicSound(item, null, isSlowMode ? 0.75 : 1.0);
                       setActivePlayingIndex(idx);
                     }}
-                    className={`font-amiri text-4xl sm:text-5xl font-bold p-3 rounded-2xl border transition-all cursor-pointer shadow-lg active:scale-95 ${
+                    className={`font-arabic text-4xl sm:text-5xl font-bold p-3.5 sm:p-4 rounded-3xl border-2 transition-all cursor-pointer shadow-md active:scale-95 ${
                       activePlayingIndex === idx
-                        ? "bg-amber-500 text-slate-950 border-amber-300 shadow-amber-500/40 scale-105"
-                        : "bg-[#03140d] text-amber-300 border-emerald-700/60 hover:border-emerald-400 hover:bg-emerald-950"
+                        ? "bg-amber-400 text-slate-950 border-amber-300 shadow-lg scale-105"
+                        : "bg-emerald-50/80 dark:bg-[#03140d] text-emerald-950 dark:text-amber-300 border-emerald-200 dark:border-emerald-700/60 hover:border-emerald-500 hover:bg-emerald-100 dark:hover:bg-emerald-950"
                     }`}
                     title={t.listenAudio}
                   >
@@ -506,19 +506,19 @@ export default function LessonExperienceModal({
                 ))}
               </div>
 
-              <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-800/60 max-w-md">
-                <p className="text-xs text-slate-200 leading-relaxed">{explanation}</p>
-                <p className="text-[11px] text-amber-400/90 mt-2 font-medium">{t.touchLetterTip}</p>
+              <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 max-w-md text-left sm:text-center shadow-xs">
+                <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed font-medium">{explanation}</p>
+                <p className="text-[11px] text-emerald-800 dark:text-amber-400 mt-2 font-bold">{t.touchLetterTip}</p>
               </div>
 
               <div className="flex flex-wrap items-center justify-center gap-2.5">
                 <button
                   type="button"
                   onClick={playDemoAudio}
-                  className={`px-4 py-2.5 rounded-xl text-xs font-black flex items-center gap-2 shadow-md transition-all cursor-pointer active:scale-95 ${
+                  className={`px-4 py-2.5 rounded-2xl text-xs font-black flex items-center gap-2 shadow-md transition-all cursor-pointer active:scale-95 ${
                     isPlayingDemo
                       ? "bg-rose-500 text-white animate-pulse"
-                      : "bg-amber-500 hover:bg-amber-400 text-slate-950"
+                      : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white"
                   }`}
                 >
                   <Volume2 className="w-4 h-4" />
@@ -533,13 +533,13 @@ export default function LessonExperienceModal({
                   <button
                     type="button"
                     onClick={playQariAudio}
-                    className={`px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer active:scale-95 ${
+                    className={`px-4 py-2.5 rounded-2xl text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer active:scale-95 ${
                       isPlayingQari
-                        ? "bg-emerald-600 text-white border-emerald-400 animate-pulse shadow-emerald-500/30"
-                        : "bg-emerald-950/80 hover:bg-emerald-900 text-emerald-300 border-emerald-600/70"
+                        ? "bg-emerald-600 text-white border-emerald-400 animate-pulse shadow-xs"
+                        : "bg-white dark:bg-emerald-950/80 hover:bg-emerald-50 text-emerald-900 dark:text-emerald-200 border-emerald-200 dark:border-emerald-600/70"
                     }`}
                   >
-                    <Volume2 className="w-4 h-4 text-emerald-400" />
+                    <Volume2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>
                       {isPlayingQari
                         ? (lang === "en" ? "Playing Recitation..." : lang === "ar" ? "تشغيل التلاوة..." : "ক্বারীর তিলাওয়াত বাজছে...")
@@ -554,7 +554,7 @@ export default function LessonExperienceModal({
           {/* STEP 1: INTERACTIVE PRACTICE */}
           {step === 1 && (
             <div className="space-y-4 flex flex-col items-center text-center my-auto">
-              <p className="text-xs text-slate-300">
+              <p className="text-xs text-slate-600 dark:text-slate-300 font-medium">
                 {t.touchLetterPractice}
               </p>
 
@@ -569,14 +569,14 @@ export default function LessonExperienceModal({
                       setActivePlayingIndex(idx);
                       setHasPracticed(true);
                     }}
-                    className={`p-4 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer border active:scale-95 shadow-md ${
+                    className={`p-3.5 sm:p-4 rounded-3xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer border-2 active:scale-95 shadow-xs ${
                       activePlayingIndex === idx
-                        ? "bg-amber-500 border-amber-300 text-slate-950 scale-105 shadow-amber-500/30 font-black"
-                        : "bg-[#03140d] border-emerald-600/60 text-amber-200 hover:border-emerald-400 hover:bg-emerald-950"
+                        ? "bg-amber-400 border-amber-300 text-slate-950 scale-105 shadow-md font-black"
+                        : "bg-emerald-50/80 dark:bg-[#03140d] border-emerald-200 dark:border-emerald-600/60 text-emerald-950 dark:text-amber-200 hover:border-emerald-400 hover:bg-emerald-100"
                     }`}
                   >
-                    <span className="font-amiri text-4xl font-bold">{item}</span>
-                    <span className="text-[10px] text-emerald-400 flex items-center gap-1 font-semibold">
+                    <span className="font-arabic text-4xl font-bold leading-tight">{item}</span>
+                    <span className="text-[10px] text-emerald-700 dark:text-emerald-400 flex items-center gap-1 font-bold">
                       <Volume2 className="w-3 h-3" />
                       <span>{t.listenAudio}</span>
                     </span>
@@ -588,13 +588,13 @@ export default function LessonExperienceModal({
                 <button
                   type="button"
                   onClick={() => handleVoiceTest(lesson.arabicItems[activePlayingIndex ?? 0] || lesson.arabicItems[0])}
-                  className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow cursor-pointer border ${
+                  className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 transition-all shadow-xs cursor-pointer border active:scale-95 ${
                     isVoiceTesting
                       ? "bg-rose-600 text-white border-rose-400 animate-pulse"
-                      : "bg-emerald-950/90 hover:bg-emerald-900 text-emerald-300 border-emerald-600/70"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white border-emerald-500"
                   }`}
                 >
-                  {isVoiceTesting ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-emerald-400" />}
+                  {isVoiceTesting ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4 text-emerald-100" />}
                   <span>
                     {isVoiceTesting
                       ? (lang === "en" ? "Listening & Recording..." : lang === "ar" ? "جاري الاستماع والتسجيل..." : "শুনছি ও রেকর্ড করছি...")
@@ -606,13 +606,13 @@ export default function LessonExperienceModal({
                   <button
                     type="button"
                     onClick={playUserRecording}
-                    className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer shadow active:scale-95 ${
+                    className={`px-3.5 py-2 rounded-2xl text-xs font-bold flex items-center gap-2 border transition-all cursor-pointer shadow-xs active:scale-95 ${
                       isPlayingUserAudio
                         ? "bg-indigo-600 text-white border-indigo-400 animate-pulse"
-                        : "bg-indigo-950/90 hover:bg-indigo-900 text-indigo-300 border-indigo-600/70"
+                        : "bg-indigo-50 dark:bg-indigo-950/90 hover:bg-indigo-100 text-indigo-900 dark:text-indigo-300 border-indigo-200 dark:border-indigo-600/70"
                     }`}
                   >
-                    <Volume2 className="w-4 h-4 text-indigo-400" />
+                    <Volume2 className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
                     <span>{isPlayingUserAudio ? "আমার কণ্ঠ বাজছে..." : "আমার রেকর্ডিং শুনুন 🎧"}</span>
                   </button>
                 )}
@@ -624,7 +624,7 @@ export default function LessonExperienceModal({
                       onClose();
                       onOpenBlackboard();
                     }}
-                    className="px-4 py-2 rounded-xl bg-slate-900 border border-emerald-600 hover:bg-emerald-950 text-emerald-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow active:scale-95"
+                    className="px-3.5 py-2 rounded-2xl bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-emerald-600 hover:bg-slate-200 text-slate-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs active:scale-95"
                   >
                     <PenTool className="w-4 h-4" />
                     <span>{t.writeOnBlackboard}</span>
@@ -636,13 +636,13 @@ export default function LessonExperienceModal({
                 <div
                   className={`w-full max-w-md px-3.5 py-2.5 rounded-2xl border text-xs font-bold animate-fade-in text-left space-y-1 ${
                     voiceFeedback.success
-                      ? "bg-emerald-950/80 border-emerald-500 text-emerald-300"
-                      : "bg-amber-950/90 border-amber-500 text-amber-200"
+                      ? "bg-emerald-50 dark:bg-emerald-950/80 border-emerald-300 dark:border-emerald-500 text-emerald-900 dark:text-emerald-300"
+                      : "bg-amber-50 dark:bg-amber-950/90 border-amber-300 dark:border-amber-500 text-amber-900 dark:text-amber-200"
                   }`}
                 >
                   <p>{voiceFeedback.text}</p>
                   {voiceFeedback.diagnostic && (
-                    <p className="text-[11px] font-normal text-amber-300/90 leading-relaxed border-t border-amber-800/40 pt-1 mt-1">
+                    <p className="text-[11px] font-normal text-amber-900 dark:text-amber-300/90 leading-relaxed border-t border-amber-200 dark:border-amber-800/40 pt-1 mt-1">
                       💡 {voiceFeedback.diagnostic}
                     </p>
                   )}
@@ -650,12 +650,12 @@ export default function LessonExperienceModal({
               )}
 
               {/* Real-time Makhraj & Short Vowel Guidance Banner */}
-              <div className="w-full max-w-md p-3 rounded-2xl bg-emerald-950/40 border border-emerald-800/60 text-left space-y-1">
-                <div className="flex items-center gap-1.5 text-amber-400 text-[11px] font-bold">
+              <div className="w-full max-w-md p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 text-left space-y-1">
+                <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400 text-[11px] font-extrabold">
                   <Award className="w-3.5 h-3.5" />
                   <span>মাখরাজ ও স্বরধ্বনি গাইড</span>
                 </div>
-                <p className="text-[11px] text-slate-300 leading-relaxed">
+                <p className="text-[11px] text-slate-700 dark:text-slate-300 leading-relaxed font-medium">
                   {MAKHRAJ_DIAGNOSTICS[lesson.arabicItems[activePlayingIndex ?? 0]] ||
                     explanation ||
                     "ক্বারীর বিশুদ্ধ উচ্চারণ শুনে বারবার মাশক করুন।"}
@@ -667,11 +667,11 @@ export default function LessonExperienceModal({
           {/* STEP 2: QUIZ & ASSESSMENT */}
           {step === 2 && quiz && (
             <div className="space-y-4 flex flex-col justify-center my-auto">
-              <div className="text-center">
-                <span className="text-[11px] font-bold text-emerald-400 uppercase tracking-wider">
+              <div className="text-center space-y-1">
+                <span className="text-[10px] font-extrabold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-700 uppercase tracking-wider">
                   {t.quiz}
                 </span>
-                <h4 className="text-sm font-bold text-white mt-1">
+                <h4 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white mt-1">
                   {quiz.question[lang] || quiz.question.bn || quiz.question.en}
                 </h4>
               </div>
@@ -696,17 +696,17 @@ export default function LessonExperienceModal({
                           playArabicSound(optLabel);
                         }
                       }}
-                      className={`p-3.5 rounded-2xl text-center font-bold transition-all cursor-pointer border ${
+                      className={`p-3.5 rounded-2xl text-center font-bold transition-all cursor-pointer border-2 active:scale-95 shadow-xs ${
                         isSelected
                           ? isAnswerSubmitted
                             ? isCorrect
-                              ? "bg-emerald-600 border-emerald-400 text-white shadow-lg"
-                              : "bg-rose-600 border-rose-400 text-white shadow-lg animate-shake"
-                            : "bg-amber-500 border-amber-300 text-slate-950 shadow-md font-black"
-                          : "bg-[#03140d] border-emerald-900 text-slate-200 hover:border-emerald-600 hover:bg-emerald-950"
+                              ? "bg-emerald-600 border-emerald-500 text-white shadow-md font-extrabold"
+                              : "bg-rose-600 border-rose-500 text-white shadow-md animate-shake font-extrabold"
+                            : "bg-amber-400 border-amber-400 text-slate-950 shadow-xs font-black"
+                          : "bg-slate-50 dark:bg-[#03140d] border-slate-200 dark:border-emerald-900 text-slate-800 dark:text-slate-200 hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950"
                       }`}
                     >
-                      <span className={isArabicWord ? "font-amiri text-2xl font-bold" : "text-xs font-semibold"}>
+                      <span className={isArabicWord ? "font-arabic text-2xl font-bold" : "text-xs font-semibold"}>
                         {optLabel}
                       </span>
                     </button>
@@ -720,20 +720,20 @@ export default function LessonExperienceModal({
                   type="button"
                   disabled={selectedOption === null}
                   onClick={handleQuizSubmit}
-                  className="w-full max-w-md mx-auto py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-xs shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full max-w-md mx-auto py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-md transition-all disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer active:scale-95"
                 >
                   {t.verifyAnswer}
                 </button>
               ) : (
                 <div className="text-center space-y-2.5 animate-fade-in max-w-md mx-auto w-full">
-                  <p className="text-xs font-bold text-emerald-300 flex items-center justify-center gap-1.5">
-                    <CheckCircle2 className="w-4 h-4 text-emerald-400" />
+                  <p className="text-xs font-bold text-emerald-700 dark:text-emerald-300 flex items-center justify-center gap-1.5">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <span>{t.correct}</span>
                   </p>
                   <button
                     type="button"
                     onClick={() => setStep(3)}
-                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-xs shadow-lg shadow-amber-500/25 transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
+                    className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-xs shadow-md transition-all cursor-pointer flex items-center justify-center gap-2 active:scale-95"
                   >
                     <span>{t.viewResults}</span>
                     <ArrowRight className="w-4 h-4" />
@@ -748,10 +748,10 @@ export default function LessonExperienceModal({
             <div className="space-y-4 flex flex-col items-center text-center my-auto animate-fade-in">
               {/* Grand Arabic Calligraphy & Islamic Ribbon */}
               <div className="flex flex-col items-center">
-                <span className="font-amiri text-4xl sm:text-5xl font-black text-amber-300 drop-shadow-[0_0_15px_rgba(251,191,36,0.6)]">
+                <span className="font-arabic text-4xl sm:text-5xl font-black text-amber-500 dark:text-amber-300 drop-shadow-[0_0_15px_rgba(251,191,36,0.5)]">
                   {t.maShaAllah}
                 </span>
-                <span className="text-sm font-bold text-emerald-400 tracking-wide mt-1">
+                <span className="text-sm font-extrabold text-emerald-800 dark:text-emerald-400 tracking-wide mt-1">
                   {t.maShaAllahPassed}
                 </span>
               </div>
@@ -773,8 +773,8 @@ export default function LessonExperienceModal({
                       <Star
                         className={`w-10 h-10 sm:w-12 sm:h-12 ${
                           isEarned && isVisible
-                            ? "text-amber-400 fill-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.9)] animate-bounce"
-                            : "text-slate-700 fill-slate-800"
+                            ? "text-amber-500 fill-amber-400 drop-shadow-[0_0_15px_rgba(251,191,36,0.9)] animate-bounce"
+                            : "text-slate-300 dark:text-slate-700 fill-slate-200 dark:fill-slate-800"
                         }`}
                       />
                     </div>
@@ -784,32 +784,32 @@ export default function LessonExperienceModal({
 
               {/* Star Rating Badge & Heart Reward */}
               <div className="flex flex-col items-center space-y-1.5">
-                <div className="px-3.5 py-1 rounded-full bg-emerald-950/80 border border-emerald-500/60 text-emerald-300 font-extrabold text-xs shadow-md">
+                <div className="px-3.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/80 border border-emerald-300 dark:border-emerald-500/60 text-emerald-900 dark:text-emerald-300 font-extrabold text-xs shadow-xs">
                   {earnedStars === 3 ? t.threeStarsPerfect : earnedStars === 2 ? t.twoStarsGreat : t.oneStarCompleted}
                 </div>
 
                 {/* 3-Star Heart Reward Banner */}
                 {earnedStars === 3 && (
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-gradient-to-r from-rose-950/80 to-amber-950/80 border border-rose-500/60 text-rose-300 text-xs font-bold shadow-md animate-pulse">
-                    <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-400" />
+                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-2xl bg-gradient-to-r from-rose-50 to-amber-50 dark:from-rose-950/80 dark:to-amber-950/80 border border-rose-300 dark:border-rose-500/60 text-rose-800 dark:text-rose-300 text-xs font-bold shadow-xs animate-pulse">
+                    <Heart className="w-3.5 h-3.5 fill-rose-500 text-rose-500" />
                     <span>{t.threeStarHeartBonus}</span>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center gap-3 text-xs text-slate-300">
-                <span className="text-amber-300 font-bold flex items-center gap-1">
-                  <Award className="w-4 h-4 text-amber-400" />
+              <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-300 font-bold">
+                <span className="text-amber-600 dark:text-amber-300 flex items-center gap-1">
+                  <Award className="w-4 h-4 text-amber-500" />
                   <span>{t.xpEarned}</span>
                 </span>
                 <span>•</span>
-                <span className="text-emerald-400 font-bold">{t.nextLessonUnlocked}</span>
+                <span className="text-emerald-700 dark:text-emerald-400">{t.nextLessonUnlocked}</span>
               </div>
 
               <button
                 type="button"
                 onClick={handleFinishLesson}
-                className="w-full max-w-xs py-3 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-sm shadow-xl shadow-amber-500/25 active:scale-95 transition-all cursor-pointer"
+                className="w-full max-w-xs py-3 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-300 hover:to-amber-500 text-slate-950 font-black text-sm shadow-md active:scale-95 transition-all cursor-pointer"
               >
                 {t.continueLearning} ➔
               </button>
@@ -819,7 +819,7 @@ export default function LessonExperienceModal({
 
         {/* ── FOOTER CONTROLS ── */}
         {step < 3 && (
-          <div className="p-3 sm:p-4 border-t border-emerald-900/60 bg-[#05140d] flex items-center justify-between shrink-0 z-10">
+          <div className="p-3 sm:p-4 border-t border-emerald-100 dark:border-emerald-900/60 bg-emerald-50/60 dark:bg-[#071912] flex items-center justify-between shrink-0 z-10">
             <button
               type="button"
               disabled={step === 0}
@@ -827,7 +827,7 @@ export default function LessonExperienceModal({
                 stopAllPlayback();
                 setStep((s) => Math.max(0, s - 1));
               }}
-              className="px-3.5 py-1.5 rounded-xl bg-slate-900 text-slate-300 text-xs font-bold hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+              className="px-3.5 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-200 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
             >
               {t.previous}
             </button>
@@ -850,10 +850,10 @@ export default function LessonExperienceModal({
                   setStep((s) => s + 1);
                 }
               }}
-              className={`px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md transition-all ${
+              className={`px-4 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all ${
                 step === 2 && !isCorrect
-                  ? "bg-slate-800 text-slate-500 border border-slate-700 cursor-not-allowed opacity-50"
-                  : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white cursor-pointer"
+                  ? "bg-slate-200 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50"
+                  : "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white cursor-pointer active:scale-95"
               }`}
             >
               <span>{step === 2 ? t.viewResults : t.next}</span>

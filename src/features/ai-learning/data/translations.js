@@ -94,6 +94,7 @@ export const LEARNING_TRANSLATIONS = {
       hifz: "স্মৃতি",
       murajaah: "দাওর",
       progress: "রিপোর্ট",
+      games: "গেম",
     },
     paths: {
       teacher: "১. এআই পার্সোনাল শিক্ষক",
@@ -102,7 +103,8 @@ export const LEARNING_TRANSLATIONS = {
       tajweed: "৪. তাজবীদ শিক্ষা",
       hifz: "৫. হিফজ ও মুখস্থ",
       murajaah: "৬. মুরাযাআ ও দাওর",
-      progress: "৭. পরীক্ষা ও রিপোর্ট",
+      games: "৭. খেলে শিখি (গেমস)",
+      progress: "৮. পরীক্ষা ও রিপোর্ট",
     },
     honestAssessment: {
       title: "সততা-ভিত্তিক এআই তিলাওয়াত মূল্যায়ন",
@@ -228,6 +230,7 @@ export const LEARNING_TRANSLATIONS = {
       hifz: "Memory",
       murajaah: "Dour",
       progress: "Report",
+      games: "Games",
     },
     paths: {
       teacher: "1. AI Personal Teacher",
@@ -236,7 +239,8 @@ export const LEARNING_TRANSLATIONS = {
       tajweed: "4. Tajweed Mastery",
       hifz: "5. Hifz Memorization",
       murajaah: "6. Muraja'ah Revision",
-      progress: "7. Exams & Progress",
+      games: "7. Play & Learn (Games)",
+      progress: "8. Exams & Progress",
     },
     honestAssessment: {
       title: "Honest AI Recitation Assessment",
@@ -362,6 +366,7 @@ export const LEARNING_TRANSLATIONS = {
       hifz: "حفظ",
       murajaah: "مراجعة",
       progress: "تقرير",
+      games: "ألعاب",
     },
     paths: {
       teacher: "١. المعلم الشخصي الذكي",
@@ -370,7 +375,8 @@ export const LEARNING_TRANSLATIONS = {
       tajweed: "٤. أحكام التجويد",
       hifz: "٥. حفظ القرآن الكريم",
       murajaah: "٦. المراجعة والدور",
-      progress: "٧. الاختبارات والتقدم",
+      games: "٧. تعلم باللعب (ألعاب)",
+      progress: "٨. الاختبارات والتقدم",
     },
     honestAssessment: {
       title: "التقييم الذكي الأمين للتلاوة",

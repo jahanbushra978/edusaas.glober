@@ -24,25 +24,25 @@ export default function LeagueLeaderboardModal({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in select-none">
+    <div className="fixed inset-0 z-50 bg-slate-950/70 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in select-none">
       <div
         dir={dir}
-        className="bg-[#071912] border-2 border-emerald-500/80 rounded-3xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden font-sans"
+        className="bg-white dark:bg-[#0c241a] border-2 border-emerald-200 dark:border-emerald-700/80 rounded-3xl w-full max-w-md flex flex-col shadow-2xl overflow-hidden font-sans transition-all"
       >
         {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-emerald-900/60 bg-[#05140d] flex items-center justify-between">
+        <div className="p-4 sm:p-5 border-b border-emerald-100 dark:border-emerald-900/60 bg-emerald-50/70 dark:bg-[#071912] flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-emerald-500/20 border border-emerald-400 flex items-center justify-center text-emerald-300">
-              <Trophy className="w-5 h-5 text-amber-400" />
+            <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-700 flex items-center justify-center text-emerald-800 dark:text-emerald-300 shadow-xs">
+              <Trophy className="w-5 h-5 text-amber-500 fill-amber-400" />
             </div>
             <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              <h3 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
                 <span>{lang === "en" ? "Emerald League" : lang === "ar" ? "دوري الزمرد" : "মরকত লিগ (Emerald League)"}</span>
-                <span className="text-[10px] bg-amber-500/20 text-amber-300 px-2 py-0.5 rounded-full border border-amber-500/40 font-bold">
+                <span className="text-[10px] bg-amber-100 dark:bg-amber-500/20 text-amber-900 dark:text-amber-300 px-2 py-0.5 rounded-full border border-amber-300 dark:border-amber-500/40 font-extrabold">
                   Top 3
                 </span>
               </h3>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium">
                 {lang === "en" ? "Top 3 learners advance to Diamond League on Friday!" : lang === "ar" ? "أفضل ٣ متعلمين يتأهلون إلى الدوري الماسي الجمعة القادمة!" : "শীর্ষ ৩ জন শিক্ষার্থী আগামী জুমায় ডায়মন্ড লিগে উন্নীত হবেন!"}
               </p>
             </div>
@@ -50,19 +50,19 @@ export default function LeagueLeaderboardModal({
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl bg-slate-900 text-slate-400 hover:text-white transition-colors cursor-pointer"
+            className="p-1.5 rounded-xl bg-slate-100 dark:bg-slate-900 text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors cursor-pointer"
           >
             <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Promotion Banner */}
-        <div className="px-4 py-2 bg-gradient-to-r from-emerald-950 via-teal-950 to-emerald-950 border-b border-emerald-900/50 flex items-center justify-between text-[11px] text-emerald-300 font-semibold">
+        <div className="px-4 py-2 bg-emerald-100/70 dark:bg-emerald-950/80 border-b border-emerald-200 dark:border-emerald-900/50 flex items-center justify-between text-[11px] text-emerald-900 dark:text-emerald-300 font-bold">
           <div className="flex items-center gap-1.5">
-            <ArrowUp className="w-3.5 h-3.5 text-emerald-400 animate-bounce" />
+            <ArrowUp className="w-3.5 h-3.5 text-emerald-700 dark:text-emerald-400 animate-bounce" />
             <span>{lang === "en" ? "Promotion Zone" : lang === "ar" ? "منطقة التأهل" : "উন্নীত হওয়ার অবস্থান"}</span>
           </div>
-          <span className="text-slate-400 font-mono text-[10px]">
+          <span className="text-slate-500 dark:text-slate-400 font-mono text-[10px]">
             {lang === "en" ? "Resets in 3d 14h" : lang === "ar" ? "التحديث بعد ٣ أيام" : "বাকি ৩ দিন ১৪ ঘণ্টা"}
           </span>
         </div>
@@ -75,8 +75,8 @@ export default function LeagueLeaderboardModal({
                 key={student.rank}
                 className={`p-3 rounded-2xl flex items-center justify-between gap-3 border transition-all ${
                   student.isUser
-                    ? "bg-gradient-to-r from-emerald-900/60 to-teal-900/60 border-amber-400 shadow-lg scale-[1.02] ring-1 ring-amber-400/50"
-                    : "bg-[#040e0a] border-emerald-900/50 hover:border-emerald-800"
+                    ? "bg-amber-50 dark:bg-emerald-900/60 border-amber-300 dark:border-amber-400 shadow-sm scale-[1.01] ring-1 ring-amber-300 dark:ring-amber-400/50"
+                    : "bg-slate-50 dark:bg-[#071d14] border-slate-200 dark:border-emerald-900/50 hover:border-emerald-300"
                 }`}
               >
                 <div className="flex items-center gap-3">
@@ -84,12 +84,12 @@ export default function LeagueLeaderboardModal({
                   <span
                     className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 ${
                       student.rank === 1
-                        ? "bg-amber-400 text-slate-950 shadow-md"
+                        ? "bg-amber-400 text-slate-950 shadow-xs"
                         : student.rank === 2
                         ? "bg-slate-300 text-slate-950"
                         : student.rank === 3
                         ? "bg-amber-700 text-amber-100"
-                        : "bg-slate-800 text-slate-400"
+                        : "bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-400"
                     }`}
                   >
                     {student.rank}
@@ -98,21 +98,20 @@ export default function LeagueLeaderboardModal({
                   {/* Avatar & Name */}
                   <div className="text-xl shrink-0">{student.avatar}</div>
                   <div>
-                    <h5
-                      className={`text-xs font-bold leading-tight ${
-                        student.isUser ? "text-amber-300 font-black" : "text-white"
-                      }`}
-                    >
-                      {student.name}
-                    </h5>
-                    <span className="text-[10px] text-slate-400">{student.league}</span>
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                      <span>{student.name}</span>
+                      {student.isUser && (
+                        <span className="text-[9px] bg-emerald-600 text-white px-1.5 py-0.2 rounded-full font-black">
+                          আমি
+                        </span>
+                      )}
+                    </h4>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">{student.league}</span>
                   </div>
                 </div>
 
-                {/* XP Score */}
-                <div className="flex items-center gap-1 text-xs font-black text-amber-300 shrink-0">
-                  <Award className="w-3.5 h-3.5 text-amber-400" />
-                  <span>{student.xp} XP</span>
+                <div className="text-right">
+                  <span className="text-xs font-black text-amber-700 dark:text-amber-300">{student.xp} XP</span>
                 </div>
               </div>
             );
@@ -120,11 +119,11 @@ export default function LeagueLeaderboardModal({
         </div>
 
         {/* Footer */}
-        <div className="p-3.5 border-t border-emerald-900/60 bg-[#05140d] text-center">
+        <div className="p-3.5 border-t border-emerald-100 dark:border-emerald-900/60 bg-emerald-50/60 dark:bg-[#071912] text-center">
           <button
             type="button"
             onClick={onClose}
-            className="w-full py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 text-xs font-bold transition-all cursor-pointer"
+            className="w-full py-2 rounded-xl bg-slate-100 dark:bg-slate-900 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer"
           >
             {lang === "en" ? "Close" : lang === "ar" ? "إغلاق" : "বন্ধ করুন"}
           </button>
