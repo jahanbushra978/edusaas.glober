@@ -5,7 +5,7 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import { cookies } from 'next/headers'
 
 import Providers from './providers'
-import { inter, hindSiliguri, notoSansBengali, notoSansArabic, amiri, playfairDisplay } from './fonts'
+import { inter, hindSiliguri, notoSansBengali, notoSansArabic, amiri, playfairDisplay, balooDa2 } from './fonts'
 
 export const revalidate = 3600;
 
@@ -88,7 +88,7 @@ export default async function RootLayout({ children }) {
   const initialLang = (langCookie === 'bn' || langCookie === 'en' || langCookie === 'ar') ? langCookie : 'bn'
 
   return (
-    <html lang={initialLang} suppressHydrationWarning data-scroll-behavior="smooth" className={`light ${inter.variable} ${hindSiliguri.variable} ${notoSansBengali.variable} ${notoSansArabic.variable} ${amiri.variable} ${playfairDisplay.variable}`}>
+    <html lang={initialLang} suppressHydrationWarning data-scroll-behavior="smooth" className={`light ${inter.variable} ${hindSiliguri.variable} ${notoSansBengali.variable} ${notoSansArabic.variable} ${amiri.variable} ${playfairDisplay.variable} ${balooDa2.variable}`}>
       <head>
         <meta charSet="utf-8" />
         <link rel="preconnect" href="https://fonts.googleapis.com" />

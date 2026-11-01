@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft, BookOpen, Gamepad2 } from "lucide-react";
+import { ArrowLeft, Gamepad2 } from "lucide-react";
 import { QuranGamesHub } from "@/features/ai-learning";
 
 export const metadata = {

@@ -19,8 +19,9 @@ import {
   getHafiziLocationForAyah,
   parseHafiziSearchQuery
 } from "@/lib/quran/hafizi-pages";
-import { getQariAudioUrl, getActiveShaykhId } from "@/lib/ai/qari-registry";
+import { getActiveShaykhId } from "@/lib/ai/qari-registry";
 import { useBanglaAudioEngine } from "@/lib/quran/bangla-audio-engine";
+import { universalAudioEngine } from "@/lib/quran/audio";
 
 const POPULAR_THEMATIC_TOPICS = [
   { id: "salah", label: "সালাত ও নামায", query: "সালাত", icon: "🕌" },
@@ -247,6 +248,7 @@ export default function QuranThematicSearch({ onSelectAyah }) {
 
   // Stop currently playing Qari audio
   const stopAudio = useCallback(() => {
+    universalAudioEngine.stopAll();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
@@ -331,7 +333,7 @@ export default function QuranThematicSearch({ onSelectAyah }) {
     executeSearch(topic.query, topic.id);
   };
 
-  // Play Authentic Qari Recitation using EveryAyah CDN (Zero Robotic Synth)
+  // Play Authentic Qari Recitation via Central Universal Audio Engine (Zero Robotic Synth)
   const playVerseAudio = (verse, uniqueKey) => {
     stopBanglaAudio();
     if (playingKey === uniqueKey) {
@@ -341,45 +343,16 @@ export default function QuranThematicSearch({ onSelectAyah }) {
     stopAudio();
 
     const qariId = getActiveShaykhId() || "alafasy";
-    const audioUrl = getQariAudioUrl(qariId, verse.surah, verse.ayah);
-
-    const audio = new Audio(audioUrl);
-    audioRef.current = audio;
     setPlayingKey(uniqueKey);
 
-    audio.onended = () => {
-      if (audioRef.current === audio) {
-        audioRef.current = null;
+    universalAudioEngine.playAyah(verse.surah, verse.ayah, qariId, {
+      onEnd: () => {
         setPlayingKey(null);
-      }
-    };
-
-    audio.onerror = () => {
-      // Automatic fallback to Alafasy if the selected reciter is unavailable
-      if (qariId !== "alafasy") {
-        const fallbackUrl = getQariAudioUrl("alafasy", verse.surah, verse.ayah);
-        const fallbackAudio = new Audio(fallbackUrl);
-        audioRef.current = fallbackAudio;
-        fallbackAudio.onended = () => {
-          if (audioRef.current === fallbackAudio) {
-            audioRef.current = null;
-            setPlayingKey(null);
-          }
-        };
-        fallbackAudio.onerror = () => {
-          toast.error("ক্বারীর তিলাওয়াত লোড করা যায়নি।");
-          setPlayingKey(null);
-        };
-        fallbackAudio.play().catch(() => setPlayingKey(null));
-        return;
-      }
-      toast.error("ক্বারীর তিলাওয়াত লোড করা যায়নি।");
-      setPlayingKey(null);
-    };
-
-    audio.play().catch((err) => {
-      console.warn("Audio play prevented:", err);
-      setPlayingKey(null);
+      },
+      onError: () => {
+        toast.error("ক্বারীর তিলাওয়াত লোড করা যায়নি।");
+        setPlayingKey(null);
+      },
     });
   };
 

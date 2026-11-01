@@ -28,6 +28,7 @@ import {
   playHeartLostSound,
   playMaShaAllahCelebration,
 } from "../lib/arabicSoundPlayer";
+import { universalAudioEngine } from "@/lib/quran/audio";
 
 const MAKHRAJ_DIAGNOSTICS = {
   "ثَ": "মাখরাজ গাইড: 'ث' (ছা) নরম হরফ। জিহ্বার আগা সামনের ওপরের দুই দাঁতের আগার সাথে মিলিয়ে নরমভাবে পড়তে হবে (যেমন ইংরেজি 'think')। এটিকে শক্ত 'স' বা 'ছ' পড়া নিষেধ।",
@@ -219,7 +220,7 @@ export default function LessonExperienceModal({
     playNext();
   };
 
-  // Play authentic master Qari recitation of the demonstration Ayah
+  // Play authentic master Qari recitation of the demonstration Ayah via Central Universal Audio Engine
   const playQariAudio = () => {
     setHasPracticed(true);
     if (isPlayingQari) {
@@ -228,27 +229,18 @@ export default function LessonExperienceModal({
     }
     stopAllPlayback();
     if (lesson.audioSample) {
-      try {
-        const audio = new Audio(lesson.audioSample);
-        audio.playbackRate = isSlowMode ? 0.75 : 1.0;
-        audio.preservesPitch = true;
-        setQariAudioRef(audio);
-        setIsPlayingQari(true);
-        audio.onended = () => {
+      setIsPlayingQari(true);
+      universalAudioEngine.playWord(lesson.audioSample, {
+        rate: isSlowMode ? 0.75 : 1.0,
+        onEnd: () => {
           setIsPlayingQari(false);
           setQariAudioRef(null);
-        };
-        audio.onerror = () => {
+        },
+        onError: () => {
           setIsPlayingQari(false);
           setQariAudioRef(null);
-        };
-        audio.play().catch(() => {
-          setIsPlayingQari(false);
-          setQariAudioRef(null);
-        });
-      } catch {
-        setIsPlayingQari(false);
-      }
+        },
+      });
     }
   };
 

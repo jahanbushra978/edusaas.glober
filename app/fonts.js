@@ -1,4 +1,4 @@
-import { Inter, Hind_Siliguri, Noto_Sans_Bengali, Noto_Sans_Arabic, Amiri, Playfair_Display } from "next/font/google";
+import { Inter, Hind_Siliguri, Noto_Sans_Bengali, Noto_Sans_Arabic, Amiri, Playfair_Display, Baloo_Da_2 } from "next/font/google";
 
 // next/font self-hosts these at build time — no runtime request to
 // fonts.googleapis.com, no render-blocking <link>, automatic font-display:
@@ -47,4 +47,12 @@ export const playfairDisplay = Playfair_Display({
   variable: "--font-playfair",
   display: "swap",
 });
+
+export const balooDa2 = Baloo_Da_2({
+  subsets: ["bengali", "latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-kids",
+  display: "swap",
+});
+
 

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useMemo, useState } from "react";
-import { BookOpen, Trophy, CheckCircle2, Play, Flame, Award, Star } from "lucide-react";
+import { BookOpen, Trophy, CheckCircle2, Play, Award, Star } from "lucide-react";
 import DuolingoNode from "./DuolingoNode";
 import ParentCelebrationCard from "./ParentCelebrationCard";
 import { useLearningLanguage } from "../hooks/useLearningLanguage";

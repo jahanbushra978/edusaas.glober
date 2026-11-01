@@ -15,6 +15,7 @@ export default {
 			serif: ['var(--font-hind-siliguri)', 'var(--font-noto-sans-bengali)', 'sans-serif'],
 			display: ['var(--font-hind-siliguri)', 'var(--font-noto-sans-bengali)', 'sans-serif'],
 			bengali: ['var(--font-hind-siliguri)', 'var(--font-noto-sans-bengali)', 'sans-serif'],
+			kids: ['var(--font-kids)', 'var(--font-hind-siliguri)', 'sans-serif'],
 		},
   		colors: {
   			background: 'hsl(var(--background))',
@@ -84,11 +85,32 @@ export default {
   				to: {
   					height: '0'
   				}
+  			},
+  			'kids-pop': {
+  				'0%': { transform: 'scale(0.92)' },
+  				'50%': { transform: 'scale(1.06)' },
+  				'100%': { transform: 'scale(1)' }
+  			},
+  			'kids-wiggle': {
+  				'0%, 100%': { transform: 'rotate(-3deg)' },
+  				'50%': { transform: 'rotate(3deg)' }
+  			},
+  			'kids-float': {
+  				'0%, 100%': { transform: 'translateY(0px)' },
+  				'50%': { transform: 'translateY(-6px)' }
+  			},
+  			'kids-twinkle': {
+  				'0%, 100%': { opacity: '0.4', transform: 'scale(0.8)' },
+  				'50%': { opacity: '1', transform: 'scale(1.15)' }
   			}
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+  			'kids-pop': 'kids-pop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+  			'kids-wiggle': 'kids-wiggle 0.5s ease-in-out infinite',
+  			'kids-float': 'kids-float 3s ease-in-out infinite',
+  			'kids-twinkle': 'kids-twinkle 1.5s ease-in-out infinite'
   		},
   		transitionDuration: {
   			280: '280ms'

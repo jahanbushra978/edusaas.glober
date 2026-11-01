@@ -148,6 +148,7 @@ const STUDIO_THEMES = {
 };
 
 export default function QuranStudioPage() {
+  const [mounted, setMounted] = useState(false);
   // Theme State - Defaulting to child-friendly playful theme
   const [currentTheme, setCurrentTheme] = useState("playful");
   const [isThemeMenuOpen, setIsThemeMenuOpen] = useState(false);
@@ -166,6 +167,7 @@ export default function QuranStudioPage() {
 
   // Load saved theme on mount
   useEffect(() => {
+    setMounted(true);
     if (typeof window !== "undefined") {
       try {
         const savedTheme = localStorage.getItem("nur_studio_theme");
@@ -466,10 +468,16 @@ export default function QuranStudioPage() {
   const currentActiveCard = allCards.find((c) => c.id === activeFeature);
 
   return (
-    <div className={`min-h-screen ${theme.bgClass} ${theme.textPrimary} flex flex-col font-sans selection:bg-emerald-500 selection:text-white transition-colors duration-300`}>
+    <div
+      suppressHydrationWarning
+      className={`min-h-screen ${theme.bgClass} ${theme.textPrimary} flex flex-col font-sans selection:bg-emerald-500 selection:text-white transition-colors duration-300`}
+    >
       
       {/* ── TOP HEADER (With Theme Changer & Navigation) ── */}
-      <header className={`h-16 border-b ${theme.headerBg} backdrop-blur-md px-3 sm:px-6 flex items-center justify-between z-30 sticky top-0 shadow-xs transition-colors`}>
+      <header
+        suppressHydrationWarning
+        className={`h-16 border-b ${theme.headerBg} backdrop-blur-md px-3 sm:px-6 flex items-center justify-between z-30 sticky top-0 shadow-xs transition-colors`}
+      >
         {/* Left: Brand & Back Link */}
         <div className="flex items-center gap-2.5 sm:gap-3">
           <Link
@@ -509,6 +517,7 @@ export default function QuranStudioPage() {
               <button
                 key={th.id}
                 type="button"
+                suppressHydrationWarning
                 onClick={() => handleSelectTheme(th.id)}
                 className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
                   currentTheme === th.id
@@ -526,6 +535,7 @@ export default function QuranStudioPage() {
           {/* Search Trigger */}
           <button
             type="button"
+            suppressHydrationWarning
             onClick={() => setIsSearchOpen(true)}
             className={`p-2 sm:px-3 sm:py-1.5 rounded-2xl ${theme.surfaceClass} border ${theme.cardBorder} hover:bg-stone-50 text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer`}
             title="সূরা ও বিষয়ভিত্তিক কুরআন সার্চ"
@@ -538,6 +548,7 @@ export default function QuranStudioPage() {
           <div className="relative">
             <button
               type="button"
+              suppressHydrationWarning
               onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
               className={`px-2.5 sm:px-3 py-1.5 rounded-2xl ${theme.surfaceClass} border ${theme.cardBorder} hover:opacity-90 text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer`}
               title="অ্যাপের থিম পরিবর্তন করুন"
@@ -1162,6 +1173,7 @@ export default function QuranStudioPage() {
               <button
                 key={th.id}
                 type="button"
+                suppressHydrationWarning
                 onClick={() => handleSelectTheme(th.id)}
                 className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all flex items-center gap-1 shrink-0 ${
                   currentTheme === th.id

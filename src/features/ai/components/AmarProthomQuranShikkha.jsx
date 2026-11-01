@@ -25,6 +25,7 @@ import {
   playLifeLostSound,
   playMaShaAllahCelebration,
 } from "@/features/ai-learning/lib/arabicSoundPlayer";
+import { universalAudioEngine } from "@/lib/quran/audio";
 
 export default function AmarProthomQuranShikkha({ className = "" }) {
   // ── ACTIVE STAGE (1 to 6) ──
@@ -996,12 +997,14 @@ export default function AmarProthomQuranShikkha({ className = "" }) {
                         onClick={() => {
                           playTapSound();
                           if (isPlaying) {
+                            universalAudioEngine.stopAll();
                             setIsPlayingSurahAyah(null);
                           } else {
                             setIsPlayingSurahAyah(ayah.num);
-                            const audio = new Audio(audioUrl);
-                            audio.play().catch(() => {});
-                            audio.onended = () => setIsPlayingSurahAyah(null);
+                            universalAudioEngine.playWord(audioUrl, {
+                              onEnd: () => setIsPlayingSurahAyah(null),
+                              onError: () => setIsPlayingSurahAyah(null),
+                            });
                           }
                         }}
                         className="px-3.5 py-1.5 rounded-full bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"

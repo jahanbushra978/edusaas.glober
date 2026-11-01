@@ -24,8 +24,8 @@ import {
   SHAYKH_REGISTRY,
   DEFAULT_SHAYKH_ID,
   getActiveShaykhId,
-  getQariAudioUrl,
 } from "@/lib/ai/qari-registry";
+import { universalAudioEngine } from "@/lib/quran/audio";
 import { VoiceAgentEngine } from "@/lib/ai/voice-agent-engine";
 import { playMaShaAllahCelebration } from "@/features/ai-learning/lib/arabicSoundPlayer";
 import { appClient } from "@/api/appClient";
@@ -229,6 +229,7 @@ export default function AiDawrTeacherCompanion({ studentContext, className = "" 
 
   // Stop all audio & recognition
   const stopAllAudio = useCallback(() => {
+    universalAudioEngine.stopAll();
     if (audioQariRef.current) {
       audioQariRef.current.pause();
       audioQariRef.current = null;
@@ -537,33 +538,29 @@ export default function AiDawrTeacherCompanion({ studentContext, className = "" 
     });
   };
 
-  // Play / Pause Authentic Qari Recitation
+  // Play / Pause Authentic Qari Recitation via Central Universal Audio Engine
   const handleToggleQari = () => {
     if (isPlayingQari) {
-      if (audioQariRef.current) audioQariRef.current.pause();
+      universalAudioEngine.stopAll();
       setIsPlayingQari(false);
       return;
     }
 
     if (!currentAyah) return;
-    if (audioQariRef.current) audioQariRef.current.pause();
+    universalAudioEngine.stopAll();
 
     const ayahNo = currentAyah.numberInSurah || activeAyahIndex + 1;
-    const url = getQariAudioUrl(selectedShaykhId, selectedSurahId, ayahNo);
-    const audio = new Audio(url);
-    audioQariRef.current = audio;
     setIsPlayingQari(true);
 
-    audio.onended = () => {
-      setIsPlayingQari(false);
-      audioQariRef.current = null;
-    };
-    audio.onerror = () => {
-      setIsPlayingQari(false);
-      toast.error("ক্বারীর অডিও প্লে করতে সমস্যা হয়েছে।");
-    };
-
-    audio.play().catch(() => setIsPlayingQari(false));
+    universalAudioEngine.playAyah(selectedSurahId, ayahNo, selectedShaykhId, {
+      onEnd: () => {
+        setIsPlayingQari(false);
+      },
+      onError: () => {
+        setIsPlayingQari(false);
+        toast.error("ক্বারীর অডিও প্লে করতে সমস্যা হয়েছে।");
+      },
+    });
   };
 
   // Change Ayah Index manually

@@ -28,6 +28,10 @@ import {
   useLearningLanguage,
   useLearningProgress,
   NOORANI_QAIDA_MODULES,
+  useKidsMode,
+  KidsHome,
+  TajweedLearningView,
+  SifatLearningModule,
 } from "@/features/ai-learning";
 
 // Reusing existing powerful sub-engines cleanly
@@ -58,6 +62,26 @@ export default function DuolingoQuranLearningPage() {
   const [showBlackboardView, setShowBlackboardView] = useState(false);
   const [isQuestsOpen, setIsQuestsOpen] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+
+  const { isKidsMode, enableKidsMode, disableKidsMode } = useKidsMode();
+
+  if (isKidsMode) {
+    return (
+      <KidsHome
+        onSwitchToAdult={disableKidsMode}
+        onOpenLearning={() => {
+          disableKidsMode();
+          setActivePath("qaida");
+          setShowBlackboardView(false);
+        }}
+        onOpenGames={() => {
+          disableKidsMode();
+          setActivePath("games");
+          setShowBlackboardView(false);
+        }}
+      />
+    );
+  }
 
   return (
     <div
@@ -155,6 +179,17 @@ export default function DuolingoQuranLearningPage() {
             <PenTool className="w-3.5 h-3.5" />
             <span>{showBlackboardView ? t.learningMap : t.blackboard}</span>
           </button>
+
+          {/* Kids Mode Switch Button */}
+          <button
+            type="button"
+            onClick={enableKidsMode}
+            className="px-2.5 sm:px-3.5 py-1.5 rounded-xl text-xs font-black flex items-center gap-1.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 border border-amber-300 shadow-xs transition-all cursor-pointer active:scale-95"
+            title="ছোটদের মোডে যান (Kids Mode)"
+          >
+            <span className="text-sm">🧒</span>
+            <span className="font-bold">ছোটদের মোড</span>
+          </button>
         </div>
       </header>
 
@@ -224,10 +259,20 @@ export default function DuolingoQuranLearningPage() {
               <QuranReader />
             </div>
           </div>
-        ) : activePath === "tajweed" ? (
-          /* VIEW 5: TAJWEED & 17 MAKHARIJ */
+        ) : activePath === "makhraj" ? (
+          /* VIEW 5A: 17 MAKHARIJ & ANATOMICAL VISUALIZER */
           <div className="w-full animate-fade-in space-y-6">
             <MakhrajVisualizer />
+          </div>
+        ) : activePath === "sifat" ? (
+          /* VIEW 5B: SIFATUL HÙRUF (১৮টি সিফাত — ৫ জোড়া বিপরীত ও ৮টি বিপরীতহীন) */
+          <div className="w-full animate-fade-in space-y-6">
+            <SifatLearningModule />
+          </div>
+        ) : activePath === "tajweed" ? (
+          /* VIEW 5C: TAJWEED CURRICULUM (তাজবিদ — ৮টি শাস্ত্র ও নিয়ম) */
+          <div className="w-full animate-fade-in space-y-6">
+            <TajweedLearningView />
           </div>
         ) : activePath === "hifz" ? (
           /* VIEW 6: HIFZ & MEMORIZATION ASSISTANT (১১৪ সূরা ও ৩০ পারা) */

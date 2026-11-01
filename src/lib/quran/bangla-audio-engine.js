@@ -108,6 +108,11 @@ class UniversalBanglaAudioEngine {
    * Stop any active Bengali audio playback
    */
   stop() {
+    if (typeof window !== "undefined" && window.speechSynthesis) {
+      try {
+        window.speechSynthesis.cancel();
+      } catch {}
+    }
     if (this.audio) {
       try {
         this.audio.pause();
@@ -129,6 +134,67 @@ class UniversalBanglaAudioEngine {
     this.progress = 0;
     this.currentWords = [];
     this.notify();
+  }
+
+  /**
+   * Browser Native Speech Synthesis Fallback (Web Speech API)
+   * Ensures uninterrupted audio even when network or server is offline/unavailable.
+   */
+  playBrowserSpeechFallback(cleanText, id) {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      this.status = "error";
+      this.notify();
+      setTimeout(() => {
+        if (this.currentId === id) this.stop();
+      }, 1500);
+      return;
+    }
+
+    try {
+      window.speechSynthesis.cancel();
+      const utterance = new SpeechSynthesisUtterance(cleanText);
+      utterance.lang = "bn-BD";
+      utterance.rate = 0.92;
+
+      utterance.onstart = () => {
+        if (this.currentId === id) {
+          this.status = "playing";
+          this.notify();
+        }
+      };
+
+      utterance.onboundary = (event) => {
+        if (this.currentId !== id || !this.currentWords || this.currentWords.length === 0) return;
+        const charIndex = event.charIndex || 0;
+        let runningChars = 0;
+        for (let i = 0; i < this.currentWords.length; i++) {
+          runningChars += (this.currentWords[i].length + 1);
+          if (charIndex < runningChars || i === this.currentWords.length - 1) {
+            if (this.activeWordIndex !== i) {
+              this.activeWordIndex = i;
+              this.notify();
+            }
+            break;
+          }
+        }
+      };
+
+      utterance.onend = () => {
+        if (this.currentId === id) {
+          this.stop();
+        }
+      };
+
+      utterance.onerror = () => {
+        if (this.currentId === id) {
+          this.stop();
+        }
+      };
+
+      window.speechSynthesis.speak(utterance);
+    } catch {
+      this.stop();
+    }
   }
 
   /**
@@ -201,8 +267,6 @@ class UniversalBanglaAudioEngine {
 
         this.currentTime = currentTime;
         this.duration = duration;
-        const progress = Math.min(0.999, Math.max(0, currentTime / duration));
-        this.progress = progress;
 
         if (this.currentWords && this.currentWords.length > 0) {
           const totalWords = this.currentWords.length;
@@ -212,10 +276,33 @@ class UniversalBanglaAudioEngine {
               this.notify();
             }
           } else {
-            // Proportional weighted pacing based on word syllable/character length
+            // Compensate for TTS lead-in silence (0.15s) and trailing silence (0.35s)
+            const leadIn = 0.15;
+            const trailSilence = 0.35;
+            const effectiveTime = Math.max(0, currentTime - leadIn);
+            const effectiveDuration = Math.max(0.1, duration - leadIn - trailSilence);
+            const progress = Math.min(0.999, Math.max(0, effectiveTime / effectiveDuration));
+            this.progress = progress;
+
+            // Acoustically weighted pacing based on syllables, character length and punctuation pauses
             const weights = this.currentWords.map((w, idx) => {
-              const cleanLen = w.replace(/[।?!,;:\s"']/g, "").length || 2;
-              return cleanLen + (idx === totalWords - 1 ? 1.5 : 0);
+              const clean = w.replace(/[।?!,;:\s"'()\[\]]/g, "");
+              let wt = Math.max(1.8, clean.length * 1.05);
+
+              // Pause bonus for commas (TTS pauses ~350ms)
+              if (/[,،]/.test(w)) {
+                wt += 3.2;
+              }
+              // Pause bonus for sentence-terminating danda or exclamation (TTS pauses ~550ms)
+              if (/[।?!]/.test(w)) {
+                wt += 5.2;
+              }
+              // Last word ending cadence
+              if (idx === totalWords - 1) {
+                wt += 2.0;
+              }
+
+              return wt;
             });
             const totalWeight = weights.reduce((sum, wt) => sum + wt, 0);
 
@@ -251,20 +338,9 @@ class UniversalBanglaAudioEngine {
       };
 
       audio.onerror = (e) => {
-        console.warn("Bengali audio playback error:", e);
+        console.warn("Bengali server audio error, switching to browser speech synthesis:", e);
         if (this.currentId === id) {
-          this.status = "error";
-          this.activeWordIndex = -1;
-          this.notify();
-          setTimeout(() => {
-            if (this.currentId === id) {
-              this.status = "idle";
-              this.currentId = null;
-              this.audio = null;
-              this.activeWordIndex = -1;
-              this.notify();
-            }
-          }, 2000);
+          this.playBrowserSpeechFallback(clean, id);
         }
       };
 
@@ -274,18 +350,9 @@ class UniversalBanglaAudioEngine {
         this.notify();
       }
     } catch (err) {
-      console.warn("Audio play call failed:", err);
+      console.warn("Audio play call failed, switching to browser speech synthesis:", err);
       if (this.currentId === id) {
-        this.status = "error";
-        this.notify();
-        setTimeout(() => {
-          if (this.currentId === id) {
-            this.status = "idle";
-            this.currentId = null;
-            this.audio = null;
-            this.notify();
-          }
-        }, 1500);
+        this.playBrowserSpeechFallback(clean, id);
       }
     }
   }

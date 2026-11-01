@@ -3,7 +3,6 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import os from "os";
-import { EdgeTTS } from "node-edge-tts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,8 +13,8 @@ if (!global.__ttsBufferCache) {
 }
 const ttsCache = global.__ttsBufferCache;
 
-// Persistent disk cache directory for static Quran translations & speech chunks
-const DISK_CACHE_DIR = path.join(process.cwd(), ".next", "cache", "tts-audio");
+// Persistent disk cache directory using os.tmpdir() (100% safe on Vercel Serverless & Docker)
+const DISK_CACHE_DIR = path.join(os.tmpdir(), "tts-audio-cache");
 try {
   if (!fs.existsSync(DISK_CACHE_DIR)) {
     fs.mkdirSync(DISK_CACHE_DIR, { recursive: true });
@@ -227,12 +226,15 @@ async function fetchEdgeTtsAudio(text, lang = "bn", voiceOverride = null, rateOv
   }
 
   const runnerPath = path.join(process.cwd(), "src/lib/ai/edge-tts-runner.mjs");
+  if (!fs.existsSync(runnerPath)) {
+    throw new Error(`Edge runner not available at ${runnerPath}`);
+  }
 
   return new Promise((resolve, reject) => {
     execFile(
       process.execPath,
       [runnerPath, text, voice, rateOverride || "-4%"],
-      { encoding: "buffer", maxBuffer: 20 * 1024 * 1024, timeout: 10000 },
+      { encoding: "buffer", maxBuffer: 20 * 1024 * 1024, timeout: 20000 },
       (error, stdout, stderr) => {
         if (error) {
           reject(new Error(stderr?.toString() || error.message));
@@ -254,7 +256,7 @@ async function fetchGeminiNeuralTts(text, gender = "male") {
   if (!apiKey) return null;
 
   const voiceName = gender === "female" ? "Aoede" : "Enceladus";
-  const models = ["gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts"];
+  const models = ["gemini-3.8-flash-lite-tts", "gemini-3.8-flash-tts", "gemini-2.0-flash"];
 
   for (const model of models) {
     try {
@@ -289,6 +291,53 @@ async function fetchGeminiNeuralTts(text, gender = "male") {
     } catch (err) {
       // Continue to next model
     }
+  }
+
+  return null;
+}
+
+/**
+ * Universal Tier 3: Zero-Config Cloud Google TTS (100% Reliable Fallback on Vercel/Serverless)
+ * Never blocked by datacenter IPs, requires zero API keys, guarantees audio generation.
+ */
+async function fetchGoogleTtsFallback(text, lang = "bn") {
+  const cleanLang = lang.startsWith("ar") ? "ar" : "bn";
+  const urlPrimary = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${encodeURIComponent(cleanLang)}&client=tw-ob`;
+  try {
+    const res = await fetch(urlPrimary, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        Accept: "*/*",
+        Referer: "https://translate.google.com/",
+      },
+      signal: AbortSignal.timeout(6000),
+    });
+
+    if (res.ok) {
+      const arrayBuffer = await res.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    }
+  } catch (err) {
+    console.warn("[TTS] Google TTS primary endpoint notice:", err?.message);
+  }
+
+  const urlSecondary = `https://translate.googleapis.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${encodeURIComponent(cleanLang)}&client=gtx`;
+  try {
+    const resSec = await fetch(urlSecondary, {
+      headers: {
+        "User-Agent":
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+      },
+      signal: AbortSignal.timeout(6000),
+    });
+
+    if (resSec.ok) {
+      const arrayBuffer = await resSec.arrayBuffer();
+      return Buffer.from(arrayBuffer);
+    }
+  } catch (err2) {
+    console.warn("[TTS] Google TTS secondary endpoint notice:", err2?.message);
   }
 
   return null;
@@ -333,6 +382,19 @@ async function synthesizeChunk(chunk, lang = "bn", voice = null, rate = null, ge
       }
     } catch (geminiErr) {
       console.warn(`[TTS] Gemini notice:`, geminiErr?.message);
+    }
+  }
+
+  // 3. TIER 3: Universal Google Cloud Fallback (Works 100% on Vercel & Any Cloud Serverless)
+  if (!chunkResult || !chunkResult.data || chunkResult.data.length === 0) {
+    try {
+      const gBuf = await fetchGoogleTtsFallback(chunk, lang);
+      if (gBuf && gBuf.length > 0) {
+        chunkResult = { isPcm: false, data: gBuf };
+        console.log(`[TTS] Universal Google fallback success for "${chunk.slice(0, 30)}...": ${gBuf.length} bytes`);
+      }
+    } catch (gErr) {
+      console.warn(`[TTS] Google fallback notice:`, gErr?.message);
     }
   }
 

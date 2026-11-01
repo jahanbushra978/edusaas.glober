@@ -28,6 +28,7 @@ import {
 } from "@/lib/ai/voice-agent-engine";
 import VoiceAgentSettingsModal from "./VoiceAgentSettingsModal";
 import LiveVoiceQuranClass from "./LiveVoiceQuranClass";
+import { universalAudioEngine } from "@/lib/quran/audio";
 
 const STORAGE_VOICE_CONFIG_KEY = "rahmania_voice_agent_config_v1";
 
@@ -481,17 +482,16 @@ export default function InteractiveVoiceTutor({
   const playDemoAudio = (url) => {
     if (!url) return;
     if (isPlayingDemo) {
-      if (audioDemoRef.current) audioDemoRef.current.pause();
+      universalAudioEngine.stopAll();
       setIsPlayingDemo(false);
       return;
     }
 
-    const audio = new Audio(url);
-    audioDemoRef.current = audio;
     setIsPlayingDemo(true);
-    audio.onended = () => setIsPlayingDemo(false);
-    audio.onerror = () => setIsPlayingDemo(false);
-    audio.play().catch(() => setIsPlayingDemo(false));
+    universalAudioEngine.playWord(url, {
+      onEnd: () => setIsPlayingDemo(false),
+      onError: () => setIsPlayingDemo(false),
+    });
   };
 
   const handleClearConversation = () => {

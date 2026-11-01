@@ -1,3 +1,289 @@
+
+// Canonical 17 Takhtis of Noorani Qaida (নূরানী কায়দার ১৭টি তখতী)
+// Structured according to the classical Maktab syllabus
+export const NOORANI_QAIDA_17_TAKHTIS = [
+  {
+    number: 1,
+    titleBn: "তখতী নং ১: মুফরাদাত (পৃথক হরফসমূহ)",
+    titleAr: "التختي الأول: المفردات",
+    ruleCategory: "alphabet",
+    summaryBn: "আরবি ২৯টি একক হরফের খাঁটি উচ্চারণ, নুকতাহীন (১৪টি) ও নুকতাযুক্ত (১৫টি) হরফের শ্রেণিবিভাগ এবং ১৭টি মাখরাজের পরিচয়।",
+    itemCount: 29,
+    lessonIds: ["l1-1", "l1-2", "l1-3", "l1-4", "l1-5"],
+    drills: [
+      { ar: "ا", bn: "আলিফ", tip: "খালি আলিফ মাদ্দ হিসেবে ব্যবহৃত হয়" },
+      { ar: "ب", bn: "বা", tip: "দুই ঠোঁটের ভিজা অংশ মিলিয়ে" },
+      { ar: "ت", bn: "তা", tip: "জিহ্বার আগা উপরের দাঁতের গোড়ায়" },
+      { ar: "ث", bn: "ছা", tip: "জিহ্বার আগা উপরের দাঁতের আগায় নরম সুরে" },
+      { ar: "ج", bn: "জীম", tip: "জিহ্বার মধ্যভাগ উপরের তালুর সাথে শক্তভাবে" },
+      { ar: "ح", bn: "হা", tip: "হলকের মধ্যভাগ থেকে পরিষ্কার কণ্ঠে" },
+      { ar: "خ", bn: "খা", tip: "হলকের শুরুভাগ থেকে মোটা আওয়াজে" },
+      { ar: "د", bn: "দাল", tip: "জিহ্বার আগা উপরের দাঁতের গোড়ায়" },
+      { ar: "ذ", bn: "যাল", tip: "জিহ্বার আগা উপরের দাঁতের আগায় নরম সুরে" },
+      { ar: "ر", bn: "রা", tip: "জিহ্বার আগার পিঠ উপরের তালুর সাথে" },
+      { ar: "ز", bn: "যা", tip: "জিহ্বার আগা নিচের দাঁতের সাথে শিসধ্বনি" },
+      { ar: "س", bn: "সীন", tip: "জিহ্বার আগা নিচের দাঁতের সাথে স্পষ্ট শিস" },
+      { ar: "ش", bn: "শীন", tip: "জিহ্বার মধ্যভাগ থেকে বাতাস ছড়িয়ে" },
+      { ar: "ص", bn: "ছোয়াদ", tip: "মোটা ও ভরাট শিসধ্বনি সহকারে" },
+      { ar: "ض", bn: "দোয়াদ", tip: "জিহ্বার গোড়ার কিনারা উপরের মাড়ির দাঁতে" },
+      { ar: "ط", bn: "ত্বোয়া", tip: "জিহ্বার আগা উপরের দাঁতের গোড়ায় অতি মোটা" },
+      { ar: "ظ", bn: "যোয়া", tip: "জিহ্বার আগা উপরের দাঁতের আগায় মোটা ও নরম" },
+      { ar: "ع", bn: "আইন", tip: "হলকের মধ্যভাগ থেকে চাপ দিয়ে" },
+      { ar: "غ", bn: "গইন", tip: "হলকের শুরুভাগ থেকে মোটা গরগর শব্দে" },
+      { ar: "ف", bn: "ফা", tip: "নিচের ঠোঁটের পেট উপরের দাঁতের আগায়" },
+      { ar: "ق", bn: "ক্বাফ", tip: "জিহ্বার গোড়া নরম তালুতে শক্তভাবে" },
+      { ar: "ك", bn: "কাফ", tip: "জিহ্বার গোড়ার অগ্রভাগ শক্ত তালুতে" },
+      { ar: "ل", bn: "লাম", tip: "জিহ্বার আগার কিনারা সামনের দাঁতের মাড়িতে" },
+      { ar: "م", bn: "মীম", tip: "দুই ঠোঁটের শুকনা অংশ মিলিয়ে" },
+      { ar: "ن", bn: "নূন", tip: "জিহ্বার আগা উপরের তালুর সাথে" },
+      { ar: "و", bn: "ওয়াও", tip: "দুই ঠোঁট গোল করে ফাঁক রেখে" },
+      { ar: "هـ", bn: "হা", tip: "হলকের শেষভাগ (বুকের নিকট) থেকে মৃদু স্বরে" },
+      { ar: "ء", bn: "হামযাহ", tip: "হলকের শেষভাগ থেকে ঝটকা আওয়াজে" },
+      { ar: "ي", bn: "ইয়া", tip: "জিহ্বার মধ্যভাগ উপরের তালুর সাথে" }
+    ]
+  },
+  {
+    number: 2,
+    titleBn: "তখতী নং ২: মুরাক্কাবাত (যুক্ত হরফ)",
+    titleAr: "التختي الثاني: المركبات",
+    ruleCategory: "compound",
+    summaryBn: "হরফের প্রাথমিক, মধ্য ও চূড়ান্ত রূপের সংযোজন। ডান থেকে বামে যুক্ত হরফসমূহ চেনার মাশক।",
+    itemCount: 15,
+    lessonIds: ["l2-1", "l2-2"],
+    drills: [
+      { ar: "لَا", bn: "লাম-আলিফ", tip: "লাম ও আলিফের যুক্ত রূপ" },
+      { ar: "بَا", bn: "বা-আলিফ", tip: "বা হরফের শুরুতে ছোট রূপ" },
+      { ar: "بَلْ", bn: "বাল", tip: "বা ও লামের সংযোজন" },
+      { ar: "نَحْ", bn: "নাহ্", tip: "নূন ও হা হরফের সংযোজন" },
+      { ar: "جَحْ", bn: "জাহ্", tip: "জীম ও হা হরফের সংযোজন" },
+      { ar: "عَسْ", bn: "আস্", tip: "আইন ও সীন হরফ" }
+    ]
+  },
+  {
+    number: 3,
+    titleBn: "তখতী নং ৩: হুরুফে মুকাত্তা'আত (সাংকেতিক হরফসমূহ)",
+    titleAr: "التختي الثالث: الحروف المقطعات",
+    ruleCategory: "muqattaat",
+    summaryBn: "কুরআনের ২৯টি সূরার প্রারম্ভিক সাংকেতিক হরফসমূহ। প্রতিটি হরফের পূর্ণ নাম ৩ বা ৪ আলিফ মাদ্দ সহকারে পড়া।",
+    itemCount: 14,
+    lessonIds: ["l4-4"],
+    drills: [
+      { ar: "الم", bn: "আলিফ-লাম-মীম", tip: "লাম ও মীমে ৩ আলিফ মাদ্দ" },
+      { ar: "الر", bn: "আলিফ-লাম-রা", tip: "লামে ৩ আলিফ, রা-তে ১ আলিফ মাদ্দ" },
+      { ar: "طه", bn: "ত্বোয়া-হা", tip: "উভয় হরফে ১ আলিফ মাদ্দ" },
+      { ar: "يس", bn: "ইয়া-সীন", tip: "ইয়া-তে ১ আলিফ, সীনে ৩ আলিফ মাদ্দ" },
+      { ar: "حم", bn: "হা-মীম", tip: "হা-তে ১ আলিফ, মীমে ৩ আলিফ মাদ্দ" },
+      { ar: "كهيعص", bn: "কাফ-হা-ইয়া-আইন-ছোয়াদ", tip: "৫ হরফের বিশেষ মুকাত্তাআত" },
+      { ar: "ق", bn: "ক্বাফ", tip: "৩ আলিফ মাদ্দে লাযিম" },
+      { ar: "ن", bn: "নূন", tip: "৩ আলিফ মাদ্দে লাযিম" }
+    ]
+  },
+  {
+    number: 4,
+    titleBn: "তখতী নং ৪: হরকত (যবর, যের, পেশ)",
+    titleAr: "التختي الرابع: الحركات",
+    ruleCategory: "harakat",
+    summaryBn: "যবর, যের, পেশকে হরকত বলে। হরকতের উচ্চারণ এক আলিফও না টেনে অতি দ্রুত পড়া ওয়াজিব।",
+    itemCount: 15,
+    lessonIds: ["l2-3", "l2-4", "l2-5"],
+    drills: [
+      { ar: "بَ بِ بُ", bn: "বা, বি, বু", tip: "একটুও না টেনে দ্রুত পড়া" },
+      { ar: "تَ تِ تُ", bn: "তা, তি, তু", tip: "তাড়াতাড়ি উচ্চারণ" },
+      { ar: "ثَ ثِ ثُ", bn: "ছা, ছি, ছু", tip: "নরম সুরে তাড়াতাড়ি" }
+    ]
+  },
+  {
+    number: 5,
+    titleBn: "তখতী নং ৫: তানভীন (দুই যবর, দুই যের, দুই পেশ)",
+    titleAr: "التختي الخامس: التنوين",
+    ruleCategory: "tanween",
+    summaryBn: "দুই যবর, দুই যের ও দুই পেশকে তানভীন বলে। তানভীনের মধ্যে একটি নূন সাকিন সুপ্ত থাকে।",
+    itemCount: 12,
+    lessonIds: ["l2-7"],
+    drills: [
+      { ar: "بً بٍ بٌ", bn: "বান্, বিন্, বুন্", tip: "নূন সাকিনের মতো উচ্চারণ" },
+      { ar: "تً تٍ تٌ", bn: "তান্, তিন্, তুন্", tip: "লুকানো নূন ধ্বনি" }
+    ]
+  },
+  {
+    number: 6,
+    titleBn: "তখতী নং ৬: মশক হরকত ও তানভীন (শব্দগঠন)",
+    titleAr: "التختي السادس: مشق الحركات والتنوين",
+    ruleCategory: "mashq_harakat",
+    summaryBn: "হরকত ও তানভীন সমন্বিত ছোট ছোট শব্দের দ্রুত ও বিশুদ্ধ পঠন মাশক।",
+    itemCount: 15,
+    lessonIds: ["l2-6"],
+    drills: [
+      { ar: "أَبَدًا", bn: "আবাদান", tip: "হরকত ও দুই যবরের শব্দ" },
+      { ar: "أَحَدٌ", bn: "আহাদুন", tip: "হরকত ও দুই পেশের শব্দ" },
+      { ar: "بَلَدٍ", bn: "বালাদিন", tip: "হরকত ও দুই যেরের শব্দ" },
+      { ar: "خَلَقَ", bn: "খলাক্বা", tip: "তিনটি হরকতের শব্দ" }
+    ]
+  },
+  {
+    number: 7,
+    titleBn: "তখতী নং ৭: খাড়া হরকত (খাড়া যবর, খাড়া যের, উল্টা পেশ)",
+    titleAr: "التختي السابع: الحركات القائمة",
+    ruleCategory: "standing_harakat",
+    summaryBn: "খাড়া যবর, খাড়া যের ও উল্টা পেশ মাদ্দে আসলীর সমতুল্য; সর্বদা ১ আলিফ পরিমাণ টেনে পড়তে হয়।",
+    itemCount: 12,
+    lessonIds: ["l4-2"],
+    drills: [
+      { ar: "بٰ", bn: "বা-আ (১ আলিফ)", tip: "খাড়া যবর = আলিফ মাদ্দ" },
+      { ar: "بٖ", bn: "বী-ই (১ আলিফ)", tip: "খাড়া যের = ইয়া মাদ্দ" },
+      { ar: "بٗ", bn: "বু-উ (১ আলিফ)", tip: "উল্টা পেশ = ওয়াও মাদ্দ" }
+    ]
+  },
+  {
+    number: 8,
+    titleBn: "তখতী নং ৮: হুরুফে মাদ্দাহ ও হুরুফে লীন",
+    titleAr: "التختي الثامن: حروف المد واللين",
+    ruleCategory: "madd_and_leen",
+    summaryBn: "মাদ্দের হরফ ৩টি (আলিফ, ওয়াও, ইয়া) এবং লীনের হরফ ২টি (ওয়াও-লীন, ইয়া-লীন)।",
+    itemCount: 15,
+    lessonIds: ["l4-1", "l4-3"],
+    drills: [
+      { ar: "بَا", bn: "বা-আ (১ আলিফ)", tip: "যবরের পর খালি আলিফ" },
+      { ar: "بُوْ", bn: "বু-উ (১ আলিফ)", tip: "পেশের পর সাকিন ওয়াও" },
+      { ar: "بِيْ", bn: "বী-ই (১ আলিফ)", tip: "যেরের পর সাকিন ইয়া" },
+      { ar: "بَوْ", bn: "বাও (নরম সুর)", tip: "যবরের পর সাকিন ওয়াও (লীন)" },
+      { ar: "بَيْ", bn: "বাই (নরম সুর)", tip: "যবরের পর সাকিন ইয়া (লীন)" }
+    ]
+  },
+  {
+    number: 9,
+    titleBn: "তখতী নং ৯: মশক মাদ্দাহ ও লীন",
+    titleAr: "التختي التاسع: مشق المد واللين",
+    ruleCategory: "mashq_madd",
+    summaryBn: "মাদ্দে আসলী ও লীনের হরফ সমন্বিত কুরআনিক শব্দের শব্দগত মাশক।",
+    itemCount: 15,
+    lessonIds: ["l4-1", "l4-3"],
+    drills: [
+      { ar: "قَالَ", bn: "ক্বা-লা", tip: "ক্বাফে ১ আলিফ মাদ্দ" },
+      { ar: "يَقُولُ", bn: "ইয়াকূ-লু", tip: "ক্বাফে ওয়াও মাদ্দ" },
+      { ar: "قِيلَ", bn: "কী-লা", tip: "ক্বাফে ইয়া মাদ্দ" },
+      { ar: "خَوْفٌ", bn: "খাওফুন", tip: "খা হরফে ওয়াও-লীন" },
+      { ar: "بَيْتٌ", bn: "বাইতুন", tip: "বা হরফে ইয়া-লীন" }
+    ]
+  },
+  {
+    number: 10,
+    titleBn: "তখতী নং ১০: সাকিন বা জযম ও ক্বলক্বলাহ",
+    titleAr: "التختي العاشر: السكون والقلقلة",
+    ruleCategory: "sakin_qalqalah",
+    summaryBn: "জযমযুক্ত হরফ পূর্বের হরকতের সাথে মিলিত হয়। ৫টি ক্বলক্বলাহর হরফে (ق ط ب ج د) ধাক্কা দিয়ে প্রতিধ্বনি তৈরি হয়।",
+    itemCount: 12,
+    lessonIds: ["l3-1", "l3-2"],
+    drills: [
+      { ar: "أَبْ", bn: "আব্ব্ (ধাক্কা)", tip: "বা ক্বলক্বলাহর হরফ" },
+      { ar: "أَتْ", bn: "আত্ত্", tip: "তা ক্বলক্বলাহ নয়" },
+      { ar: "أَجْ", bn: "আজ্ (ধাক্কা)", tip: "জীম ক্বলক্বলাহর হরফ" },
+      { ar: "أَدْ", bn: "আদ্ (ধাক্কা)", tip: "দাল ক্বলক্বলাহর হরফ" },
+      { ar: "أَطْ", bn: "আত্ব্ (ধাক্কা)", tip: "ত্বোয়া ক্বলক্বলাহর হরফ" },
+      { ar: "أَقْ", bn: "আক্ব্ (ধাক্কা)", tip: "ক্বাফ ক্বলক্বলাহর হরফ" }
+    ]
+  },
+  {
+    number: 11,
+    titleBn: "তখতী নং ১১: মশক সাকিন (জযমযুক্ত শব্দ)",
+    titleAr: "التختي الحادي عشر: مشق السكون",
+    ruleCategory: "mashq_sakin",
+    summaryBn: "জযমযুক্ত শব্দের ধারাবাহিক পঠন ও ক্বলক্বলাহর সঠিক প্রয়োগ মাশক।",
+    itemCount: 15,
+    lessonIds: ["l3-1", "l3-2"],
+    drills: [
+      { ar: "ٱلْحَمْدُ", bn: "আল-হামদু", tip: "লাম ও মীমে সাকিন" },
+      { ar: "يَقْطَعُ", bn: "ইয়াক্বত্বা'উ", tip: "ক্বাফে ক্বলক্বলাহ" },
+      { ar: "إِطْعَامٌ", bn: "ইত্ব'আমুন", tip: "ত্বোয়াতে ক্বলক্বলাহ" }
+    ]
+  },
+  {
+    number: 12,
+    titleBn: "তখতী নং ১২: তাশদীদ (হরফ দুইবার পড়া)",
+    titleAr: "التختي الثاني عشر: التشديد",
+    ruleCategory: "tashdeed",
+    summaryBn: "তাশদীদযুক্ত হরফ দুইবার উচ্চারিত হয়—১ম বার জযমের মতো, ২য় বার স্বীয় হরকত দিয়ে। নূন ও মীমে তাশদীদ হলে ওয়াজিব গুন্নাহ।",
+    itemCount: 12,
+    lessonIds: ["l3-4", "l3-5"],
+    drills: [
+      { ar: "أَبَّ", bn: "আব্বা", tip: "বা হরফে তাশদীদ" },
+      { ar: "إِنَّ", bn: "ইন্না (গুন্নাহ)", tip: "নূনে তাশদীদে ওয়াজিব গুন্নাহ" },
+      { ar: "عَمَّ", bn: "আম্মা (গুন্নাহ)", tip: "মীমে তাশদীদে ওয়াজিব গুন্নাহ" }
+    ]
+  },
+  {
+    number: 13,
+    titleBn: "তখতী নং ১৩: মশক তাশদীদ (শব্দ অনুশীলন)",
+    titleAr: "التختي الثالث عشر: مشق التشديد",
+    ruleCategory: "mashq_tashdeed",
+    summaryBn: "তাশদীদযুক্ত শব্দের সাবলীল ও মজবুত পঠন অনুশীলন।",
+    itemCount: 15,
+    lessonIds: ["l3-4", "l3-5"],
+    drills: [
+      { ar: "رَبٌّ", bn: "রাব্বুন", tip: "রা হরকত ও বা-তে তাশদীদ তানভীন" },
+      { ar: "جَنَّةٌ", bn: "জান্নাতুন", tip: "নূনে ওয়াজিব গুন্নাহ" },
+      { ar: "كَذَّبَ", bn: "কায্যাবা", tip: "যাল হরফে তাশদীদ" }
+    ]
+  },
+  {
+    number: 14,
+    titleBn: "তখতী নং ১৪: তাশদীদ মা'আ তাশদীদ (একাধিক তাশদীদ)",
+    titleAr: "التختي الرابع عشر: تشديد مع تشديد",
+    ruleCategory: "double_tashdeed",
+    summaryBn: "একই শব্দে বা বাক্যাংশে পরপর দুটি তাশদীদ আসলে কিভাবে অবিচ্ছিন্নভাবে মেলাতে হবে।",
+    itemCount: 10,
+    lessonIds: ["l3-4", "l4-8"],
+    drills: [
+      { ar: "يَزَّكَّىٰ", bn: "ইয়ায্যাক্কা", tip: "যা ও কাফে পরপর তাশদীদ" },
+      { ar: "مُزَّمِّلُ", bn: "মুয্যাম্মিলু", tip: "যা ও মীমে পরপর তাশদীদ" },
+      { ar: "يَصَّدَّقُ", bn: "ইয়াস্স্বাদ্দাক্বু", tip: "ছোয়াদ ও দালে তাশদীদ" }
+    ]
+  },
+  {
+    number: 15,
+    titleBn: "তখতী নং ১৫: তাশদীদ মা'আ সাকিন (তাশদীদ ও সাকিন সমন্বিত শব্দ)",
+    titleAr: "التختي الخامس عشر: تشديد مع سكون",
+    ruleCategory: "tashdeed_with_sakin",
+    summaryBn: "তাশদীদের সাথে সাকিনের সমন্বয় এবং দীর্ঘ মাদ্দে লাযিম কালমীর জটিল শব্দ পাঠ।",
+    itemCount: 10,
+    lessonIds: ["l4-4", "l4-8"],
+    drills: [
+      { ar: "وَٱلْعَـٰدِيَـٰتِ", bn: "ওয়াল-'আ-দিয়াতি", tip: "সাকিন ও মাদ্দের মিলন" },
+      { ar: "ٱلضَّآلِّينَ", bn: "আদ্-দা-ল্লীন", tip: "৪ আলিফ মাদ্দে লাযিমের পর তাশদীদ" }
+    ]
+  },
+  {
+    number: 16,
+    titleBn: "তখতী নং ১৬: নূন সাকিন, তানভীন ও মীম সাকিনের নিয়ম",
+    titleAr: "التختي السادس عشر: أحكام النون الساكنة والتنوين والميم الساكنة",
+    ruleCategory: "nun_and_meem_sakin",
+    summaryBn: "নূন সাকিন ও তানভীনের চার নিয়ম (ইযহার, ইদগাম, ইক্বলাব, ইখফা) এবং মীম সাকিনের তিন নিয়ম (ইখফা, ইদগাম, ইযহার শাফাবী)।",
+    itemCount: 20,
+    lessonIds: ["l4-5", "l4-6", "l4-7", "l3-3"],
+    drills: [
+      { ar: "مَنْ ءَامَنَ", bn: "মান্ আমানা", tip: "ইযহার (স্পষ্ট পড়া)" },
+      { ar: "مَن يَقُولُ", bn: "মাই-ইয়াকূলু", tip: "ইদগাম মা'আল গুন্নাহ (মিলিয়ে গুন্নাহ)" },
+      { ar: "مِن بَعْدِ", bn: "মিম্ বা'দি", tip: "ইক্বলাব (মীমে রূপান্তর)" },
+      { ar: "مِن شَرِّ", bn: "মিঙ্-শার্রি", tip: "ইখফা (লুকিয়ে গুন্নাহ)" },
+      { ar: "تَرْمِيهِم بِحِجَارَةٍ", bn: "তারমীহিম বিহিজারাহ", tip: "মীম সাকিনের ইখফা শাফাবী" }
+    ]
+  },
+  {
+    number: 17,
+    titleBn: "তখতী নং ১৭: রূসমুল খত, ওয়াক্ফ ও আমপারা পাঠ",
+    titleAr: "التختي السابع عشر: رسم الخط والوقف وقراءة عم",
+    ruleCategory: "waqf_and_ampara",
+    summaryBn: "কুরআনিক লিখনরীতি, গোল তা (ة), ওয়াক্ফের বিভিন্ন প্রকার ও চিহ্ন এবং আমপারার (৩০তম পারা) পূর্ণাঙ্গ তিলাওয়াত।",
+    itemCount: 38,
+    lessonIds: ["l5-1", "l5-2", "l5-3", "l5-4", "l5-5", "l5-6", "l5-7", "l5-8"],
+    drills: [
+      { ar: "رَحْمَةٌ ➔ رَحْمَهْ", bn: "রাহমাতুন ➔ রাহমাহ", tip: "ওয়াক্ফে গোল তা হা-তে রূপান্তরিত হয়" },
+      { ar: "أَحَدٌ ➔ أَحَدْ", bn: "আহাদুন ➔ আহাদ", tip: "ওয়াক্ফে শেষ হরফে সাকিন ও ক্বলক্বলাহ" },
+      { ar: "عَلِيمًا ➔ عَلِيمَا", bn: "আলীমান ➔ আলীমা", tip: "দুই যবরে ওয়াক্ফ করলে ১ আলিফ মাদ্দ" }
+    ]
+  }
+];
+
 /**
  * 📚 Complete 5-Level · 35-Lesson Quran Learning Curriculum
  * Inspired by Mawlana Muhammad Jamal Uddin (Panvision TV) — "কুরআন শেখার সহজ উপায়"
@@ -26,6 +312,8 @@ export const NOORANI_QAIDA_MODULES = [
     lessons: [
       {
         id: "l1-1",
+        takhtiNumber: 1,
+        takhtiTitle: "তখতী ১: মুফরাদাত (নুকতাহীন হরফসমূহ)",
         title: { bn: "নুকতাহীন হরফসমূহ (১ম অংশ)", en: "Dotless Letters (Part 1)", ar: "الحروف غير المنقوطة" },
         arabicItems: ["ا", "ح", "د", "ر", "س", "ص", "ط"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/001001.mp3",
@@ -46,6 +334,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l1-2",
+        takhtiNumber: 1,
+        takhtiTitle: "তখতী ১: মুফরাদাত (নুকতাযুক্ত হরফসমূহ)",
         title: { bn: "নুকতাযুক্ত হরফ ও অবস্থান কৌশল", en: "Dotted Letters & Dot Positions", ar: "الحروف المنقوطة ومواضع النقط" },
         arabicItems: ["ب", "ت", "ث", "ج", "خ", "ذ", "ز"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/001001.mp3",
@@ -66,6 +356,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l1-3",
+        takhtiNumber: 1,
+        takhtiTitle: "তখতী ১: মুফরাদাত (১৭টি মাখরাজের পরিচয়)",
         title: { bn: "৫টি প্রধান মাখরাজ এলাকা ও ১৭ মাখরাজ", en: "5 Articulation Zones & 17 Makharij", ar: "المخارج الخمسة الرئيسية" },
         arabicItems: ["ء", "ع", "غ", "ق", "ض", "ط", "ف", "م"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/001002.mp3",
@@ -91,6 +383,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l1-4",
+        takhtiNumber: 1,
+        takhtiTitle: "তখতী ১: মুফরাদাত (সদৃশ হরফের তুলনামূলক মাশক)",
         title: { bn: "সদৃশ হরফের তুলনামূলক ড্রিল", en: "Similar-Sounding Letters Drill", ar: "التمييز بين الحروف المتشابهة" },
         arabicItems: ["ت", "ط", "س", "ث", "ص", "د", "ض", "ك", "ق"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/001001.mp3",
@@ -111,6 +405,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l1-5",
+        takhtiNumber: 1,
+        takhtiTitle: "তখতী ১: মুফরাদাত (লেভেল ১ সমাপনী পরীক্ষা)",
         title: { bn: "লেভেল ১ সমাপনী মূল্যায়ন পরীক্ষা", en: "Level 1 Mastery Test", ar: "اختبار إتقان المستوى الأول" },
         arabicItems: ["ث", "ح", "خ", "ص", "ض", "ط", "ظ", "ع", "غ", "ق"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/001001.mp3",
@@ -152,6 +448,8 @@ export const NOORANI_QAIDA_MODULES = [
     lessons: [
       {
         id: "l2-1",
+        takhtiNumber: 2,
+        takhtiTitle: "তখতী ২: মুরাক্কাবাত (হরফের রূপসমূহ)",
         title: { bn: "হরফের বিভিন্ন রূপ (শুরু, মধ্য, শেষ)", en: "Positional Forms of Letters", ar: "أشكال الحروف حسب موقعها" },
         arabicItems: ["بـ", "ـبـ", "ـب", "نـ", "ـنـ", "ـن"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/001001.mp3",
@@ -177,6 +475,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l2-2",
+        takhtiNumber: 2,
+        takhtiTitle: "তখতী ২: মুরাক্কাবাত (যুক্তাক্ষর পাঠ মাশক)",
         title: { bn: "মোরাক্কাব (যুক্তাক্ষর) পাঠ মাশক", en: "Murakkabat Joining Practice", ar: "تدريبات الحروف المركبة" },
         arabicItems: ["لا", "با", "جا", "بل", "تح"],
         audioSample: "/sounds/noorani/qari_lam_alif.m4a?v=15",
@@ -197,6 +497,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l2-3",
+        takhtiNumber: 4,
+        takhtiTitle: "তখতী ৪: হরকত (যবর / Fathah)",
         title: { bn: "যবর (Fathah) — আ-কার স্বল্প স্বরধ্বনি", en: "Fathah: Short 'a' Vowel", ar: "الفتحة وصوتها القصير" },
         arabicItems: ["بَ", "تَ", "ثَ", "جَ"],
         audioSample: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Takhti4.m4a",
@@ -222,6 +524,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l2-4",
+        takhtiNumber: 4,
+        takhtiTitle: "তখতী ৪: হরকত (যের / Kasrah)",
         title: { bn: "যের (Kasrah) — ই-কার স্বল্প স্বরধ্বনি", en: "Kasrah: Short 'i' Vowel", ar: "الكسرة وصوتها القصير" },
         arabicItems: ["بِ", "تِ", "ثِ", "جِ"],
         audioSample: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Takhti4.m4a",
@@ -247,6 +551,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l2-5",
+        takhtiNumber: 4,
+        takhtiTitle: "তখতী ৪: হরকত (পেশ / Dammah)",
         title: { bn: "পেশ (Dammah) — উ-কার স্বল্প স্বরধ্বনি", en: "Dammah: Short 'u' Vowel", ar: "الضمة وصوتها القصير" },
         arabicItems: ["بُ", "تُ", "ثُ", "جُ"],
         audioSample: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Takhti4.m4a",
@@ -272,6 +578,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l2-6",
+        takhtiNumber: 6,
+        takhtiTitle: "তখতী ৬: মশক হরকত ও তানভীন (৩-অক্ষরী শব্দ গঠন)",
         title: { bn: "হরকতের ৩-অক্ষরী শব্দ রিডিং মাশক", en: "3-Letter Short Vowel Words Drill", ar: "قراءة كلمات ثلاثية بالحركات" },
         arabicItems: ["كَتَبَ", "خَلَقَ", "جَعَلَ"],
         audioSample: "https://audio.qurancdn.com/wbw/005_021_006.mp3",
@@ -297,6 +605,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l2-7",
+        takhtiNumber: 5,
+        takhtiTitle: "তখতী ৫: তানভীন (দুই যবর, দুই যের, দুই পেশ)",
         title: { bn: "তানভীন — দুই যবর, দুই যের, দুই পেশ", en: "Tanween: Double Vowels Nunation", ar: "التنوين: فتحتان وكسرتان وضمتان" },
         arabicItems: ["بً", "بٍ", "بٌ", "تً", "تٍ", "تٌ"],
         audioSample: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter05/Takhti5.m4a",
@@ -343,6 +653,8 @@ export const NOORANI_QAIDA_MODULES = [
     lessons: [
       {
         id: "l3-1",
+        takhtiNumber: 10,
+        takhtiTitle: "তখতী ১০: সাকিন বা জযম মিলন মাশক",
         title: { bn: "জযম বা সাকিন মিলন মাশক", en: "Sukoon / Jazm Word Joining", ar: "أحكام السكون والجزم" },
         arabicItems: ["أَتْ", "أَثْ", "أَحْ", "أَخْ"],
         audioSample: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-4.m4a",
@@ -368,6 +680,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l3-2",
+        takhtiNumber: 10,
+        takhtiTitle: "তখতী ১০: ক্বলক্বলাহর ৫টি হরফ (ق ط ب ج د)",
         title: { bn: "ক্বলক্বলাহর ৫টি হরফ (ق ط ب ج د)", en: "The 5 Qalqalah Letters (Echo/Bounce)", ar: "حروف القلقلة الخمسة (قطب جد)" },
         arabicItems: ["أَبْ", "أَجْ", "أَدْ", "أَطْ", "أَقْ"],
         audioSample: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-1.m4a",
@@ -393,6 +707,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l3-3",
+        takhtiNumber: 16,
+        takhtiTitle: "তখতী ১৬: মীম সাকিনের ৩টি নিয়ম",
         title: { bn: "মীম সাকিনের ৩টি নিয়ম", en: "3 Rules of Meem Saakin", ar: "أحكام الميم الساكنة الثلاثة" },
         arabicItems: ["تَرْمِيهِم بِحِجَارَةٍ", "لَهُم مَّا", "هُمْ فِيهَا"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/105004.mp3",
@@ -418,6 +734,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l3-4",
+        takhtiNumber: 12,
+        takhtiTitle: "তখতী ১২: তাশদীদ পাঠ মাশক",
         title: { bn: "তাশদীদ পাঠ মাশক", en: "Tashdeed Doubling Drill", ar: "تدريبات الشدة والتشديد" },
         arabicItems: ["أَبَّ", "قُلْ", "رَبِّ"],
         audioSample: "/sounds/noorani/abba.mp3?v=4",
@@ -443,6 +761,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l3-5",
+        takhtiNumber: 12,
+        takhtiTitle: "তখতী ১২: ওয়াজিব গুন্নাহ — নূন ও মীমে তাশদীদ",
         title: { bn: "ওয়াজিব গুন্নাহ — নূন ও মীমে তাশদীদ", en: "Wajib Ghunnah: Noon & Meem Tashdeed", ar: "الغنة الواجبة في النون والميم" },
         arabicItems: ["إِنَّ", "ثُمَّ", "عَمَّ"],
         audioSample: "https://audio.qurancdn.com/wbw/002_006_001.mp3",
@@ -468,6 +788,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l3-6",
+        takhtiNumber: 13,
+        takhtiTitle: "তখতী ১৩: লাম ও রার পুর (মোটা) ও বারিক (চিকন) নিয়ম",
         title: { bn: "লাম ও রার পুর (মোটা) ও বারিক (চিকন) নিয়ম", en: "Rules of Laam & Raa (Thick vs Thin)", ar: "أحكام اللام والراء تفخيماً وترقيقاً" },
         arabicItems: ["اللَّهِ", "بِاللَّهِ", "رَبِّ", "رِزْقًا"],
         audioSample: "https://audio.qurancdn.com/wbw/001_001_002.mp3",
@@ -493,6 +815,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l3-7",
+        takhtiNumber: 11,
+        takhtiTitle: "তখতী ১১: লেভেল ৩ সমাপনী মূল্যায়ন পরীক্ষা",
         title: { bn: "লেভেল ৩ সমাপনী মূল্যায়ন পরীক্ষা", en: "Level 3 Mastery Test", ar: "اختبار إتقان المستوى الثالث" },
         arabicItems: ["أَبْ", "إِنَّ", "ثُمَّ", "أَطْ", "اللَّهِ"],
         audioSample: "https://audio.qurancdn.com/wbw/002_006_001.mp3",
@@ -539,6 +863,8 @@ export const NOORANI_QAIDA_MODULES = [
     lessons: [
       {
         id: "l4-1",
+        takhtiNumber: 8,
+        takhtiTitle: "তখতী ৮: ১ আলিফ মাদ্দের ৩টি হরফ (মাদ্দে আসলী)",
         title: { bn: "১ আলিফ মাদ্দের ৩টি হরফ (মাদ্দে আসলী)", en: "Madd Asli: 3 Elongation Letters", ar: "حروف المد الثلاثة (المد الطبيعي)" },
         arabicItems: ["بَا", "بُو", "بِي"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/106001.mp3",
@@ -564,6 +890,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l4-2",
+        takhtiNumber: 7,
+        takhtiTitle: "তখতী ৭: খাড়া যবর, খাড়া যের, উল্টা পেশ",
         title: { bn: "খাড়া যবর, খাড়া যের, উল্টা পেশ", en: "Substituted Madd Signs (Standing Vowels)", ar: "الحركات القائمة: الفتحة والكسرة القائمتان والضمة المقلوبة" },
         arabicItems: ["مٰ", "بٖ", "لٗ"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/001004.mp3",
@@ -589,6 +917,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l4-3",
+        takhtiNumber: 8,
+        takhtiTitle: "তখতী ৮: লীন-এর হরফ — নরম সুরে পড়া",
         title: { bn: "লীন-এর হরফ — নরম সুরে পড়া", en: "Huroof Al-Leen: Soft Dipthongs", ar: "حرفا اللين (الواو والياء الساكنتان بعد فتح)" },
         arabicItems: ["خَوْفٍ", "بَيْتٍ", "الْبَيْتِ"],
         audioSample: "https://audio.qurancdn.com/wbw/106_004_007.mp3",
@@ -614,6 +944,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l4-4",
+        takhtiNumber: 3,
+        takhtiTitle: "তখতী ৩: হুরুফে মুকাত্তা'আত ও বড় মাদ্দ (৩ ও ৪ আলিফ)",
         title: { bn: "বড় মাদ্দ — ৩ ও ৪ আলিফ মাদ্দ", en: "Major Madd: 3 & 4 Alif Elongation", ar: "المدود الكبرى: المد المتصل والمنفصل واللازم" },
         arabicItems: ["جَاءَ", "بِمَا أُنزِلَ", "الضَّالِّينَ"],
         audioSample: "https://audio.qurancdn.com/wbw/110_001_002.mp3",
@@ -629,7 +961,7 @@ export const NOORANI_QAIDA_MODULES = [
             ar: "كم يُمَدّ المد اللازم الكلمي المثقل في كلمة (الضَّالِّينَ)؟",
           },
           options: [
-            { bn: "৪ আলিফ (৬ হরকত)", en: "4 Alifs (6 counts)", ar: "٤ ألوف (٦ حركات)" },
+            { bn: "৩ আলিফ (৬ হরকত)", en: "3 Alifs (6 Harakats)", ar: "٣ ألوف (٦ حركات)" },
             { bn: "১ আলিফ", en: "1 Alif", ar: "ألف واحدة" },
             { bn: "২ আলিফ", en: "2 Alifs", ar: "ألفان" },
             { bn: "টানা নিষেধ", en: "Do not stretch", ar: "ممنوع المد" },
@@ -639,6 +971,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l4-5",
+        takhtiNumber: 16,
+        takhtiTitle: "তখতী ১৬: নূন সাকিন ও তানভীন: ইযহার ও ইক্বলাব",
         title: { bn: "নূন সাকিন ও তানভীন: ইযহার ও ইক্বলাব", en: "Noon Saakin Rules: Izhar & Iqlab", ar: "أحكام النون الساكنة: الإظهار الحلقي والإقلاب" },
         arabicItems: ["مَنْ آمَنَ", "مِن بَعْدِ", "عَذَابٌ أَلِيمٌ"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/098004.mp3",
@@ -664,6 +998,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l4-6",
+        takhtiNumber: 16,
+        takhtiTitle: "তখতী ১৬: নূন সাকিন ও তানভীন: ইদগাম (ইয়ারমালূন)",
         title: { bn: "নূন সাকিন ও তানভীন: ইদগাম (ইয়ারমালূন)", en: "Noon Saakin Rules: Idgham (Yarmaloon)", ar: "الإدغام بغنة وبغير غنة (يرملون)" },
         arabicItems: ["مَن يَقُولُ", "مِن رَّبِّهِمْ"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/002008.mp3",
@@ -689,6 +1025,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l4-7",
+        takhtiNumber: 16,
+        takhtiTitle: "তখতী ১৬: নূন সাকিন ও তানভীন: ইখফা (১৫ হরফ)",
         title: { bn: "নূন সাকিন ও তানভীন: ইখফা (১৫ হরফ)", en: "Noon Saakin Rules: Ikhfa (15 Letters)", ar: "الإخفاء الحقيقي في خمسة عشر حرفاً" },
         arabicItems: ["مِن قَبْلُ", "أَنتُمْ", "مِن دُونِ"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/109003.mp3",
@@ -714,6 +1052,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l4-8",
+        takhtiNumber: 14,
+        takhtiTitle: "তখতী ১৪: তাশদীদ মা'আ তাশদীদ ও লেভেল ৪ সমাপনী তাজবীদ পরীক্ষা",
         title: { bn: "লেভেল ৪ সমাপনী তাজবীদ পরীক্ষা", en: "Level 4 Mastery Test", ar: "اختبار إتقان المستوى الرابع" },
         arabicItems: ["مَن يَقُولُ", "مِن بَعْدِ", "جَاءَ", "مِن قَبْلُ", "الضَّالِّينَ"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/001007.mp3",
@@ -759,6 +1099,8 @@ export const NOORANI_QAIDA_MODULES = [
     lessons: [
       {
         id: "l5-1",
+        takhtiNumber: 17,
+        takhtiTitle: "তখতী ১৭: রূসমুল খত, ওয়াক্ফ ও ইবতিদার নিয়মাবলী",
         title: { bn: "ওয়াক্ফ ও ইবতিদার নিয়মাবলী", en: "Rules of Waqf (Stopping) & Starting", ar: "أحكام الوقف والابتداء في القرآن" },
         arabicItems: ["الْعَالَمِينَ", "مُسْتَقِيمٍ", "أَحَدٌ", "رَحِيمٌ"],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/001002.mp3",
@@ -784,6 +1126,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l5-2",
+        takhtiNumber: 17,
+        takhtiTitle: "তখতী ১৭: আমপারা মাশক — সূরা আল-ফাতিহা (১-৪)",
         title: { bn: "সূরা আল-ফাতিহা — অংশ ১ (আয়াত ১-৪)", en: "Surah Al-Fatiha Part 1 (Verses 1-4)", ar: "سورة الفاتحة (الجزء الأول: الآيات ١-٤)" },
         arabicItems: [
           "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",
@@ -814,6 +1158,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l5-3",
+        takhtiNumber: 17,
+        takhtiTitle: "তখতী ১৭: আমপারা মাশক — সূরা আল-ফাতিহা (৫-৭)",
         title: { bn: "সূরা আল-ফাতিহা — অংশ ২ (আয়াত ৫-৭)", en: "Surah Al-Fatiha Part 2 (Verses 5-7)", ar: "سورة الفاتحة (الجزء الثاني: الآيات ٥-٧)" },
         arabicItems: [
           "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ",
@@ -822,8 +1168,8 @@ export const NOORANI_QAIDA_MODULES = [
         ],
         audioSample: "https://everyayah.com/data/Alafasy_128kbps/001005.mp3",
         explanation: {
-          bn: "দোয়া ও মোনাজাত: إِيَّاكَ-তে তাশদীদ শক্ত রাখা, الضَّالِّينَ-তে ৪ আলিফ মাদ্দে লাযিম ও লামে তাশদীদ দেওয়া।",
-          en: "Complete Surah Al-Fatiha: maintain firm Tashdeed on Iyyaka, and 4-Alif Madd Lazim on Ad-Daalleen.",
+          bn: "দোয়া ও মোনাজাত: إِيَّاكَ-তে তাশদীদ শক্ত রাখা, الضَّالِّينَ-তে ৩ আলিফ (৬ হরকত) মাদ্দে লাযিম ও লামে তাশদীদ দেওয়া।",
+          en: "Complete Surah Al-Fatiha: maintain firm Tashdeed on Iyyaka, and 3-Alif (6 Harakats) Madd Lazim on Ad-Daalleen.",
           ar: "إكمال سورة الفاتحة مع مراعاة تشديد الياء في إياك، والمد اللازم ٦ حركات في الضالين.",
         },
         quiz: {
@@ -833,7 +1179,7 @@ export const NOORANI_QAIDA_MODULES = [
             ar: "كم مقدار المد اللازم في كلمة (الضالين)؟",
           },
           options: [
-            { bn: "৪ আলিফ (৬ হরকত)", en: "4 Alifs (6 counts)", ar: "٤ ألوف (٦ حركات)" },
+            { bn: "৩ আলিফ (৬ হরকত)", en: "3 Alifs (6 Harakats)", ar: "٣ ألوف (٦ حركات)" },
             { bn: "১ আলিফ", en: "1 Alif", ar: "ألف واحدة" },
             { bn: "২ আলিফ", en: "2 Alifs", ar: "ألفان" },
             { bn: "টানা নিষেধ", en: "Do not stretch", ar: "ممنوع المد" },
@@ -843,6 +1189,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l5-4",
+        takhtiNumber: 17,
+        takhtiTitle: "তখতী ১৭: আমপারা মাশক — সূরা আল-ইখলাস",
         title: { bn: "সূরা আল-ইখলাস — তাওহীদের পাঠ", en: "Surah Al-Ikhlas: The Monotheism", ar: "سورة الإخلاص: عقيدة التوحيد" },
         arabicItems: [
           "قُلْ هُوَ اللَّهُ أَحَدٌ",
@@ -873,6 +1221,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l5-5",
+        takhtiNumber: 17,
+        takhtiTitle: "তখতী ১৭: আমপারা মাশক — সূরা আল-ফালাক্ব",
         title: { bn: "সূরা আল-ফালাক্ব — অনিষ্ট থেকে আশ্রয়", en: "Surah Al-Falaq: Seeking Refuge", ar: "سورة الفلق: الاستعاذة من الشرور" },
         arabicItems: [
           "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ",
@@ -904,6 +1254,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l5-6",
+        takhtiNumber: 17,
+        takhtiTitle: "তখতী ১৭: আমপারা মাশক — সূরা আন্-নাস",
         title: { bn: "সূরা আন্-নাস — শয়তানের প্ররোচনা থেকে পানাহ", en: "Surah An-Nas: Refuge from Whispers", ar: "سورة الناس: الاستعاذة من الوسواس" },
         arabicItems: [
           "قُلْ أَعُوذُ بِرَبِّ النَّاسِ",
@@ -936,6 +1288,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l5-7",
+        takhtiNumber: 17,
+        takhtiTitle: "তখতী ১৭: আমপারা মাশক — আয়াতুল কুরসী",
         title: { bn: "আয়াতুল কুরসী — নির্বাচিত অংশ", en: "Ayatul Kursi: Master Passage", ar: "آية الكرسي: أعظم آيات القرآن" },
         arabicItems: [
           "اللَّهُ لَا إِلَٰهَ إِلَّا هُوَ الْحَيُّ الْقَيُّومُ",
@@ -965,6 +1319,8 @@ export const NOORANI_QAIDA_MODULES = [
       },
       {
         id: "l5-8",
+        takhtiNumber: 17,
+        takhtiTitle: "তখতী ১৭: কোর্স সমাপ্তির চূড়ান্ত পরীক্ষা ও প্রশংসাপত্র",
         title: { bn: "কোর্স সমাপ্তির চূড়ান্ত পরীক্ষা ও প্রশংসাপত্র", en: "Graduation Final Exam & Certificate", ar: "الامتحان النهائي وشهادة إتمام الدورة" },
         arabicItems: [
           "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ",

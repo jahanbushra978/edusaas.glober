@@ -1,19 +1,13 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Gamepad2,
-  Award,
   Trophy,
   Play,
   RotateCcw,
   CheckCircle2,
-  Volume2,
   ArrowLeft,
-  Star,
-  Flame,
-  HelpCircle,
-  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import { fireCelebrationConfetti } from "../lib/confetti";
@@ -26,8 +20,27 @@ import {
   playMaShaAllahCelebration,
 } from "../lib/arabicSoundPlayer";
 
+import MemoryMatchGame from "./games/MemoryMatchGame";
+import SoundDetectiveGame from "./games/SoundDetectiveGame";
+import DotCountGame from "./games/DotCountGame";
+import TraceLetterGame from "./games/TraceLetterGame";
+import HarakatGame from "./games/HarakatGame";
+import DragDropLetterGame from "./games/DragDropLetterGame";
+
 // 🎮 Curated Quran Educational Games
 const QURAN_GAMES = [
+  {
+    id: "drag-drop-letter",
+    title: "হরফ মেলানো ড্র্যাগ ও ড্রপ",
+    titleEn: "Drag & Drop Letter Matching",
+    desc: "হরফ কার্ডগুলো টেনে বা চাপ দিয়ে সঠিক স্থানে বসাও এবং ক্বারীর কণ্ঠে বিশুদ্ধ উচ্চারণ শোনো।",
+    badge: "নতুন খেলা 🌟",
+    difficulty: "সহজ",
+    xpReward: 30,
+    playable: true,
+    colorGradient: "from-emerald-600 via-teal-600 to-cyan-600",
+    bgTint: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800",
+  },
   {
     id: "balloon-pop",
     title: "হরকত বেলুন পপ",
@@ -53,6 +66,54 @@ const QURAN_GAMES = [
     bgTint: "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800",
   },
   {
+    id: "sound-detective",
+    title: "আওয়াজ চিনো (গোয়েন্দা)",
+    titleEn: "Sound Detective Challenge",
+    desc: "ক্বারীর খাঁটি মাখরাজ ও সুর শুনে ৩টি হরফের মধ্য থেকে সঠিক হরফটি ধরো।",
+    badge: "শ্রবণ পরীক্ষা",
+    difficulty: "সহজ",
+    xpReward: 25,
+    playable: true,
+    colorGradient: "from-sky-500 to-indigo-600",
+    bgTint: "bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800",
+  },
+  {
+    id: "dot-count",
+    title: "নুকতা গোনার খেলা",
+    titleEn: "Nuqta Counting Game",
+    desc: "হরফের নুকতার সংখ্যা (১টি, ২টি, ৩টি নাকি নুকতাহীন) গুনে পয়েন্ট জেতো।",
+    badge: "নুকতা শিক্ষা",
+    difficulty: "সহজ",
+    xpReward: 20,
+    playable: true,
+    colorGradient: "from-emerald-500 to-teal-600",
+    bgTint: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800",
+  },
+  {
+    id: "trace-letter",
+    title: "হরফ অঙ্কন ক্যানভাস",
+    titleEn: "Letter Tracing Canvas",
+    desc: "স্ক্রিনে আঙুল বা মাউস ঘুরিয়ে আরবী হরফের সঠিক গঠন আঁকা শেখো।",
+    badge: "হাতে কলমে",
+    difficulty: "সহজ",
+    xpReward: 30,
+    playable: true,
+    colorGradient: "from-purple-500 to-fuchsia-600",
+    bgTint: "bg-purple-50 dark:bg-purple-950/40 border-purple-200 dark:border-purple-800",
+  },
+  {
+    id: "harakat-master",
+    title: "হরকত মাস্টার (যবর, যের, পেশ)",
+    titleEn: "Harakat Pronunciation Master",
+    desc: "হরকতের সঠিক বাংলা উচ্চারণ ও ক্বারীর সুর শুনে হরকত চিহ্নিত করো।",
+    badge: "হরকত প্রশিক্ষণ",
+    difficulty: "সহজ",
+    xpReward: 25,
+    playable: true,
+    colorGradient: "from-rose-500 to-amber-600",
+    bgTint: "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800",
+  },
+  {
     id: "makhraj-challenge",
     title: "মাখরাজ অঙ্গ লক্ষ্যভেদ",
     titleEn: "Makhraj Target Challenge",
@@ -61,8 +122,8 @@ const QURAN_GAMES = [
     difficulty: "মাঝারি",
     xpReward: 30,
     playable: true,
-    colorGradient: "from-sky-500 to-blue-600",
-    bgTint: "bg-sky-50 dark:bg-sky-950/40 border-sky-200 dark:border-sky-800",
+    colorGradient: "from-blue-500 to-cyan-600",
+    bgTint: "bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800",
   },
   {
     id: "tajweed-gem-hunt",
@@ -87,8 +148,8 @@ const QURAN_GAMES = [
     xpReward: 35,
     playable: false,
     comingSoon: true,
-    colorGradient: "from-rose-500 to-pink-600",
-    bgTint: "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800",
+    colorGradient: "from-slate-500 to-zinc-600",
+    bgTint: "bg-slate-50 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800",
   },
 ];
 
@@ -416,6 +477,48 @@ export default function QuranGamesHub({ onEarnXP }) {
             </div>
           )}
         </div>
+      ) : activeGameId === "drag-drop-letter" ? (
+        <DragDropLetterGame
+          onBack={() => setActiveGameId(null)}
+          onEarnReward={(xp) => {
+            if (onEarnXP) onEarnXP(xp);
+          }}
+        />
+      ) : activeGameId === "letter-match" ? (
+        <MemoryMatchGame
+          onBack={() => setActiveGameId(null)}
+          onEarnReward={(xp) => {
+            if (onEarnXP) onEarnXP(xp);
+          }}
+        />
+      ) : activeGameId === "sound-detective" ? (
+        <SoundDetectiveGame
+          onBack={() => setActiveGameId(null)}
+          onEarnReward={(xp) => {
+            if (onEarnXP) onEarnXP(xp);
+          }}
+        />
+      ) : activeGameId === "dot-count" ? (
+        <DotCountGame
+          onBack={() => setActiveGameId(null)}
+          onEarnReward={(xp) => {
+            if (onEarnXP) onEarnXP(xp);
+          }}
+        />
+      ) : activeGameId === "trace-letter" ? (
+        <TraceLetterGame
+          onBack={() => setActiveGameId(null)}
+          onEarnReward={(xp) => {
+            if (onEarnXP) onEarnXP(xp);
+          }}
+        />
+      ) : activeGameId === "harakat-master" ? (
+        <HarakatGame
+          onBack={() => setActiveGameId(null)}
+          onEarnReward={(xp) => {
+            if (onEarnXP) onEarnXP(xp);
+          }}
+        />
       ) : (
         /* ── GAMES HUB DIRECTORY (Onosaee Visual Gallery) ── */
         <div className="w-full space-y-6 animate-fade-in">
@@ -501,7 +604,7 @@ export default function QuranGamesHub({ onEarnXP }) {
                       onClick={() => {
                         if (game.id === "balloon-pop") startBalloonGame();
                         else if (game.id === "makhraj-challenge") startMakhrajGame();
-                        else toast.info("গেমটি লোড হচ্ছে...");
+                        else setActiveGameId(game.id);
                       }}
                       className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-extrabold text-xs shadow-xs transition-transform active:scale-95 flex items-center gap-1.5 cursor-pointer"
                     >

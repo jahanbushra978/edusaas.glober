@@ -1368,7 +1368,8 @@ async function getHydratedAyah(surahNum, ayahNum) {
   }
   try {
     const res = await fetch(`https://api.alquran.cloud/v1/ayah/${key}/editions/quran-uthmani,bn.bengali`, {
-      next: { revalidate: 86400 }
+      next: { revalidate: 86400 },
+      signal: AbortSignal.timeout(5000)
     });
     if (res.ok) {
       const data = await res.json();
@@ -1444,7 +1445,7 @@ export async function POST(request) {
 
     try {
       let searchUrl = `https://api.alquran.cloud/v1/search/${encodeURIComponent(searchTerm)}/all/${searchEdition}`;
-      let res = await fetch(searchUrl, { next: { revalidate: 3600 } });
+      let res = await fetch(searchUrl, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(6000) });
       let searchData = res.ok ? await res.json() : null;
 
       // In Arabic, if no results with stripped harakat, try normalized Alef
@@ -1452,7 +1453,7 @@ export async function POST(request) {
         const normAlef = searchTerm.replace(/[إأآٱ]/g, "ا");
         if (normAlef !== searchTerm) {
           const fallbackUrl = `https://api.alquran.cloud/v1/search/${encodeURIComponent(normAlef)}/all/${searchEdition}`;
-          const fbRes = await fetch(fallbackUrl, { next: { revalidate: 3600 } });
+          const fbRes = await fetch(fallbackUrl, { next: { revalidate: 3600 }, signal: AbortSignal.timeout(6000) });
           if (fbRes.ok) {
             searchData = await fbRes.json();
           }

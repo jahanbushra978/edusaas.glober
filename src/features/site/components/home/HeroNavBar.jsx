@@ -40,7 +40,7 @@ export default function HeroNavBar() {
         { label: isBn ? "🎯 এআই কোরআন শিক্ষা (Duolingo)" : "🎯 AI Quran Learning (Duolingo)", to: "/ai-quran-learning" },
         { label: isBn ? "🎙️ লাইভ ভয়েস ক্লাসরুম" : "🎙️ Live Voice Classroom", to: "/quran-tutor/live-class" },
         { label: isBn ? "📖 সম্পূর্ণ কুরআন" : "📖 Full Quran Reader", to: "/quran-tutor/studio?tab=reader" },
-        { label: isBn ? "নূর AI শিক্ষক স্টুডিও" : "Nur AI Tutor Studio", to: "/quran-tutor" },
+        { label: isBn ? "নূর AI কুরআন শিক্ষক" : "Nur AI Quran Tutor", to: "/quran-tutor" },
       ],
     },
     { label: isBn ? "আমাদের পরিচিতি" : isAr ? "من نحن" : "About Us", to: "about" },

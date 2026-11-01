@@ -76,7 +76,7 @@ export async function proxy(request) {
   response.headers.set('X-DNS-Prefetch-Control', 'on')
   response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin')
   response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload')
-  response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()')
+  response.headers.set('Permissions-Policy', 'camera=(self), microphone=(self), geolocation=(), interest-cohort=()')
   response.headers.set('X-XSS-Protection', '0')
 
   // 1. Platform Console Super Admin Boundary (Isolated from school auth)

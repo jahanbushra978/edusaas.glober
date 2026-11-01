@@ -4,12 +4,13 @@ import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { 
   BookOpen, Mic, Award, Compass, Volume2, Headphones, 
-  BarChart3, Trophy, Users, Building2, WifiOff, ShieldCheck, 
+  BarChart3, Trophy, Users, Building2, 
   Check, X, ChevronDown, ChevronUp, Play, Square, 
   Star, ArrowRight, Bot, Search, Menu, Baby, Gamepad2, RotateCcw, PenTool
 } from "lucide-react";
 import { toast } from "sonner";
 import QuranSemanticSearchModal from "@/features/ai/components/QuranSemanticSearchModal";
+import { universalAudioEngine } from "@/lib/quran/audio";
 
 // Audio asset for Bismillah demo
 const DEMO_BISMILLAH_AUDIO = "https://everyayah.com/data/Alafasy_128kbps/001001.mp3";
@@ -29,33 +30,22 @@ export default function AIQuranTutorPage() {
   const [contactForm, setContactForm] = useState({ name: "", email: "", message: "" });
   const [isSubmittingContact, setIsSubmittingContact] = useState(false);
 
-  // Audio Playback simulation
+  // Audio Playback simulation via Central Universal Audio Engine
   const togglePlayBismillah = () => {
-    if (!audioRef.current) {
-      audioRef.current = new Audio(DEMO_BISMILLAH_AUDIO);
-      audioRef.current.onended = () => setIsPlayingAudio(false);
-      audioRef.current.onerror = () => {
-        setIsPlayingAudio(false);
-        toast.info("অডিও প্রিভিউ চলছে...");
-      };
-    }
-
     if (isPlayingAudio) {
-      audioRef.current.pause();
-      audioRef.current.currentTime = 0;
+      universalAudioEngine.stopAll();
       setIsPlayingAudio(false);
     } else {
-      audioRef.current.play().then(() => {
-        setIsPlayingAudio(true);
-        // Animate confidence slightly
-        const interval = setInterval(() => {
-          setAudioConfidence(prev => (prev === 92 ? 94 : prev === 94 ? 91 : 92));
-        }, 1200);
-        setTimeout(() => clearInterval(interval), 5000);
-      }).catch(() => {
-        setIsPlayingAudio(true);
-        setTimeout(() => setIsPlayingAudio(false), 4500);
+      setIsPlayingAudio(true);
+      universalAudioEngine.playAyah(1, 1, "alafasy", {
+        onEnd: () => setIsPlayingAudio(false),
+        onError: () => setIsPlayingAudio(false),
       });
+      // Animate confidence slightly
+      const interval = setInterval(() => {
+        setAudioConfidence((prev) => (prev === 92 ? 94 : prev === 94 ? 91 : 92));
+      }, 1200);
+      setTimeout(() => clearInterval(interval), 5000);
     }
   };
 

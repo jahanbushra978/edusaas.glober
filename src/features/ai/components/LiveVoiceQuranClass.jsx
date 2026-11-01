@@ -34,8 +34,8 @@ import {
   DEFAULT_SHAYKH_ID,
   getActiveShaykhId,
   setActiveShaykhId,
-  getQariAudioUrl,
 } from "@/lib/ai/qari-registry";
+import { universalAudioEngine } from "@/lib/quran/audio";
 import { VoiceAgentEngine } from "@/lib/ai/voice-agent-engine";
 import { ALL_SURAHS, JUZ_MAPPING } from "@/lib/quran/quran-meta";
 import { getSurahData } from "@/lib/quran/quran-service";
@@ -129,7 +129,7 @@ export default function LiveVoiceQuranClass({
     setTeacherVoice(val);
     try {
       localStorage.setItem("nur_teacher_voice", val);
-    } catch {}
+    } catch { }
     if (voiceEngineRef.current) {
       voiceEngineRef.current.gender = val.startsWith("female") ? "female" : "male";
       voiceEngineRef.current.personaId = val;
@@ -138,8 +138,8 @@ export default function LiveVoiceQuranClass({
       val.startsWith("female")
         ? "উস্তাদা ফাতিমা (নারী কণ্ঠ) সক্রিয় করা হয়েছে"
         : val === "male_energetic"
-        ? "উস্তাদ সালমান (প্রাণবন্ত পুরুষ কণ্ঠ) সক্রিয় করা হয়েছে"
-        : "উস্তাদ তারিক (গম্ভীর পুরুষ কণ্ঠ) সক্রিয় করা হয়েছে"
+          ? "উস্তাদ সালমান (প্রাণবন্ত পুরুষ কণ্ঠ) সক্রিয় করা হয়েছে"
+          : "উস্তাদ তারিক (গম্ভীর পুরুষ কণ্ঠ) সক্রিয় করা হয়েছে"
     );
   };
 
@@ -172,12 +172,30 @@ export default function LiveVoiceQuranClass({
           setSavedResumePosition(parsed);
         }
       }
-    } catch {}
+    } catch { }
 
     const handleShaykhChanged = (e) => {
       if (e?.detail?.shaykhId) setSelectedShaykhId(e.detail.shaykhId);
     };
     window.addEventListener("rahmania:shaykh_changed", handleShaykhChanged);
+
+    // Auto-listen to browser microphone permission changes in real-time
+    if (typeof navigator !== "undefined" && navigator.permissions?.query) {
+      navigator.permissions
+        .query({ name: "microphone" })
+        .then((permissionStatus) => {
+          setMicPermissionState(permissionStatus.state);
+          permissionStatus.onchange = () => {
+            setMicPermissionState(permissionStatus.state);
+            if (permissionStatus.state === "granted") {
+              setIsMicModalOpen(false);
+              toast.success("আলহামদুলিল্লাহ! ব্রাউজার থেকে মাইক্রোফোন অনুমতি সফলভাবে সক্রিয় হয়েছে।");
+            }
+          };
+        })
+        .catch(() => { });
+    }
+
     return () => window.removeEventListener("rahmania:shaykh_changed", handleShaykhChanged);
   }, []);
 
@@ -246,10 +264,9 @@ export default function LiveVoiceQuranClass({
       basePitch: 1.0,
       bargeInEnabled: true,
       onStateChange: (state) => {
-        if (state === "speaking") {
-          startVisualizer();
-        } else if (state === "idle") {
-          stopVisualizer();
+        // Teacher speaking state (audio output only, does not open learner's microphone)
+        if (state === "idle") {
+          // Idle state
         }
       },
     });
@@ -290,14 +307,14 @@ export default function LiveVoiceQuranClass({
         osc.start();
         osc.stop(ctx.currentTime + 0.35);
       }
-    } catch {}
+    } catch { }
   }, []);
 
   // Visualizer Setup with active microphone
+  // Visualizer Setup with active microphone
   const startVisualizer = async () => {
     try {
-      if (!navigator.mediaDevices?.getUserMedia) {
-        toast.error("আপনার ব্রাউজারে অডিও রেকর্ডিং সাপোর্ট নেই। গুগল ক্রোম ব্রাউজার ব্যবহার করুন।");
+      if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia) {
         return;
       }
       if (micStreamRef.current) return;
@@ -352,49 +369,72 @@ export default function LiveVoiceQuranClass({
       console.warn("Visualizer mic access error:", err);
       if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
         setMicPermissionState("denied");
-        setIsMicModalOpen(true);
-        toast.error("মাইক্রোফোনের অনুমতি বন্ধ আছে! ব্রাউজারের সাইট সেটিংসে গিয়ে Mic Allow করুন।");
       } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
         setMicPermissionState("not_found");
-        setIsMicModalOpen(true);
-        toast.error("কোনো মাইক্রোফোন পাওয়া যায়নি! হেডফোন বা মাইক প্লাগ-ইন করুন।");
       }
     }
   };
 
-  // Dedicated Microphone Self-Test
+  // Open browser site-level mic settings helper
+  const handleOpenBrowserMicSettings = () => {
+    if (typeof window === 'undefined') return;
+    toast.info(
+      '🔒 ব্রাউজারের অ্যাড্রেস বারের বাঁ দিকে তালা আইকন → Microphone → Allow করুন, তারপর পেজ রিলোড করুন।',
+      { duration: 10000 }
+    );
+  };
+
+  // Dedicated Microphone Request & Test
   const handleTestMicrophone = async () => {
+    if (typeof window === 'undefined') return;
     setIsMicTesting(true);
+
     try {
-      if (typeof window === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-        toast.error("আপনার ব্রাউজারে অডিও রেকর্ডিং সাপোর্ট নেই। গুগল ক্রোম ব্রাউজার ব্যবহার করুন।");
-        setMicPermissionState("not_supported");
-        setIsMicModalOpen(true);
+      // Secure Context check (WebRTC requires HTTPS except on localhost)
+      if (
+        !window.isSecureContext &&
+        window.location.hostname !== 'localhost' &&
+        window.location.hostname !== '127.0.0.1'
+      ) {
+        toast.error(
+          'মোবাইল বা রিমোট ডিভাইসে মাইক চালুর জন্য HTTPS প্রয়োজন। লোকাল HTTP আইপিতে ব্রাউজার মাইক সাপোর্ট করে না।',
+          { duration: 7000 }
+        );
+        setMicPermissionState('not_supported');
         return;
       }
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      setMicPermissionState("granted");
-      playChime("success");
-      toast.success("মাশাআল্লাহ! আপনার মাইক্রোফোন সফলভাবে যুক্ত ও সক্রিয় হয়েছে।");
+      if (!navigator.mediaDevices?.getUserMedia) {
+        toast.error('আপনার ব্রাউজারে অডিও রেকর্ডিং সাপোর্ট নেই। গুগল ক্রোম ব্রাউজার ব্যাবহার করুন।');
+        setMicPermissionState('not_supported');
+        return;
+      }
 
-      // Animate waveform for 2.5 seconds
+      // This triggers the native browser permission popup when permission state is 'prompt'
+      // When 'denied', the browser silently throws NotAllowedError — no popup shown by browser
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // ── Permission granted ──
+      setMicPermissionState('granted');
+      setIsMicModalOpen(false);
+      playChime('success');
+      toast.success('আলহামদুলিল্লাহ! আপনার মাইক্রোফোন সফলভাবে যুক্ত ও সক্রিয় হয়েছে।');
+
       micStreamRef.current = stream;
       startVisualizer();
-      setTimeout(() => {
-        stopVisualizer();
-      }, 2500);
+      setTimeout(() => stopVisualizer(), 2500);
     } catch (err) {
-      console.warn("Microphone test error:", err);
-      if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-        setMicPermissionState("denied");
-        setIsMicModalOpen(true);
-      } else if (err?.name === "NotFoundError" || err?.name === "DevicesNotFoundError") {
-        setMicPermissionState("not_found");
-        setIsMicModalOpen(true);
+      console.warn('Microphone test error:', err);
+      const errName = err?.name ?? '';
+      if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+        setMicPermissionState('denied');
+        // The modal UI now shows a detailed guide — no redundant toast
+      } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+        setMicPermissionState('not_found');
+        toast.error('কোনো মাইক্রোফোন পাওয়া যায়নি! হেডফোন বা মাইক প্লাগ-ইন করুন।');
       } else {
-        setMicPermissionState("error");
-        setIsMicModalOpen(true);
+        setMicPermissionState('error');
+        toast.error('মাইক্রোফোন সংযোগে সমস্যা হয়েছে।');
       }
     } finally {
       setIsMicTesting(false);
@@ -408,7 +448,7 @@ export default function LiveVoiceQuranClass({
       micStreamRef.current = null;
     }
     if (audioContextRef.current && audioContextRef.current.state !== "closed") {
-      audioContextRef.current.close().catch(() => {});
+      audioContextRef.current.close().catch(() => { });
       audioContextRef.current = null;
     }
     setIsVoiceDetected(false);
@@ -416,6 +456,7 @@ export default function LiveVoiceQuranClass({
   };
 
   const stopAllAudio = () => {
+    universalAudioEngine.stopAll();
     if (audioDemoRef.current) {
       audioDemoRef.current.pause();
       audioDemoRef.current = null;
@@ -426,7 +467,7 @@ export default function LiveVoiceQuranClass({
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
-      } catch {}
+      } catch { }
       recognitionRef.current = null;
     }
     if (timerRef.current) {
@@ -469,48 +510,40 @@ export default function LiveVoiceQuranClass({
       // Save current reading position
       saveProgressPosition(selectedSurahNumber, targetAyah.numberInSurah || ayahIdx + 1);
 
-      // Resolve Qari Audio URL
+      // Play Qari recitation via Central Universal Audio Engine
       const ayahNo = targetAyah.numberInSurah || ayahIdx + 1;
-      const audioUrl = getQariAudioUrl(selectedShaykhId, selectedSurahNumber, ayahNo);
+      universalAudioEngine.playAyah(selectedSurahNumber, ayahNo, selectedShaykhId, {
+        rate: playbackSpeed,
+        onEnd: () => {
+          // Step 2: Teacher prompts student by voice
+          setClassState("teacher_prompting");
 
-      const audio = new Audio(audioUrl);
-      audio.playbackRate = playbackSpeed;
-      audioDemoRef.current = audio;
+          let promptScript = "";
+          if (learningMode === "memorize") {
+            promptScript = `মাশাআল্লাহ। এবার মন থেকে মুখস্থ তিলাওয়াত করুন, আমি শুনছি।`;
+          } else if (learningMode === "revise") {
+            promptScript = `বিসমিল্লাহ বলে আয়াতটি সুন্দরভাবে তিলাওয়াত করুন, আমি শুনছি।`;
+          } else {
+            promptScript = `মাশাআল্লাহ। এবার আপনি ক্বারীর মতো করে শান্তভাবে মুখে পড়ুন, আমি শুনছি।`;
+          }
 
-      audio.onended = () => {
-        // Step 2: Teacher prompts student by voice
-        setClassState("teacher_prompting");
-
-        let promptScript = "";
-        if (learningMode === "memorize") {
-          promptScript = `মাশাআল্লাহ। এবার মন থেকে মুখস্থ তিলাওয়াত করুন, আমি শুনছি।`;
-        } else if (learningMode === "revise") {
-          promptScript = `বিসমিল্লাহ বলে আয়াতটি সুন্দরভাবে তিলাওয়াত করুন, আমি শুনছি।`;
-        } else {
-          promptScript = `মাশাআল্লাহ। এবার আপনি ক্বারীর মতো করে শান্তভাবে মুখে পড়ুন, আমি শুনছি।`;
-        }
-
-        if (voiceEngineRef.current) {
-          voiceEngineRef.current.speak(promptScript, {
-            onEnd: () => {
-              // Transition delay to prevent echo: Gated Hand-off
-              initiateStudentWaitingAndListening(ayahIdx);
-            },
-            onError: () => {
-              initiateStudentWaitingAndListening(ayahIdx);
-            },
-          });
-        } else {
+          if (voiceEngineRef.current) {
+            voiceEngineRef.current.speak(promptScript, {
+              onEnd: () => {
+                // Transition delay to prevent echo: Gated Hand-off
+                initiateStudentWaitingAndListening(ayahIdx);
+              },
+              onError: () => {
+                initiateStudentWaitingAndListening(ayahIdx);
+              },
+            });
+          } else {
+            initiateStudentWaitingAndListening(ayahIdx);
+          }
+        },
+        onError: () => {
           initiateStudentWaitingAndListening(ayahIdx);
-        }
-      };
-
-      audio.onerror = () => {
-        initiateStudentWaitingAndListening(ayahIdx);
-      };
-
-      audio.play().catch(() => {
-        initiateStudentWaitingAndListening(ayahIdx);
+        },
       });
     },
     [currentAyahIndex, activeSurahData, selectedSurahNumber, selectedShaykhId, playbackSpeed, learningMode]
@@ -563,8 +596,7 @@ export default function LiveVoiceQuranClass({
               console.warn("SpeechRec notice:", err?.error);
               if (err?.error === "not-allowed" || err?.error === "audio-capture") {
                 setMicPermissionState("denied");
-                setIsMicModalOpen(true);
-                toast.error("মাইক্রোফোনের অনুমতি বন্ধ আছে! ব্রাউজারে অনুমতি দিতে নির্দেশিকা দেখুন।");
+                toast.error("মাইক্রোফোনের অনুমতি বন্ধ আছে! ব্রাউজারের সাইট সেটিংসে গিয়ে Mic Allow করুন।");
                 setClassState("idle");
               }
             };
@@ -600,7 +632,7 @@ export default function LiveVoiceQuranClass({
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
-      } catch {}
+      } catch { }
     }
 
     // Allow 300ms buffer for pending SpeechRecognition interim/final event to land
@@ -714,8 +746,8 @@ export default function LiveVoiceQuranClass({
       const feedbackBn = passed
         ? `মাশাআল্লাহ! অত্যন্ত চমৎকার ও বিশুদ্ধ তিলাওয়াত হয়েছে। হরফের মাখরাজ এবং তারতীল সুন্দর ছিল।`
         : score < 40
-        ? `কিছু শব্দের উচ্চারণে ত্রুটি ছিল। ${missedSample ? `বিশেষ করে "${missedSample}" শব্দগুলোতে একটু নজর দিন।` : ""} আসুন, মনোযোগ দিয়ে আরেকবার শান্তভাবে মাশক করি।`
-        : `চেষ্টা সুন্দর হয়েছে। তবে কয়েকটি হরফের মাখরাজ আরও স্পষ্ট করতে হবে। আসুন, আরেকবার ধীরেসুস্থে পড়ি।`;
+          ? `কিছু শব্দের উচ্চারণে ত্রুটি ছিল। ${missedSample ? `বিশেষ করে "${missedSample}" শব্দগুলোতে একটু নজর দিন।` : ""} আসুন, মনোযোগ দিয়ে আরেকবার শান্তভাবে মাশক করি।`
+          : `চেষ্টা সুন্দর হয়েছে। তবে কয়েকটি হরফের মাখরাজ আরও স্পষ্ট করতে হবে। আসুন, আরেকবার ধীরেসুস্থে পড়ি।`;
 
       handleEvaluationFeedback(
         {
@@ -826,9 +858,26 @@ export default function LiveVoiceQuranClass({
   // ── 10b. SELF-RECITE MODE: Student recites alone without Qari demo first ──
   // Student clicks dedicated button → mic opens immediately → AI evaluates strictly
   const startSelfReciteMode = useCallback(
-    (ayahIdx = currentAyahIndex) => {
+    async (ayahIdx = currentAyahIndex) => {
       stopAllAudio();
       if (!activeSurahData?.ayahs?.length) return;
+
+      // Ask for microphone permission directly on user click if not granted yet
+      if (micPermissionState !== "granted" && typeof navigator !== "undefined" && navigator.mediaDevices?.getUserMedia) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          setMicPermissionState("granted");
+          stream.getTracks().forEach((t) => t.stop());
+        } catch (err) {
+          console.warn("Self-recite mic request error:", err);
+          if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+            setMicPermissionState("denied");
+            toast.error("মাইক্রোফোনের অনুমতি বন্ধ আছে! ব্রাউজারের সাইট সেটিংসে গিয়ে Mic Allow করুন।");
+            return;
+          }
+        }
+      }
+
       setSelfReciteMode(true);
       setEvaluationResult(null);
       setIsSavedToHifz(false);
@@ -873,8 +922,7 @@ export default function LiveVoiceQuranClass({
               console.warn("SpeechRec error (self-recite):", err?.error);
               if (err?.error === "not-allowed" || err?.error === "audio-capture") {
                 setMicPermissionState("denied");
-                setIsMicModalOpen(true);
-                toast.error("মাইক্রোফোনের অনুমতি বন্ধ আছে! ব্রাউজারে অনুমতি দিতে নির্দেশিকা দেখুন।");
+                toast.error("মাইক্রোফোনের অনুমতি বন্ধ আছে! ব্রাউজারের সাইট সেটিংসে গিয়ে Mic Allow করুন।");
                 setClassState("idle");
               }
             };
@@ -947,7 +995,7 @@ export default function LiveVoiceQuranClass({
         mode: learningMode,
         timestamp: new Date().toISOString(),
       });
-    } catch {}
+    } catch { }
     toast.success(`মাশাআল্লাহ! ${activeSurahData?.bengaliName} (আয়াত ${currentAyah?.numberInSurah})-এর পাঠ ডায়েরিতে সংরক্ষিত হয়েছে।`);
   };
 
@@ -994,7 +1042,7 @@ export default function LiveVoiceQuranClass({
       };
       localStorage.setItem("nur_last_recited_pos", JSON.stringify(pos));
       setSavedResumePosition(pos);
-    } catch {}
+    } catch { }
   };
 
   // Peek word for 2.5s in memorize mode
@@ -1135,11 +1183,10 @@ export default function LiveVoiceQuranClass({
                 setLearningMode("learn");
                 setMemorizeHidden(false);
               }}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                learningMode === "learn"
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${learningMode === "learn"
                   ? "bg-emerald-600 text-white shadow"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
             >
               📖 পড়া ও মাশক
             </button>
@@ -1149,11 +1196,10 @@ export default function LiveVoiceQuranClass({
                 setLearningMode("memorize");
                 setMemorizeHidden(true);
               }}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                learningMode === "memorize"
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${learningMode === "memorize"
                   ? "bg-amber-600 text-white shadow"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
             >
               🧠 হিফজ / মুখস্থ
             </button>
@@ -1163,11 +1209,10 @@ export default function LiveVoiceQuranClass({
                 setLearningMode("revise");
                 setMemorizeHidden(false);
               }}
-              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                learningMode === "revise"
+              className={`px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${learningMode === "revise"
                   ? "bg-teal-600 text-white shadow"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
             >
               ⚡ মুরাযাআ / দাওর
             </button>
@@ -1186,11 +1231,10 @@ export default function LiveVoiceQuranClass({
                   setPlaybackSpeed(spd);
                   if (audioDemoRef.current) audioDemoRef.current.playbackRate = spd;
                 }}
-                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${
-                  playbackSpeed === spd
+                className={`px-2 py-1 rounded-lg text-[10px] font-bold transition-all cursor-pointer ${playbackSpeed === spd
                     ? "bg-emerald-600 text-white shadow"
                     : "text-slate-400 hover:text-slate-200"
-                }`}
+                  }`}
                 title={`তিলাওয়াত গতি ${spd}x`}
               >
                 {spd === 1.0 ? "১.০x" : spd === 0.75 ? "০.৭৫x" : "১.২৫x"}
@@ -1257,11 +1301,10 @@ export default function LiveVoiceQuranClass({
           <button
             type="button"
             onClick={() => setAutoLoopEnabled(!autoLoopEnabled)}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 ${
-              autoLoopEnabled
+            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 ${autoLoopEnabled
                 ? "bg-emerald-950/80 border-emerald-500 text-emerald-300"
                 : "bg-slate-900 border-slate-700 text-slate-400"
-            }`}
+              }`}
             title="তিলাওয়াত শেষে স্বয়ংক্রিয়ভাবে পরবর্তী আয়াতে যাওয়া"
           >
             <Radio className="w-3 h-3" />
@@ -1273,28 +1316,62 @@ export default function LiveVoiceQuranClass({
             type="button"
             onClick={handleTestMicrophone}
             disabled={isMicTesting}
-            className={`px-2.5 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 ${
-              micPermissionState === "granted"
-                ? "bg-emerald-950/80 border-emerald-500/80 text-emerald-300 shadow-sm"
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95 ${micPermissionState === "granted"
+                ? "bg-emerald-950/80 border-emerald-500/80 text-emerald-300 shadow-sm hover:bg-emerald-900/60"
                 : micPermissionState === "denied"
-                ? "bg-rose-950/90 border-rose-500 text-rose-300 animate-pulse shadow-md"
-                : "bg-slate-900 border-slate-700 text-slate-300 hover:text-white hover:border-emerald-600"
-            }`}
-            title="মাইক্রোফোন সংযোগ ও অনুমতি পরীক্ষা করুন বা সমস্যা সমাধান করুন"
+                  ? "bg-rose-950/90 border-rose-500 text-rose-300 animate-pulse shadow-md hover:bg-rose-900"
+                  : "bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-400 text-white shadow-md hover:brightness-110 ring-2 ring-emerald-400/40"
+              }`}
+            title={
+              micPermissionState === "granted"
+                ? "মাইক্রোফোন সক্রিয় আছে (পরীক্ষা করতে ক্লিক করুন)"
+                : micPermissionState === "denied"
+                  ? "মাইক্রোফোনের অনুমতি বন্ধ আছে (ক্লিক করে পরীক্ষা করুন)"
+                  : "মাইক্রোফোনের অনুমতি দিন ও চালু করুন"
+            }
           >
             <Mic className="w-3.5 h-3.5" />
             <span>
               {isMicTesting
                 ? "যাচাই হচ্ছে..."
                 : micPermissionState === "granted"
-                ? "মাইক সচল ✓"
-                : micPermissionState === "denied"
-                ? "মাইক বন্ধ ⚠️"
-                : "মাইক টেস্ট"}
+                  ? "মাইক সচল ✓"
+                  : micPermissionState === "denied"
+                    ? "মাইক ব্লক ⚠️"
+                    : "মাইক চালু করুন (Allow Mic)"}
             </span>
           </button>
         </div>
       </div>
+
+      {/* ── NON-BLOCKING MIC DENIED ALERT (ONLY IF BLOCKED) ── */}
+      {micPermissionState === "denied" && (
+        <div className="bg-rose-950/80 border border-rose-600/70 rounded-2xl p-3 px-4 mb-4 flex items-center justify-between text-xs text-rose-100 shadow-lg animate-fade-in flex-wrap gap-2">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="w-4.5 h-4.5 text-rose-400 shrink-0" />
+            <span>
+              ব্রাউজারে মাইক্রোফোনের অনুমতি বন্ধ আছে। উপরে ব্রাউজারের অ্যাড্রেস বারের তালা <strong>(🔒)</strong> আইকনে ক্লিক করে <strong>Microphone ➔ Allow</strong> করে রিলোড দিন।
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              type="button"
+              onClick={handleTestMicrophone}
+              disabled={isMicTesting}
+              className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold transition-all text-xs cursor-pointer active:scale-95"
+            >
+              {isMicTesting ? "যাচাই হচ্ছে..." : "পুনরায় পরীক্ষা"}
+            </button>
+            <button
+              type="button"
+              onClick={() => setIsMicModalOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white text-xs font-bold transition-all cursor-pointer"
+            >
+              সহায়িকা 📖
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── RESUME POSITION BANNER (IF AVAILABLE) ── */}
       {savedResumePosition && savedResumePosition.surahNumber !== selectedSurahNumber && (
@@ -1345,8 +1422,8 @@ export default function LiveVoiceQuranClass({
                     {learningMode === "memorize"
                       ? "স্মৃতি পরীক্ষা • হিফজ মাশক"
                       : learningMode === "revise"
-                      ? "মুরাযাআ • দ্রুত ঝালাই"
-                      : "তাজবীদ ও তারতীল মাশক"}
+                        ? "মুরাযাআ • দ্রুত ঝালাই"
+                        : "তাজবীদ ও তারতীল মাশক"}
                   </span>
                   {currentHafiziLocation && (
                     <span className="px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/40 text-[11px] font-bold text-amber-300 shadow-sm">
@@ -1406,50 +1483,46 @@ export default function LiveVoiceQuranClass({
               {/* Arabic Verse Calligraphy — with word-level click inspection and mistake highlighting */}
               <div
                 dir="rtl"
-                className={`font-amiri text-3xl sm:text-4xl md:text-5xl font-bold leading-[1.8] sm:leading-[2.0] tracking-wide transition-all duration-300 drop-shadow-[0_4px_16px_rgba(245,158,11,0.25)] select-none flex flex-wrap justify-center items-center gap-x-2.5 gap-y-2 relative ${
-                  learningMode === "memorize" && memorizeHidden && !isPeeking
+                className={`font-amiri text-3xl sm:text-4xl md:text-5xl font-bold leading-[1.8] sm:leading-[2.0] tracking-wide transition-all duration-300 drop-shadow-[0_4px_16px_rgba(245,158,11,0.25)] select-none flex flex-wrap justify-center items-center gap-x-2.5 gap-y-2 relative ${learningMode === "memorize" && memorizeHidden && !isPeeking
                     ? "filter blur-md opacity-30 scale-95"
                     : "filter-none opacity-100 scale-100"
-                }`}
+                  }`}
               >
                 {/* Glowing Sacred Ambient Aura behind active Ayah */}
                 <div
-                  className={`absolute -inset-8 rounded-full bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-teal-500/10 blur-2xl pointer-events-none transition-all duration-700 ${
-                    classState === "student_listening" ? "opacity-100 scale-105" : "opacity-30 scale-100"
-                  }`}
+                  className={`absolute -inset-8 rounded-full bg-gradient-to-r from-emerald-500/10 via-amber-500/10 to-teal-500/10 blur-2xl pointer-events-none transition-all duration-700 ${classState === "student_listening" ? "opacity-100 scale-105" : "opacity-30 scale-100"
+                    }`}
                 />
 
                 {evaluationResult?.wordMatches?.length > 0
                   ? evaluationResult.wordMatches.map((item, idx) => (
-                      <span
-                        key={idx}
-                        onClick={() => setSelectedWordForTajweed({ word: item.word, status: item.status })}
-                        title={item.status === "correct" ? "সঠিক ✓" : item.status === "near" ? "কাছাকাছি ≈" : "ভুল ✕"}
-                        className={`px-2 py-0.5 rounded-lg transition-all mx-0.5 cursor-pointer ${
-                          item.status === "correct"
-                            ? "text-emerald-200 bg-emerald-950/30 hover:bg-emerald-900/50"
-                            : item.status === "near"
+                    <span
+                      key={idx}
+                      onClick={() => setSelectedWordForTajweed({ word: item.word, status: item.status })}
+                      title={item.status === "correct" ? "সঠিক ✓" : item.status === "near" ? "কাছাকাছি ≈" : "ভুল ✕"}
+                      className={`px-2 py-0.5 rounded-lg transition-all mx-0.5 cursor-pointer ${item.status === "correct"
+                          ? "text-emerald-200 bg-emerald-950/30 hover:bg-emerald-900/50"
+                          : item.status === "near"
                             ? "text-amber-300 bg-amber-950/50 border-b-2 border-amber-400 hover:bg-amber-900/60"
                             : "text-rose-300 bg-rose-950/80 border-2 border-rose-500/80 font-black shadow-[0_0_12px_rgba(244,63,94,0.35)]"
                         }`}
-                      >
-                        {item.word}
-                      </span>
-                    ))
+                    >
+                      {item.word}
+                    </span>
+                  ))
                   : (currentAyah?.text || "").split(/\s+/).filter(Boolean).map((word, wIdx) => (
-                      <span
-                        key={wIdx}
-                        onClick={() => setSelectedWordForTajweed({ word, index: wIdx })}
-                        title="তাজবীদ ও উচ্চারণ নির্দেশিকার জন্য ক্লিক করুন"
-                        className={`px-1.5 py-0.5 rounded-xl cursor-pointer transition-all duration-200 hover:text-amber-300 hover:bg-emerald-900/40 hover:scale-105 ${
-                          selectedWordForTajweed?.word === word
-                            ? "text-amber-300 bg-emerald-950/80 ring-2 ring-amber-400/80 shadow-md"
-                            : "text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-amber-200 to-yellow-100"
+                    <span
+                      key={wIdx}
+                      onClick={() => setSelectedWordForTajweed({ word, index: wIdx })}
+                      title="তাজবীদ ও উচ্চারণ নির্দেশিকার জন্য ক্লিক করুন"
+                      className={`px-1.5 py-0.5 rounded-xl cursor-pointer transition-all duration-200 hover:text-amber-300 hover:bg-emerald-900/40 hover:scale-105 ${selectedWordForTajweed?.word === word
+                          ? "text-amber-300 bg-emerald-950/80 ring-2 ring-amber-400/80 shadow-md"
+                          : "text-transparent bg-clip-text bg-gradient-to-r from-amber-100 via-amber-200 to-yellow-100"
                         }`}
-                      >
-                        {word}
-                      </span>
-                    ))}
+                    >
+                      {word}
+                    </span>
+                  ))}
                 <span className="inline-flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 mr-2 rounded-full border border-amber-500/70 bg-amber-950/80 text-amber-300 font-bold text-base sm:text-lg align-middle shadow-md font-sans">
                   {currentAyah?.numberInSurah || currentAyahIndex + 1}
                 </span>
@@ -1491,9 +1564,8 @@ export default function LiveVoiceQuranClass({
 
               {/* Bengali Meaning */}
               <p
-                className={`text-slate-300 text-sm sm:text-base mt-4 font-normal leading-relaxed max-w-2xl mx-auto transition-opacity duration-300 ${
-                  learningMode === "memorize" && memorizeHidden && !isPeeking ? "opacity-20" : "opacity-100"
-                }`}
+                className={`text-slate-300 text-sm sm:text-base mt-4 font-normal leading-relaxed max-w-2xl mx-auto transition-opacity duration-300 ${learningMode === "memorize" && memorizeHidden && !isPeeking ? "opacity-20" : "opacity-100"
+                  }`}
               >
                 {currentAyah?.bengali || ""}
               </p>
@@ -1506,13 +1578,12 @@ export default function LiveVoiceQuranClass({
                   <div
                     key={i}
                     style={{ height: `${height}%` }}
-                    className={`w-1.5 rounded-full transition-all duration-75 ${
-                      classState === "student_listening"
+                    className={`w-1.5 rounded-full transition-all duration-75 ${classState === "student_listening"
                         ? "bg-gradient-to-t from-emerald-500 to-teal-300 shadow-[0_0_8px_rgba(16,185,129,0.7)]"
                         : classState === "qari_reciting"
-                        ? "bg-gradient-to-t from-amber-500 to-yellow-300 shadow-[0_0_8px_rgba(245,158,11,0.7)]"
-                        : "bg-slate-700/60"
-                    }`}
+                          ? "bg-gradient-to-t from-amber-500 to-yellow-300 shadow-[0_0_8px_rgba(245,158,11,0.7)]"
+                          : "bg-slate-700/60"
+                      }`}
                   />
                 ))}
               </div>
@@ -1681,11 +1752,10 @@ export default function LiveVoiceQuranClass({
             <button
               type="button"
               onClick={() => setActiveCompanionTab("feedback")}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                activeCompanionTab === "feedback"
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${activeCompanionTab === "feedback"
                   ? "bg-emerald-600 text-white shadow"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
             >
               <Award className="w-3.5 h-3.5" />
               <span>মূল্যায়ন</span>
@@ -1693,11 +1763,10 @@ export default function LiveVoiceQuranClass({
             <button
               type="button"
               onClick={() => setActiveCompanionTab("words")}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                activeCompanionTab === "words"
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${activeCompanionTab === "words"
                   ? "bg-emerald-600 text-white shadow"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
             >
               <Sliders className="w-3.5 h-3.5" />
               <span>শব্দ বিশ্লেষণ</span>
@@ -1705,11 +1774,10 @@ export default function LiveVoiceQuranClass({
             <button
               type="button"
               onClick={() => setActiveCompanionTab("makhraj")}
-              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${
-                activeCompanionTab === "makhraj"
+              className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1 ${activeCompanionTab === "makhraj"
                   ? "bg-emerald-600 text-white shadow"
                   : "text-slate-400 hover:text-slate-200"
-              }`}
+                }`}
             >
               <Compass className="w-3.5 h-3.5" />
               <span>মাখরাজ</span>
@@ -1743,11 +1811,10 @@ export default function LiveVoiceQuranClass({
                     </div>
                     <div className="text-right">
                       <span
-                        className={`px-3 py-1 rounded-xl text-xs font-bold inline-block shadow ${
-                          evaluationResult.passed
+                        className={`px-3 py-1 rounded-xl text-xs font-bold inline-block shadow ${evaluationResult.passed
                             ? "bg-emerald-600 text-white"
                             : "bg-amber-600 text-white"
-                        }`}
+                          }`}
                       >
                         {evaluationResult.passed ? "উত্তীর্ণ (Passed)" : "পুনঃপ্রচেষ্টা প্রয়োজন"}
                       </span>
@@ -1773,11 +1840,10 @@ export default function LiveVoiceQuranClass({
                     type="button"
                     onClick={handleSaveToHifz}
                     disabled={isSavedToHifz}
-                    className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow ${
-                      isSavedToHifz
+                    className={`w-full py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow ${isSavedToHifz
                         ? "bg-slate-800 text-emerald-400 border border-emerald-700"
                         : "bg-gradient-to-r from-emerald-700 to-teal-700 hover:from-emerald-600 hover:to-teal-600 text-white"
-                    }`}
+                      }`}
                   >
                     {isSavedToHifz ? (
                       <>
@@ -1816,13 +1882,12 @@ export default function LiveVoiceQuranClass({
                     {evaluationResult.wordMatches.map((item, idx) => (
                       <span
                         key={idx}
-                        className={`px-3 py-1.5 rounded-xl font-amiri text-lg font-bold shadow-sm flex items-center gap-1.5 border ${
-                          item.status === "correct"
+                        className={`px-3 py-1.5 rounded-xl font-amiri text-lg font-bold shadow-sm flex items-center gap-1.5 border ${item.status === "correct"
                             ? "bg-emerald-950/80 border-emerald-500 text-emerald-200"
                             : item.status === "near"
-                            ? "bg-amber-950/80 border-amber-500 text-amber-200"
-                            : "bg-rose-950/80 border-rose-500 text-rose-200"
-                        }`}
+                              ? "bg-amber-950/80 border-amber-500 text-amber-200"
+                              : "bg-rose-950/80 border-rose-500 text-rose-200"
+                          }`}
                       >
                         <span>{item.word}</span>
                         <span className="text-[10px] font-sans font-normal opacity-80">
@@ -1913,11 +1978,10 @@ export default function LiveVoiceQuranClass({
                       startAyahTeachingFlow(i, true);
                     }}
                     title={`আয়াত ${i + 1} এ যান`}
-                    className={`min-w-9 h-9 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center relative shadow-sm ${
-                      isCurrent
+                    className={`min-w-9 h-9 px-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center relative shadow-sm ${isCurrent
                         ? "bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black ring-2 ring-emerald-300 shadow-emerald-900/50 shadow-md scale-105"
                         : "bg-[#040e0a] border border-emerald-900/60 text-slate-300 hover:bg-emerald-950/80 hover:border-emerald-600 hover:text-emerald-200"
-                    }`}
+                      }`}
                   >
                     <span>{i + 1}</span>
                   </button>
@@ -2172,11 +2236,10 @@ export default function LiveVoiceQuranClass({
                           const maxP = p.totalPages;
                           if (hafiziPage > maxP) setHafiziPage(1);
                         }}
-                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${
-                          isSelected
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1.5 ${isSelected
                             ? "bg-amber-500 text-slate-950 shadow-md font-black scale-105"
                             : "bg-[#051710] text-slate-300 border border-emerald-900/80 hover:bg-emerald-950/80 hover:text-emerald-300"
-                        }`}
+                          }`}
                       >
                         <span>পারা {p.juz}</span>
                         <span className="opacity-70 text-[10px]">({p.totalPages} পৃ:)</span>
@@ -2256,11 +2319,10 @@ export default function LiveVoiceQuranClass({
                     key={j.juz}
                     type="button"
                     onClick={() => setSelectedJuzNumber(j.juz)}
-                    className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-all ${
-                      selectedJuzNumber === j.juz
+                    className={`px-3 py-1 rounded-lg text-xs font-bold whitespace-nowrap cursor-pointer transition-all ${selectedJuzNumber === j.juz
                         ? "bg-amber-500 text-slate-950 shadow"
                         : "bg-[#040e0a] text-slate-300 hover:bg-slate-800"
-                    }`}
+                      }`}
                   >
                     পারা {j.juz}
                   </button>
@@ -2276,11 +2338,10 @@ export default function LiveVoiceQuranClass({
                     key={s.id}
                     type="button"
                     onClick={() => handleSelectSurahByNumber(s.id)}
-                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${
-                      selectedSurahNumber === s.id
+                    className={`p-3 rounded-2xl border text-left transition-all cursor-pointer flex items-center justify-between ${selectedSurahNumber === s.id
                         ? "bg-emerald-950 border-emerald-400 ring-2 ring-emerald-500/50 shadow-lg"
                         : "bg-[#040e0a] border-emerald-900/60 hover:border-emerald-600 hover:bg-[#061811]"
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2.5">
                       <span className="w-8 h-8 rounded-xl bg-slate-900 border border-slate-700 text-emerald-400 font-bold text-xs flex items-center justify-center">
@@ -2307,117 +2368,117 @@ export default function LiveVoiceQuranClass({
         </div>
       )}
 
-      {/* ── 12. MICROPHONE TROUBLESHOOTING & PERMISSION MODAL ── */}
+      {/* ── 12. IN-APP MICROPHONE ACCESS PERMISSION MODAL ── */}
       {isMicModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in font-hind-siliguri">
-          <div className="bg-[#071912] border-2 border-emerald-700/80 rounded-3xl w-full max-w-lg p-6 shadow-2xl flex flex-col gap-4 text-slate-100">
-            <div className="flex items-center justify-between pb-3 border-b border-emerald-900/60">
-              <div className="flex items-center gap-2.5">
-                <div className="w-10 h-10 rounded-xl bg-amber-500/20 border border-amber-500/60 flex items-center justify-center text-amber-400">
-                  <Mic className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-base font-extrabold text-white">
-                    মাইক্রোফোন সংযোগ ও অনুমতি সহায়িকা
-                  </h3>
-                  <p className="text-[11px] text-slate-400">
-                    কম্পিউটারে সহজে মাইক চালু করার নির্দেশিকা
-                  </p>
-                </div>
-              </div>
+        <div
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setIsMicModalOpen(false);
+          }}
+          className="fixed inset-0 z-50 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 animate-fade-in font-hind-siliguri"
+        >
+          <div className="bg-[#071912] border-2 border-emerald-600/80 rounded-3xl w-full max-w-md p-6 shadow-2xl flex flex-col items-center text-center gap-4 text-slate-100 relative">
+            {/* Header Close Button */}
+            <div className="w-full flex justify-end">
               <button
                 type="button"
                 onClick={() => setIsMicModalOpen(false)}
                 className="w-8 h-8 rounded-full bg-slate-900 border border-slate-700 text-slate-400 hover:text-white flex items-center justify-center cursor-pointer transition-all"
+                title="বন্ধ করুন"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
-            {/* Status Alert Banner */}
-            <div className={`p-3.5 rounded-2xl border text-xs leading-relaxed flex items-start gap-2.5 ${
-              micPermissionState === "denied"
-                ? "bg-rose-950/70 border-rose-600/70 text-rose-200"
-                : micPermissionState === "not_found"
-                ? "bg-amber-950/70 border-amber-600/70 text-amber-200"
-                : "bg-emerald-950/70 border-emerald-600/70 text-emerald-200"
-            }`}>
-              <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-current" />
-              <div>
-                <p className="font-bold">
-                  {micPermissionState === "denied"
-                    ? "ব্রাউজারে মাইক্রোফোনের অনুমতি (Permission) বন্ধ বা ব্লক করা আছে!"
-                    : micPermissionState === "not_found"
-                    ? "আপনার কম্পিউটারে কোনো মাইক্রোফোন খুঁজে পাওয়া যায়নি!"
-                    : "মাইক্রোফোন ব্যবহারের জন্য ব্রাউজারের অনুমতি প্রয়োজন।"}
-                </p>
-                <p className="text-[11px] opacity-90 mt-0.5">
-                  নিচের ৩টি সহজ ধাপ অনুসরণ করে মাইকটি সক্রিয় করে নিন:
-                </p>
-              </div>
+            {/* Glowing Icon */}
+            <div className="w-20 h-20 rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center text-white shadow-xl shadow-emerald-900/60 ring-4 ring-emerald-500/30 animate-pulse">
+              <Mic className="w-10 h-10" />
             </div>
 
-            {/* Step-by-Step Instructions */}
-            <div className="space-y-2.5 text-xs">
-              <div className="p-3 rounded-xl bg-[#040e0a] border border-emerald-900/60 flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-emerald-600/30 text-emerald-300 border border-emerald-500/50 flex items-center justify-center font-bold shrink-0 text-xs">
-                  ১
-                </span>
-                <div>
-                  <p className="font-extrabold text-white">ব্রাউজারের অ্যাড্রেস বারের তালা (🔒) আইকনে ক্লিক করুন</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    উপরে যেখানে <code>localhost:3000</code> লেখা আছে, তার ঠিক বাম পাশে থাকা তালা <strong>(🔒)</strong> অথবা সাইট সেটিংস স্লাইডার আইকনে ক্লিক করুন।
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-[#040e0a] border border-emerald-900/60 flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-emerald-600/30 text-emerald-300 border border-emerald-500/50 flex items-center justify-center font-bold shrink-0 text-xs">
-                  ২
-                </span>
-                <div>
-                  <p className="font-extrabold text-white">Microphone অপশনটি &quot;Allow&quot; (অনুমতি দিন) করুন</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    ড্রপডাউন থেকে <strong>Allow (অনুমতি)</strong> সিলেক্ট করুন বা টগলটি অন করুন।
-                  </p>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-[#040e0a] border border-emerald-900/60 flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full bg-emerald-600/30 text-emerald-300 border border-emerald-500/50 flex items-center justify-center font-bold shrink-0 text-xs">
-                  ৩
-                </span>
-                <div>
-                  <p className="font-extrabold text-white">উইন্ডোজ সেটিংস ও হেডফোন চেক করুন</p>
-                  <p className="text-[11px] text-slate-400 mt-0.5">
-                    কম্পিউটারে হেডফোন বা মাইকের তার সঠিকভাবে লাগানো আছে কিনা এবং উইন্ডোজের <strong>Settings &gt; Privacy &gt; Microphone</strong> এ মাইক পারমিশন অন আছে কিনা তা দেখুন।
-                  </p>
-                </div>
-              </div>
+            {/* Title & Description */}
+            <div className="space-y-1.5">
+              <h3 className="text-xl font-black text-white">
+                মাইক্রোফোন ব্যবহারের অনুমতি দিন
+              </h3>
+              <p className="text-xs text-slate-300 leading-relaxed max-w-sm">
+                নূর এআই আপনার মুখের তিলাওয়াত শুনে সঠিক উচ্চারণ ও তাজবীদ যাচাই করতে মাইক্রোফোন ব্যবহার করবে।
+              </p>
             </div>
 
-            {/* Actions */}
-            <div className="pt-2 flex items-center justify-between gap-3 border-t border-emerald-900/40">
-              <button
-                type="button"
-                onClick={() => {
-                  if (typeof window !== "undefined") window.location.reload();
-                }}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 text-xs font-bold transition-all cursor-pointer"
-              >
-                পেজ রিলোড করুন (F5)
-              </button>
+            {/* Mic denied — step-by-step guide */}
+            {micPermissionState === "denied" && (
+              <div className="w-full rounded-2xl bg-rose-950/80 border border-rose-600/70 text-xs text-rose-100 text-left overflow-hidden">
+                <div className="flex items-center gap-2 p-3 border-b border-rose-700/60 bg-rose-900/40">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-400" />
+                  <p className="font-extrabold text-rose-200">মাইক বন্ধ আছে — নিচের ধাপগুলো অনুসরণ করুন:</p>
+                </div>
+                <ol className="p-3 space-y-2.5 text-[11.5px] leading-relaxed text-rose-100">
+                  <li className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">1</span>
+                    <span>ব্রাউজারের অ্যাড্রেস বারের বাঁদিকে <strong className="text-white">🔒 তালা আইকন</strong>ে ক্লিক করুন</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-rose-600 text-white font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">2</span>
+                    <span><strong className="text-white">Microphone</strong> অপশন → <strong className="text-emerald-300">Allow (অনুমতি দিন)</strong> সিলেক্ট করুন</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <span className="w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-[10px] flex items-center justify-center shrink-0 mt-0.5">3</span>
+                    <span>Allow দেওয়ার পর নিচের বাটনে ক্লিক করুন — মাইক সরাসরি সক্রিয় হয়ে যাবে!</span>
+                  </li>
+                </ol>
+              </div>
+            )}
 
+            {/* Mic not found */}
+            {micPermissionState === "not_found" && (
+              <div className="w-full p-3 rounded-2xl bg-amber-950/80 border border-amber-600/70 text-xs text-amber-100 text-left flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-amber-400" />
+                <div>
+                  <p className="font-bold">কোনো মাইক্রোফোন ডিভাইস পাওয়া যায়নি!</p>
+                  <p className="text-[11px] opacity-90 mt-0.5">হেডফোন বা ইউএসবি মাইক প্লাগ-ইন করুন, তারপর আবার চেষ্টা করুন।</p>
+                </div>
+              </div>
+            )}
+
+            {/* Primary Action Button */}
+            <div className="w-full pt-2 flex flex-col gap-2.5">
               <button
                 type="button"
                 onClick={handleTestMicrophone}
                 disabled={isMicTesting}
-                className="px-5 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-extrabold shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1.5"
+                className="w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-white font-extrabold text-sm shadow-xl shadow-emerald-900/60 flex items-center justify-center gap-2.5 active:scale-95 transition-all cursor-pointer ring-4 ring-emerald-500/20"
               >
-                <Mic className="w-3.5 h-3.5" />
-                <span>{isMicTesting ? "যাচাই হচ্ছে..." : "আবার মাইক পরীক্ষা করুন"}</span>
+                <Mic className="w-5 h-5 fill-current" />
+                <span>
+                  {isMicTesting
+                    ? "অনুমতি যাচাই হচ্ছে..."
+                    : micPermissionState === "denied"
+                      ? "🎤 Allow দেওয়ার পর আবার চেষ্টা করুন"
+                      : "🎤 হ্যাঁ, মাইক্রোফোন চালু করুন (Allow)"}
+                </span>
+              </button>
+
+              {micPermissionState === "denied" && (
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="w-full py-3 rounded-xl bg-blue-900/50 hover:bg-blue-800/70 border border-blue-600/60 text-blue-200 hover:text-white text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  🔄 Allow করার পর পেজ রিলোড করুন (F5)
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsMicModalOpen(false)}
+                className="w-full py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-400 hover:text-slate-200 text-xs font-bold transition-all cursor-pointer"
+              >
+                পরে করব / বন্ধ করুন
               </button>
             </div>
+
+            <p className="text-[10px] text-slate-400">
+              🔒 আপনার কণ্ঠ সম্পূর্ণ নিরাপদ এবং শুধুমাত্র আপনার পড়ার তাজবীদ মূল্যায়নে ব্যবহৃত হবে।
+            </p>
           </div>
         </div>
       )}

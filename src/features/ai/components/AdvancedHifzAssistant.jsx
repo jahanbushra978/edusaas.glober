@@ -25,8 +25,8 @@ import {
   SHAYKH_REGISTRY,
   DEFAULT_SHAYKH_ID,
   getActiveShaykhId,
-  getQariAudioUrl,
 } from "@/lib/ai/qari-registry";
+import { universalAudioEngine } from "@/lib/quran/audio";
 import { playMaShaAllahCelebration } from "@/features/ai-learning/lib/arabicSoundPlayer";
 import { appClient } from "@/api/appClient";
 
@@ -172,6 +172,7 @@ export default function AdvancedHifzAssistant({ studentContext, className = "" }
 
   // Stop all audio & recognition
   const stopAllAudio = useCallback(() => {
+    universalAudioEngine.stopAll();
     if (audioQariRef.current) {
       audioQariRef.current.pause();
       audioQariRef.current = null;
@@ -206,7 +207,7 @@ export default function AdvancedHifzAssistant({ studentContext, className = "" }
     };
   }, [stopAllAudio]);
 
-  // Play / Pause Authentic Qari
+  // Play / Pause Authentic Qari via Central Universal Audio Engine
   const handleToggleQari = () => {
     if (isPlayingQari) {
       stopAllAudio();
@@ -217,27 +218,17 @@ export default function AdvancedHifzAssistant({ studentContext, className = "" }
     stopAllAudio();
 
     const ayahNum = currentAyah.numberInSurah || activeAyahIndex + 1;
-    const audioUrl = getQariAudioUrl(selectedShaykhId, selectedSurahId, ayahNum);
-
-    const audio = new Audio(audioUrl);
-    audio.playbackRate = playbackSpeed;
-    audioQariRef.current = audio;
     setIsPlayingQari(true);
 
-    audio.onended = () => {
-      setIsPlayingQari(false);
-      audioQariRef.current = null;
-    };
-
-    audio.onerror = () => {
-      setIsPlayingQari(false);
-      audioQariRef.current = null;
-      toast.error("ক্বারীর অডিও প্লে করতে সমস্যা হয়েছে।");
-    };
-
-    audio.play().catch(() => {
-      setIsPlayingQari(false);
-      audioQariRef.current = null;
+    universalAudioEngine.playAyah(selectedSurahId, ayahNum, selectedShaykhId, {
+      rate: playbackSpeed,
+      onEnd: () => {
+        setIsPlayingQari(false);
+      },
+      onError: () => {
+        setIsPlayingQari(false);
+        toast.error("ক্বারীর অডিও প্লে করতে সমস্যা হয়েছে।");
+      },
     });
   };
 

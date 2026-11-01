@@ -10,6 +10,8 @@ import {
   RotateCcw,
   BarChart3,
   Gamepad2,
+  Sparkles,
+  Layers,
 } from "lucide-react";
 import { useLearningLanguage } from "../hooks/useLearningLanguage";
 
@@ -17,10 +19,12 @@ export default function PathCategorySelector({ activePath, onSelectPath }) {
   const { t, dir } = useLearningLanguage();
 
   const paths = [
-    { id: "qaida", label: t.paths.qaida, icon: BookOpen, badge: t.badges?.qaida || "12" },
-    { id: "teacher", label: t.paths.teacher, icon: Bot, badge: t.badges?.teacher || "Live" },
+    { id: "qaida", label: t.paths.qaida, icon: BookOpen, badge: t.badges?.qaida || "17" },
+    { id: "makhraj", label: "মাখরাজ (المخارج)", icon: Layers, badge: "17" },
+    { id: "sifat", label: "সিফাতুল হুরুফ (الصفات)", icon: Sparkles, badge: "18" },
+    { id: "tajweed", label: "তাজবিদ (التجويد)", icon: Award, badge: "8" },
     { id: "nazera", label: t.paths.nazera, icon: Eye, badge: t.badges?.nazera || "114" },
-    { id: "tajweed", label: t.paths.tajweed, icon: Award, badge: t.badges?.tajweed || "17" },
+    { id: "teacher", label: t.paths.teacher, icon: Bot, badge: t.badges?.teacher || "Live" },
     { id: "hifz", label: t.paths.hifz, icon: Bookmark, badge: t.badges?.hifz || "Hifz" },
     { id: "murajaah", label: t.paths.murajaah, icon: RotateCcw, badge: t.badges?.murajaah || "Dour" },
     { id: "games", label: t.paths.games || "খেলে শিখি (গেমস)", icon: Gamepad2, badge: t.badges?.games || "গেম" },

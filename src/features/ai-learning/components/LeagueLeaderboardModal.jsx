@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { X, Trophy, Award, ArrowUp } from "lucide-react";
+import { X, Trophy, ArrowUp } from "lucide-react";
 import { useLearningLanguage } from "../hooks/useLearningLanguage";
 
 export default function LeagueLeaderboardModal({

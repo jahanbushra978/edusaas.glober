@@ -31,6 +31,8 @@ import {
   parseHafiziSearchQuery
 } from "@/lib/quran/hafizi-pages";
 import { useBanglaAudioEngine } from "@/lib/quran/bangla-audio-engine";
+import { loadChapterSegments, getActiveArabicWordIndex } from "@/lib/quran/quran-audio-timing";
+import { universalAudioEngine, audioCache } from "@/lib/quran/audio";
 
 const STORAGE_LAST_READ = "rahmania_quran_last_read_v1";
 const STORAGE_BOOKMARKS = "rahmania_quran_bookmarks_v1";
@@ -117,6 +119,13 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
       stopBanglaAudio();
     };
   }, [stopBanglaAudio]);
+
+  // Pre-load QuranCDN millisecond-accurate word timing segments for active Surah & Qari
+  useEffect(() => {
+    if (selectedSurahId) {
+      loadChapterSegments(selectedSurahId, selectedQari);
+    }
+  }, [selectedSurahId, selectedQari]);
 
   const hafiziSearchMatch = useMemo(() => {
     return parseHafiziSearchQuery(searchQuery);
@@ -256,9 +265,18 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
     const currentSurah = surahDataRef.current;
     if (!currentSurah?.ayahs?.length) return;
 
+    universalAudioEngine.stopAll();
+
     const audioUrl = getAyahAudioUrl(selectedQariRef.current, selectedSurahIdRef.current, ayahNumber);
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
+    audioRef.current = audioCache.getOrCreate(audioUrl);
+
+    // Predictive preload next Ayah
+    if (ayahNumber < currentSurah.ayahs.length) {
+      universalAudioEngine.preload({
+        surahNumber: selectedSurahIdRef.current,
+        ayahNumber: ayahNumber + 1,
+        qariId: selectedQariRef.current,
+      });
     }
 
     // Reset loop counter on newly selected or advanced Ayah
@@ -287,42 +305,28 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
       if (audioRef.current) audioRef.current.playbackRate = playbackSpeedRef.current;
     };
 
-    // Word-by-word tracking during playback
+    // Precise word-by-word tracking during playback (QuranCDN Millisecond Segments + Tajweed Pacing)
     audioRef.current.ontimeupdate = () => {
       if (!audioRef.current) return;
       const { currentTime, duration } = audioRef.current;
       if (!duration || isNaN(duration)) return;
 
-      const progress = Math.min(0.999, Math.max(0, currentTime / duration));
       const currentAyahObj = surahDataRef.current?.ayahs?.find((a) => a.numberInSurah === ayahNumber);
       if (!currentAyahObj) return;
 
       const words = currentAyahObj.words && currentAyahObj.words.length > 0
         ? currentAyahObj.words
         : currentAyahObj.text.trim().split(/\s+/);
-      const totalWords = words.length;
-      if (totalWords <= 1) {
-        setActiveWordIndex(0);
-        return;
-      }
 
-      // Proportional weighted pacing
-      const weights = words.map((w, idx) => {
-        const txt = typeof w === "string" ? w : (w.ar || w.text || "");
-        const cleanLen = txt.replace(/[\u064B-\u065F\u0670]/g, "").length || 3;
-        return cleanLen + (idx === totalWords - 1 ? 2.5 : 0);
+      const computedIndex = getActiveArabicWordIndex({
+        currentTime,
+        duration,
+        surahNumber: selectedSurahId,
+        ayahNumber,
+        qariId: selectedQari,
+        words,
       });
-      const totalWeight = weights.reduce((sum, wt) => sum + wt, 0);
 
-      let accumulated = 0;
-      let computedIndex = 0;
-      for (let i = 0; i < totalWords; i++) {
-        accumulated += weights[i] / totalWeight;
-        if (progress < accumulated || i === totalWords - 1) {
-          computedIndex = i;
-          break;
-        }
-      }
       setActiveWordIndex(computedIndex);
     };
 
@@ -446,6 +450,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
 
   // Explicitly close player bar and reset
   const closePlayerBar = () => {
+    universalAudioEngine.stopAll();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;

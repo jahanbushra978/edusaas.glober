@@ -8,6 +8,7 @@ export default [
   {
     ignores: [
       ".next/**/*",
+      "noor-kids/**/*",
       "node_modules/**/*",
       ".buildcheck/**/*",
       "public/**/*",

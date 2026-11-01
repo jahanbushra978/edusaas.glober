@@ -1,0 +1,299 @@
+/**
+ * Authentic Noorani Qaida Master Qari Recordings & Tajweed Rules Audio Map
+ * Rahmania Institute / Nur AI Quran Learning Platform
+ * 
+ * Maps Sukoon, Qalqalah, Harakat, Tanween, Madd, and Tajweed examples
+ * to authentic human studio recordings (Noorani Master tracks & Quran.com WBW CDN).
+ * 
+ * STRICT ARCHITECTURAL INVARIANT:
+ * ZERO ROBOTIC BROWSER TTS (synthetic speech is strictly prohibited).
+ */
+
+export const AUTHENTIC_TAJWEED_AUDIO_MAP = {
+  // Noorani Qaida Takhti 10: Sukoon (Jazm) & Qalqalah Master Qari Audio
+  "أَبْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-1.m4a", // Qalqalah
+  "إِبْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-2.m4a", // Qalqalah
+  "أُبْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-3.m4a", // Qalqalah
+  "أَتْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-4.m4a",
+  "إِتْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-5.m4a",
+  "أُتْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-6.m4a",
+  "أَثْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-7.m4a",
+  "إِثْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-8.m4a",
+  "أُثْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-9.m4a",
+  "أَجْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-10.m4a", // Qalqalah
+  "إِجْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-11.m4a", // Qalqalah
+  "أُجْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-12.m4a", // Qalqalah
+  "أَحْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-13.m4a",
+  "إِحْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-14.m4a",
+  "أُحْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-15.m4a",
+  "أَخْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-16.m4a",
+  "إِخْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-17.m4a",
+  "أُخْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-18.m4a",
+  "أَدْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-19.m4a", // Qalqalah
+  "إِدْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-20.m4a", // Qalqalah
+  "أُدْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-21.m4a", // Qalqalah
+  "أَذْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-22.m4a",
+  "إِذْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-23.m4a",
+  "أُذْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-24.m4a",
+  "أَرْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-25.m4a",
+  "إِرْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-26.m4a",
+  "أُرْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-27.m4a",
+  "أَزْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-28.m4a",
+  "إِزْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-29.m4a",
+  "أُزْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-30.m4a",
+  "أَسْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-1.m4a",
+  "إِسْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-2.m4a",
+  "أُسْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-3.m4a",
+  "أَشْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-4.m4a",
+  "أَصْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-7.m4a",
+  "أَضْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-10.m4a",
+  "أَطْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-13.m4a", // Qalqalah
+  "إِطْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-14.m4a", // Qalqalah
+  "أُطْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-15.m4a", // Qalqalah
+  "أَظْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-16.m4a",
+  "أَعْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-19.m4a",
+  "أَقْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter11/Page20-29.m4a", // Qalqalah
+  "إِقْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter11/Page20-30.m4a", // Qalqalah
+  "أُقْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter11/Page20-31.m4a", // Qalqalah
+
+  // Quranic Words & Short Verses (EveryAyah & QuranCDN Master Qari Recitations)
+  "قُلْ": "https://audio.qurancdn.com/wbw/112_001_001.mp3",
+  "بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ": "https://everyayah.com/data/Alafasy_128kbps/001001.mp3",
+  "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ": "https://everyayah.com/data/Alafasy_128kbps/001002.mp3",
+  "الرَّحْمَٰنِ الرَّحِيمِ": "https://everyayah.com/data/Alafasy_128kbps/001003.mp3",
+  "مَالِكِ يَوْمِ الدِّينِ": "https://everyayah.com/data/Alafasy_128kbps/001004.mp3",
+  "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ": "https://everyayah.com/data/Alafasy_128kbps/001005.mp3",
+  "اهْدِنَا الصِّرَاطَ الْمُسْتَقِيمَ": "https://everyayah.com/data/Alafasy_128kbps/001006.mp3",
+  "صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ الْمَغْضُوبِ عَلَيْهِمْ وَلَا الضَّالِّينَ": "https://everyayah.com/data/Alafasy_128kbps/001007.mp3",
+  "قُلْ هُوَ اللَّهُ أَحَدٌ": "https://everyayah.com/data/Alafasy_128kbps/112001.mp3",
+  "اللَّهُ الصَّمَدُ": "https://everyayah.com/data/Alafasy_128kbps/112002.mp3",
+  "لَمْ يَلِدْ وَلَمْ يُولَدْ": "https://everyayah.com/data/Alafasy_128kbps/112003.mp3",
+  "وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ": "https://everyayah.com/data/Alafasy_128kbps/112004.mp3",
+  "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ": "https://everyayah.com/data/Alafasy_128kbps/113001.mp3",
+  "مِن شَرِّ مَا خَلَقَ": "https://everyayah.com/data/Alafasy_128kbps/113002.mp3",
+  "وَمِن شَرِّ غَاسِقٍ إِذَا وَقَبَ": "https://everyayah.com/data/Alafasy_128kbps/113003.mp3",
+  "وَمِن شَرِّ النَّفَّاثَاتِ فِي الْعُقَدِ": "https://everyayah.com/data/Alafasy_128kbps/113004.mp3",
+  "وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ": "https://everyayah.com/data/Alafasy_128kbps/113005.mp3",
+  "قُلْ أَعُوذُ بِرَبِّ النَّاسِ": "https://everyayah.com/data/Alafasy_128kbps/114001.mp3",
+  "مَلِكِ النَّاسِ": "https://everyayah.com/data/Alafasy_128kbps/114002.mp3",
+  "إِلَٰهِ النَّاسِ": "https://everyayah.com/data/Alafasy_128kbps/114003.mp3",
+  "مِن شَرِّ الْوَسْوَاسِ الْخَنَّاسِ": "https://everyayah.com/data/Alafasy_128kbps/114004.mp3",
+  "الَّذِي يُوَسْوِسُ فِي صُدُورِ النَّاسِ": "https://everyayah.com/data/Alafasy_128kbps/114005.mp3",
+  "مِنَ الْجِنَّةِ وَالنَّاسِ": "https://everyayah.com/data/Alafasy_128kbps/114006.mp3",
+  "الضَّالِّينَ": "https://audio.qurancdn.com/wbw/001_007_009.mp3",
+  "وَلَا الضَّالِّينَ": "https://audio.qurancdn.com/wbw/001_007_009.mp3",
+  "ٱلضَّآلِّينَ": "https://audio.qurancdn.com/wbw/001_007_009.mp3",
+
+  // Level 4 Tajweed Examples (Iqlab, Idgham, Ikhfa, Izhar)
+  "مِن بَعْدِ": [
+    "https://audio.qurancdn.com/wbw/002_027_005.mp3",
+    "https://audio.qurancdn.com/wbw/002_027_006.mp3",
+  ],
+  "بَعْدِ": "https://audio.qurancdn.com/wbw/002_027_006.mp3",
+  "مَن يَقُولُ": [
+    "https://audio.qurancdn.com/wbw/002_008_003.mp3",
+    "https://audio.qurancdn.com/wbw/002_008_004.mp3",
+  ],
+  "مِن قَبْلُ": [
+    "https://audio.qurancdn.com/wbw/002_004_008.mp3",
+    "https://audio.qurancdn.com/wbw/002_004_009.mp3",
+  ],
+  "أَنتُمْ": "https://audio.qurancdn.com/wbw/109_003_002.mp3",
+  "وَأَنتُمْ": "https://audio.qurancdn.com/wbw/002_022_023.mp3",
+  "مِن دُونِ": [
+    "https://audio.qurancdn.com/wbw/002_023_015.mp3",
+    "https://audio.qurancdn.com/wbw/002_023_016.mp3",
+  ],
+  "رَبِّ": "https://audio.qurancdn.com/wbw/001_002_003.mp3",
+  "اللَّهِ": "https://audio.qurancdn.com/wbw/001_001_002.mp3",
+  "اللَّهُ": "https://audio.qurancdn.com/wbw/112_002_001.mp3",
+  "بِاللَّهِ": "https://audio.qurancdn.com/wbw/002_008_006.mp3",
+  "مَنْ آمَنَ": [
+    "https://audio.qurancdn.com/wbw/002_062_008.mp3",
+    "https://audio.qurancdn.com/wbw/002_062_009.mp3",
+  ],
+  "مَن آمَنَ": [
+    "https://audio.qurancdn.com/wbw/002_062_008.mp3",
+    "https://audio.qurancdn.com/wbw/002_062_009.mp3",
+  ],
+  "عَذَابٌ أَلِيمٌ": [
+    "https://audio.qurancdn.com/wbw/002_010_003.mp3",
+    "https://audio.qurancdn.com/wbw/002_010_004.mp3",
+  ],
+  "عَلِيمٌ حَكِيمٌ": [
+    "https://audio.qurancdn.com/wbw/027_006_006.mp3",
+    "https://audio.qurancdn.com/wbw/027_006_007.mp3",
+  ],
+  "تَرْمِيهِم بِحِجَارَةٍ": [
+    "https://audio.qurancdn.com/wbw/105_004_001.mp3",
+    "https://audio.qurancdn.com/wbw/105_004_002.mp3",
+  ],
+  "لَهُم مَّا": [
+    "https://audio.qurancdn.com/wbw/050_035_001.mp3",
+    "https://audio.qurancdn.com/wbw/050_035_002.mp3",
+  ],
+  "هُمْ فِيهَا": [
+    "https://audio.qurancdn.com/wbw/002_082_009.mp3",
+    "https://audio.qurancdn.com/wbw/002_082_010.mp3",
+  ],
+  "مِن رَّبِّهِمْ": [
+    "https://audio.qurancdn.com/wbw/002_005_004.mp3",
+    "https://audio.qurancdn.com/wbw/002_005_005.mp3",
+  ],
+  "مِن رَّبِّهِم": [
+    "https://audio.qurancdn.com/wbw/002_005_004.mp3",
+    "https://audio.qurancdn.com/wbw/002_005_005.mp3",
+  ],
+  "بِمَا أُنزِلَ": [
+    "https://audio.qurancdn.com/wbw/002_004_003.mp3",
+    "https://audio.qurancdn.com/wbw/002_004_004.mp3",
+  ],
+  "بِمَآ أُنزِلَ": [
+    "https://audio.qurancdn.com/wbw/002_004_003.mp3",
+    "https://audio.qurancdn.com/wbw/002_004_004.mp3",
+  ],
+
+  // Noorani Qaida Takhti 4: Harakat (Zabar / Fathah, Zer / Kasrah, Pesh / Dammah)
+  "بَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-9.m4a",
+  "بِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-10.m4a",
+  "بُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-11.m4a",
+  "بْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-1.m4a",
+  "تَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-22.m4a",
+  "تِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-23.m4a",
+  "تُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-24.m4a",
+  "تْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-4.m4a",
+  "ثَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-37.m4a",
+  "ثِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-38.m4a",
+  "ثُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-39.m4a",
+  "ثْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-7.m4a",
+  "جَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-25.m4a",
+  "جِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-26.m4a",
+  "جُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-27.m4a",
+  "جْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-10.m4a",
+  "حْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-13.m4a",
+  "خْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-16.m4a",
+  "دْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-19.m4a",
+  "ذْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-22.m4a",
+  "رْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-25.m4a",
+  "زْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-28.m4a",
+  "سْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-1.m4a",
+  "شْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-4.m4a",
+  "صْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-7.m4a",
+  "ضْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-10.m4a",
+  "طْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-13.m4a",
+  "ظْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-16.m4a",
+  "عْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page20-19.m4a",
+  "أَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-1.m4a",
+  "إِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-2.m4a",
+  "أُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-3.m4a",
+  "ءَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-1.m4a",
+  "ءِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-2.m4a",
+  "ءُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-3.m4a",
+  "اَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-1.m4a",
+  "اِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-2.m4a",
+  "اُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-3.m4a",
+  "هَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-4.m4a",
+  "هِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-5.m4a",
+  "هُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-6.m4a",
+  "عَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-7.m4a",
+  "عِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-8.m4a",
+  "عُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-9.m4a",
+  "حَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-10.m4a",
+  "حِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-11.m4a",
+  "حُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-12.m4a",
+  "غَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-13.m4a",
+  "غِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-14.m4a",
+  "غُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-15.m4a",
+  "خَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-16.m4a",
+  "خِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-17.m4a",
+  "خُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-18.m4a",
+  "قَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-19.m4a",
+  "قِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-20.m4a",
+  "قُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-21.m4a",
+  "كَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-22.m4a",
+  "كِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-23.m4a",
+  "كُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-24.m4a",
+  "شَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-28.m4a",
+  "شِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-29.m4a",
+  "شُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page7-30.m4a",
+  "يَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-1.m4a",
+  "يِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-2.m4a",
+  "يُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-3.m4a",
+  "ضَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-4.m4a",
+  "ضِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-5.m4a",
+  "ضُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-6.m4a",
+  "لَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-7.m4a",
+  "لِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-8.m4a",
+  "لُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-9.m4a",
+  "نَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-10.m4a",
+  "نِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-11.m4a",
+  "نُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-12.m4a",
+  "رَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-13.m4a",
+  "رِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-14.m4a",
+  "رُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-15.m4a",
+  "طَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-16.m4a",
+  "طِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-17.m4a",
+  "طُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-18.m4a",
+  "دَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-19.m4a",
+  "دِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-20.m4a",
+  "دُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-21.m4a",
+  "صَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-25.m4a",
+  "صِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-26.m4a",
+  "صُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-27.m4a",
+  "زَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-28.m4a",
+  "زِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-29.m4a",
+  "زُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-30.m4a",
+  "سَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-31.m4a",
+  "سِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-32.m4a",
+  "سُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-33.m4a",
+  "ظَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-34.m4a",
+  "ظِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-35.m4a",
+  "ظُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-36.m4a",
+  "ذَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-37.m4a",
+  "ذِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-38.m4a",
+  "ذُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-39.m4a",
+  "فَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-3.m4a",
+  "فِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-4.m4a",
+  "فُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-5.m4a",
+  "وَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-6.m4a",
+  "وِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-7.m4a",
+  "وُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-8.m4a",
+  "مَ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-12.m4a",
+  "مِ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-13.m4a",
+  "مُ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-14.m4a",
+
+  // Tanween (Double Vowels - Takhti 5 Master Qari Recordings)
+  "بً": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter05/Page9-18.m4a",
+  "بٍ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter05/Page9-19.m4a",
+  "بٌ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter05/Page9-20.m4a",
+  "تً": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter05/Page10-16.m4a",
+  "تٍ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter05/Page10-17.m4a",
+  "تٌ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter05/Page10-18.m4a",
+
+  // Madd Asli (Takhti 8 Master Recordings)
+  "بَا": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter08/Page13-26.m4a",
+  "بُو": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter08/Page13-27.m4a",
+  "بُوْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter08/Page13-27.m4a",
+  "بِي": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter08/Page13-28.m4a",
+  "بِيْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter08/Page13-28.m4a",
+
+  // Standing Harakat (Khada Zabar, Khada Zer, Ulta Pesh - Takhti 7 Master Qari Recordings)
+  "مٰ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-28.m4a",
+  "مٖ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-28.m4a",
+  "مٗ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-28.m4a",
+  "بٖ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-25.m4a",
+  "بٰ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-25.m4a",
+  "بٗ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-25.m4a",
+  "لٗ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-29.m4a",
+  "لٰ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-29.m4a",
+  "لٖ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-29.m4a",
+  "لُو": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-29.m4a",
+  "لَا": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-29.m4a",
+  "لِي": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-29.m4a",
+  "مَا": "https://audio.qurancdn.com/wbw/109_002_003.mp3",
+  "مِي": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-28.m4a",
+  "مُو": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter07/Page12-28.m4a",
+};
+
+export default AUTHENTIC_TAJWEED_AUDIO_MAP;
+

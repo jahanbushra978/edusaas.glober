@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { X, Volume2, Award, Heart, Flame } from "lucide-react";
+import { X, Volume2 } from "lucide-react";
 import { useLearningLanguage } from "../hooks/useLearningLanguage";
 import { playTapSound } from "../lib/arabicSoundPlayer";
 

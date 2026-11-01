@@ -1201,3 +1201,31 @@ select:focus-visible,
   box-shadow: 0 12px 36px -4px rgba(13, 122, 95, 0.14), 0 4px 12px -2px rgba(0, 0, 0, 0.05);
 }
 
+/* ── KIDS MODE ACCESSIBILITY & TOUCH INTERACTION ── */
+.kids-font {
+  font-family: var(--font-kids), var(--font-hind-siliguri), sans-serif;
+}
+
+.kids-tap {
+  transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.15s ease;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.kids-tap:active {
+  transform: scale(0.94);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kids-tap,
+  .animate-kids-float,
+  .animate-kids-wiggle,
+  .animate-kids-pop,
+  .animate-kids-twinkle {
+    animation: none !important;
+    transform: none !important;
+    transition: none !important;
+  }
+}
+
+

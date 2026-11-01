@@ -8,9 +8,11 @@ import {
   CheckCircle2,
   AlertCircle,
   ShieldCheck,
-  UserCheck,
+  Send,
 } from "lucide-react";
 import { useLearningLanguage } from "../hooks/useLearningLanguage";
+import { universalAudioEngine } from "@/lib/quran/audio";
+import { submitRecitationForReview } from "../lib/recitationReviewBridge";
 
 export default function QuranRecitationAssessment({
   verseAr = "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ",
@@ -23,17 +25,18 @@ export default function QuranRecitationAssessment({
   const displayMeaning = verseMeaning || t.honestAssessment?.fatihaMeaning || "";
 
   const [isRecording, setIsRecording] = useState(false);
-  const [assessmentStatus, setAssessmentStatus] = useState("idle"); // 'idle' | 'recording' | 'analyzing' | 'completed'
+  const [assessmentStatus, setAssessmentStatus] = useState("idle");
   const [assessmentResult, setAssessmentResult] = useState(null);
+  const [isSubmittedToUstadh, setIsSubmittedToUstadh] = useState(false);
   const recognitionRef = useRef(null);
   const transcriptRef = useRef("");
 
-  // Start Voice Recording
   const startRecording = () => {
     transcriptRef.current = "";
     setIsRecording(true);
     setAssessmentStatus("recording");
     setAssessmentResult(null);
+    setIsSubmittedToUstadh(false);
 
     if (typeof window !== "undefined") {
       const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -59,7 +62,6 @@ export default function QuranRecitationAssessment({
     }
   };
 
-  // Stop Recording and Perform Honest Assessment
   const stopRecordingAndAssess = async () => {
     setIsRecording(false);
     if (recognitionRef.current) {
@@ -70,15 +72,11 @@ export default function QuranRecitationAssessment({
     }
 
     setAssessmentStatus("analyzing");
-
-    // Allow slight buffer
     await new Promise((resolve) => setTimeout(resolve, 800));
 
     const cleanTranscript = (transcriptRef.current || "").trim();
 
-    // STRICT HONEST ASSESSMENT LOGIC
     if (!cleanTranscript) {
-      // Audio uncertain or no Arabic words detected
       setAssessmentResult({
         category: "uncertain_assessment",
         score: 45,
@@ -91,7 +89,6 @@ export default function QuranRecitationAssessment({
       return;
     }
 
-    // Normalized word comparison
     const targetWords = verseAr.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "").split(/\s+/);
     const spokenWords = cleanTranscript.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "").split(/\s+/);
 
@@ -105,7 +102,6 @@ export default function QuranRecitationAssessment({
     const ratio = matchCount / targetWords.length;
 
     if (ratio >= 0.8) {
-      // Confirmed high accuracy
       setAssessmentResult({
         category: "passed",
         score: Math.round(ratio * 100),
@@ -116,7 +112,6 @@ export default function QuranRecitationAssessment({
       });
       if (onPassed) onPassed();
     } else if (ratio >= 0.4) {
-      // Potential pronunciation flaw or partial match
       setAssessmentResult({
         category: "moderate",
         score: Math.round(ratio * 100),
@@ -126,7 +121,6 @@ export default function QuranRecitationAssessment({
         recommendation: t.honestAssessment?.moderateRec || "হরফগুলোর মাখরাজ পয়েন্ট দেখে ধীরেসুস্থে মাশক করুন।",
       });
     } else {
-      // Mismatch
       setAssessmentResult({
         category: "mismatch",
         score: Math.round(ratio * 100),
@@ -140,11 +134,22 @@ export default function QuranRecitationAssessment({
     setAssessmentStatus("completed");
   };
 
+  const handleSendToUstadh = () => {
+    submitRecitationForReview({
+      studentName: "নূর শিক্ষার্থী",
+      rollNo: "N-101",
+      batch: "নূরানী কায়দা ও নাজেরা",
+      examType: "tajweed",
+      examTitle: `কুরআন তিলাওয়াত: ${verseAr.slice(0, 30)}...`,
+      verseText: verseAr,
+      audioUrl: referenceAudio,
+      aiScore: assessmentResult?.score || 75,
+    });
+    setIsSubmittedToUstadh(true);
+  };
+
   const playReference = () => {
-    try {
-      const audio = new Audio(referenceAudio);
-      audio.play().catch(() => {});
-    } catch {}
+    universalAudioEngine.playWord(referenceAudio);
   };
 
   return (
@@ -162,23 +167,25 @@ export default function QuranRecitationAssessment({
         </span>
       </div>
 
-      {/* Target Verse Calligraphy */}
-      <div className="p-4 sm:p-5 rounded-2xl bg-emerald-50/70 dark:bg-[#05140d] border border-emerald-200 dark:border-emerald-700/50 text-center space-y-2">
-        <p dir="rtl" className="font-arabic text-3xl sm:text-4xl font-bold text-emerald-950 dark:text-amber-300 leading-relaxed">
+      <div className="p-4 sm:p-6 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/30 border border-emerald-100 dark:border-emerald-900/50 flex flex-col items-center justify-center text-center space-y-2">
+        <span className="font-uthmani text-2xl sm:text-3xl text-emerald-950 dark:text-emerald-100 leading-relaxed drop-shadow-sm select-all">
           {verseAr}
-        </p>
-        <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium">{displayMeaning}</p>
+        </span>
+        {displayMeaning && (
+          <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 font-medium max-w-lg">
+            {displayMeaning}
+          </p>
+        )}
       </div>
 
-      {/* Actions: Reference Audio & Mic */}
-      <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-3 py-1">
+      <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
         <button
           type="button"
           onClick={playReference}
-          className="px-4 py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200 dark:border-emerald-700 text-slate-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 transition-all cursor-pointer shadow-xs active:scale-95"
+          className="px-4 py-2 rounded-2xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold flex items-center gap-2 transition cursor-pointer active:scale-95 border border-slate-300 dark:border-slate-700"
         >
           <Volume2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          <span>{t.honestAssessment?.listenQari || "আদর্শ ক্বারী তিলাওয়াত শুনুন"}</span>
+          <span>{t.honestAssessment?.listenQari || "ক্বারীর সঠিক তিলাওয়াত শুনুন"}</span>
         </button>
 
         {!isRecording ? (
@@ -202,7 +209,6 @@ export default function QuranRecitationAssessment({
         )}
       </div>
 
-      {/* Assessment Status / Result Box */}
       {assessmentStatus === "analyzing" && (
         <div className="text-center py-3 text-xs text-amber-600 dark:text-amber-300 font-bold animate-pulse">
           {t.honestAssessment?.analyzing || "তিলাওয়াত ধ্বনি ও মাখরাজ বিশ্লেষণ করা হচ্ছে..."}
@@ -211,7 +217,7 @@ export default function QuranRecitationAssessment({
 
       {assessmentResult && (
         <div
-          className={`p-4 rounded-2xl border text-xs space-y-2 animate-fade-in ${
+          className={`p-4 rounded-2xl border text-xs space-y-3 animate-fade-in ${
             assessmentResult.passed
               ? "bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-500 text-emerald-950 dark:text-emerald-100"
               : "bg-amber-50 dark:bg-amber-950/60 border-amber-300 dark:border-amber-500 text-amber-950 dark:text-amber-100"
@@ -236,21 +242,31 @@ export default function QuranRecitationAssessment({
             💡 <strong>{t.honestAssessment?.adviceLabel || "পরামর্শ"}:</strong> {assessmentResult.recommendation}
           </p>
 
-          {!assessmentResult.passed && (
-            <div className="pt-2 flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 border-t border-black/10 dark:border-white/10">
-              <span className="flex items-center gap-1">
-                <UserCheck className="w-3.5 h-3.5" />
-                <span>{t.honestAssessment?.teacherReviewOption || "সন্দেহ হলে উস্তাদের রিভিউ চাওয়া যাবে"}</span>
+          <div className="pt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-600 dark:text-slate-400 border-t border-black/10 dark:border-white/10">
+            {isSubmittedToUstadh ? (
+              <span className="text-emerald-700 dark:text-emerald-300 font-bold flex items-center gap-1 bg-emerald-100/70 dark:bg-emerald-900/60 px-2.5 py-1 rounded-lg">
+                <CheckCircle2 className="w-3.5 h-3.5" />
+                <span>উস্তাদের রিভিউ কিউতে জমা হয়েছে</span>
               </span>
+            ) : (
               <button
                 type="button"
-                onClick={startRecording}
-                className="text-amber-700 dark:text-amber-300 font-bold hover:underline"
+                onClick={handleSendToUstadh}
+                className="px-3 py-1 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5 cursor-pointer transition active:scale-95 shadow-sm"
               >
-                {t.honestAssessment?.tryAgain || "আবার চেষ্টা করুন ➔"}
+                <Send className="w-3.5 h-3.5" />
+                <span>উস্তাদের নিকট পাঠান</span>
               </button>
-            </div>
-          )}
+            )}
+
+            <button
+              type="button"
+              onClick={startRecording}
+              className="text-amber-700 dark:text-amber-300 font-bold hover:underline"
+            >
+              {t.honestAssessment?.tryAgain || "আবার চেষ্টা করুন ➔"}
+            </button>
+          </div>
         </div>
       )}
     </div>

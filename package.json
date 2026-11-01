@@ -10,6 +10,7 @@
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "typecheck": "npx tsc --noEmit --checkJs false --skipLibCheck",
+    "test": "node --test tests/audio-engine.test.mjs tests/audio-engine-integration.test.mjs tests/kids-learning-journey.test.mjs tests/tajweed-sifat.test.mjs tests/complete-audio-engine.test.mjs",
     "preview": "next start"
   },
   "dependencies": {

@@ -12,6 +12,7 @@ import {
   Loader2
 } from "lucide-react";
 import { toast } from "sonner";
+import { universalAudioEngine } from "@/lib/quran/audio";
 
 const QUICK_THEMATIC_PROMPTS = [
   { label: "সালাত ও নামায", query: "সালাত" },
@@ -75,19 +76,21 @@ export default function QuranSemanticSearchModal({ isOpen, onClose, onSelectAyah
 
   if (!isOpen) return null;
 
-  const playVerseAudio = (text, index) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-      toast.error("অডিও প্লেয়ার আপনার ব্রাউজারে উপলব্ধ নয়।");
+  const playVerseAudio = (surah, ayah, index) => {
+    if (typeof window === "undefined") return;
+    if (playingIndex === index) {
+      universalAudioEngine.stopAll();
+      setPlayingIndex(null);
       return;
     }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "ar-SA";
-    utterance.rate = 0.85;
-    utterance.onstart = () => setPlayingIndex(index);
-    utterance.onend = () => setPlayingIndex(null);
-    utterance.onerror = () => setPlayingIndex(null);
-    window.speechSynthesis.speak(utterance);
+    setPlayingIndex(index);
+    universalAudioEngine.playAyah(surah, ayah, null, {
+      onEnd: () => setPlayingIndex(null),
+      onError: () => {
+        setPlayingIndex(null);
+        toast.error("আয়াতের তিলাওয়াত অডিও লোড করতে সমস্যা হয়েছে।");
+      },
+    });
   };
 
   return (
@@ -215,7 +218,7 @@ export default function QuranSemanticSearchModal({ isOpen, onClose, onSelectAyah
                 </div>
                 <div className="flex items-center gap-2">
                   <button
-                    onClick={() => playVerseAudio(verse.arabic, idx)}
+                    onClick={() => playVerseAudio(verse.surah, verse.ayah, idx)}
                     className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition-all flex items-center gap-1 ${
                       playingIndex === idx
                         ? "bg-amber-600 border-amber-500 text-white"

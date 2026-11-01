@@ -38,6 +38,7 @@ import {
   setActiveShaykhId,
   switchAudioUrlQari,
 } from "@/lib/ai/qari-registry";
+import { universalAudioEngine } from "@/lib/quran/audio";
 import NurShaykhSelector from "./NurShaykhSelector";
 import { LESSON_MODULES } from "../lib/nurLessonModules";
 import { getSavedAIConfig } from "../lib/aiConfigHelper";
@@ -258,6 +259,7 @@ export default function NurTeachingEngine({
   };
 
   const stopAllPlayback = () => {
+    universalAudioEngine.stopAll();
     if (audioPlayerRef.current) {
       audioPlayerRef.current.pause();
       audioPlayerRef.current = null;
@@ -267,7 +269,7 @@ export default function NurTeachingEngine({
       teacherAudioRef.current = null;
     }
     if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      window.speechSynthesis.cancel();
+      try { window.speechSynthesis.cancel(); } catch {}
     }
     setAudioPlaying(false);
     setIsExplainingVoice(false);
@@ -311,32 +313,7 @@ export default function NurTeachingEngine({
     }
   };
 
-  const playWebSpeechFallback = () => {
-    if (typeof window === "undefined") return;
-    try {
-      if ("speechSynthesis" in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(activeModule.verseAr);
-        utterance.lang = "ar-SA";
-        utterance.rate = playbackSpeed === 0.75 ? 0.65 : 0.85;
-        utterance.pitch = 1.0;
-        utterance.onend = () => {
-          setAudioPlaying(false);
-          if (currentStep === 2) {
-            toast.success("বিশুদ্ধ ডেমো সমাপ্ত! এবার নিজের কণ্ঠে অনুশীলন করুন।");
-          }
-        };
-        utterance.onerror = () => setAudioPlaying(false);
-        window.speechSynthesis.speak(utterance);
-      } else {
-        setTimeout(() => setAudioPlaying(false), 1200);
-      }
-    } catch {
-      setAudioPlaying(false);
-    }
-  };
-
-  // Step 2: Audio demonstration playback using Authentic Qari Audio / Web Audio
+  // Step 2: Audio demonstration playback via Central Universal Audio Engine (Zero robotic voice)
   const handlePlayDemonstration = () => {
     if (typeof window === "undefined") return;
 
@@ -352,30 +329,29 @@ export default function NurTeachingEngine({
       SHAYKH_REGISTRY.find((q) => q.id === selectedShaykhId) || SHAYKH_REGISTRY[0];
     const resolvedUrl = switchAudioUrlQari(activeModule.audioUrl, selectedShaykhId);
 
-    if (resolvedUrl) {
-      try {
-        const audio = new Audio(resolvedUrl);
-        audioPlayerRef.current = audio;
-        audio.playbackRate = playbackSpeed === 0.75 ? 0.75 : 1.0;
-        audio.onended = () => {
-          setAudioPlaying(false);
-          if (currentStep === 2) {
-            toast.success(
-              `মাশাআল্লাহ! ${activeShaykh.shortNameBn}-এর বিশুদ্ধ তিলাওয়াত সমাপ্ত। এবার নিজের কণ্ঠে অনুশীলন করুন।`
-            );
-          }
-        };
-        audio.onerror = () => {
-          playWebSpeechFallback();
-        };
-        audio.play().catch(() => {
-          playWebSpeechFallback();
-        });
-      } catch {
-        playWebSpeechFallback();
+    const onComplete = () => {
+      setAudioPlaying(false);
+      if (currentStep === 2) {
+        toast.success(
+          `মাশাআল্লাহ! ${activeShaykh.shortNameBn}-এর বিশুদ্ধ তিলাওয়াত সমাপ্ত। এবার নিজের কণ্ঠে অনুশীলন করুন।`
+        );
       }
+    };
+
+    if (resolvedUrl) {
+      universalAudioEngine.playWord(resolvedUrl, {
+        rate: playbackSpeed === 0.75 ? 0.75 : 1.0,
+        onEnd: onComplete,
+        onError: () => setAudioPlaying(false),
+      });
+    } else if (activeModule.verseAr) {
+      universalAudioEngine.playArabicSound(activeModule.verseAr, {
+        rate: playbackSpeed === 0.75 ? 0.75 : 1.0,
+        onEnd: onComplete,
+        onError: () => setAudioPlaying(false),
+      });
     } else {
-      playWebSpeechFallback();
+      setAudioPlaying(false);
     }
   };
 

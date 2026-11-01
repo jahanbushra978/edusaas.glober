@@ -28,6 +28,7 @@ import {
   setActiveShaykhId,
   switchAudioUrlQari,
 } from "@/lib/ai/qari-registry";
+import { universalAudioEngine } from "@/lib/quran/audio";
 import { recordMistakeToMemory, recordModuleCompletion, getLearningMemory } from "@/lib/ai/teaching-rules";
 import { getSavedAIConfig } from "@/features/ai/lib/aiConfigHelper";
 
@@ -106,6 +107,7 @@ export default function AIPracticeGenerator({ studentId = "student_studio", clas
   }, []);
 
   const stopActiveAudio = () => {
+    universalAudioEngine.stopAll();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current = null;
@@ -130,33 +132,15 @@ export default function AIPracticeGenerator({ studentId = "student_studio", clas
   };
 
   const playSingleLoop = () => {
-    const audio = new Audio(activeAudioUrl);
-    audioRef.current = audio;
-    audio.playbackRate = playbackSpeed;
-    audio.volume = volume;
     setPlayingAudioId(currentDrill.id);
 
-    audio.onloadedmetadata = () => {
-      setAudioDuration(audio.duration || 4);
-    };
-
-    const updateProgress = () => {
-      if (!audioRef.current || audioRef.current.paused) return;
-      if (audioRef.current.duration) {
-        setAudioProgress((audioRef.current.currentTime / audioRef.current.duration) * 100);
-      }
-      progressAnimRef.current = requestAnimationFrame(updateProgress);
-    };
-    progressAnimRef.current = requestAnimationFrame(updateProgress);
-
-    audio.onended = () => {
-      if (progressAnimRef.current) cancelAnimationFrame(progressAnimRef.current);
+    const onComplete = () => {
       setAudioProgress(100);
 
       if (repeatCountRef.current < repeatMode) {
         repeatCountRef.current += 1;
         setTimeout(() => {
-          if (audioRef.current) playSingleLoop();
+          playSingleLoop();
         }, 500);
       } else {
         setPlayingAudioId(null);
@@ -165,33 +149,45 @@ export default function AIPracticeGenerator({ studentId = "student_studio", clas
       }
     };
 
-    audio.onerror = () => {
-      playWebSpeechFallback();
-    };
-
-    audio.play().catch(() => {
-      playWebSpeechFallback();
-    });
-  };
-
-  const playWebSpeechFallback = () => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    if (activeAudioUrl) {
+      universalAudioEngine.playWord(activeAudioUrl, {
+        rate: playbackSpeed,
+        volume,
+        onProgress: ({ percent }) => {
+          setAudioProgress(percent);
+        },
+        onEnd: onComplete,
+        onError: () => {
+          if (currentDrill?.ar) {
+            universalAudioEngine.playArabicSound(currentDrill.ar, {
+              rate: playbackSpeed,
+              volume,
+              onEnd: onComplete,
+              onError: () => {
+                setPlayingAudioId(null);
+                setAudioProgress(0);
+              },
+            });
+          } else {
+            setPlayingAudioId(null);
+            setAudioProgress(0);
+          }
+        },
+      });
+    } else if (currentDrill?.ar) {
+      universalAudioEngine.playArabicSound(currentDrill.ar, {
+        rate: playbackSpeed,
+        volume,
+        onEnd: onComplete,
+        onError: () => {
+          setPlayingAudioId(null);
+          setAudioProgress(0);
+        },
+      });
+    } else {
       setPlayingAudioId(null);
-      return;
+      setAudioProgress(0);
     }
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(currentDrill.ar);
-    utterance.lang = "ar-SA";
-    utterance.rate = playbackSpeed === 0.75 ? 0.7 : 0.85;
-    utterance.onend = () => {
-      setPlayingAudioId(null);
-      setAudioProgress(0);
-    };
-    utterance.onerror = () => {
-      setPlayingAudioId(null);
-      setAudioProgress(0);
-    };
-    window.speechSynthesis.speak(utterance);
   };
 
   // ── REAL AUDIO ANALYSER (MIC VISUALIZER) ──
