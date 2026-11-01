@@ -154,8 +154,8 @@ export default function TraceLetterGame({ onBack, onEarnReward }) {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 rounded-[2.75rem] bg-gradient-to-b from-[#FFFDF7] via-white to-[#F0FDF4] border-4 border-sky-400 shadow-xl space-y-4 animate-kids-pop select-none">
-      <div className="flex items-center justify-between border-b-2 border-sky-100 pb-3">
+    <div className="w-full max-w-2xl mx-auto p-3 sm:p-6 rounded-2xl sm:rounded-[2.75rem] bg-gradient-to-b from-[#FFFDF7] via-white to-[#F0FDF4] border-3 sm:border-4 border-sky-400 shadow-xl space-y-3.5 sm:space-y-4 animate-kids-pop select-none">
+      <div className="flex items-center justify-between border-b-2 border-sky-100 pb-2.5 sm:pb-3 flex-wrap gap-2">
         <button
           type="button"
           onClick={onBack}
@@ -219,7 +219,7 @@ export default function TraceLetterGame({ onBack, onEarnReward }) {
 
       {!isWon ? (
         <div className="space-y-4">
-          <div className="relative w-full max-w-sm sm:max-w-md mx-auto aspect-square rounded-3xl bg-slate-900 border-4 border-sky-300 shadow-inner flex items-center justify-center overflow-hidden touch-none">
+          <div className="relative w-full max-w-[280px] sm:max-w-md mx-auto aspect-square rounded-2xl sm:rounded-3xl bg-slate-900 border-3 sm:border-4 border-sky-300 shadow-inner flex items-center justify-center overflow-hidden touch-none">
             <span className="absolute inset-0 flex items-center justify-center font-uthmani text-9xl sm:text-[12rem] text-white/20 select-none pointer-events-none drop-shadow-md">
               {currentLetter?.ar}
             </span>
@@ -339,16 +339,19 @@ export default function TraceLetterGame({ onBack, onEarnReward }) {
         </div>
       )}
 
-      <NuruMascot
-        mood={isWon ? "celebrating" : isCompleted ? "happy" : "encouraging"}
-        dialogue={
-          isWon
-            ? "মাশাআল্লাহ! তুমি পুরো গ্রুপের হরফ নিখুঁতভাবে লিখেছ!"
-            : isCompleted
-            ? "চমৎকার! হরফটির দিক একদম সঠিক হয়েছে!"
-            : `১ নম্বর নির্দেশক থেকে শুরু করে ক্রমানুসারে হাত নাও!`
-        }
-      />
+      <div className="flex justify-center pt-1">
+        <NuruMascot
+          size="sm"
+          mood={isWon ? "celebrating" : isCompleted ? "happy" : "encouraging"}
+          dialogue={
+            isWon
+              ? "মাশাআল্লাহ! তুমি পুরো গ্রুপের হরফ নিখুঁতভাবে লিখেছ!"
+              : isCompleted
+              ? "চমৎকার! হরফটির দিক একদম সঠিক হয়েছে!"
+              : `১ নম্বর নির্দেশক থেকে শুরু করে ক্রমানুসারে হাত নাও!`
+          }
+        />
+      </div>
     </div>
   );
 }

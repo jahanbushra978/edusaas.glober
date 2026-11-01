@@ -5,7 +5,10 @@ import { subscribeVoicePromptState } from "../../lib/voicePrompts";
 
 export default function NuruMascot({
   message,
-  size = "md", // 'sm' | 'md' | 'lg'
+  dialogue,
+  mood,
+  size = "md", // 'xs' | 'sm' | 'md' | 'lg' or number in px
+  showName,
   className = "",
   showSpeechBubble = true,
   onClick,
@@ -31,11 +34,27 @@ export default function NuruMascot({
     return () => clearInterval(blinkInterval);
   }, []);
 
-  const dimensions = {
-    sm: { width: 72, height: 86 },
-    md: { width: 110, height: 130 },
-    lg: { width: 150, height: 180 },
-  }[size] || { width: 110, height: 130 };
+  const effectiveMessage = message || dialogue;
+
+  // Determine dimensions safely based on size prop
+  let dimensions = { width: 110, height: 130 };
+  if (typeof size === "number") {
+    dimensions = { width: size, height: Math.round(size * 1.16) };
+  } else if (size === "xs") {
+    dimensions = { width: 44, height: 52 };
+  } else if (size === "sm") {
+    dimensions = { width: 72, height: 86 };
+  } else if (size === "lg") {
+    dimensions = { width: 150, height: 180 };
+  }
+
+  // By default, only show the name badge on medium/large sizes
+  const shouldShowName =
+    showName !== undefined
+      ? showName
+      : typeof size === "number"
+      ? size >= 70
+      : size === "md" || size === "lg";
 
   return (
     <div
@@ -43,13 +62,13 @@ export default function NuruMascot({
       className={`relative inline-flex flex-col items-center select-none cursor-pointer group ${className}`}
     >
       {/* Speech Bubble */}
-      {showSpeechBubble && message && (
+      {showSpeechBubble && effectiveMessage && (
         <div className="mb-2 relative animate-kids-pop">
-          <div className="px-4 py-2 rounded-2xl bg-white border-2 border-emerald-400 text-emerald-950 shadow-md kids-font text-sm sm:text-base font-extrabold max-w-[220px] text-center leading-snug">
-            {message}
+          <div className="px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-2xl bg-white border-2 border-emerald-400 text-emerald-950 shadow-md kids-font text-xs sm:text-sm font-extrabold max-w-[260px] sm:max-w-xs text-center leading-snug">
+            {effectiveMessage}
           </div>
           {/* Arrow */}
-          <div className="w-0 h-0 border-x-8 border-x-transparent border-t-8 border-t-emerald-400 mx-auto -mt-[1px]" />
+          <div className="w-0 h-0 border-x-6 sm:border-x-8 border-x-transparent border-t-6 sm:border-t-8 border-t-emerald-400 mx-auto -mt-[1px]" />
         </div>
       )}
 
@@ -173,9 +192,11 @@ export default function NuruMascot({
         </svg>
       </div>
 
-      <span className="kids-font text-xs font-black text-emerald-800 mt-1 tracking-wider uppercase">
-        নূরু (Nuru)
-      </span>
+      {shouldShowName && (
+        <span className="kids-font text-[10px] sm:text-xs font-black text-emerald-800 mt-1 tracking-wider uppercase">
+          নূরু (Nuru)
+        </span>
+      )}
     </div>
   );
 }

@@ -224,9 +224,9 @@ export default function SoundDetectiveGame({ onBack, onEarnReward }) {
   });
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 rounded-[2.75rem] bg-gradient-to-b from-[#FFFDF7] via-white to-[#F0FDF4] border-4 border-amber-400 shadow-xl space-y-4 animate-kids-pop select-none">
+    <div className="w-full max-w-2xl mx-auto p-3 sm:p-6 rounded-2xl sm:rounded-[2.75rem] bg-gradient-to-b from-[#FFFDF7] via-white to-[#F0FDF4] border-3 sm:border-4 border-amber-400 shadow-xl space-y-3.5 sm:space-y-4 animate-kids-pop select-none">
       {/* ── TOP HEADER ── */}
-      <div className="flex items-center justify-between border-b-2 border-amber-100 pb-3">
+      <div className="flex items-center justify-between border-b-2 border-amber-100 pb-2.5 sm:pb-3 flex-wrap gap-2">
         <button
           type="button"
           onClick={onBack}
@@ -315,21 +315,23 @@ export default function SoundDetectiveGame({ onBack, onEarnReward }) {
           )}
 
           {/* 3 Choices */}
-          <div className="grid grid-cols-3 gap-2.5 sm:gap-3.5">
+          <div className="grid grid-cols-3 gap-2 sm:gap-3.5">
             {options.map((opt, i) => (
               <button
                 key={opt.ar || opt.nameBn || i}
                 type="button"
                 onClick={() => handleSelectOption(opt)}
-                className="p-4 sm:p-6 rounded-2xl sm:rounded-3xl bg-white hover:bg-amber-50 border-3 border-amber-300 hover:border-amber-500 shadow-[0_5px_0_0_#F59E0B] active:translate-y-1 active:shadow-none flex flex-col items-center justify-center gap-1.5 cursor-pointer transition-all"
+                className="p-2.5 sm:p-5 rounded-xl sm:rounded-3xl bg-white hover:bg-amber-50 border-3 border-amber-300 hover:border-amber-500 shadow-[0_4px_0_0_#F59E0B] active:translate-y-1 active:shadow-none flex flex-col items-center justify-center gap-1 cursor-pointer transition-all"
               >
-                <span className="font-uthmani text-4xl sm:text-6xl text-amber-950 font-bold leading-none">
+                <span className={`font-uthmani text-amber-950 font-bold leading-none block px-1 ${
+                  opt.ar?.length > 2 ? "text-2xl sm:text-4xl md:text-5xl" : "text-3xl sm:text-6xl"
+                }`}>
                   {opt.ar}
                 </span>
-                <span className="text-xs font-black text-slate-700">
+                <span className="text-[10px] sm:text-xs font-black text-slate-700 truncate max-w-full px-1">
                   {opt.nameBn}
                 </span>
-                <span className="text-[10px] text-slate-400">কীবোর্ড: {i + 1}</span>
+                <span className="text-[9px] sm:text-[10px] text-slate-400">কীবোর্ড: {i + 1}</span>
               </button>
             ))}
           </div>
@@ -375,16 +377,19 @@ export default function SoundDetectiveGame({ onBack, onEarnReward }) {
       )}
 
       {/* Mascot Guidance */}
-      <NuruMascot
-        mood={isWon ? "celebrating" : wrongAttempts > 0 ? "thinking" : "happy"}
-        dialogue={
-          isWon
-            ? "দারুণ গোয়েন্দা তুমি! মাশাআল্লাহ, সূক্ষ্ম আওয়াজও ধরে ফেলেছো!"
-            : wrongAttempts > 0
-            ? "স্পিকারে আবার চাপ দাও এবং সাবধানে শুনে সঠিক হরফে চাপো।"
-            : "কান পেতে তিলাওয়াত শোনো এবং সঠিক হরফটি বের করো!"
-        }
-      />
+      <div className="flex justify-center pt-1">
+        <NuruMascot
+          size="sm"
+          mood={isWon ? "celebrating" : wrongAttempts > 0 ? "thinking" : "happy"}
+          dialogue={
+            isWon
+              ? "দারুণ গোয়েন্দা তুমি! মাশাআল্লাহ, সূক্ষ্ম আওয়াজও ধরে ফেলেছো!"
+              : wrongAttempts > 0
+              ? "স্পিকারে আবার চাপ দাও এবং সাবধানে শুনে সঠিক হরফে চাপো।"
+              : "কান পেতে তিলাওয়াত শোনো এবং সঠিক হরফটি বের করো!"
+          }
+        />
+      </div>
     </div>
   );
 }

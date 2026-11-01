@@ -139,9 +139,9 @@ export default function MemoryMatchGame({ onBack, onEarnReward }) {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 rounded-[2.75rem] bg-gradient-to-b from-[#FFFDF7] via-white to-[#F0FBF7] border-4 border-teal-400 shadow-xl space-y-4 animate-kids-pop select-none">
+    <div className="w-full max-w-2xl mx-auto p-3 sm:p-6 rounded-2xl sm:rounded-[2.75rem] bg-gradient-to-b from-[#FFFDF7] via-white to-[#F0FBF7] border-3 sm:border-4 border-teal-400 shadow-xl space-y-3.5 sm:space-y-4 animate-kids-pop select-none">
       {/* ── TOP HEADER ── */}
-      <div className="flex items-center justify-between border-b-2 border-teal-100 pb-3">
+      <div className="flex items-center justify-between border-b-2 border-teal-100 pb-2.5 sm:pb-3 flex-wrap gap-2">
         <button
           type="button"
           onClick={onBack}
@@ -218,12 +218,14 @@ export default function MemoryMatchGame({ onBack, onEarnReward }) {
                 }`}
               >
                 {isFlipped ? (
-                  <div className="text-center animate-kids-pop">
-                    <span className="font-uthmani text-4xl sm:text-5xl font-bold text-teal-950">
+                  <div className="text-center animate-kids-pop px-1">
+                    <span className={`font-uthmani font-bold text-teal-950 leading-tight block ${
+                      card.ar.length > 2 ? "text-xl sm:text-3xl md:text-4xl" : "text-3xl sm:text-5xl"
+                    }`}>
                       {card.ar}
                     </span>
                     {card.nameBn && (
-                      <p className="text-[10px] font-black text-teal-700 mt-1">
+                      <p className="text-[9px] sm:text-[10px] font-black text-teal-700 mt-0.5 truncate max-w-full">
                         {card.nameBn}
                       </p>
                     )}
@@ -276,14 +278,17 @@ export default function MemoryMatchGame({ onBack, onEarnReward }) {
       )}
 
       {/* Mascot Guidance */}
-      <NuruMascot
-        mood={isWon ? "celebrating" : matched.length > 0 ? "happy" : "thinking"}
-        dialogue={
-          isWon
-            ? "মাশাআল্লাহ! তোমার স্মৃতিশক্তি দারুণ! পরের লেভেলে আরও বড় চ্যালেঞ্জ আছে!"
-            : "কার্ড উল্টে উল্টে একই হরফের জোড়া মেলাও!"
-        }
-      />
+      <div className="flex justify-center pt-1">
+        <NuruMascot
+          size="sm"
+          mood={isWon ? "celebrating" : matched.length > 0 ? "happy" : "thinking"}
+          dialogue={
+            isWon
+              ? "মাশাআল্লাহ! তোমার স্মৃতিশক্তি দারুণ! পরের লেভেলে আরও বড় চ্যালেঞ্জ আছে!"
+              : "কার্ড উল্টে উল্টে একই হরফের জোড়া মেলাও!"
+          }
+        />
+      </div>
     </div>
   );
 }

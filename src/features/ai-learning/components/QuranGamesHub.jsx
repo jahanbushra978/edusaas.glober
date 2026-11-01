@@ -273,9 +273,9 @@ export default function QuranGamesHub({ onEarnXP }) {
       {/* ── ACTIVE GAME CONTAINER ── */}
       {activeGameId === "balloon-pop" ? (
         /* 🎈 BALLOON POP GAME VIEW */
-        <div className="w-full p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c241a] border border-emerald-200 dark:border-emerald-800 shadow-xl space-y-5 animate-fade-in">
+        <div className="w-full p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0c241a] border border-emerald-200 dark:border-emerald-800 shadow-xl space-y-4 sm:space-y-5 animate-fade-in">
           {/* Top Game Bar */}
-          <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900 pb-3">
+          <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900 pb-2.5 sm:pb-3 flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setActiveGameId(null)}
@@ -284,7 +284,7 @@ export default function QuranGamesHub({ onEarnXP }) {
               <ArrowLeft className="w-4 h-4" />
               <span>গেম লিস্টে ফিরুন</span>
             </button>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
                 লেভেল {balloonLevelIdx + 1} / {BALLOON_LEVELS.length}
               </span>
@@ -296,13 +296,13 @@ export default function QuranGamesHub({ onEarnXP }) {
           </div>
 
           {!balloonGameOver ? (
-            <div className="flex flex-col items-center text-center space-y-4 py-2">
-              <div className="inline-block px-4 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 text-xs sm:text-sm font-black border border-emerald-300 dark:border-emerald-700">
+            <div className="flex flex-col items-center text-center space-y-3 sm:space-y-4 py-2">
+              <div className="inline-block px-3.5 py-1.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-900 dark:text-emerald-100 text-xs sm:text-sm font-black border border-emerald-300 dark:border-emerald-700">
                 🎯 খুঁজে বের করো: {BALLOON_LEVELS[balloonLevelIdx].target} যুক্ত বেলুন!
               </div>
 
               {/* Balloons Grid */}
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 w-full max-w-xl pt-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-6 w-full max-w-xl pt-2 sm:pt-4">
                 {BALLOON_LEVELS[balloonLevelIdx].letters.map((item, idx) => {
                   const isPopped = poppedBalloons.includes(idx);
                   return (
@@ -311,16 +311,16 @@ export default function QuranGamesHub({ onEarnXP }) {
                       type="button"
                       disabled={isPopped}
                       onClick={() => handlePopBalloon(item, idx)}
-                      className={`h-28 sm:h-36 rounded-3xl flex flex-col items-center justify-center p-3 relative transition-all duration-300 select-none cursor-pointer ${
+                      className={`h-24 sm:h-36 rounded-2xl sm:rounded-3xl flex flex-col items-center justify-center p-2.5 sm:p-3 relative transition-all duration-300 select-none cursor-pointer ${
                         isPopped
                           ? "opacity-20 scale-75 bg-slate-100 dark:bg-slate-900 border-dashed border-2 border-slate-300"
-                          : "bg-gradient-to-t from-emerald-500 via-teal-500 to-emerald-400 text-white shadow-lg hover:shadow-xl hover:-translate-y-2 active:scale-95 border-2 border-emerald-200"
+                          : "bg-gradient-to-t from-emerald-500 via-teal-500 to-emerald-400 text-white shadow-lg hover:shadow-xl hover:-translate-y-1 active:scale-95 border-2 border-emerald-200"
                       }`}
                     >
-                      <span className="text-4xl sm:text-5xl font-bold font-arabic mb-1 leading-tight">
+                      <span className="text-3xl sm:text-5xl font-bold font-arabic mb-0.5 sm:mb-1 leading-tight">
                         {item.ar}
                       </span>
-                      <span className="text-[10px] font-semibold opacity-90">ট্যাপ করো 🎈</span>
+                      <span className="text-[9px] sm:text-[10px] font-semibold opacity-90">ট্যাপ করো 🎈</span>
                     </button>
                   );
                 })}
@@ -360,9 +360,9 @@ export default function QuranGamesHub({ onEarnXP }) {
         </div>
       ) : activeGameId === "makhraj-challenge" ? (
         /* 🎯 MAKHRAJ TARGET GAME VIEW */
-        <div className="w-full p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c241a] border border-emerald-200 dark:border-emerald-800 shadow-xl space-y-5 animate-fade-in">
+        <div className="w-full p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-white dark:bg-[#0c241a] border border-emerald-200 dark:border-emerald-800 shadow-xl space-y-4 sm:space-y-5 animate-fade-in">
           {/* Top Bar */}
-          <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900 pb-3">
+          <div className="flex items-center justify-between border-b border-emerald-100 dark:border-emerald-900 pb-2.5 sm:pb-3 flex-wrap gap-2">
             <button
               type="button"
               onClick={() => setActiveGameId(null)}
@@ -371,7 +371,7 @@ export default function QuranGamesHub({ onEarnXP }) {
               <ArrowLeft className="w-4 h-4" />
               <span>গেম লিস্টে ফিরুন</span>
             </button>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3">
               <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
                 প্রশ্ন {makhrajLevelIdx + 1} / {MAKHRAJ_LEVELS.length}
               </span>
@@ -383,17 +383,17 @@ export default function QuranGamesHub({ onEarnXP }) {
           </div>
 
           {!makhrajGameOver ? (
-            <div className="flex flex-col items-center text-center space-y-5 py-2 max-w-xl mx-auto">
-              <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex flex-col items-center justify-center text-white shadow-lg border-2 border-emerald-200">
-                <span className="text-5xl sm:text-6xl font-bold font-arabic">
+            <div className="flex flex-col items-center text-center space-y-4 sm:space-y-5 py-2 max-w-xl mx-auto w-full">
+              <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-2xl sm:rounded-3xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex flex-col items-center justify-center text-white shadow-lg border-2 border-emerald-200">
+                <span className="text-4xl sm:text-6xl font-bold font-arabic leading-tight">
                   {MAKHRAJ_LEVELS[makhrajLevelIdx].letter}
                 </span>
-                <span className="text-[11px] font-bold opacity-90">
+                <span className="text-[10px] sm:text-[11px] font-bold opacity-90">
                   {MAKHRAJ_LEVELS[makhrajLevelIdx].name}
                 </span>
               </div>
 
-              <h4 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white">
+              <h4 className="text-xs sm:text-base font-extrabold text-slate-900 dark:text-white px-2">
                 হরফটির সঠিক মাখরাজ (উচ্চারণ স্থান) কোনটি?
               </h4>
 
@@ -523,25 +523,25 @@ export default function QuranGamesHub({ onEarnXP }) {
         /* ── GAMES HUB DIRECTORY (Onosaee Visual Gallery) ── */
         <div className="w-full space-y-6 animate-fade-in">
           {/* Hero Banner for Games Hub */}
-          <div className="p-4 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="p-3.5 sm:p-6 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-emerald-700 via-teal-700 to-emerald-800 text-white shadow-xl relative overflow-hidden flex flex-col md:flex-row items-center justify-between gap-3.5 sm:gap-4">
             <div className="space-y-1.5 text-center md:text-left z-10">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] font-extrabold text-amber-300">
+              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[10px] sm:text-[11px] font-extrabold text-amber-300">
                 <Gamepad2 className="w-3.5 h-3.5" />
                 <span>ছোটদের কুরআন লার্নিং গেম জোন</span>
               </div>
-              <h2 className="text-lg sm:text-2xl font-black tracking-tight">
+              <h2 className="text-base sm:text-2xl font-black tracking-tight leading-snug">
                 খেলে খেলে কুরআন শিখি, পয়েন্ট ও উপহার জিতি!
               </h2>
-              <p className="text-xs text-emerald-100 max-w-md">
+              <p className="text-[11px] sm:text-xs text-emerald-100 max-w-md">
                 হরকত, মাখরাজ ও তাজবীদের আনন্দদায়ক গেম খেলে নিজের স্মৃতিশক্তি ও পড়ার শুদ্ধতা বাড়াও।
               </p>
             </div>
 
-            <div className="shrink-0 flex items-center gap-2 z-10">
+            <div className="shrink-0 flex items-center gap-2 z-10 w-full sm:w-auto justify-center">
               <button
                 type="button"
                 onClick={startBalloonGame}
-                className="px-4 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center gap-2 cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
               >
                 <Play className="w-4 h-4 fill-amber-950" />
                 <span>প্রথম গেম খেলো</span>
@@ -553,11 +553,11 @@ export default function QuranGamesHub({ onEarnXP }) {
           </div>
 
           {/* Games Grid (Extensible Cards) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {QURAN_GAMES.map((game) => (
               <div
                 key={game.id}
-                className={`p-4 sm:p-5 rounded-3xl border ${game.bgTint} shadow-md flex flex-col justify-between space-y-4 hover:shadow-lg transition-all duration-200 relative group`}
+                className={`p-3.5 sm:p-5 rounded-2xl sm:rounded-3xl border ${game.bgTint} shadow-md flex flex-col justify-between space-y-3.5 sm:space-y-4 hover:shadow-lg transition-all duration-200 relative group`}
               >
                 <div className="space-y-2.5">
                   {/* Card Header & Badges */}

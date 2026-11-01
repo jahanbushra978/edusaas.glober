@@ -144,9 +144,9 @@ export default function DotCountGame({ onBack, onEarnReward }) {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 rounded-[2.75rem] bg-gradient-to-b from-[#FFFDF7] via-white to-[#F5F0FF] border-4 border-purple-400 shadow-xl space-y-4 animate-kids-pop select-none">
+    <div className="w-full max-w-2xl mx-auto p-3 sm:p-6 rounded-2xl sm:rounded-[2.75rem] bg-gradient-to-b from-[#FFFDF7] via-white to-[#F5F0FF] border-3 sm:border-4 border-purple-400 shadow-xl space-y-3.5 sm:space-y-4 animate-kids-pop select-none">
       {/* ── TOP HEADER ── */}
-      <div className="flex items-center justify-between border-b-2 border-purple-100 pb-3">
+      <div className="flex items-center justify-between border-b-2 border-purple-100 pb-2.5 sm:pb-3 flex-wrap gap-2">
         <button
           type="button"
           onClick={onBack}
@@ -300,16 +300,19 @@ export default function DotCountGame({ onBack, onEarnReward }) {
       )}
 
       {/* Mascot Guidance */}
-      <NuruMascot
-        mood={isWon ? "celebrating" : wrongAttempts > 0 ? "thinking" : "happy"}
-        dialogue={
-          isWon
-            ? "দারুণ নুকতা গণনা করেছো! চলো পরের লেভেলে যাই!"
-            : wrongAttempts > 0
-            ? "চিন্তা নেই! হরফটির উপরে বা নিচে ভালো করে দেখো।"
-            : "হরফটির নুকতা গুনে সঠিক বাটনটিতে চাপ দাও!"
-        }
-      />
+      <div className="flex justify-center pt-1">
+        <NuruMascot
+          size="sm"
+          mood={isWon ? "celebrating" : wrongAttempts > 0 ? "thinking" : "happy"}
+          dialogue={
+            isWon
+              ? "দারুণ নুকতা গণনা করেছো! চলো পরের লেভেলে যাই!"
+              : wrongAttempts > 0
+              ? "চিন্তা নেই! হরফটির উপরে বা নিচে ভালো করে দেখো।"
+              : "হরফটির নুকতা গুনে সঠিক বাটনটিতে চাপ দাও!"
+          }
+        />
+      </div>
     </div>
   );
 }

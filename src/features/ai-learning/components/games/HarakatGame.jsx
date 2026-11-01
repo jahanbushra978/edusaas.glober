@@ -174,9 +174,9 @@ export default function HarakatGame({ onBack, onEarnReward }) {
   });
 
   return (
-    <div className="w-full max-w-2xl mx-auto p-4 sm:p-6 rounded-[2.75rem] bg-gradient-to-b from-[#FFFDF7] via-white to-[#EFFCF6] border-4 border-emerald-400 shadow-xl space-y-4 animate-kids-pop select-none">
+    <div className="w-full max-w-2xl mx-auto p-3 sm:p-6 rounded-2xl sm:rounded-[2.75rem] bg-gradient-to-b from-[#FFFDF7] via-white to-[#EFFCF6] border-3 sm:border-4 border-emerald-400 shadow-xl space-y-3.5 sm:space-y-4 animate-kids-pop select-none">
       {/* ── TOP HEADER ── */}
-      <div className="flex items-center justify-between border-b-2 border-emerald-100 pb-3">
+      <div className="flex items-center justify-between border-b-2 border-emerald-100 pb-2.5 sm:pb-3 flex-wrap gap-2">
         <button
           type="button"
           onClick={onBack}
@@ -251,7 +251,9 @@ export default function HarakatGame({ onBack, onEarnReward }) {
                 <span className="hidden sm:inline">শুনুন</span>
               </button>
 
-              <span className="font-uthmani text-6xl sm:text-8xl text-emerald-950 font-bold leading-none select-none drop-shadow-sm">
+              <span className={`font-uthmani font-bold leading-none select-none drop-shadow-sm text-center px-1 text-emerald-950 ${
+                target.ar.length > 2 ? "text-4xl sm:text-6xl md:text-7xl" : "text-6xl sm:text-8xl"
+              }`}>
                 {target.ar}
               </span>
               <span className="text-xs font-black text-emerald-800 bg-emerald-100/80 px-3 py-0.5 rounded-full">
@@ -372,16 +374,19 @@ export default function HarakatGame({ onBack, onEarnReward }) {
       )}
 
       {/* Mascot Guidance */}
-      <NuruMascot
-        mood={isWon ? "celebrating" : wrongAttempts > 0 ? "thinking" : "happy"}
-        dialogue={
-          isWon
-            ? "দারুণ হরকত চিনেছো! মাশাআল্লাহ, এভাবে পড়লে দ্রুত কুরআন রিডিং শিখবে!"
-            : wrongAttempts > 0
-            ? "চিহ্নটি দেখো — উপরে এক দাগ যবর, নিচে যের, আর গোল মাথা হলো পেশ!"
-            : "হরকতের চিহ্ন দেখে সঠিক বাটনটিতে চাপ দাও!"
-        }
-      />
+      <div className="flex justify-center pt-1">
+        <NuruMascot
+          size="sm"
+          mood={isWon ? "celebrating" : wrongAttempts > 0 ? "thinking" : "happy"}
+          dialogue={
+            isWon
+              ? "দারুণ হরকত চিনেছো! মাশাআল্লাহ, এভাবে পড়লে দ্রুত কুরআন রিডিং শিখবে!"
+              : wrongAttempts > 0
+              ? "চিহ্নটি দেখো — উপরে এক দাগ যবর, নিচে যের, আর গোল মাথা হলো পেশ!"
+              : "হরকতের চিহ্ন দেখে সঠিক বাটনটিতে চাপ দাও!"
+          }
+        />
+      </div>
     </div>
   );
 }

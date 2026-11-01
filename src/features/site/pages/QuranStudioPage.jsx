@@ -628,7 +628,7 @@ export default function QuranStudioPage() {
             </div>
 
             {/* Render the Active Real Feature Component */}
-            <div className="p-3 sm:p-5">
+            <div className="p-2 sm:p-5">
               {activeFeature === "nur-teacher" ? (
                 <NurTeachingEngine
                   onMakhrajHighlight={(zone) => {
