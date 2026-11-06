@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import ReactMarkdown from "react-markdown";
 import { useAIChat } from "../hooks/useAIChat";
 import FeeConfirmationCard from "./FeeConfirmationCard";
@@ -43,6 +43,7 @@ const STORAGE_FLOATING_KEY = "rahmania_ai_floating_visible_v1";
 
 export default function AIChatDrawer({ currentUser }) {
   const pathname = usePathname();
+  const router = useRouter();
   const isPortalPage = Boolean(
     pathname?.startsWith("/admin") ||
     pathname?.startsWith("/teacher") ||
@@ -247,9 +248,18 @@ export default function AIChatDrawer({ currentUser }) {
       {/* 🌟 Prominent & Elegant Floating Nur AI Button - Directly Opens Full Page */}
       {isFloatingVisible && !isOpen && !isStudioPage && (
         <div className="fixed bottom-4 right-4 z-40 flex items-center gap-1 group">
-          <Link
-            href="/quran-tutor/teacher"
-            className="flex items-center gap-2 rounded-full border border-emerald-500/50 bg-slate-900/95 px-4 py-2.5 text-xs font-semibold text-white shadow-2xl backdrop-blur-md transition-all hover:scale-105 hover:bg-emerald-950/90 hover:border-emerald-400 group-hover:ring-2 group-hover:ring-emerald-500/30"
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== "undefined") {
+                // Ensure browser history has /quran-tutor so Back step-by-step returns to AI Home then Main Landing
+                try {
+                  window.history.pushState({ page: "quran-tutor" }, "", "/quran-tutor");
+                } catch {}
+                router.push("/quran-tutor/studio?feature=voice-tutor");
+              }
+            }}
+            className="flex items-center gap-2 rounded-full border border-emerald-500/50 bg-slate-900/95 px-4 py-2.5 text-xs font-semibold text-white shadow-2xl backdrop-blur-md transition-all hover:scale-105 hover:bg-emerald-950/90 hover:border-emerald-400 group-hover:ring-2 group-hover:ring-emerald-500/30 cursor-pointer"
           >
             <div className="w-5 h-5 rounded-full bg-emerald-600 flex items-center justify-center text-white shadow-sm">
               <BookOpen className="h-3 w-3" />
@@ -265,7 +275,7 @@ export default function AIChatDrawer({ currentUser }) {
             <span className="rounded-full bg-emerald-950 border border-emerald-700 px-2 py-0.5 text-[9px] text-emerald-300 ml-1 font-bold">
               সরাসরি পেজে যান ➔
             </span>
-          </Link>
+          </button>
           <button
             onClick={() => toggleFloatingBadge(false)}
             className="h-6 w-6 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition-all opacity-0 group-hover:opacity-100"

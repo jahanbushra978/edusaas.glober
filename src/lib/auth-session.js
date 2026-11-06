@@ -1,5 +1,5 @@
-import { AUTH_COOKIE_NAME } from "./auth-identity";
-import { safeCompare } from "./safe-compare";
+import { AUTH_COOKIE_NAME } from "./auth-identity.js";
+import { safeCompare } from "./safe-compare.js";
 
 const encoder = new TextEncoder();
 const decoder = new TextDecoder();

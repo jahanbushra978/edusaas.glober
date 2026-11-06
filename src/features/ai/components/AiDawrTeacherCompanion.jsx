@@ -20,6 +20,7 @@ import {
 import { toast } from "sonner";
 import { ALL_SURAHS } from "@/lib/quran/quran-meta";
 import { getSurahData } from "@/lib/quran/quran-service";
+import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 import {
   SHAYKH_REGISTRY,
   DEFAULT_SHAYKH_ID,
@@ -379,8 +380,9 @@ export default function AiDawrTeacherCompanion({ studentContext, className = "" 
         // Live Word-by-Word Matching ("পড়া ধরা")
         const currentA = currentAyahRef.current;
         if (currentA?.text) {
-          const targetWords = currentA.text.split(" ").filter(Boolean);
-          const targetNorm = normalizeArabic(currentA.text);
+          const targetWords = splitArabicAyahWords(
+            currentA.words && currentA.words.length > 0 ? currentA.words : currentA.text
+          );
           const spokenNorm = normalizeArabic(clean);
 
           const spokenWords = spokenNorm.split(" ").filter(Boolean);
@@ -477,7 +479,9 @@ export default function AiDawrTeacherCompanion({ studentContext, className = "" 
     setHesitationCount((prev) => prev + 1);
     setStabilityScore((prev) => Math.max(50, prev - 4));
 
-    const words = (currentAyah.text || "").split(" ").filter(Boolean);
+    const words = splitArabicAyahWords(
+      currentAyah.words && currentAyah.words.length > 0 ? currentAyah.words : currentAyah.text
+    );
     // Find first unmatched word or next word in sequence
     let targetWord = words[0] || "";
     for (let i = 0; i < words.length; i++) {
@@ -607,7 +611,9 @@ export default function AiDawrTeacherCompanion({ studentContext, className = "" 
   };
 
   const wordsInCurrentAyah = useMemo(() => {
-    return (currentAyah?.text || "").split(" ").filter(Boolean);
+    return splitArabicAyahWords(
+      currentAyah?.words && currentAyah?.words.length > 0 ? currentAyah?.words : currentAyah?.text
+    );
   }, [currentAyah]);
 
   return (

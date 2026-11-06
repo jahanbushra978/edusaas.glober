@@ -10,7 +10,7 @@ import {
   RotateCcw,
   BarChart3,
   Gamepad2,
-  Sparkles,
+  GraduationCap,
   Layers,
 } from "lucide-react";
 import { useLearningLanguage } from "../hooks/useLearningLanguage";
@@ -21,7 +21,7 @@ export default function PathCategorySelector({ activePath, onSelectPath }) {
   const paths = [
     { id: "qaida", label: t.paths.qaida, icon: BookOpen, badge: t.badges?.qaida || "17" },
     { id: "makhraj", label: "মাখরাজ (المخارج)", icon: Layers, badge: "17" },
-    { id: "sifat", label: "সিফাতুল হুরুফ (الصفات)", icon: Sparkles, badge: "18" },
+    { id: "sifat", label: "সিফাতুল হুরুফ (الصفات)", icon: GraduationCap, badge: "18" },
     { id: "tajweed", label: "তাজবিদ (التجويد)", icon: Award, badge: "8" },
     { id: "nazera", label: t.paths.nazera, icon: Eye, badge: t.badges?.nazera || "114" },
     { id: "teacher", label: t.paths.teacher, icon: Bot, badge: t.badges?.teacher || "Live" },

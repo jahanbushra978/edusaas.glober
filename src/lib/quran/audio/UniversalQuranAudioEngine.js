@@ -322,6 +322,13 @@ class UniversalQuranAudioEngine {
   }
 
   /**
+   * Alias for stopAll() to prevent consumer errors
+   */
+  stop() {
+    this.stopAll();
+  }
+
+  /**
    * Pause active audio playback
    */
   pause() {

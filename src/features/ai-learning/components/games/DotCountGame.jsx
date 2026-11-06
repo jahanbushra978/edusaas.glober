@@ -6,7 +6,7 @@ import {
   RotateCcw,
   HelpCircle,
   Volume2,
-  ChevronRight,
+  BookOpen,
 } from "lucide-react";
 import { KIDS_ARABIC_LETTERS, KIDS_DOT_GAME_LEVELS } from "../../data/kidsGameData";
 import {
@@ -14,12 +14,14 @@ import {
   playCorrectChime,
   playWrongBuzzer,
   playStarPopSound,
-  playMaShaAllahCelebration,
   playTapSound,
 } from "../../lib/arabicSoundPlayer";
 import { playVoicePrompt } from "../../lib/voicePrompts";
-import { fireCelebrationConfetti } from "../../lib/confetti";
 import NuruMascot from "../kids/NuruMascot";
+import { useQuranGameProgress } from "../../hooks/useQuranGameProgress";
+import BuildingRewardCelebrationModal from "./BuildingRewardCelebrationModal";
+import TeachBeforePlayModal from "./TeachBeforePlayModal";
+import InteractiveBuildingVisualizer from "../rewards/InteractiveBuildingVisualizer";
 
 const DOT_CHOICES = [
   { count: 0, label: "০", dotsUi: "খালি (০)", key: "0" },
@@ -29,21 +31,26 @@ const DOT_CHOICES = [
 ];
 
 export default function DotCountGame({ onBack, onEarnReward }) {
-  const [currentLevelId, setCurrentLevelId] = useState(1);
+  const {
+    journey,
+    currentLevelId,
+    completedLevels,
+    earnedRewardIds,
+    stars,
+    isLevelUnlocked,
+    completeLevel,
+    setCurrentLevel,
+  } = useQuranGameProgress("dot-count");
+
   const [round, setRound] = useState(1);
   const [score, setScore] = useState(0);
   const [currentLetter, setCurrentLetter] = useState(null);
   const [isWon, setIsWon] = useState(false);
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [showHint, setShowHint] = useState(false);
-  const [levelStars, setLevelStars] = useState(() => {
-    try {
-      const saved = localStorage.getItem("noor_kids_dot_stars");
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
+  const [isCelebrationOpen, setIsCelebrationOpen] = useState(false);
+  const [newlyEarnedComponent, setNewlyEarnedComponent] = useState(null);
+  const [isTeachModalOpen, setIsTeachModalOpen] = useState(false);
 
   const activeLevel = KIDS_DOT_GAME_LEVELS.find((l) => l.id === currentLevelId) || KIDS_DOT_GAME_LEVELS[0];
 
@@ -74,10 +81,17 @@ export default function DotCountGame({ onBack, onEarnReward }) {
     startRound();
   }, [round, currentLevelId, startRound]);
 
+  // Open teach modal if level not completed yet
+  useEffect(() => {
+    if (!completedLevels.includes(currentLevelId)) {
+      setIsTeachModalOpen(true);
+    }
+  }, [currentLevelId, completedLevels]);
+
   // Keyboard navigation for desktop: 0, 1, 2, 3
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (isWon) return;
+      if (isWon || isCelebrationOpen || isTeachModalOpen) return;
       const foundChoice = DOT_CHOICES.find((c) => c.key === e.key);
       if (foundChoice) {
         handleSelectChoice(foundChoice);
@@ -96,21 +110,15 @@ export default function DotCountGame({ onBack, onEarnReward }) {
       playCorrectChime();
       playStarPopSound(2);
       const points = wrongAttempts === 0 ? 15 : 10;
-      setScore((s) => s + points);
+      const nextScore = score + points;
+      setScore(nextScore);
 
       if (round >= 5) {
         setIsWon(true);
-        fireCelebrationConfetti();
-        playMaShaAllahCelebration();
-
-        // Calculate 1 to 3 stars based on score
-        const earnedStars = score >= 60 ? 3 : score >= 40 ? 2 : 1;
-        const updatedStars = { ...levelStars, [currentLevelId]: Math.max(levelStars[currentLevelId] || 0, earnedStars) };
-        setLevelStars(updatedStars);
-        try {
-          localStorage.setItem("noor_kids_dot_stars", JSON.stringify(updatedStars));
-        } catch {}
-
+        const earnedStars = nextScore >= 60 ? 3 : nextScore >= 40 ? 2 : 1;
+        const rewardResult = completeLevel(currentLevelId, earnedStars, nextScore, KIDS_DOT_GAME_LEVELS.length);
+        setNewlyEarnedComponent(rewardResult.newlyEarnedComponent);
+        setIsCelebrationOpen(true);
         if (onEarnReward) onEarnReward(30);
       } else {
         setTimeout(() => {
@@ -126,22 +134,29 @@ export default function DotCountGame({ onBack, onEarnReward }) {
   };
 
   const handleNextLevel = () => {
+    setIsCelebrationOpen(false);
     if (currentLevelId < KIDS_DOT_GAME_LEVELS.length) {
-      setCurrentLevelId((l) => l + 1);
+      setCurrentLevel(currentLevelId + 1);
       setRound(1);
       setScore(0);
       setIsWon(false);
     } else {
-      if (onBack) onBack();
+      setCurrentLevel(1);
+      setRound(1);
+      setScore(0);
+      setIsWon(false);
     }
   };
 
   const handleRetryLevel = () => {
+    setIsCelebrationOpen(false);
     setRound(1);
     setScore(0);
     setIsWon(false);
     startRound();
   };
+
+  const levelPoolLetters = getLevelPool().slice(0, 6);
 
   return (
     <div className="w-full max-w-2xl mx-auto p-3 sm:p-6 rounded-2xl sm:rounded-[2.75rem] bg-gradient-to-b from-[#FFFDF7] via-white to-[#F5F0FF] border-3 sm:border-4 border-purple-400 shadow-xl space-y-3.5 sm:space-y-4 animate-kids-pop select-none">
@@ -149,6 +164,7 @@ export default function DotCountGame({ onBack, onEarnReward }) {
       <div className="flex items-center justify-between border-b-2 border-purple-100 pb-2.5 sm:pb-3 flex-wrap gap-2">
         <button
           type="button"
+          data-testid="game-back-btn"
           onClick={onBack}
           className="px-3.5 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-950 font-black text-xs flex items-center gap-1.5 cursor-pointer transition active:scale-95"
         >
@@ -156,10 +172,27 @@ export default function DotCountGame({ onBack, onEarnReward }) {
           <span>গেম মেনু</span>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Journey Badge */}
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-100/80 text-purple-900 text-xs font-bold border border-purple-200">
+            <span>{journey.icon}</span>
+            <span>{earnedRewardIds.length}/{journey.totalMilestones} উপাদান</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsTeachModalOpen(true)}
+            className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold flex items-center gap-1 cursor-pointer"
+            title="হরফ ও নুকতা দেখে নাও"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>শিখে নাও</span>
+          </button>
+
           <span className="kids-font text-xs font-bold text-slate-700 bg-purple-50 px-3 py-1 rounded-full border border-purple-200">
             প্রশ্ন {round}/৫ · পয়েন্ট: {score}
           </span>
+
           <button
             type="button"
             onClick={handleRetryLevel}
@@ -173,32 +206,48 @@ export default function DotCountGame({ onBack, onEarnReward }) {
 
       {/* ── LEVEL SELECTOR CAROUSEL ── */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        {KIDS_DOT_GAME_LEVELS.map((lvl) => {
-          const stars = levelStars[lvl.id] || 0;
+        {KIDS_DOT_GAME_LEVELS.map((lvl, idx) => {
+          const lvlStars = stars[lvl.id] || 0;
           const isActive = lvl.id === currentLevelId;
+          const unlocked = isLevelUnlocked(lvl.id, idx);
+          const isDone = completedLevels.includes(lvl.id);
           return (
             <button
               key={lvl.id}
               type="button"
+              disabled={!unlocked}
               onClick={() => {
-                playTapSound();
-                setCurrentLevelId(lvl.id);
-                setRound(1);
-                setScore(0);
-                setIsWon(false);
+                if (unlocked) {
+                  playTapSound();
+                  setCurrentLevel(lvl.id);
+                  setRound(1);
+                  setScore(0);
+                  setIsWon(false);
+                }
               }}
               className={`px-3 py-1.5 rounded-2xl text-xs font-black shrink-0 transition-all cursor-pointer flex items-center gap-1.5 border-2 ${
                 isActive
                   ? "bg-purple-600 border-purple-700 text-white shadow-md scale-105"
-                  : "bg-white border-purple-200 text-purple-900 hover:bg-purple-50"
+                  : isDone
+                  ? "bg-amber-50 border-amber-300 text-amber-900"
+                  : unlocked
+                  ? "bg-white border-purple-200 text-purple-900 hover:bg-purple-50"
+                  : "bg-slate-100 border-slate-200 text-slate-400 opacity-50 cursor-not-allowed"
               }`}
             >
               <span>লেভেল {lvl.id}</span>
-              {stars > 0 && <span className="text-amber-300 text-[10px]">{"⭐".repeat(stars)}</span>}
+              {lvlStars > 0 && <span className="text-amber-400 text-[10px]">{"⭐".repeat(lvlStars)}</span>}
             </button>
           );
         })}
       </div>
+
+      {/* ── 🌴 INTERACTIVE AMAL FRUIT GARDEN BUILDING SCENE ── */}
+      <InteractiveBuildingVisualizer
+        gameId="dot-count"
+        earnedRewardIds={earnedRewardIds}
+        currentLevel={currentLevelId}
+      />
 
       {/* ── LEVEL BANNER & OBJECTIVE ── */}
       <div className="text-center space-y-1">
@@ -206,98 +255,65 @@ export default function DotCountGame({ onBack, onEarnReward }) {
         <p className="text-xs text-slate-600 font-medium">{activeLevel.instructionBn}</p>
       </div>
 
-      {/* ── MAIN CARD OR WIN MODAL ── */}
-      {!isWon ? (
-        <div className="space-y-4">
-          {/* Letter Card */}
-          {currentLetter && (
-            <div className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-purple-50 via-white to-purple-100/60 border-3 border-purple-300 shadow-md flex flex-col items-center justify-center gap-2 group">
-              <button
-                type="button"
-                onClick={() => playArabicSound(currentLetter.ar)}
-                className="absolute top-3 right-3 p-2 rounded-full bg-white/90 hover:bg-purple-100 text-purple-700 border border-purple-200 shadow-xs cursor-pointer transition active:scale-95"
-                title="উচ্চারণ শুনুন"
-              >
-                <Volume2 className="w-4 h-4" />
-              </button>
-
-              <span className="font-uthmani text-7xl sm:text-8xl text-purple-950 font-bold leading-none select-none drop-shadow-sm">
-                {currentLetter.ar}
-              </span>
-              <span className="text-xs font-black text-purple-800 bg-purple-100/80 px-3 py-0.5 rounded-full">
-                {currentLetter.nameBn}
-              </span>
-            </div>
-          )}
-
-          {/* Hint Card */}
-          {showHint && activeLevel.tipBn && (
-            <div className="p-3 rounded-2xl bg-amber-50 border border-amber-300 text-xs text-amber-900 flex items-center gap-2 animate-fade-in">
-              <HelpCircle className="w-4 h-4 shrink-0 text-amber-600" />
-              <span>
-                <strong>ইঙ্গিত:</strong> {activeLevel.tipBn}
-              </span>
-            </div>
-          )}
-
-          {/* 4 Choices */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
-            {DOT_CHOICES.map((choice) => (
-              <button
-                key={choice.count}
-                type="button"
-                onClick={() => handleSelectChoice(choice)}
-                className="p-3 sm:p-4 rounded-2xl bg-white hover:bg-purple-50 border-3 border-purple-300 hover:border-purple-500 shadow-[0_4px_0_0_#C084FC] active:translate-y-1 active:shadow-none flex flex-col items-center justify-center gap-1 cursor-pointer transition-all"
-              >
-                <span className="text-2xl sm:text-3xl font-black text-purple-950">{choice.label}</span>
-                <span className="text-[11px] font-bold text-slate-500">{choice.dotsUi}</span>
-              </button>
-            ))}
-          </div>
-
-          <p className="text-center text-[10px] text-slate-400">
-            💡 কীবোর্ডের 0, 1, 2, 3 চেপেও উত্তর দিতে পারবে
-          </p>
-        </div>
-      ) : (
-        /* ── LEVEL COMPLETE CELEBRATION MODAL ── */
-        <div className="p-6 rounded-3xl bg-gradient-to-b from-purple-900 to-indigo-950 text-white text-center space-y-4 shadow-2xl animate-kids-pop">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 mx-auto flex items-center justify-center text-3xl shadow-lg animate-bounce">
-            🏆
-          </div>
-
-          <div className="space-y-1">
-            <h3 className="text-xl font-black text-amber-300">মাশাআল্লাহ! লেভেল সম্পূর্ণ!</h3>
-            <p className="text-xs text-purple-200">
-              তুমি {activeLevel.title} সফলভাবে শেষ করেছো। মোট পয়েন্ট: {score}
-            </p>
-          </div>
-
-          <div className="flex justify-center gap-2 text-2xl py-2">
-            {"⭐".repeat(levelStars[currentLevelId] || 3)}
-          </div>
-
-          <div className="flex items-center justify-center gap-3 pt-2">
+      {/* ── MAIN CARD ── */}
+      <div className="space-y-4">
+        {/* Letter Card */}
+        {currentLetter && (
+          <div
+            data-testid="current-letter-card"
+            data-target-dots={currentLetter.dots}
+            data-ar={currentLetter.ar}
+            className="relative p-6 sm:p-8 rounded-3xl bg-gradient-to-b from-purple-50 via-white to-purple-100/60 border-3 border-purple-300 shadow-md flex flex-col items-center justify-center gap-2 group"
+          >
             <button
               type="button"
-              onClick={handleRetryLevel}
-              className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+              onClick={() => playArabicSound(currentLetter.ar)}
+              className="absolute top-3 right-3 p-2 rounded-full bg-white/90 hover:bg-purple-100 text-purple-700 border border-purple-200 shadow-xs cursor-pointer transition active:scale-95"
+              title="উচ্চারণ শুনুন"
             >
-              <RotateCcw className="w-4 h-4" />
-              <span>আবার খেলো</span>
+              <Volume2 className="w-4 h-4" />
             </button>
 
-            <button
-              type="button"
-              onClick={handleNextLevel}
-              className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-900/40 cursor-pointer active:scale-95"
-            >
-              <span>পরবর্তী লেভেল</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            <span className="font-uthmani text-7xl sm:text-8xl text-purple-950 font-bold leading-none select-none drop-shadow-sm">
+              {currentLetter.ar}
+            </span>
+            <span className="text-xs font-black text-purple-800 bg-purple-100/80 px-3 py-0.5 rounded-full">
+              {currentLetter.nameBn}
+            </span>
           </div>
+        )}
+
+        {/* Hint Card */}
+        {showHint && activeLevel.tipBn && (
+          <div className="p-3 rounded-2xl bg-amber-50 border border-amber-300 text-xs text-amber-900 flex items-center gap-2 animate-fade-in">
+            <HelpCircle className="w-4 h-4 shrink-0 text-amber-600" />
+            <span>
+              <strong>ইঙ্গিত:</strong> {activeLevel.tipBn}
+            </span>
+          </div>
+        )}
+
+        {/* 4 Choices */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3">
+          {DOT_CHOICES.map((choice) => (
+            <button
+              key={choice.count}
+              type="button"
+              data-testid={`dot-choice-${choice.count}`}
+              data-count={choice.count}
+              onClick={() => handleSelectChoice(choice)}
+              className="p-3 sm:p-4 rounded-2xl bg-white hover:bg-purple-50 border-3 border-purple-300 hover:border-purple-500 shadow-[0_4px_0_0_#C084FC] active:translate-y-1 active:shadow-none flex flex-col items-center justify-center gap-1 cursor-pointer transition-all"
+            >
+              <span className="text-2xl sm:text-3xl font-black text-purple-950">{choice.label}</span>
+              <span className="text-[11px] font-bold text-slate-500">{choice.dotsUi}</span>
+            </button>
+          ))}
         </div>
-      )}
+
+        <p className="text-center text-[10px] text-slate-400">
+          💡 কীবোর্ডের 0, 1, 2, 3 চেপেও উত্তর দিতে পারবে
+        </p>
+      </div>
 
       {/* Mascot Guidance */}
       <div className="flex justify-center pt-1">
@@ -313,6 +329,32 @@ export default function DotCountGame({ onBack, onEarnReward }) {
           }
         />
       </div>
+
+      {/* ── TEACH BEFORE PLAY MODAL ── */}
+      <TeachBeforePlayModal
+        isOpen={isTeachModalOpen}
+        title={activeLevel.title}
+        instructionsBn="খেলা শুরুর আগে এই লেভেলের হরফগুলো শোনো এবং নুকতার অবস্থান খেয়াল করো!"
+        learningItems={levelPoolLetters.map((l) => ({
+          ar: l.ar,
+          nameBn: `${l.nameBn} (${l.dots === 0 ? "নুকতাহীন" : `${l.dots}টি নুকতা`})`,
+          tip: l.dotPos === "bottom" ? "নিচে নুকতা" : l.dotPos === "top" ? "উপরে নুকতা" : l.dotPos === "inside" ? "পেটে নুকতা" : "নুকতাহীন",
+        }))}
+        onStartGame={() => setIsTeachModalOpen(false)}
+      />
+
+      {/* ── BUILDING REWARD CELEBRATION MODAL ── */}
+      <BuildingRewardCelebrationModal
+        isOpen={isCelebrationOpen}
+        levelId={currentLevelId}
+        stars={score >= 60 ? 3 : score >= 40 ? 2 : 1}
+        score={score}
+        journey={journey}
+        newlyEarnedComponent={newlyEarnedComponent}
+        earnedRewardIds={earnedRewardIds}
+        onNextLevel={handleNextLevel}
+        onReplay={handleRetryLevel}
+      />
     </div>
   );
 }

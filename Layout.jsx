@@ -15,6 +15,7 @@ import { useQuery } from "@tanstack/react-query";
 import { appClient } from "@/api/appClient";
 
 import Footer from "@/components/layout/Footer";
+import SiteFeedbackModal from "@/components/common/SiteFeedbackModal";
 
 const LOGO_URL = "/rahmania-logo-v2.png";
 
@@ -46,6 +47,7 @@ export default function Layout({ children, currentPageName: currentPageNameProp 
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [scrolled, setScrolled] = useState(false);
   const [langDropdownOpen, setLangDropdownOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
   const { lang, setLang } = useLanguage();
   const t = useTranslation(lang);
   const _logoUrl = LOGO_URL;
@@ -160,9 +162,17 @@ export default function Layout({ children, currentPageName: currentPageNameProp 
 
   const isNurOrQuranPage = pathname?.startsWith("/quran-tutor") || pathname?.startsWith("/ai-quran-learning");
 
-  if (isSpecialHomeView && (pathname === "/" || pathname === "" || isNurOrQuranPage)) {
+  if (isNurOrQuranPage) {
     return (
-      <div className={`min-h-screen ${isNurOrQuranPage ? "bg-[#06130d]" : "bg-[#FBFDFB]"}`}>
+      <div className="min-h-screen w-full bg-slate-50 dark:bg-[#06130d] text-slate-900 dark:text-slate-100 antialiased overflow-x-hidden">
+        {children}
+      </div>
+    );
+  }
+
+  if (isSpecialHomeView && (pathname === "/" || pathname === "")) {
+    return (
+      <div className="min-h-screen bg-[#FBFDFB]">
         {children}
       </div>
     );
@@ -419,6 +429,22 @@ export default function Layout({ children, currentPageName: currentPageNameProp 
       <ProgressiveSection minHeight={360}>
         <Footer user={user} />
       </ProgressiveSection>
+
+      {/* 💡 Global Feedback Floating Trigger (Website-wide) */}
+      {!isNurOrQuranPage && (
+        <button
+          type="button"
+          onClick={() => setFeedbackOpen(true)}
+          className="fixed bottom-5 right-5 z-40 px-3.5 py-2 rounded-full bg-emerald-800 hover:bg-emerald-700 text-amber-200 hover:text-white border border-emerald-500/50 shadow-xl backdrop-blur-md text-xs font-bold flex items-center gap-2 transition-all cursor-pointer hover:scale-105 active:scale-95 group"
+          title="সাইটের উন্নতি বা আপনার কোনো পরামর্শ বা অভিযোগ থাকলে দয়া করে এখানে লিখুন"
+        >
+          <span className="text-amber-300">💡</span>
+          <span className="hidden sm:inline">পরামর্শ ও অভিযোগ</span>
+        </button>
+      )}
+
+      {/* 💡 Global Feedback Modal */}
+      <SiteFeedbackModal isOpen={feedbackOpen} onClose={() => setFeedbackOpen(false)} />
     </div>
   );
 }

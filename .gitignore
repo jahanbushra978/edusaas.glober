@@ -28,3 +28,7 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+
+# Temporary scratch & evidence
+scratch/
+artifacts/

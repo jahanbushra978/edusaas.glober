@@ -1,0 +1,594 @@
+<USER_REQUEST>
+vai agent.md te ki ei icon chinho ta use na korar jonne bola ase na doa kore eita remov kore deo # MASTER PROJECT DIRECTIVE — RAHMANIA INSTITUTE NUR AI QURAN LEARNING PLATFORM
+
+## THE REAL GOAL
+
+This project is NOT simply a collection of children's games.
+
+I want to build a complete, child-friendly Quran learning platform where a young child can start from absolute zero — Alif, Ba, Ta — and gradually learn to read the Holy Quran correctly, with proper pronunciation, Makhraj, Sifat and Tajweed.
+
+The entire learning experience must be educationally meaningful, progressively structured, engaging, smooth and enjoyable.
+
+The child should love returning to the platform and feel excited to continue learning.
+
+**The priority order is:**
+1. Correct Quran education.
+2. Correct Arabic pronunciation and authentic human Qari audio.
+3. A complete and logically progressive curriculum.
+4. Effective teaching and practice.
+5. Clear, beautiful and child-friendly UI/UX.
+6. Games, rewards, animations and motivation.
+
+Do not prioritize visual effects over actual learning.
+
+---
+
+# PHASE 1 — READ ALL PROJECT INSTRUCTIONS BEFORE DOING ANYTHING
+
+This is mandatory.
+
+Before modifying any code, inspect the entire repository and locate every applicable instruction document, including:
+
+- AGENT.md
+- AGENTS.md
+- agent.md
+- agents.md
+- agent.ai
+- Any nested agent instruction files.
+- Any project-specific development, architecture, security or curriculum instruction documents.
+
+Search recursively throughout the repository, excluding generated directories such as node_modules, .next, build output and .git.
+
+Read every discovered instruction file completely.
+
+Do not read only the root instruction file and ignore nested instructions.
+
+Understand:
+- Project architecture.
+- Coding rules.
+- Existing module boundaries.
+- Audio architecture.
+- Database and authentication rules.
+- Existing curriculum requirements.
+- UI/UX rules.
+- Testing requirements.
+- Restrictions on changing unrelated modules.
+
+If instructions conflict, identify the conflict and follow the project's documented priority rules. Do not silently disregard any instruction.
+
+**Do not edit code until this instruction review is complete.**
+
+First provide an instruction-reading report containing:
+1. Every discovered instruction file.
+2. Whether each file was read completely.
+3. Important project constraints.
+4. Conflicting instructions, if any.
+5. Your understanding of the actual product goal.
+
+---
+
+# PHASE 2 — COMPLETE AUDIT OF THE EXISTING PLATFORM
+
+Do not assume that previous agent reports prove the platform is complete.
+
+Inspect the actual implementation.
+
+Audit:
+- Complete Quran learning journey.
+- All seven existing learning games.
+- Every game's level structure.
+- Every lesson and exercise.
+- Arabic content and educational correctness.
+- Central audio engine.
+- Human Qari audio assets and mappings.
+- Game completion and progression.
+- Reward-building systems.
+- Progress persistence.
+- Mobile and desktop UI.
+- Existing AI tutor and teaching features.
+
+Inspect the actual source code and current browser behavior.
+
+Do not merely inspect filenames or test results.
+
+For each game, explain:
+
+1. What skill does this game teach?
+2. What does the child learn at each level?
+3. What is the actual educational objective?
+4. Are the exercises meaningful and progressively harder?
+5. Does the game teach, demonstrate, practice and assess?
+6. Does it contribute to the complete Quran learning journey?
+7. What content is missing?
+8. Are the Arabic pronunciations correct?
+9. Does the reward reflect genuine learning progress?
+
+Create a detailed gap-analysis report before implementation.
+
+---
+
+# PHASE 3 — BUILD ONE COMPLETE LEARNING JOURNEY: ALIF TO QURAN
+
+The entire platform must follow one connected educational progression.
+
+A child must never feel that the games are unrelated activities.
+
+Design and implement an integrated curriculum covering the following stages.
+
+## Stage 1 — Arabic Letter Foundations
+
+Teach:
+- ا through ي
+- Recognition of all Arabic letters.
+- Correct letter names.
+- Correct basic sounds.
+- Letter identification.
+- Similar-looking letter differences.
+- Dot positions and numbers.
+- Initial, medial and final letter forms.
+- Correct pronunciation and basic Makhraj awareness.
+
+## Stage 2 — Joining Arabic Letters
+
+Teach:
+- Joining letters.
+- Connected and disconnected forms.
+- Letter position changes.
+- Mufradat and Murakkabat.
+- Reading simple connected combinations.
+- Recognizing how letters change shape in words.
+
+## Stage 3 — Harakat
+
+Teach:
+- Fathah.
+- Kasrah.
+- Dammah.
+- Reading individual letters with each Harakah.
+- Combining two and three letters.
+- Reading short syllables.
+- Recognizing common mistakes.
+
+## Stage 4 — Tanween
+
+Teach:
+- Fathatain.
+- Kasratain.
+- Dammatain.
+- Reading examples.
+- Combining Tanween with different letters.
+- Reading progressively longer combinations.
+
+## Stage 5 — Sukoon / Jazm
+
+Teach:
+- Recognizing Sukoon.
+- Correct consonant stopping.
+- Combining Sukoon with earlier Harakat.
+- Reading short and longer combinations.
+- Common pronunciation mistakes.
+
+## Stage 6 — Tashdeed
+
+Teach:
+- Recognizing Shaddah.
+- Correct doubled consonant pronunciation.
+- Shaddah with Fathah, Kasrah and Dammah.
+- Shaddah with Tanween where applicable.
+- Reading Quranic examples.
+
+## Stage 7 — Madd and Leen
+
+Teach:
+- Basic Madd.
+- Madd letters.
+- Correct vowel length.
+- Leen.
+- Practical reading examples.
+- Listening and distinguishing short and extended sounds.
+
+## Stage 8 — Syllables and Complete Words
+
+Teach:
+- Two-letter combinations.
+- Three-letter combinations.
+- Multi-letter combinations.
+- Quranic vocabulary.
+- Reading complete Quranic words.
+- Recognizing familiar Quranic words.
+- Correct word-level pronunciation.
+
+## Stage 9 — Makhraj and Sifat
+
+Teach progressively:
+- Correct articulation points.
+- Similar-sounding letters.
+- Letter characteristics.
+- Heavy and light pronunciation.
+- Tafkheem and Tarqeeq.
+- Qalqalah.
+- Ghunnah.
+- Practical listening and pronunciation exercises.
+
+## Stage 10 — Tajweed Foundations
+
+Progressively introduce:
+- Noon Sakinah and Tanween rules.
+- Izhar.
+- Idgham.
+- Iqlab.
+- Ikhfa.
+- Meem Sakinah rules.
+- Ghunnah.
+- Qalqalah.
+- Madd rules.
+- Practical Quranic examples.
+
+Use authentic curriculum content. Do not invent incorrect rules or oversimplify Quran pronunciation.
+
+## Stage 11 — Reading Quranic Verses
+
+Teach:
+- Short Quranic phrases.
+- Complete Quranic verses.
+- Correct word connection.
+- Stopping and starting.
+- Basic Waqf awareness.
+- Smooth recitation.
+- Listening to a verified Qari.
+- Practicing with the correct recitation.
+- Gradually increasing reading difficulty.
+
+## Stage 12 — Surah and Quran Reading Journey
+
+Build a structured progression toward reading the Quran:
+- Short Surahs.
+- Juz Amma reading journey.
+- Increasingly longer Surahs.
+- Complete Quran reading progression.
+- Continuous revision.
+- Reading assessments.
+- Recitation accuracy tracking.
+
+The goal is Quran reading ability, not simply passing games.
+
+Do not claim that a child has mastered an entire stage merely because the child completed a game.
+
+Use real educational mastery criteria.
+
+---
+
+# PHASE 4 — FIX THE GAME CURRICULUM
+
+I am dissatisfied with games that contain only a few basic levels and keep teaching only isolated letters.
+
+Some games currently have approximately four levels, despite the larger Quran learning objective.
+
+Do not impose an arbitrary four-level ceiling.
+
+For every game, design a meaningful curriculum with sufficient levels, exercises and progressive difficulty.
+
+However, do not add meaningless levels just to increase the level count.
+
+Each level must teach a clear skill.
+
+The seven games must have different educational purposes.
+
+For example:
+
+### Drag & Drop
+Progress from letter recognition to connected forms, Harakat, syllables and word recognition.
+
+### Balloon Pop
+Use listening, visual recognition, Harakat identification and increasingly challenging Arabic combinations.
+
+### Memory Match
+Progress from matching letters to matching connected forms, Harakat combinations, words and other appropriate Quran learning concepts.
+
+### Sound Detective
+Build real listening skills: distinguishing similar letters, recognizing Harakat, identifying correct sounds and hearing Tajweed differences.
+
+### Dot Count
+Teach Arabic letter structure, dot recognition, letter differentiation and progressively more challenging visual identification.
+
+### Trace Letter
+Teach Arabic writing direction, letter construction, individual shapes, positional forms and connected writing exercises.
+
+### Harakat Master
+Progress from individual Harakat to combinations, Tanween, Sukoon, Tashdeed, Madd and Quranic word reading.
+
+These are educational direction examples, not permission to force unrelated exercises into a game.
+
+For every game:
+- Define its educational role.
+- Define all levels.
+- Define learning objectives.
+- Define exercises.
+- Define difficulty progression.
+- Define completion criteria.
+- Define reward progression.
+- Connect its learning outcomes to the central curriculum.
+
+A game may specialize in one skill, but the complete platform must cover the entire Quran reading journey.
+
+---
+
+# PHASE 5 — EVERY LEVEL MUST TEACH BEFORE IT TESTS
+
+Use a consistent educational flow:
+
+1. INTRODUCE — Explain what the child will learn.
+2. SHOW — Demonstrate the Arabic text clearly.
+3. LISTEN — Play the correct verified human Qari recording.
+4. LEARN — Explain the concept in simple child-friendly language.
+5. PRACTICE — Let the child try multiple examples.
+6. PLAY — Provide meaningful interactive exercises.
+7. ASSESS — Test whether the child actually understands.
+8. REWARD — Celebrate genuine achievement.
+9. PROGRESS — Unlock the next appropriate learning stage.
+
+Do not immediately throw a child into a game without teaching the concept.
+
+Provide additional practice when the child makes repeated mistakes.
+
+Do not unlock advanced material solely because a timer expired or a reward animation played.
+
+---
+
+# PHASE 6 — ZERO ROBOTIC QURAN PRONUNCIATION
+
+This requirement is non-negotiable.
+
+There must be no robotic or synthetic voice for Quranic Arabic pronunciation.
+
+Every Arabic learning item must play its correct verified human Qari recording.
+
+This includes:
+- Individual letters.
+- Harakat.
+- Tanween.
+- Sukoon.
+- Tashdeed.
+- Madd.
+- Leen.
+- Murakkabat.
+- Syllables.
+- Complete words.
+- Makhraj.
+- Sifat.
+- Tajweed.
+- Quranic verses.
+- Surah recitation.
+
+## Exact audio correctness
+
+Every clickable Arabic item must play the audio belonging to that exact Arabic item.
+
+Examples:
+- سَ must play Seen with Fathah.
+- سِ must play Seen with Kasrah.
+- سُ must play Seen with Dammah.
+- زَ must play Zay with Fathah.
+- زِ must play Zay with Kasrah.
+- زُ must play Zay with Dammah.
+
+Never mix similar-looking or similar-sounding letters.
+
+Never use a different word's audio as a substitute.
+
+Never assume a filename proves the pronunciation is correct.
+
+When audio is missing:
+- Show a clear unavailable state.
+- Do not play robotic speech.
+- Do not silently select an unrelated recording.
+
+Use the existing central audio engine and preserve the existing architecture.
+
+Do not rebuild the audio engine unnecessarily.
+
+For complete words, use exact verified word recordings or correctly aligned word segments. Do not treat a complete Ayah recording as an isolated word recording.
+
+Human-listening verification must be distinguished from automated URL and mapping tests.
+
+---
+
+# PHASE 7 — CHILD-FRIENDLY UI/UX THAT MAKES CHILDREN WANT TO RETURN
+
+The user interface must be clear, simple, polished and enjoyable.
+
+A child should immediately understand:
+- Where they are.
+- What they are learning.
+- What they should do next.
+- How much they have learned.
+- What they will unlock next.
+
+Required design qualities:
+
+- Mobile-first.
+- Large readable Arabic text.
+- Clear Bengali instructions.
+- Beautiful Arabic typography.
+- Proper spacing.
+- Large touch-friendly buttons.
+- Smooth transitions.
+- Consistent colors and visual language.
+- Friendly illustrations.
+- Meaningful animations.
+- Clear progress indicators.
+- No overcrowded screens.
+- No confusing navigation.
+- No clipped or hidden content.
+- No unnecessary visual noise.
+- No excessive popups.
+- No repetitive or meaningless rewards.
+
+Make the UI emotionally rewarding without distracting from learning.
+
+Build a motivating learning journey so children feel:
+- Excited to start.
+- Comfortable making mistakes.
+- Proud of completing a lesson.
+- Curious about the next level.
+- Motivated to return tomorrow.
+
+Keep the existing premium Islamic visual identity and project-specific design rules.
+
+Do not redesign unrelated pages or ERP modules.
+
+---
+
+# PHASE 8 — REAL PROGRESSION AND REWARD SYSTEM
+
+Rewards must reflect actual learning.
+
+Preserve the existing construction-based reward concepts where they work.
+
+For example:
+- Super Noor Car.
+- Kids Fun Park.
+- Noor Cottage.
+- Noor Space Rocket.
+- Amal Fruit Garden.
+- Castle of Knowledge.
+- Noor City and Grand Mosque.
+
+However:
+- Every completed level must award the correct unique component.
+- Replaying a completed level must not duplicate rewards.
+- Refreshing must not reset progress.
+- Leaving and re-entering must preserve progress.
+- Progress must survive browser close and reopening.
+- Completion must be based on real learning criteria.
+- A child must clearly understand what they have achieved.
+
+Rewards must never replace educational quality.
+
+---
+
+# PHASE 9 — TEST THE ENTIRE EXPERIENCE
+
+Do not rely only on unit tests or successful builds.
+
+Perform real browser verification.
+
+Test:
+- First-time learner experience.
+- Curriculum navigation.
+- Every game's actual teaching flow.
+- Every level's exercises.
+- Correct answers and incorrect answers.
+- Audio playback.
+- Correct Arabic-to-audio mapping.
+- Level progression.
+- Completion.
+- Rewards.
+- Refresh persistence.
+- Back navigation.
+- Re-entering games.
+- Mobile viewport.
+- Desktop viewport.
+- Empty and missing audio states.
+
+Check whether a real child can understand the UI without technical explanations.
+
+Verify that the learning journey actually progresses beyond isolated letters.
+
+A successful build does not prove that the learning platform works properly.
+
+---
+
+# PHASE 10 — STRICT IMPLEMENTATION RULES
+
+Before implementation, produce:
+1. Full instruction-reading report.
+2. Existing curriculum audit.
+3. Game-by-game gap analysis.
+4. Complete proposed learning roadmap.
+5. Audio quality audit.
+6. UI/UX issues.
+7. A phased implementation plan.
+
+After the audit, implement in controlled phases.
+
+Do not make random changes.
+
+Preserve:
+- Existing authentication.
+- Existing database architecture.
+- Existing progress data.
+- Existing central audio engine.
+- Existing working features.
+- Existing games and reward assets.
+- Existing AI tutor and voice features unrelated to Quranic speech.
+- Existing ERP and public website.
+
+Do not modify unrelated systems.
+
+Respect all Supabase Free Tier, tenant isolation, server-side security and repository rules.
+
+---
+
+# PHASE 11 — FINAL ACCEPTANCE CRITERIA
+
+The project is not complete merely because:
+- Seven games exist.
+- Every game has a reward.
+- A few levels work.
+- Tests pass.
+- The production build succeeds.
+
+The actual completion criteria are:
+
+1. All instruction documents were read.
+2. The complete Alif-to-Quran curriculum is implemented.
+3. All learning stages are connected.
+4. Each game has a meaningful educational purpose.
+5. No game is restricted to basic letter repetition when its curriculum requires more.
+6. Every lesson teaches before assessing.
+7. Children can progress through meaningful difficulty.
+8. Quranic pronunciation uses correct verified human Qari audio.
+9. No synthetic or robotic Quran speech is used.
+10. The UI is clear, polished and child-friendly.
+11. Progress and rewards persist correctly.
+12. Actual browser tests verify the experience.
+13. No unrelated project functionality is broken.
+
+## FINAL REPORT
+
+At the end, provide:
+
+- All instruction files discovered and read.
+- Complete curriculum structure.
+- Game-by-game level and lesson breakdown.
+- Exact missing curriculum items fixed.
+- Exact audio issues fixed.
+- Exact files changed.
+- Browser verification evidence.
+- Screenshots of important learning stages.
+- Automated test results.
+- Typecheck, lint and production build results.
+- Any remaining limitations.
+
+Never claim complete Quran learning coverage, zero robotic speech or perfect pronunciation without evidence.
+
+**FINAL PRINCIPLE: Build a real Quran learning platform for children — not merely seven attractive games. The child must be able to start from Alif and gradually become capable of reading the Quran correctly.**
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-11-02T14:08:34+06:00.
+
+The user's current state is as follows:
+Active Document: e:\aa\rahmanialust\scratch\recapture-proof-2.mjs (LANGUAGE_UNSPECIFIED)
+Cursor is on line: 18
+Other open documents:
+- e:\aa\rahmanialust\src\features\ai\components\InteractiveVoiceTutor.jsx (LANGUAGE_UNSPECIFIED)
+- e:\aa\rahmanialust\src\features\site\pages\QuranStudioPage.jsx (LANGUAGE_UNSPECIFIED)
+- e:\aa\rahmanialust\src\features\ai-learning\components\QuranRecitationAssessment.jsx (LANGUAGE_UNSPECIFIED)
+- e:\aa\rahmanialust\scratch\capture-user-voice-studio-proofs.mjs (LANGUAGE_UNSPECIFIED)
+- e:\aa\rahmanialust\app\(site)\quran-tutor\games\page.jsx (LANGUAGE_UNSPECIFIED)
+
+The user has uploaded 1 image(s):
+- C:/Users/Arfan/.gemini/antigravity/brain/4eb044b3-6647-4b7c-a39d-ba67a843a2f4/.user_uploaded/media_1793606421899_8b1b9ec7.jpg
+You can embed this image in an artifact if you need the USER to review it.
+</ADDITIONAL_METADATA>

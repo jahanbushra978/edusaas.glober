@@ -50,7 +50,8 @@ export async function POST(request) {
       !session ||
       (session.role !== "admin" &&
         session.role !== "branch_admin" &&
-        session.role !== "boarding_manager")
+        session.role !== "boarding_manager" &&
+        session.role !== "teacher")
     ) {
       return NextResponse.json(
         { ok: false, message: "Unauthorized" },

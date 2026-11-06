@@ -6,7 +6,7 @@ import {
   BookOpen, Mic, Award, Compass, Volume2, Headphones, 
   BarChart3, Trophy, Users, Building2, 
   Check, X, ChevronDown, ChevronUp, Play, Square, 
-  Star, ArrowRight, Bot, Search, Menu, Baby, Gamepad2, RotateCcw, PenTool
+  Star, ArrowRight, ArrowLeft, Bot, Search, Menu, Baby, Gamepad2, RotateCcw, PenTool
 } from "lucide-react";
 import { toast } from "sonner";
 import QuranSemanticSearchModal from "@/features/ai/components/QuranSemanticSearchModal";
@@ -82,11 +82,11 @@ export default function AIQuranTutorPage() {
     },
     {
       id: "nur-teacher",
-      title: "নূর এআই শিক্ষক",
-      subtitle: "৬-স্তরের মাশক ও উচ্চারণ শিক্ষা",
+      title: "তাজবিদ শিখি",
+      subtitle: "নূর এআই-এর সহায়তায় ধাপে ধাপে শুদ্ধ কুরআন তিলাওয়াত",
       icon: Users,
       iconBg: "bg-teal-100 text-teal-800",
-      badge: "জনপ্রিয়",
+      badge: "পূর্ণাঙ্গ পাঠ্যক্রম",
       link: "/quran-tutor/studio?feature=nur-teacher"
     },
     {
@@ -205,9 +205,9 @@ export default function AIQuranTutorPage() {
     },
     {
       icon: Users,
-      title: "নূর এআই শিক্ষক (৬-স্তরের মাশক)",
-      desc: "Explain → Demonstrate → Practice → Evaluate → Correct → Repeat চক্রের পূর্ণাঙ্গ পাঠ।",
-      badge: "জনপ্রিয় শিক্ষক",
+      title: "তাজবিদ শিখি (পূর্ণাঙ্গ পাঠ্যক্রম)",
+      desc: "নূর এআই-এর সহায়তায় ৪টি স্তর, ১২টি ইউনিট ও ৪১টি পাঠে বিশুদ্ধ কুরআন তিলাওয়াত শিক্ষা।",
+      badge: "প্রামাণিক তাজবিদ",
       link: "/quran-tutor/studio?feature=nur-teacher"
     },
     {
@@ -304,20 +304,31 @@ export default function AIQuranTutorPage() {
       {/* ── STICKY TOP NAVBAR ── */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-100 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-          {/* Brand Logo */}
-          <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-700 to-teal-800 flex items-center justify-center text-white shadow-md shadow-emerald-700/20 group-hover:scale-105 transition-transform">
-              <BookOpen className="w-5 h-5 text-emerald-200" />
-            </div>
-            <div>
-              <span className="font-black text-lg sm:text-xl tracking-tight text-emerald-950 flex items-center gap-1.5 group-hover:text-emerald-700 transition-colors">
-                AI Quran Tutor
-              </span>
-              <span className="hidden sm:inline-block text-[10px] text-emerald-700 font-bold px-2 py-0.5 bg-emerald-50 rounded-full border border-emerald-200">
-                নূর কুরআন শিক্ষক
-              </span>
-            </div>
-          </Link>
+          {/* Brand Logo & Back to Main Website */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
+            <Link
+              href="/"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs"
+              title="মূল ওয়েবসাইটে ফিরে যান"
+            >
+              <ArrowLeft className="w-4 h-4 text-emerald-700" />
+              <span className="text-[11px] sm:text-xs">মূল ওয়েবসাইট</span>
+            </Link>
+
+            <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-700 to-teal-800 flex items-center justify-center text-white shadow-md shadow-emerald-700/20 group-hover:scale-105 transition-transform">
+                <BookOpen className="w-5 h-5 text-emerald-200" />
+              </div>
+              <div>
+                <span className="font-black text-lg sm:text-xl tracking-tight text-emerald-950 flex items-center gap-1.5 group-hover:text-emerald-700 transition-colors">
+                  AI Quran Tutor
+                </span>
+                <span className="hidden sm:inline-block text-[10px] text-emerald-700 font-bold px-2 py-0.5 bg-emerald-50 rounded-full border border-emerald-200">
+                  নূর কুরআন শিক্ষক
+                </span>
+              </div>
+            </Link>
+          </div>
 
           {/* Core Feature Badges (Desktop / Large Screens) */}
           <nav className="hidden xl:flex items-center gap-3 text-xs font-bold text-slate-600">

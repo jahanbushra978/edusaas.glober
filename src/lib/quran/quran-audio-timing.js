@@ -15,6 +15,53 @@ export const QDC_RECITER_MAP = {
   minshawy_teacher: 2, // Mohamed Siddiq Al-Minshawi
 };
 
+/**
+ * Standard Unicode regex matching all standalone Quranic Waqf & recitation symbols.
+ * (علائم الوقف: ۚ, ۗ, ۖ, ۘ, ۙ, ۜ, ۞, ۩, ۛ etc.)
+ */
+export const WAQF_OR_SIGN_REGEX = /^[\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED\u06DE\u06E9\u06DD\uFD3E\uFD3F\s\(\)\[\]\d০-৯0-9\.,:-]+$/;
+
+/**
+ * Split Arabic Quran Ayah text into clean individual words,
+ * automatically merging standalone Waqf signs with their preceding host word.
+ * This ensures the word array length perfectly matches QuranCDN's word segment count 1-to-1.
+ *
+ * @param {string|Array} textOrWords
+ * @returns {string[]} Array of synchronized Arabic words
+ */
+export function splitArabicAyahWords(textOrWords) {
+  if (!textOrWords) return [];
+  let rawList = [];
+  if (Array.isArray(textOrWords)) {
+    rawList = textOrWords.map((w) => (typeof w === "string" ? w : w.ar || w.text || ""));
+  } else if (typeof textOrWords === "string") {
+    rawList = textOrWords.trim().split(/\s+/);
+  } else {
+    return [];
+  }
+
+  const merged = [];
+  let pendingPrefix = "";
+  for (const token of rawList) {
+    if (!token) continue;
+    if (WAQF_OR_SIGN_REGEX.test(token)) {
+      if (merged.length > 0) {
+        merged[merged.length - 1] += " " + token;
+      } else {
+        pendingPrefix = pendingPrefix ? pendingPrefix + " " + token : token;
+      }
+    } else {
+      if (pendingPrefix) {
+        merged.push(pendingPrefix + " " + token);
+        pendingPrefix = "";
+      } else {
+        merged.push(token);
+      }
+    }
+  }
+  return merged;
+}
+
 // In-memory cache for chapter segments
 const chapterSegmentsCache = new Map();
 
@@ -55,9 +102,23 @@ export async function loadChapterSegments(chapterNumber, qariId = "alafasy") {
 
       timings.forEach((vt) => {
         if (!vt.segments || vt.segments.length === 0) return;
-        const baseOffset = vt.segments[0][1];
+        // Filter out any malformed/trailing non-tuple segment entries
+        const validSegments = vt.segments.filter((seg) => Array.isArray(seg) && seg.length >= 3);
+        if (validSegments.length === 0) return;
+
+        // Detect and remove trailing outro artifact (e.g. abrupt reset to word 1 after verse completion)
+        let maxWord = 0;
+        for (const s of validSegments) {
+          if (s[0] > maxWord) maxWord = s[0];
+        }
+        const lastSeg = validSegments[validSegments.length - 1];
+        const cleanSegments = (validSegments.length > 3 && maxWord >= 5 && lastSeg[0] <= 2)
+          ? validSegments.slice(0, -1)
+          : validSegments;
+
+        const baseOffset = cleanSegments[0][1];
         // Normalize segment timings relative to the start of this verse audio (0ms)
-        const normalized = vt.segments.map((seg) => ({
+        const normalized = cleanSegments.map((seg) => ({
           wordIndex: Math.max(0, seg[0] - 1),
           startMs: Math.max(0, seg[1] - baseOffset),
           endMs: Math.max(0, seg[2] - baseOffset),
@@ -150,8 +211,12 @@ export function getActiveArabicWordIndex({
   qariId,
   words = [],
 }) {
-  if (!words || words.length <= 1) return 0;
+  if (!words || words.length === 0) return 0;
   if (!duration || duration <= 0) return 0;
+
+  const cleanWords = splitArabicAyahWords(words);
+  const totalWords = cleanWords.length || (Array.isArray(words) ? words.length : 1);
+  if (totalWords <= 1) return 0;
 
   const reciterId = QDC_RECITER_MAP[qariId] || 7;
   const cacheKey = `${reciterId}:${surahNumber}`;
@@ -165,16 +230,16 @@ export function getActiveArabicWordIndex({
     for (let i = 0; i < segments.length; i++) {
       const seg = segments[i];
       if (currentMs >= seg.startMs && currentMs < seg.endMs) {
-        return Math.min(seg.wordIndex, words.length - 1);
+        return Math.min(seg.wordIndex, totalWords - 1);
       }
       // If past the last segment, hold on the last word until playback ends
       if (i === segments.length - 1 && currentMs >= seg.endMs) {
-        return Math.min(seg.wordIndex, words.length - 1);
+        return totalWords - 1;
       }
     }
   }
 
   // Fallback to Tajweed acoustic pacing
-  return calculateTajweedWordIndex(currentTime, duration, words);
+  return calculateTajweedWordIndex(currentTime, duration, cleanWords);
 }
 

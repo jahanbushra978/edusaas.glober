@@ -31,6 +31,7 @@ import {
 import { universalAudioEngine } from "@/lib/quran/audio";
 import { recordMistakeToMemory, recordModuleCompletion, getLearningMemory } from "@/lib/ai/teaching-rules";
 import { getSavedAIConfig } from "@/features/ai/lib/aiConfigHelper";
+import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 
 import { DRILL_GENERATOR_REGISTRY } from "@/features/ai/lib/drillGeneratorRegistry";
 export { DRILL_GENERATOR_REGISTRY };
@@ -375,7 +376,7 @@ export default function AIPracticeGenerator({ studentId = "student_studio", clas
         feedbackBn: passed
           ? `মাশাআল্লাহ! ${currentPack.ruleTitleBn} সুন্দরভাবে আদায় হয়েছে।`
           : `হরফে সামান্য অস্পষ্টতা পাওয়া গেছে। ${currentDrill.tip}`,
-        wordMatches: currentDrill.ar.split(" ").map((w) => ({
+        wordMatches: splitArabicAyahWords(currentDrill.ar).map((w) => ({
           word: w,
           status: passed ? "correct" : "near",
         })),

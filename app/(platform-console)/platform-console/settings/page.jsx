@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, CreditCard, MessageSquare, ShieldAlert,
-  Save, CheckCircle2, RefreshCw, Send, PhoneCall, Mail, MapPin, AlertTriangle
+  Save, CheckCircle2, RefreshCw, Send, PhoneCall, Mail, MapPin, AlertTriangle, Users, Percent, Video
 } from "lucide-react";
 
 const DEFAULT_SETTINGS = {
@@ -25,6 +25,13 @@ const DEFAULT_SETTINGS = {
   currency: "BDT (৳)",
   timezone: "Asia/Dhaka (GMT+6)",
   defaultAcademicYear: "2026",
+
+  // Human Teacher Marketplace & Commission Controls
+  teacherCommissionPercentage: 10,
+  teacherAutoApprove: true,
+  teacherMinHourlyRate: 200,
+  teacherPayoutSchedule: "সাপ্তাহিক (প্রতি বৃহস্পতিবার)",
+  teacherCallingEnabled: true,
 
   // Payment Gateways
   bkashEnabled: true,
@@ -200,6 +207,18 @@ export default function PlatformSettingsPage() {
         >
           <ShieldAlert size={15} />
           <span>টেন্যান্সি পলিসি ও রক্ষণাবেক্ষণ</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("teachers")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "teachers"
+              ? "bg-slate-900 text-white shadow-sm"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+          }`}
+        >
+          <Users size={15} />
+          <span>হিউম্যান টিচার ও কমিশন কন্ট্রোল</span>
         </button>
       </div>
 
@@ -659,6 +678,156 @@ export default function PlatformSettingsPage() {
                   className="font-mono text-xs"
                 />
                 <p className="text-[10px] text-slate-400">এই আইপিগুলো থেকে স্বাভাবিকভাবেই প্যানেলে প্রবেশ করা যাবে।</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Tab 5: Human Teacher Marketplace & Commission */}
+      {activeTab === "teachers" && (
+        <div className="space-y-6 max-w-4xl">
+          {/* Dynamic Commission Setting Card */}
+          <Card className="rounded-3xl border-slate-200 shadow-sm">
+            <CardHeader className="p-6 pb-4 border-b border-slate-100">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <Percent size={18} className="text-teal-600" />
+                    <span>প্ল্যাটফর্ম ডাইনামিক কমিশন রেট (%)</span>
+                  </CardTitle>
+                  <CardDescription className="text-xs text-slate-500">
+                    শিক্ষার্থীদের সরাসরি পরিশোধিত ফি বা হাদিয়া থেকে প্ল্যাটফর্মের অর্জিত কমিশন শতাংশ নির্ধারণ করুন
+                  </CardDescription>
+                </div>
+                <Badge className="bg-teal-100 text-teal-800 border-teal-200 font-black text-xs px-3 py-1">
+                  বর্তমান কমিশন: {settings.teacherCommissionPercentage ?? 10}%
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-5 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 items-center">
+                <div className="space-y-1.5">
+                  <Label className="text-slate-700 font-bold">কমিশন শতাংশ (০% থেকে ১০০%)</Label>
+                  <div className="relative max-w-xs">
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={settings.teacherCommissionPercentage ?? 10}
+                      onChange={(e) => {
+                        const val = Math.max(0, Math.min(100, Number(e.target.value) || 0));
+                        updateSetting("teacherCommissionPercentage", val);
+                      }}
+                      className="font-mono text-base font-bold pr-10"
+                    />
+                    <span className="absolute right-3 top-2.5 font-bold text-slate-400">%</span>
+                  </div>
+                  <p className="text-[11px] text-slate-500">
+                    উদাহরণ: 10% দিলে প্রতি ১,০০০৳ ফিতে প্ল্যাটফর্ম ১০০৳ পাবে এবং শিক্ষক ৯০০৳ পাবেন।
+                  </p>
+                </div>
+
+                {/* Live Split Calculation Simulator */}
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                  <p className="font-bold text-slate-800 text-[11px] uppercase tracking-wider">
+                    লাইভ হিসাব ক্যালকুলেটর (১,০০০ ৳ নমুনা ফি)
+                  </p>
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="text-slate-600">শিক্ষার্থী প্রদান করবে:</span>
+                    <span className="font-black text-slate-900">১,০০০ ৳</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-teal-700 font-semibold">
+                    <span>প্ল্যাটফর্ম কমিশন ({settings.teacherCommissionPercentage ?? 10}%):</span>
+                    <span>+{Math.round(1000 * ((settings.teacherCommissionPercentage ?? 10) / 100))} ৳</span>
+                  </div>
+                  <div className="flex justify-between items-center text-xs text-emerald-700 font-bold border-t border-slate-200 pt-1.5">
+                    <span>শিক্ষকের ওয়ালেটে জমা:</span>
+                    <span>{Math.round(1000 * (1 - (settings.teacherCommissionPercentage ?? 10) / 100))} ৳</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Teacher Auto-Approve Toggle Card */}
+          <Card className="rounded-3xl border-slate-200 shadow-sm">
+            <CardHeader className="p-6 pb-4 border-b border-slate-100">
+              <CardTitle className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Users size={18} className="text-teal-600" />
+                <span>শিক্ষক সেলফ-রেজিস্ট্রেশন ও প্রোফাইল অনুমোদন পলিসি</span>
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                নতুন শিক্ষকরা সরাসরি প্রোফাইল তৈরি করে যুক্ত হতে পারবেন নাকি অ্যাডমিন অনুমোদন প্রয়োজন হবে
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4 text-xs">
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="space-y-0.5">
+                  <p className="font-bold text-slate-900">
+                    শিক্ষক অটো-অনুমোদন (Auto-Approve Profile)
+                  </p>
+                  <p className="text-slate-500 text-[11px]">
+                    {settings.teacherAutoApprove !== false
+                      ? "বর্তমানে চালু: শিক্ষকরা প্রোফাইল সাজিয়ে জমা দিলেই তাৎক্ষণিকভাবে ডিরেক্টরিতে প্রকাশিত হবে।"
+                      : "বর্তমানে বন্ধ: শিক্ষকের প্রোফাইল জমা হওয়ার পর সুপার অ্যাডমিন যাচাই করে ম্যানুয়ালি অনুমোদন দিলে তবেই দেখা যাবে।"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full ${
+                    settings.teacherAutoApprove !== false
+                      ? "bg-emerald-100 text-emerald-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}>
+                    {settings.teacherAutoApprove !== false ? "অটো চালু" : "অনুমোদন আবশ্যক"}
+                  </span>
+                  <input
+                    type="checkbox"
+                    checked={settings.teacherAutoApprove !== false}
+                    onChange={(e) => updateSetting("teacherAutoApprove", e.target.checked)}
+                    className="h-5 w-5 rounded text-teal-600 cursor-pointer"
+                  />
+                </div>
+              </div>
+
+              {/* WebRTC Video/Audio Calling Switch */}
+              <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl border border-slate-100">
+                <div className="space-y-0.5">
+                  <p className="font-bold text-slate-900 flex items-center gap-2">
+                    <Video size={14} className="text-teal-600" />
+                    <span>WebRTC ১-অন-১ লাইভ ভিডিও ও অডিও কলিং</span>
+                  </p>
+                  <p className="text-slate-500 text-[11px]">
+                    IMO, Google Meet ও Zoom-এর মতো সরাসরি ব্রাউজার টু ব্রাউজার লাইভ কুরআন ক্লাস ব্যবস্থা।
+                  </p>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={settings.teacherCallingEnabled !== false}
+                  onChange={(e) => updateSetting("teacherCallingEnabled", e.target.checked)}
+                  className="h-5 w-5 rounded text-teal-600 cursor-pointer"
+                />
+              </div>
+
+              {/* Min hourly fee */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+                <div className="space-y-1.5">
+                  <Label className="text-slate-700 font-bold">সর্বনিম্ন পাঠদান ফি (টাকা / ঘণ্টা)</Label>
+                  <Input
+                    type="number"
+                    value={settings.teacherMinHourlyRate ?? 200}
+                    onChange={(e) => updateSetting("teacherMinHourlyRate", Number(e.target.value) || 0)}
+                    className="font-mono max-w-xs"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-slate-700 font-bold">পে-আউট ও উইথড্রয়াল সময়সূচী</Label>
+                  <Input
+                    value={settings.teacherPayoutSchedule ?? "সাপ্তাহিক (প্রতি বৃহস্পতিবার)"}
+                    onChange={(e) => updateSetting("teacherPayoutSchedule", e.target.value)}
+                    className="text-xs"
+                  />
+                </div>
               </div>
             </CardContent>
           </Card>

@@ -11,8 +11,10 @@ import {
 } from "lucide-react";
 import NurTeachingEngine from "@/features/ai/components/NurTeachingEngine";
 import MakhrajVisualizer from "@/features/ai/components/MakhrajVisualizer";
+import TajweedLearningPlatform from "@/features/ai-learning/components/tajweed/TajweedLearningPlatform";
 
 export default function NurAITeacherPage() {
+  const [activeTab, setActiveTab] = useState("tajweed"); // "tajweed" | "nur-engine"
   const [selectedMakhrajZone, setSelectedMakhrajZone] = useState("halq");
   const [selectedLetter, setSelectedLetter] = useState(null);
   const [showMakhrajModal, setShowMakhrajModal] = useState(false);
@@ -24,25 +26,25 @@ export default function NurAITeacherPage() {
   };
 
   return (
-    <div className="nur-theme min-h-screen bg-[#faf8f2] text-slate-800 flex flex-col font-sans selection:bg-emerald-500 selection:text-white relative overflow-x-hidden">
+    <div className="nur-theme min-h-screen bg-[#faf8f2] dark:bg-[#071912] text-slate-800 dark:text-slate-100 flex flex-col font-sans selection:bg-emerald-500 selection:text-white relative overflow-x-hidden">
       {/* ── AMBIENT ISLAMIC LIGHTING & WARM GLOWS ── */}
       <div className="fixed top-0 left-1/3 w-[600px] h-[350px] bg-emerald-500/10 rounded-full blur-[130px] pointer-events-none -z-10" />
       <div className="fixed bottom-0 right-1/4 w-[500px] h-[350px] bg-amber-400/10 rounded-full blur-[140px] pointer-events-none -z-10" />
 
-      {/* ── TOP IMMERSIVE APP BAR (Child-Friendly Frosted Ivory) ── */}
-      <header className="h-16 border-b border-emerald-100/80 bg-white/95 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-30 sticky top-0 shadow-sm">
+      {/* ── TOP IMMERSIVE APP BAR ── */}
+      <header className="h-16 border-b border-emerald-100/80 dark:border-emerald-900/60 bg-white/95 dark:bg-[#0a2318]/95 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-30 sticky top-0 shadow-sm">
         {/* Left: Navigation & Branding */}
         <div className="flex items-center gap-3">
           <Link
             href="/quran-tutor"
-            className="p-2 sm:px-3 sm:py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 hover:bg-emerald-100 text-emerald-800 transition-colors flex items-center gap-1.5 text-xs font-bold shadow-xs"
+            className="p-2 sm:px-3 sm:py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950 border border-emerald-200/80 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 transition-colors flex items-center gap-1.5 text-xs font-bold shadow-xs"
             title="কুরআন টিউটর হোমে ফিরুন"
           >
-            <ArrowLeft className="w-4 h-4 text-emerald-700" />
+            <ArrowLeft className="w-4 h-4 text-emerald-700 dark:text-emerald-300" />
             <span className="hidden sm:inline">ফিরে যান</span>
           </Link>
 
-          <div className="h-5 w-px bg-emerald-200 hidden sm:block" />
+          <div className="h-5 w-px bg-emerald-200 dark:bg-emerald-800 hidden sm:block" />
 
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#0d7a5f] to-[#064e3b] flex items-center justify-center text-white shadow-md shadow-emerald-900/10 shrink-0">
@@ -50,27 +52,51 @@ export default function NurAITeacherPage() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
-                  <span>নূর এআই কুরআন শিক্ষক</span>
-                  <span className="text-[11px] bg-gradient-to-r from-amber-100 to-amber-200 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-300 font-bold shadow-xs">
-                    ছোটদের পূর্ণাঙ্গ পাঠশালা
+                <h1 className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white tracking-tight flex items-center gap-1.5">
+                  <span>তাজবিদ শিখি</span>
+                  <span className="text-[11px] bg-gradient-to-r from-amber-100 to-amber-200 dark:bg-amber-950 text-amber-900 dark:text-amber-300 px-2.5 py-0.5 rounded-full border border-amber-300 font-bold shadow-xs">
+                    পূর্ণাঙ্গ পাঠ্যক্রম
                   </span>
                 </h1>
               </div>
-              <p className="text-[11px] text-emerald-700 font-medium hidden md:block">
-                শিশুদের মুখে মুখে সহজ ও বিশুদ্ধ তাজবীদ, মাখরাজ ও তিলাওয়াত শিক্ষা
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-300 font-medium hidden md:block">
+                নূর এআই-এর সহায়তায় ধাপে ধাপে শুদ্ধ কুরআন তিলাওয়াত শিখি।
               </p>
             </div>
           </div>
         </div>
 
-        {/* Right: Quick Tools */}
+        {/* Center / Right: Tabs & Quick Tools */}
         <div className="flex items-center gap-2">
+          {/* Tab Switcher */}
+          <div className="bg-emerald-50 dark:bg-emerald-950 p-1 rounded-2xl border border-emerald-200 dark:border-emerald-800 hidden sm:flex items-center gap-1 text-xs font-bold">
+            <button
+              onClick={() => setActiveTab("tajweed")}
+              className={`px-3 py-1 rounded-xl transition-all ${
+                activeTab === "tajweed"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900"
+              }`}
+            >
+              তাজবিদ শিখি
+            </button>
+            <button
+              onClick={() => setActiveTab("nur-engine")}
+              className={`px-3 py-1 rounded-xl transition-all ${
+                activeTab === "nur-engine"
+                  ? "bg-emerald-600 text-white shadow-xs"
+                  : "text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900"
+              }`}
+            >
+              ভয়েস মাশক শিক্ষক
+            </button>
+          </div>
+
           {/* 17 Makharij Guide Modal Trigger */}
           <button
             type="button"
             onClick={() => setShowMakhrajModal(true)}
-            className="px-3.5 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+            className="px-3.5 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950 hover:bg-emerald-100 border border-emerald-200/80 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
             title="১৭ মাখরাজ এনাটমিক্যাল মানচিত্র দেখুন"
           >
             <Compass className="w-3.5 h-3.5 text-emerald-600" />
@@ -91,10 +117,17 @@ export default function NurAITeacherPage() {
 
       {/* ── MAIN FULL-PAGE CONTAINER ── */}
       <main className="flex-1 w-full max-w-6xl mx-auto p-3 sm:p-5 md:p-6 flex flex-col">
-        <NurTeachingEngine
-          onMakhrajHighlight={handleMakhrajHighlight}
-          onMakhrajSelect={handleMakhrajHighlight}
-        />
+        {activeTab === "tajweed" ? (
+          <TajweedLearningPlatform
+            isStandalonePage={false}
+            onOpenMakhrajVisualizer={() => setShowMakhrajModal(true)}
+          />
+        ) : (
+          <NurTeachingEngine
+            onMakhrajHighlight={handleMakhrajHighlight}
+            onMakhrajSelect={handleMakhrajHighlight}
+          />
+        )}
       </main>
 
       {/* ── MAKHRAJ MODAL COMPANION (Onosaee Clean Card) ── */}
@@ -123,6 +156,7 @@ export default function NurAITeacherPage() {
             <MakhrajVisualizer
               activeZone={selectedMakhrajZone}
               onZoneChange={setSelectedMakhrajZone}
+              targetLetter={selectedLetter}
               interactive={true}
             />
 

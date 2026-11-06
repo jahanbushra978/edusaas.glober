@@ -40,6 +40,7 @@ import {
 } from "@/lib/ai/qari-registry";
 import { universalAudioEngine } from "@/lib/quran/audio";
 import NurShaykhSelector from "./NurShaykhSelector";
+import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 import { LESSON_MODULES } from "../lib/nurLessonModules";
 import { getSavedAIConfig } from "../lib/aiConfigHelper";
 export { LESSON_MODULES };
@@ -545,7 +546,7 @@ export default function NurTeachingEngine({
         feedbackBn: passed
           ? `মাশাআল্লাহ! আপনি ${activeModule.titleBn} সুন্দরভাবে নিয়ম মেনে পড়েছেন।`
           : `হরফের মাখরাজে সামান্য অস্পষ্টতা পাওয়া গেছে। ${activeModule.correctTipBn}`,
-        wordMatches: activeModule.verseAr.split(" ").map((w) => ({
+        wordMatches: splitArabicAyahWords(activeModule.verseAr).map((w) => ({
           word: w,
           status: passed ? "correct" : "near",
         })),
@@ -717,7 +718,7 @@ export default function NurTeachingEngine({
           {/* Category Tabs */}
           <div className="flex flex-wrap items-center gap-1.5">
             {[
-              { id: "all", label: `✨ সব পাঠ (${LESSON_MODULES.length})` },
+              { id: "all", label: `📚 সব পাঠ (${LESSON_MODULES.length})` },
               { id: "noon_meem", label: "🟢 নূন ও মীম সাকিন (৮)" },
               { id: "madd", label: "🟣 সকল প্রকার মাদ্দ (৭)" },
               { id: "tajweed", label: "🎯 তাজবীদ রুলস (৪)" },

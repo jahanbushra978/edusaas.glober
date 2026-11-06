@@ -85,6 +85,12 @@ const NAV_ITEMS = [
     exact: true,
   },
   {
+    href: "/platform-console/moderation",
+    label: "Content Moderation (সোশ্যাল মডারেশন)",
+    icon: ShieldAlert,
+    exact: true,
+  },
+  {
     href: "/platform-console/security",
     label: "Security & Firewall (নিরাপত্তা)",
     icon: ShieldCheck,

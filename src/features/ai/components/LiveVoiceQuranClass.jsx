@@ -27,6 +27,7 @@ import {
   Radio,
   X,
   AlertCircle,
+  CheckCircle2,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -39,6 +40,7 @@ import { universalAudioEngine } from "@/lib/quran/audio";
 import { VoiceAgentEngine } from "@/lib/ai/voice-agent-engine";
 import { ALL_SURAHS, JUZ_MAPPING } from "@/lib/quran/quran-meta";
 import { getSurahData } from "@/lib/quran/quran-service";
+import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 import { nurStorage } from "@/lib/ai/nur-storage";
 import { getSavedAIConfig } from "../lib/aiConfigHelper";
 import {
@@ -82,6 +84,7 @@ export default function LiveVoiceQuranClass({
   const [isMicModalOpen, setIsMicModalOpen] = useState(false);
   const [isMicTesting, setIsMicTesting] = useState(false);
   const [micPermissionState, setMicPermissionState] = useState("unknown"); // 'unknown' | 'granted' | 'denied' | 'not_found'
+  const [isMicMuted, setIsMicMuted] = useState(false);
 
   // Resume position banner state
   const [savedResumePosition, setSavedResumePosition] = useState(null);
@@ -441,6 +444,27 @@ export default function LiveVoiceQuranClass({
     }
   };
 
+  // Dedicated Microphone Mute/Unmute Toggle
+  const handleToggleMicMute = () => {
+    if (micPermissionState !== "granted") {
+      handleTestMicrophone();
+      return;
+    }
+    if (isMicMuted) {
+      setIsMicMuted(false);
+      toast.success("মাইক্রোফোন সক্রিয় করা হয়েছে");
+    } else {
+      setIsMicMuted(true);
+      if (classState === "student_listening" || classState === "self_reciting") {
+        stopAllAudio();
+        stopVisualizer();
+        setClassState("idle");
+        setSelfReciteMode(false);
+      }
+      toast.info("মাইক্রোফোন বন্ধ (মিউট) করা হয়েছে");
+    }
+  };
+
   const stopVisualizer = () => {
     if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     if (micStreamRef.current) {
@@ -708,7 +732,9 @@ export default function LiveVoiceQuranClass({
     } catch (fallbackErr) {
       console.warn("AI evaluation fallback triggered:", fallbackErr);
       // Strictly honest deterministic comparison
-      const targetWords = (targetAyah.text || "").trim().split(/\s+/).filter(Boolean);
+      const targetWords = splitArabicAyahWords(
+        targetAyah.words && targetAyah.words.length > 0 ? targetAyah.words : targetAyah.text
+      );
       const cleanNorm = (str) =>
         (str || "")
           .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "")
@@ -1311,31 +1337,38 @@ export default function LiveVoiceQuranClass({
             <span>অটো-লুপ</span>
           </button>
 
-          {/* Microphone Test & Permission Button */}
+          {/* Microphone Mute & Permission Button */}
           <button
             type="button"
-            onClick={handleTestMicrophone}
+            onClick={handleToggleMicMute}
             disabled={isMicTesting}
-            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95 ${micPermissionState === "granted"
-                ? "bg-emerald-950/80 border-emerald-500/80 text-emerald-300 shadow-sm hover:bg-emerald-900/60"
+            className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1.5 shadow-sm active:scale-95 ${
+              micPermissionState === "granted"
+                ? isMicMuted
+                  ? "bg-rose-950/80 border-rose-500/80 text-rose-300 hover:bg-rose-900/60"
+                  : "bg-emerald-950/80 border-emerald-500/80 text-emerald-300 shadow-sm hover:bg-emerald-900/60"
                 : micPermissionState === "denied"
                   ? "bg-rose-950/90 border-rose-500 text-rose-300 animate-pulse shadow-md hover:bg-rose-900"
                   : "bg-gradient-to-r from-emerald-600 to-teal-600 border-emerald-400 text-white shadow-md hover:brightness-110 ring-2 ring-emerald-400/40"
-              }`}
+            }`}
             title={
               micPermissionState === "granted"
-                ? "মাইক্রোফোন সক্রিয় আছে (পরীক্ষা করতে ক্লিক করুন)"
+                ? isMicMuted
+                  ? "মাইক্রোফোন বন্ধ আছে (চালু করতে ক্লিক করুন)"
+                  : "মাইক্রোফোন চালু আছে (বন্ধ করতে ক্লিক করুন)"
                 : micPermissionState === "denied"
                   ? "মাইক্রোফোনের অনুমতি বন্ধ আছে (ক্লিক করে পরীক্ষা করুন)"
                   : "মাইক্রোফোনের অনুমতি দিন ও চালু করুন"
             }
           >
-            <Mic className="w-3.5 h-3.5" />
+            {isMicMuted ? <MicOff className="w-3.5 h-3.5 text-rose-400" /> : <Mic className="w-3.5 h-3.5" />}
             <span>
               {isMicTesting
                 ? "যাচাই হচ্ছে..."
                 : micPermissionState === "granted"
-                  ? "মাইক সচল ✓"
+                  ? isMicMuted
+                    ? "মাইক বন্ধ 🛑"
+                    : "মাইক সচল ✓"
                   : micPermissionState === "denied"
                     ? "মাইক ব্লক ⚠️"
                     : "মাইক চালু করুন (Allow Mic)"}
@@ -1510,7 +1543,11 @@ export default function LiveVoiceQuranClass({
                       {item.word}
                     </span>
                   ))
-                  : (currentAyah?.text || "").split(/\s+/).filter(Boolean).map((word, wIdx) => (
+                  : splitArabicAyahWords(
+                      currentAyah?.words && currentAyah?.words.length > 0
+                        ? currentAyah?.words
+                        : currentAyah?.text
+                    ).map((word, wIdx) => (
                     <span
                       key={wIdx}
                       onClick={() => setSelectedWordForTajweed({ word, index: wIdx })}
@@ -1659,14 +1696,31 @@ export default function LiveVoiceQuranClass({
             <div className="w-full flex items-center justify-center gap-3 pt-3 border-t border-emerald-900/40 z-10 flex-wrap">
               {/* Primary Mic Recite / Action Button */}
               {(classState === "student_listening" || classState === "self_reciting") ? (
-                <button
-                  type="button"
-                  onClick={() => finishStudentRecitationAndEvaluate(currentAyahIndex)}
-                  className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-sm font-bold shadow-xl flex items-center gap-2.5 active:scale-95 transition-all cursor-pointer animate-pulse ring-4 ring-rose-500/30"
-                >
-                  <MicOff className="w-5 h-5" />
-                  <span>পড়া শেষ হয়েছে • AI যাচাই করুন (Enter)</span>
-                </button>
+                <div className="flex items-center gap-3 flex-wrap justify-center">
+                  <button
+                    type="button"
+                    onClick={() => finishStudentRecitationAndEvaluate(currentAyahIndex)}
+                    className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-sm font-bold shadow-xl flex items-center gap-2.5 active:scale-95 transition-all cursor-pointer animate-pulse ring-4 ring-rose-500/30"
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                    <span>পড়া শেষ হয়েছে • AI যাচাই করুন (Enter)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      stopAllAudio();
+                      stopVisualizer();
+                      setClassState("idle");
+                      setSelfReciteMode(false);
+                      toast.info("মাইক ও তিলাওয়াত বন্ধ করা হয়েছে");
+                    }}
+                    className="px-4 py-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-700 text-xs sm:text-sm font-bold shadow-md flex items-center gap-2 active:scale-95 transition-all cursor-pointer"
+                    title="মাইক বন্ধ করুন এবং তিলাওয়াত বাতিল করুন"
+                  >
+                    <MicOff className="w-4 h-4 text-rose-400" />
+                    <span>মাইক বন্ধ করুন</span>
+                  </button>
+                </div>
               ) : (
                 <>
                   {/* Button 1: Dedicated Self-Recite & AI Test Button (The user's blue circled spot) */}

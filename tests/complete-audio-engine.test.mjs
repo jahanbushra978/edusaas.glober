@@ -41,6 +41,15 @@ describe("Complete Quran Learning Audio Resolution Test Suite", () => {
       assert.equal(wordRes.found, true, `Word "${word}" must resolve in resolveWordAudio`);
       assert.ok(wordRes.urls[0].startsWith("https://audio.qurancdn.com/wbw/"), `Word "${word}" URL should be WBW CDN`);
 
+      // Verify exact verified positions for Surah 113 and 114
+      if (word === "الْفَلَقِ") {
+        assert.equal(wordRes.urls[0], "https://audio.qurancdn.com/wbw/113_001_004.mp3", "الْفَلَقِ must be word 4 in 113:1");
+      } else if (word === "النَّاسِ") {
+        assert.equal(wordRes.urls[0], "https://audio.qurancdn.com/wbw/114_001_004.mp3", "النَّاسِ must be word 4 in 114:1");
+      } else if (word === "الْحَمْدُ") {
+        assert.equal(wordRes.urls[0], "https://audio.qurancdn.com/wbw/001_002_001.mp3", "الْحَمْدُ must be word 1 in 1:2");
+      }
+
       // 2. resolveArabicSoundAudio
       const soundRes = resolveArabicSoundAudio(word);
       assert.equal(soundRes.found, true, `Word "${word}" must resolve in resolveArabicSoundAudio`);
@@ -50,6 +59,29 @@ describe("Complete Quran Learning Audio Resolution Test Suite", () => {
       const letterRes = resolveLetterAudio(word);
       assert.equal(letterRes.found, true, `Word "${word}" must be gracefully resolved even if passed to resolveLetterAudio`);
     });
+  });
+
+  it("verifies accurate word indices for critical Quran words (Rabbi, Kufuwan, Falaq, Naas, etc.)", () => {
+    const expectedMappings = {
+      "الْفَلَقِ": "https://audio.qurancdn.com/wbw/113_001_004.mp3",
+      "النَّاسِ": "https://audio.qurancdn.com/wbw/114_001_004.mp3",
+      "رَبِّ": "https://audio.qurancdn.com/wbw/001_002_003.mp3",
+      "كُفُوًا": "https://audio.qurancdn.com/wbw/112_004_004.mp3",
+      "خَلَقَ": "https://audio.qurancdn.com/wbw/096_001_005.mp3",
+      "قَالَ": "https://audio.qurancdn.com/wbw/002_030_002.mp3",
+      "يَقُولُ": "https://audio.qurancdn.com/wbw/002_008_004.mp3",
+      "نُورٌ": "https://audio.qurancdn.com/wbw/024_035_002.mp3",
+      "فِيهِ": "https://audio.qurancdn.com/wbw/002_002_005.mp3",
+      "مَدَّ": "https://audio.qurancdn.com/wbw/025_045_006.mp3",
+      "حَقَّ": "https://audio.qurancdn.com/wbw/022_074_004.mp3",
+      "نُوحِيهَا": "https://audio.qurancdn.com/wbw/011_049_005.mp3",
+    };
+
+    for (const [word, expectedUrl] of Object.entries(expectedMappings)) {
+      const res = resolveWordAudio(word);
+      assert.equal(res.found, true, `"${word}" must be found`);
+      assert.equal(res.urls[0], expectedUrl, `"${word}" must match exact verified audio URL ${expectedUrl}`);
+    }
   });
 
   it("resolves all words across Drag & Drop levels 11, 12, 13, 14", () => {
@@ -109,7 +141,47 @@ describe("Complete Quran Learning Audio Resolution Test Suite", () => {
     });
   });
 
-  it("enforces ZERO synthetic SpeechSynthesis in audio engine", async () => {
+  it("resolves all letters combined with Alif (both vowelled and unvowelled Murakkabat)", () => {
+    const vowelledAlifPairs = [
+      "بَا", "تَا", "ثَا", "جَا", "حَا", "خَا", "دَا", "ذَا", "رَا", "زَا",
+      "سَا", "شَا", "صَا", "ضَا", "طَا", "ظَا", "عَا", "غَا", "فَا", "قَا",
+      "كَا", "لَا", "مَا", "نَا", "وَا", "هَا", "يَا"
+    ];
+
+    vowelledAlifPairs.forEach((pair) => {
+      const res = resolveArabicSoundAudio(pair);
+      assert.equal(res.found, true, `Vowelled Alif combination "${pair}" must resolve`);
+      assert.ok(res.urls.length > 0, `"${pair}" must have candidate URLs`);
+    });
+
+    const unvowelledAlifPairs = [
+      "با", "تا", "ثا", "جا", "حا", "خا", "دا", "را", "سا", "لا", "ما", "نا", "ها", "يا"
+    ];
+
+    unvowelledAlifPairs.forEach((pair) => {
+      const res = resolveArabicSoundAudio(pair);
+      assert.equal(res.found, true, `Unvowelled Alif combination "${pair}" must resolve via fallback`);
+      assert.ok(res.urls.length > 0, `"${pair}" must have candidate URLs`);
+    });
+  });
+
+  it("resolves Huroof Muqatta'at (Takhti 3) and Murakkabat (Takhti 2)", () => {
+    const muqattaat = ["الم", "الر", "طه", "يس", "حم", "كهيعص"];
+    muqattaat.forEach((m) => {
+      const res = resolveArabicSoundAudio(m);
+      assert.equal(res.found, true, `Muqatta'ah "${m}" must resolve`);
+      assert.ok(res.urls.length > 0);
+    });
+
+    const murakkabat = ["بل", "تح", "نح", "جح", "عس", "بَلْ", "تَحْتَ", "نَحْ", "جَحْ", "عَسْ"];
+    murakkabat.forEach((m) => {
+      const res = resolveArabicSoundAudio(m);
+      assert.equal(res.found, true, `Murakkabat "${m}" must resolve`);
+      assert.ok(res.urls.length > 0);
+    });
+  });
+
+  it("enforces ZERO synthetic SpeechSynthesis in audio engine and voice prompts", async () => {
     const fs = await import("fs");
     const audioDir = "src/lib/quran/audio";
     const files = fs.readdirSync(audioDir);
@@ -129,6 +201,46 @@ describe("Complete Quran Learning Audio Resolution Test Suite", () => {
         );
       }
     });
+
+    // Enforce ZERO synthetic speech in children's voicePrompts
+    const promptContent = fs.readFileSync("src/features/ai-learning/lib/voicePrompts.js", "utf8");
+    assert.equal(
+      promptContent.includes("speechSynthesis"),
+      false,
+      "voicePrompts.js must not contain speechSynthesis"
+    );
+    assert.equal(
+      promptContent.includes("SpeechSynthesisUtterance"),
+      false,
+      "voicePrompts.js must not contain SpeechSynthesisUtterance"
+    );
+  });
+
+  it("verifies accurate authentic audio resolution for Seen (سَ, سِ, سُ) and Zay (زَ, زِ, زُ)", () => {
+    const testCases = [
+      { token: "سَ", expectedFile: "Page8-28.m4a" },
+      { token: "سِ", expectedFile: "Page8-29.m4a" },
+      { token: "سُ", expectedFile: "Page8-30.m4a" },
+      { token: "زَ", expectedFile: "Page8-31.m4a" },
+      { token: "زِ", expectedFile: "Page8-32.m4a" },
+      { token: "زُ", expectedFile: "Page8-33.m4a" },
+    ];
+
+    testCases.forEach(({ token, expectedFile }) => {
+      const res = resolveArabicSoundAudio(token);
+      assert.equal(res.found, true, `${token} must resolve`);
+      assert.ok(
+        res.urls.some((u) => u.includes(expectedFile)),
+        `${token} must resolve to ${expectedFile}, got ${res.urls.join(", ")}`
+      );
+    });
+
+    // Specifically verify Seen with Kasrah produces short "si" sound (Page8-29.m4a) and NOT "sa" or Zay (Page8-31/32)
+    const seenKasrah = resolveArabicSoundAudio("سِ");
+    assert.equal(seenKasrah.found, true);
+    assert.ok(seenKasrah.urls[0].includes("Page8-29.m4a"));
+    assert.ok(!seenKasrah.urls[0].includes("Page8-32.m4a"));
+    assert.ok(!seenKasrah.urls[0].includes("Page8-31.m4a"));
   });
 });
 

@@ -92,7 +92,11 @@ export { AUTHENTIC_TAJWEED_AUDIO_MAP };
  */
 function cleanArabicString(str) {
   if (!str) return "";
-  return String(str).replace(/\u0640/g, "").trim();
+  return String(str)
+    .replace(/\u0640/g, "") // Tatweel
+    .replace(/\u0671/g, "\u0627") // Wasla to standard Alif
+    .replace(/[➔➜➝→]/g, "") // UI arrow characters
+    .trim();
 }
 
 /**
@@ -135,13 +139,28 @@ export function resolveLetterAudio(char) {
   }
 
   // Graceful Fallback: If caller passed a word, vowel-marked token or multi-letter combination,
-  // resolve via Authentic Quran Words Map rather than failing
+  // resolve via Authentic Quran Words Map or Authentic Tajweed Map rather than failing
   const wordFallback = resolveWordAudio(char) || resolveWordAudio(base);
   if (wordFallback && wordFallback.found) {
     return {
       found: true,
       urls: wordFallback.urls,
       assetId: wordFallback.assetId,
+      baseLetter: base || char,
+    };
+  }
+
+  const tajweedFallback =
+    AUTHENTIC_TAJWEED_AUDIO_MAP[char] ||
+    AUTHENTIC_TAJWEED_AUDIO_MAP[base] ||
+    AUTHENTIC_TAJWEED_AUDIO_MAP[char.normalize("NFC")] ||
+    AUTHENTIC_TAJWEED_AUDIO_MAP[char.normalize("NFD")];
+
+  if (tajweedFallback) {
+    return {
+      found: true,
+      urls: Array.isArray(tajweedFallback) ? tajweedFallback : [tajweedFallback],
+      assetId: `tajweed_${char}`,
       baseLetter: base || char,
     };
   }
@@ -179,10 +198,17 @@ export function resolveArabicSoundAudio(text) {
   }
 
   // 2. Direct match in Authentic Tajweed / Noorani Map
+  const vowelledAlifCandidate = clean.length === 2 && clean.endsWith("ا")
+    ? clean[0] + "\u064E" + "ا"
+    : null;
+  const unvowelledCandidate = clean.replace(/[\u064B-\u065F\u0670]/g, "").trim();
+
   const authenticTrack =
     AUTHENTIC_TAJWEED_AUDIO_MAP[clean] ||
     AUTHENTIC_TAJWEED_AUDIO_MAP[clean.normalize("NFC")] ||
-    AUTHENTIC_TAJWEED_AUDIO_MAP[clean.normalize("NFD")];
+    AUTHENTIC_TAJWEED_AUDIO_MAP[clean.normalize("NFD")] ||
+    (vowelledAlifCandidate && (AUTHENTIC_TAJWEED_AUDIO_MAP[vowelledAlifCandidate] || AUTHENTIC_TAJWEED_AUDIO_MAP[vowelledAlifCandidate.normalize("NFC")])) ||
+    (unvowelledCandidate && (AUTHENTIC_TAJWEED_AUDIO_MAP[unvowelledCandidate] || AUTHENTIC_TAJWEED_AUDIO_MAP[unvowelledCandidate.normalize("NFC")]));
 
   if (authenticTrack) {
     if (Array.isArray(authenticTrack)) {

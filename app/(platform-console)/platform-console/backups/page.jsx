@@ -113,7 +113,8 @@ export default function BackupsManagementPage() {
       const jsonStr = JSON.stringify(backupPayload, null, 2);
       const blob = new Blob([jsonStr], { type: "application/json" });
       const url = URL.createObjectURL(blob);
-      const nowStr = new Date().toISOString().replace(/[-:T]/g, "").slice(0, 14);
+      const isoCleanRe = /[^0-9]/g; // remove non-digit chars from ISO string
+      const nowStr = new Date().toISOString().replace(isoCleanRe, "").slice(0, 14);
       const fileName = `edusaas_snapshot_${nowStr}.json`;
 
       // Trigger real browser download

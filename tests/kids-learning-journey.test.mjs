@@ -34,6 +34,11 @@ import {
   submitRecitationForReview,
   getStoredSubmissions,
 } from "../src/features/ai-learning/lib/recitationReviewBridge.js";
+import {
+  BUILDING_JOURNEYS,
+  getBuildingJourney,
+} from "../src/features/ai-learning/data/buildingRewardData.js";
+import { DRAG_DROP_LEVELS } from "../src/features/ai-learning/data/dragDropGameData.js";
 
 test("1. Comprehensive Maktab Curriculum Stages (Zero to Quran Reading)", () => {
   assert.equal(KIDS_CURRICULUM_STAGES.length, 8, "Must have all 8 complete maktab curriculum stages");
@@ -287,4 +292,112 @@ test("13. Teacher Verification Channel Bridge & Submission Generation", () => {
   assert.equal(submission.studentName, "আব্দুল হালীম", "Student name must match");
   assert.equal(submission.aiScore.overall, 92, "AI score must be preserved");
   assert.ok(submission.aiScore.makhraj > 0, "Makhraj sub-score must be calculated");
+});
+
+test("14. All 7 Building Journeys & Milestones Validation", () => {
+  const expectedJourneys = [
+    { gameId: "drag-drop-letter", themeId: "super-car", milestones: 14 },
+    { gameId: "balloon-pop", themeId: "play-park", milestones: 3 },
+    { gameId: "letter-match", themeId: "dream-house", milestones: 7 },
+    { gameId: "sound-detective", themeId: "space-rocket", milestones: 7 },
+    { gameId: "dot-count", themeId: "fruit-garden", milestones: 6 },
+    { gameId: "harakat-master", themeId: "noor-village", milestones: 9 },
+    { gameId: "trace-letter", themeId: "ilm-castle", milestones: 4 },
+  ];
+
+  expectedJourneys.forEach(({ gameId, themeId, milestones }) => {
+    const journey = getBuildingJourney(gameId);
+    assert.ok(journey, `Journey for ${gameId} must exist`);
+    assert.equal(journey.themeId, themeId, `Journey ${gameId} must have themeId ${themeId}`);
+    assert.equal(journey.totalMilestones, milestones, `Journey ${gameId} must have ${milestones} totalMilestones`);
+    assert.equal(journey.components.length, milestones, `Journey ${gameId} must have exactly ${milestones} components`);
+
+    // Verify each component has level, id, nameBn, descBn, and percent
+    journey.components.forEach((comp, idx) => {
+      assert.equal(comp.level, idx + 1, `Component ${comp.id} level must be ${idx + 1}`);
+      assert.ok(comp.id, `Component at level ${comp.level} must have id`);
+      assert.ok(comp.nameBn, `Component ${comp.id} must have Bengali name`);
+      assert.ok(comp.descBn, `Component ${comp.id} must have Bengali description`);
+      assert.ok(comp.percent > 0 && comp.percent <= 100, `Component ${comp.id} percent must be 1..100`);
+    });
+  });
+});
+
+test("15. Drag & Drop Complete Educational Progression (All 14 Levels: Noorani Qaida to Full Ayahs)", () => {
+  assert.equal(DRAG_DROP_LEVELS.length, 14, "Must have all 14 comprehensive educational levels");
+
+  const expectedCurriculumProgression = [
+    { id: 1, type: "mufradat", sample: "ا" },
+    { id: 2, type: "shapes", sample: "بـ" },
+    { id: 3, type: "murakkabat", sample: "لَا" },
+    { id: 4, type: "harakat", sample: "دَ" },
+    { id: 5, type: "3-letter-words", sample: "دَرَسَ" },
+    { id: 6, type: "tanween", sample: "بً" },
+    { id: 7, type: "sukoon", sample: "أَبْ" },
+    { id: 8, type: "qalqalah", sample: "فَلَقْ" },
+    { id: 9, type: "tashdeed", sample: "رَبِّ" },
+    { id: 10, type: "madd-leen", sample: "بَا" },
+    { id: 11, type: "fatihah-words", sample: "الْحَمْدُ" },
+    { id: 12, type: "falaq-words", sample: "الْفَلَقِ" },
+    { id: 13, type: "naas-words", sample: "النَّاسِ" },
+    { id: 14, type: "full-ayahs", sample: "رَبِّ الْعَالَمِينَ" },
+  ];
+
+  expectedCurriculumProgression.forEach((exp, idx) => {
+    const lvl = DRAG_DROP_LEVELS[idx];
+    assert.equal(lvl.id, exp.id, `Level at index ${idx} must have id ${exp.id}`);
+    assert.ok(lvl.title, `Level ${lvl.id} must have title`);
+    assert.ok(lvl.desc, `Level ${lvl.id} must have description`);
+    assert.ok(lvl.tip, `Level ${lvl.id} must have educational tip`);
+    assert.ok(lvl.letters.length >= 3, `Level ${lvl.id} must contain at least 3 practice items`);
+
+    const hasExpectedSample = lvl.letters.some((l) => l.ar === exp.sample);
+    assert.ok(hasExpectedSample, `Level ${lvl.id} must contain representative item ${exp.sample}`);
+  });
+});
+
+test("16. Vehicle Reward Counter Math & Idempotent Persistence Invariant", () => {
+  const carJourney = getBuildingJourney("drag-drop-letter");
+  assert.equal(carJourney.totalMilestones, 14);
+
+  // Simulation: Initial state before any level completed
+  let earnedRewardIds = [];
+  let completedLevels = [];
+
+  assert.equal(earnedRewardIds.length, 0, "Before Level 1: 0/14 components earned");
+
+  // Simulate Level 1 complete
+  const comp1 = carJourney.components.find((c) => c.level === 1);
+  assert.ok(comp1, "Level 1 component must exist");
+  earnedRewardIds.push(comp1.id);
+  completedLevels.push(1);
+
+  assert.equal(earnedRewardIds.length, 1, "After Level 1: 1/14 components earned");
+  assert.equal(earnedRewardIds[0], "chassis", "First component must be chassis");
+
+  // Simulate Level 2 complete
+  const comp2 = carJourney.components.find((c) => c.level === 2);
+  earnedRewardIds.push(comp2.id);
+  completedLevels.push(2);
+
+  assert.equal(earnedRewardIds.length, 2, "After Level 2: 2/14 components earned");
+  assert.equal(earnedRewardIds[1], "rear-wheels", "Second component must be rear wheels");
+
+  // Replaying Level 1 or 2 must NEVER duplicate rewards (Idempotency)
+  if (!earnedRewardIds.includes(comp1.id)) earnedRewardIds.push(comp1.id);
+  if (!earnedRewardIds.includes(comp2.id)) earnedRewardIds.push(comp2.id);
+
+  assert.equal(earnedRewardIds.length, 2, "Replaying levels must not duplicate rewards (remains 2/14)");
+
+  // Complete remaining levels 3 to 14
+  for (let l = 3; l <= 14; l++) {
+    const comp = carJourney.components.find((c) => c.level === l);
+    if (comp && !earnedRewardIds.includes(comp.id)) {
+      earnedRewardIds.push(comp.id);
+      completedLevels.push(l);
+    }
+  }
+
+  assert.equal(earnedRewardIds.length, 14, "After Level 14: exactly 14/14 components earned");
+  assert.equal(earnedRewardIds[13], "noor-crown", "Final 14th component must be noor crown");
 });

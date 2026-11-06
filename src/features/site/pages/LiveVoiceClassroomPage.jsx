@@ -10,14 +10,31 @@ import {
   Minimize2,
   Compass,
   Radio,
+  Key,
 } from "lucide-react";
 import LiveVoiceQuranClass from "@/features/ai/components/LiveVoiceQuranClass";
 import MakhrajVisualizer from "@/features/ai/components/MakhrajVisualizer";
+import AISettingsModal from "@/features/ai/components/AISettingsModal";
+import { getSavedAIConfig, saveAIConfigToStorage } from "@/features/ai/lib/aiConfigHelper";
+import { toast } from "sonner";
 
 export default function LiveVoiceClassroomPage() {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [selectedMakhrajZone, setSelectedMakhrajZone] = useState("halq");
   const [showMakhrajModal, setShowMakhrajModal] = useState(false);
+  const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
+  const [aiConfig, setAiConfig] = useState(null);
+
+  useEffect(() => {
+    setAiConfig(getSavedAIConfig());
+  }, []);
+
+  const handleSaveAIConfig = (newConfig) => {
+    saveAIConfigToStorage(newConfig);
+    setAiConfig(newConfig);
+    setIsAISettingsOpen(false);
+    toast.success("মাশাআল্লাহ! এআই সেটিংস ও API Key সংরক্ষিত হয়েছে");
+  };
 
   // Handle Fullscreen Toggle
   const toggleFullscreen = () => {
@@ -54,12 +71,12 @@ export default function LiveVoiceClassroomPage() {
         {/* Left: Navigation & Branding */}
         <div className="flex items-center gap-3">
           <Link
-            href="/quran-tutor/studio"
-            className="p-2 sm:px-3 sm:py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 hover:bg-emerald-100 text-emerald-800 transition-colors flex items-center gap-1.5 text-xs font-bold shadow-xs cursor-pointer"
-            title="নূর লার্নিং স্টুডিওতে ফিরে যান"
+            href="/quran-tutor/studio?feature=voice-tutor"
+            className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 hover:bg-emerald-100 text-emerald-800 transition-colors flex items-center gap-1.5 text-xs font-bold shadow-xs cursor-pointer"
+            title="উস্তাদ চ্যাটে ফিরে যান"
           >
             <ArrowLeft className="w-4 h-4 text-emerald-700" />
-            <span className="hidden sm:inline">স্টুডিও</span>
+            <span className="text-[11px] sm:text-xs font-bold">উস্তাদ চ্যাট</span>
           </Link>
 
           <div className="h-5 w-px bg-emerald-200" />
@@ -85,22 +102,39 @@ export default function LiveVoiceClassroomPage() {
         </div>
 
         {/* Right: Quick Tools */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {/* 🔑 API Key Modal Trigger */}
+          <button
+            type="button"
+            onClick={() => setIsAISettingsOpen(true)}
+            className={`px-3 py-1.5 rounded-full border text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+              aiConfig?.apiKey
+                ? "bg-emerald-50 border-emerald-300 text-emerald-800"
+                : "bg-amber-100 border-amber-300 text-amber-950 animate-pulse"
+            }`}
+            title="এআই প্রোভাইডার ও নিজস্ব API Key যোগ করুন (ফ্রি Google Gemini Key)"
+          >
+            <Key className="w-3.5 h-3.5 text-amber-600" />
+            <span className="text-[11px] sm:text-xs">
+              {aiConfig?.apiKey ? "কী সক্রিয়" : "API Key"}
+            </span>
+          </button>
+
           {/* Quick Makhraj Guide Trigger */}
           <button
             type="button"
             onClick={() => setShowMakhrajModal(true)}
-            className="px-3.5 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+            className="px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
             title="১৭ মাখরাজ এনাটমিক্যাল মানচিত্র দেখুন"
           >
             <Compass className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="hidden md:inline">১৭ মাখরাজ গাইড</span>
+            <span className="hidden md:inline">১৭ মাখরাজ</span>
           </button>
 
           {/* AI Teacher Full Page Link */}
           <Link
             href="/quran-tutor/teacher"
-            className="px-3.5 py-1.5 rounded-full bg-amber-50 border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+            className="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
             title="নূর এআই কুরআন শিক্ষক পূর্ণাঙ্গ পেজে যান"
           >
             <Bot className="w-3.5 h-3.5 text-amber-700" />
@@ -171,6 +205,14 @@ export default function LiveVoiceClassroomPage() {
           </div>
         </div>
       )}
+
+      {/* 🔑 AI Settings & API Key Modal */}
+      <AISettingsModal
+        open={isAISettingsOpen}
+        onOpenChange={setIsAISettingsOpen}
+        config={aiConfig}
+        onSave={handleSaveAIConfig}
+      />
     </div>
   );
 }

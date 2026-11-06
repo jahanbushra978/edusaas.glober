@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import {
-  Sparkles,
+  Award,
   Volume2,
   BookOpen,
   Layers,
@@ -65,7 +65,7 @@ export default function SifatLearningModule() {
       <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-[#071912] text-white p-5 sm:p-6 rounded-3xl border border-emerald-500/30 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div className="flex items-center gap-3.5">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black shadow-lg shrink-0">
-            <Sparkles className="w-6 h-6" />
+            <Award className="w-6 h-6 text-slate-950" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -86,7 +86,7 @@ export default function SifatLearningModule() {
         <div className="flex flex-wrap gap-1.5 bg-black/40 p-1.5 rounded-2xl border border-emerald-500/20">
           {[
             { id: "opposite", label: "বিপরীতযুক্ত (১০টি)", icon: Layers },
-            { id: "nonopposite", label: "বিপরীতহীন (৮টি)", icon: Sparkles },
+            { id: "nonopposite", label: "বিপরীতহীন (৮টি)", icon: Award },
             { id: "inspector", label: "হরফ পরীক্ষক (২৯টি)", icon: BookOpen },
             { id: "quiz", label: "সিফাত কুইজ", icon: HelpCircle },
           ].map((tab) => {

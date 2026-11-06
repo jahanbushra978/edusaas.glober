@@ -12,6 +12,7 @@ export default {
   			sm: 'calc(var(--radius) - 4px)'
   		},
 		fontFamily: {
+			sans: ['var(--font-hind-siliguri)', 'var(--font-noto-sans-bengali)', '-apple-system', 'BlinkMacSystemFont', 'sans-serif'],
 			serif: ['var(--font-hind-siliguri)', 'var(--font-noto-sans-bengali)', 'sans-serif'],
 			display: ['var(--font-hind-siliguri)', 'var(--font-noto-sans-bengali)', 'sans-serif'],
 			bengali: ['var(--font-hind-siliguri)', 'var(--font-noto-sans-bengali)', 'sans-serif'],

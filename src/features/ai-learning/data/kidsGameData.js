@@ -387,15 +387,15 @@ export const KIDS_HARAKAT_DATA = [
 
 // Stage 2: মুরাক্কাবাত (যুক্তাক্ষর)
 export const KIDS_MURAKKABAT_DATA = [
-  { ar: "لَا", nameBn: "লাম-আলিফ", components: ["ل", "ا"], audio: "/sounds/noorani/murakkab_lam_alif.mp3", tip: "লাম ও আলিফ জোড়া লেগে তৈরি হয়।" },
-  { ar: "بَا", nameBn: "বা-আলিফ", components: ["ب", "ا"], audio: "/sounds/noorani/murakkab_baa_alif.mp3", tip: "বা-এর ১ নুকতা নিচে, সাথে আলিফ উপরে।" },
+  { ar: "لَا", nameBn: "লাম-আলিফ", components: ["ل", "ا"], audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter02/Page2-3.m4a", tip: "লাম ও আলিফ জোড়া লেগে তৈরি হয়।" },
+  { ar: "بَا", nameBn: "বা-আলিফ", components: ["ب", "ا"], audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter02/Page2-23.m4a", tip: "বা-এর ১ নুকতা নিচে, সাথে আলিফ উপরে।" },
   { ar: "بَلْ", nameBn: "বা-লাম", components: ["ب", "ل"], audio: "/sounds/noorani/murakkab_baa_laam.mp3", tip: "বা এবং লাম যুক্ত হয়েছে।" },
-  { ar: "جَا", nameBn: "জীম-আলিফ", components: ["ج", "ا"], audio: "/sounds/noorani/murakkab_jeem_alif.mp3", tip: "জীমের পেটের নুকতা নিচে নেমে এসেছে।" },
+  { ar: "جَا", nameBn: "জীম-আলিফ", components: ["ج", "ا"], audio: "https://audio.qurancdn.com/wbw/110_001_002.mp3", tip: "জীমের পেটের নুকতা নিচে নেমে এসেছে।" },
   { ar: "تَه", nameBn: "তা-হা", components: ["ت", "ه"], audio: "/sounds/noorani/murakkab_taa_haa.mp3", tip: "তা-এর ২ নুকতা উপরে এবং গোল হা।" },
-  { ar: "تَا", nameBn: "তা-আলিফ", components: ["ت", "ا"], audio: "/sounds/noorani/qari_taa_haa.m4a", tip: "তা ও আলিফ যুক্ত।" },
-  { ar: "ثَا", nameBn: "ছা-আলিফ", components: ["ث", "ا"], audio: "/sounds/noorani/qari_thaa.mp3", tip: "ছা-এর ৩ নুকতা উপরে নরমভাবে পড়তে হয়।" },
-  { ar: "نَا", nameBn: "নূন-আলিফ", components: ["ن", "ا"], audio: "/sounds/noorani/Page1-25.m4a", tip: "নূনের ১ নুকতা উপরে।" },
-  { ar: "يَا", nameBn: "ইয়া-আলিফ", components: ["ي", "ا"], audio: "/sounds/noorani/Page1-29.m4a", tip: "ইয়ার ২ নুকতা নিচে।" },
+  { ar: "تَا", nameBn: "তা-আলিফ", components: ["ت", "ا"], audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter02/Page2-24.m4a", tip: "তা ও আলিফ যুক্ত।" },
+  { ar: "ثَا", nameBn: "ছা-আলিফ", components: ["ث", "ا"], audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter02/Page2-25.m4a", tip: "ছা-এর ৩ নুকতা উপরে নরমভাবে পড়তে হয়।" },
+  { ar: "نَا", nameBn: "নূন-আলিফ", components: ["ن", "ا"], audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter02/Page2-26.m4a", tip: "নূনের ১ নুকতা উপরে।" },
+  { ar: "يَا", nameBn: "ইয়া-আলিফ", components: ["ي", "ا"], audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter02/Page2-27.m4a", tip: "ইয়ার ২ নুকতা নিচে।" },
 ];
 
 // Stage 3: হরকত মাশক ড্রিল (এক আলিফও না টেনে পড়া)
@@ -412,9 +412,9 @@ export const KIDS_HARAKAT_DRILL_DATA = [
   { ar: "جَ", nameBn: "জীম যবর জা", harakat: "যবর", base: "ج", audio: "/sounds/noorani/jeem_zabar.mp3" },
   { ar: "جِ", nameBn: "জীম যের জি", harakat: "যের", base: "ج", audio: "/sounds/noorani/jeem_zer.mp3" },
   { ar: "جُ", nameBn: "জীম পেশ জু", harakat: "পেশ", base: "ج", audio: "/sounds/noorani/jeem_pesh.mp3" },
-  { ar: "دَ", nameBn: "দাল যবর দা", harakat: "যবর", base: "د", audio: "/sounds/noorani/Page1-8.m4a" },
-  { ar: "رَ", nameBn: "রা যবর র (মোটা)", harakat: "যবর", base: "ر", audio: "/sounds/noorani/Page1-10.m4a" },
-  { ar: "مَ", nameBn: "মীম যবর মা", harakat: "যবর", base: "م", audio: "/sounds/noorani/Page1-24.m4a" },
+  { ar: "دَ", nameBn: "দাল যবর দা", harakat: "যবর", base: "د", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-19.m4a" },
+  { ar: "رَ", nameBn: "রা যবর র (মোটা)", harakat: "যবর", base: "ر", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page8-13.m4a" },
+  { ar: "مَ", nameBn: "মীম যবর মা", harakat: "যবর", base: "م", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter04/Page9-12.m4a" },
 ];
 
 // Stage 4: তানভীন শিক্ষা (দুই যবর, দুই যের, দুই পেশ)
@@ -443,11 +443,11 @@ export const KIDS_JAZM_QALQALAH_DATA = [
 export const KIDS_SURAHS_DATA = AMPARA_JUZ_30_SURAHS;
 
 export const KIDS_TASHDEED_DATA = [
-  { ar: "إِنَّ", nameBn: "ইন্না (ওয়াজিব গুন্নাহ)", isGhunnah: true, audio: "https://audio.qurancdn.com/wbw/108_001_001.mp3", tip: "নূনে তাশদীদ হলে ১ আলিফ পরিমাণ সময় নাক দিয়ে গুন্নাহ করে পড়তে হয়।" },
+  { ar: "إِنَّ", nameBn: "ইন্না (ওয়াজিব গুন্নাহ)", isGhunnah: true, audio: "https://audio.qurancdn.com/wbw/002_006_001.mp3", tip: "নূনে তাশদীদ হলে ১ আলিফ পরিমাণ সময় নাক দিয়ে গুন্নাহ করে পড়তে হয়।" },
   { ar: "ثُمَّ", nameBn: "ছুম্মা (ওয়াজিব গুন্নাহ)", isGhunnah: true, audio: "https://audio.qurancdn.com/wbw/102_004_001.mp3", tip: "মীমে তাশদীদ হলেও ওয়াজিব গুন্নাহ করতে হয়।" },
-  { ar: "رَبِّ", nameBn: "রব্বি", audio: "https://audio.qurancdn.com/wbw/001_002_002.mp3", tip: "তাশদীদযুক্ত হরফ শক্ত করে দুইবার পড়তে হয়।" },
-  { ar: "مَدَّ", nameBn: "মাদ্দা", audio: "https://audio.qurancdn.com/wbw/025_045_005.mp3", tip: "প্রথমে সাকিন মিলন, পরে যবর দিয়ে উচ্চারণ।" },
-  { ar: "حَقَّ", nameBn: "হাক্বক্বা", audio: "https://audio.qurancdn.com/wbw/022_074_002.mp3", tip: "ক্বাফ হরফে তাশদীদ শক্তভাবে আদায় করতে হয়।" },
+  { ar: "رَبِّ", nameBn: "রব্বি", audio: "https://audio.qurancdn.com/wbw/001_002_003.mp3", tip: "তাশদীদযুক্ত হরফ শক্ত করে দুইবার পড়তে হয়।" },
+  { ar: "مَدَّ", nameBn: "মাদ্দা", audio: "https://audio.qurancdn.com/wbw/025_045_006.mp3", tip: "প্রথমে সাকিন মিলন, পরে যবর দিয়ে উচ্চারণ।" },
+  { ar: "حَقَّ", nameBn: "হাক্বক্বা", audio: "https://audio.qurancdn.com/wbw/022_074_004.mp3", tip: "ক্বাফ হরফে তাশদীদ শক্তভাবে আদায় করতে হয়।" },
   { ar: "عَدَّ", nameBn: "আদ্দা", audio: "https://audio.qurancdn.com/wbw/019_094_003.mp3", tip: "আইন যবর আ, দাল তাশদীদ দা।" },
 ];
 
@@ -456,9 +456,9 @@ export const KIDS_MADD_DATA = [
   { ar: "بَا", nameBn: "বা-আলিফ (বাআ)", maddLetter: "ا", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter08/Page13-26.m4a", tip: "যবরের বামে খালি আলিফ থাকলে ১ আলিফ টেনে পড়তে হয়।" },
   { ar: "بُو", nameBn: "বা-ওয়াও (বূ)", maddLetter: "و", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter08/Page13-27.m4a", tip: "পেশের বামে জযমওয়ালা ওয়াও থাকলে ১ আলিফ টানতে হয়।" },
   { ar: "بِي", nameBn: "বা-ইয়া (বী)", maddLetter: "ي", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter08/Page13-28.m4a", tip: "যেরের বামে জযমওয়ালা ইয়া থাকলে ১ আলিফ টানতে হয়।" },
-  { ar: "نُوحِيهَا", nameBn: "নূ-হী-হা (৩ মাদ্দ)", audio: "https://audio.qurancdn.com/wbw/011_049_003.mp3", tip: "এই শব্দটিতে ৩টি মাদ্দের হরফই একত্রে এসেছে (নূ, হী, হা)।" },
-  { ar: "قَالَ", nameBn: "ক্বা-লা", audio: "https://audio.qurancdn.com/wbw/002_030_006.mp3", tip: "ক্বাফ আলিফ যবর ক্বা, লাম যবর লা।" },
-  { ar: "يَقُولُ", nameBn: "ইয়া-কূ-লু", audio: "https://audio.qurancdn.com/wbw/002_008_002.mp3", tip: "ক্বাফ ওয়াও পেশ কূ ১ আলিফ টানতে হবে।" },
+  { ar: "نُوحِيهَا", nameBn: "নূ-হী-হা (৩ মাদ্দ)", audio: "https://audio.qurancdn.com/wbw/011_049_005.mp3", tip: "এই শব্দটিতে ৩টি মাদ্দের হরফই একত্রে এসেছে (নূ, হী, হা)।" },
+  { ar: "قَالَ", nameBn: "ক্বা-লা", audio: "https://audio.qurancdn.com/wbw/002_030_002.mp3", tip: "ক্বাফ আলিফ যবর ক্বা, লাম যবর লা।" },
+  { ar: "يَقُولُ", nameBn: "ইয়া-কূ-লু", audio: "https://audio.qurancdn.com/wbw/002_008_004.mp3", tip: "ক্বাফ ওয়াও পেশ কূ ১ আলিফ টানতে হবে।" },
 ];
 
 // Stages Definition for Kids Stage Selector
@@ -700,7 +700,7 @@ export const KIDS_HARAKAT_GAME_LEVELS = [
       { ar: "دَرَسَ", nameBn: "দা-রা-সা (দারাছা)", audio: "https://audio.qurancdn.com/wbw/006_105_005.mp3", tip: "দাল যবর দা, রা যবর রা, সীন যবর সা।" },
       { ar: "وَجَدَ", nameBn: "ওয়া-জা-দা (ওয়াজাদা)", audio: "https://audio.qurancdn.com/wbw/093_007_001.mp3", tip: "ওয়াও যবর ওয়া, জীম যবর জা, দাল যবর দা।" },
       { ar: "كَتَبَ", nameBn: "কা-তা-বা (কাতাবা)", audio: "https://audio.qurancdn.com/wbw/058_021_001.mp3", tip: "কাফ যবর কা, তা যবর তা, বা যবর বা।" },
-      { ar: "خَلَقَ", nameBn: "খা-লা-ক্বা (খালাক্বা)", audio: "https://audio.qurancdn.com/wbw/096_001_003.mp3", tip: "খা যবর খা, লাম যবর লা, ক্বাফ যবর ক্বা।" },
+      { ar: "خَلَقَ", nameBn: "খা-লা-ক্বা (খালাক্বা)", audio: "https://audio.qurancdn.com/wbw/096_001_005.mp3", tip: "খা যবর খা, লাম যবর লা, ক্বাফ যবর ক্বা।" },
     ]
   },
   {
@@ -711,7 +711,7 @@ export const KIDS_HARAKAT_GAME_LEVELS = [
     items: [
       { ar: "قُلْ", nameBn: "ক্বুল", audio: "https://audio.qurancdn.com/wbw/112_001_001.mp3", tip: "ক্বাফ পেশ ও লাম সাকিন" },
       { ar: "أَبْ", nameBn: "আব (ক্বলক্বলাহ ধাক্কা)", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-1.m4a", tip: "হামযাহ যবর ও বা সাকিন" },
-      { ar: "فَلَقْ", nameBn: "ফালাক্ব (ওয়াকফ ধাক্কা)", audio: "https://audio.qurancdn.com/wbw/113_001_003.mp3", tip: "ক্বলক্বলাহ কুবরা" },
+      { ar: "فَلَقْ", nameBn: "ফালাক্ব (ওয়াকফ ধাক্কা)", audio: "https://audio.qurancdn.com/wbw/113_001_004.mp3", tip: "ক্বলক্বলাহ কুবরা" },
     ]
   },
   {
@@ -720,8 +720,8 @@ export const KIDS_HARAKAT_GAME_LEVELS = [
     instructionBn: "তাশদীদযুক্ত দ্বিত্ব হরফ ও গুন্নাহ মাশক করো!",
     tashdeed: true,
     items: [
-      { ar: "رَبِّ", nameBn: "রব্বি", audio: "https://audio.qurancdn.com/wbw/001_002_002.mp3", tip: "রা যবর ও বা তাশদীদ" },
-      { ar: "إِنَّ", nameBn: "ইন্না (১ আলিফ গুন্নাহ)", audio: "https://audio.qurancdn.com/wbw/108_001_001.mp3", tip: "নূন মুশাদ্দাদ" },
+      { ar: "رَبِّ", nameBn: "রব্বি", audio: "https://audio.qurancdn.com/wbw/001_002_003.mp3", tip: "রা যবর ও বা তাশদীদ" },
+      { ar: "إِنَّ", nameBn: "ইন্না (১ আলিফ গুন্নাহ)", audio: "https://audio.qurancdn.com/wbw/002_006_001.mp3", tip: "নূন মুশাদ্দাদ" },
       { ar: "ثُمَّ", nameBn: "ছুম্মা (১ আলিফ গুন্নাহ)", audio: "https://audio.qurancdn.com/wbw/102_004_001.mp3", tip: "মীম মুশাদ্দাদ" },
     ]
   },
@@ -731,9 +731,9 @@ export const KIDS_HARAKAT_GAME_LEVELS = [
     instructionBn: "১ আলিফ টেনে পড়ার মাদ্দ শব্দগুলো মেলাও!",
     madd: true,
     items: [
-      { ar: "قَالَ", nameBn: "ক্ব-লা (আলিফ মাদ্দ)", audio: "https://audio.qurancdn.com/wbw/002_030_006.mp3", tip: "১ আলিফ টান" },
-      { ar: "نُورٌ", nameBn: "নূ-রুন (ওয়াও মাদ্দ)", audio: "https://audio.qurancdn.com/wbw/024_035_012.mp3", tip: "১ আলিফ টান" },
-      { ar: "فِيهِ", nameBn: "ফী-হি (ইয়া মাদ্দ)", audio: "https://audio.qurancdn.com/wbw/002_002_003.mp3", tip: "১ আলিফ টান" },
+      { ar: "قَالَ", nameBn: "ক্ব-লা (আলিফ মাদ্দ)", audio: "https://audio.qurancdn.com/wbw/002_030_002.mp3", tip: "১ আলিফ টান" },
+      { ar: "نُورٌ", nameBn: "নূ-রুন (ওয়াও মাদ্দ)", audio: "https://audio.qurancdn.com/wbw/024_035_002.mp3", tip: "১ আলিফ টান" },
+      { ar: "فِيهِ", nameBn: "ফী-হি (ইয়া মাদ্দ)", audio: "https://audio.qurancdn.com/wbw/002_002_005.mp3", tip: "১ আলিফ টান" },
     ]
   }
 ];

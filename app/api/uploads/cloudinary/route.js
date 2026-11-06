@@ -26,7 +26,15 @@ export async function POST(request) {
     const cookieStore = await cookies();
     const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
     const session = await verifySessionToken(token);
-    if (!session || (session.role !== "admin" && session.role !== "branch_admin" && session.role !== "boarding_manager")) {
+    const isAllowedRole =
+      session.role === "admin" ||
+      session.role === "platform_owner" ||
+      session.role === "branch_admin" ||
+      session.role === "boarding_manager" ||
+      session.role === "teacher" ||
+      session.role === "student";
+
+    if (!session || !isAllowedRole) {
       return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
     }
 

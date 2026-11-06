@@ -1,4 +1,4 @@
-import React from "react";
+import React, { Suspense } from "react";
 import Link from "next/link";
 import { ArrowLeft, Gamepad2 } from "lucide-react";
 import { QuranGamesHub } from "@/features/ai-learning";
@@ -43,7 +43,9 @@ export default function QuranGamesRoute() {
 
       {/* ── MAIN CONTENT ── */}
       <main className="flex-1 max-w-5xl w-full mx-auto p-2 sm:p-6">
-        <QuranGamesHub />
+        <Suspense fallback={<div className="p-8 text-center text-xs font-bold text-slate-400">গেমস লোড হচ্ছে...</div>}>
+          <QuranGamesHub />
+        </Suspense>
       </main>
     </div>
   );

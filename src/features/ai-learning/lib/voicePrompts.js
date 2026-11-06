@@ -4,8 +4,8 @@ import { stopArabicAudio } from "./arabicSoundPlayer";
 
 /**
  * Pre-recorded audio prompt map & script text.
- * Future studio recording files will be placed in /sounds/prompts/bn/<key>.mp3.
- * Until audio files are recorded, Web SpeechSynthesis acts as an immediate fallback.
+ * Authentic human audio prompt files reside in /sounds/prompts/bn/<key>.mp3.
+ * ZERO ROBOTIC SPEECH: Missing prompt files NEVER trigger synthetic browser TTS.
  */
 export const VOICE_PROMPTS_SCRIPTS = {
   welcome: "আসসালামু আলাইকুম! চলো, আমরা খেলি!",
@@ -65,17 +65,12 @@ export function stopVoicePrompt() {
     currentAudio = null;
   }
 
-  if (typeof window !== "undefined" && "speechSynthesis" in window) {
-    try {
-      window.speechSynthesis.cancel();
-    } catch {}
-  }
-
   notifySpeechState(false);
 }
 
 /**
- * Play a kid-friendly Bengali voice prompt
+ * Play a human Bengali voice prompt from verified audio assets.
+ * ZERO ROBOTIC SPEECH: If asset is missing, cleanly terminates without synthetic fallback.
  * @param {string} key - prompt key in VOICE_PROMPTS_SCRIPTS
  * @param {Object} options - { onStart, onEnded }
  */
@@ -86,10 +81,9 @@ export function playVoicePrompt(key, { onStart, onEnded } = {}) {
   stopArabicAudio();
   stopVoicePrompt();
 
-  const text = VOICE_PROMPTS_SCRIPTS[key] || key;
   const audioUrl = `/sounds/prompts/bn/${key}.mp3`;
 
-  // Try pre-recorded mp3 first
+  // Try pre-recorded human audio file
   const audio = new Audio(audioUrl);
   currentAudio = audio;
 
@@ -108,59 +102,17 @@ export function playVoicePrompt(key, { onStart, onEnded } = {}) {
 
   audio.onended = handleEnd;
 
-  // If mp3 is missing (404), fall back seamlessly to Bengali speech synthesis
+  // If mp3 is missing (404), do NOT fall back to robotic TTS; cleanly terminate
   audio.onerror = () => {
     currentAudio = null;
-    playSpeechSynthesisFallback(text, { onStart, onEnded });
+    notifySpeechState(false);
+    if (onEnded) onEnded();
   };
 
   audio.play().catch(() => {
-    // Autoplay prevented or file missing -> fallback
-    playSpeechSynthesisFallback(text, { onStart, onEnded });
-  });
-}
-
-function playSpeechSynthesisFallback(text, { onStart, onEnded } = {}) {
-  if (typeof window === "undefined" || !("speechSynthesis" in window)) {
-    if (onEnded) onEnded();
-    return;
-  }
-
-  try {
-    window.speechSynthesis.cancel();
-
-    const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = "bn-BD";
-    utterance.rate = 0.90; // Gentle, clear speed for young children
-    utterance.pitch = 1.12; // Friendly, warm tone
-
-    // Try finding Bengali voice
-    const voices = window.speechSynthesis.getVoices();
-    const bnVoice = voices.find(
-      (v) => v.lang.includes("bn") || v.lang.includes("ben") || v.name.toLowerCase().includes("bangla")
-    );
-    if (bnVoice) {
-      utterance.voice = bnVoice;
-    }
-
-    utterance.onstart = () => {
-      notifySpeechState(true);
-      if (onStart) onStart();
-    };
-
-    utterance.onend = () => {
-      notifySpeechState(false);
-      if (onEnded) onEnded();
-    };
-
-    utterance.onerror = () => {
-      notifySpeechState(false);
-      if (onEnded) onEnded();
-    };
-
-    window.speechSynthesis.speak(utterance);
-  } catch {
+    // Autoplay blocked or asset unavailable -> cleanly terminate with zero synthetic speech
+    currentAudio = null;
     notifySpeechState(false);
     if (onEnded) onEnded();
-  }
+  });
 }

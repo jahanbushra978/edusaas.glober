@@ -17,7 +17,6 @@ import {
   X,
   Eye,
   ImageIcon,
-  Sparkles,
   HelpCircle,
 } from "lucide-react";
 import MakhrajComparativeTab from "./makhraj/MakhrajComparativeTab";
@@ -508,7 +507,7 @@ export default function MakhrajVisualizer({
                 : "text-slate-600 hover:text-slate-900"
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Award className="w-3.5 h-3.5" />
             <span>সদৃশ হরফের পার্থক্য</span>
           </button>
           <button

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import {
   ArrowLeft,
   RotateCcw,
-  ChevronRight,
+  BookOpen,
 } from "lucide-react";
 import {
   KIDS_ARABIC_LETTERS,
@@ -12,35 +12,47 @@ import {
   KIDS_MURAKKABAT_DATA,
   KIDS_MEMORY_GAME_LEVELS,
 } from "../../data/kidsGameData";
+import { universalAudioEngine } from "@/lib/quran/audio";
 import {
   playArabicSound,
   playCorrectChime,
   playStarPopSound,
-  playMaShaAllahCelebration,
   playTapSound,
 } from "../../lib/arabicSoundPlayer";
-import { fireCelebrationConfetti } from "../../lib/confetti";
 import NuruMascot from "../kids/NuruMascot";
+import { useQuranGameProgress } from "../../hooks/useQuranGameProgress";
+import BuildingRewardCelebrationModal from "./BuildingRewardCelebrationModal";
+import TeachBeforePlayModal from "./TeachBeforePlayModal";
+import InteractiveBuildingVisualizer from "../rewards/InteractiveBuildingVisualizer";
 
 export default function MemoryMatchGame({ onBack, onEarnReward }) {
-  const [currentLevelId, setCurrentLevelId] = useState(1);
+  const {
+    journey,
+    currentLevelId,
+    completedLevels,
+    earnedRewardIds,
+    stars,
+    isLevelUnlocked,
+    completeLevel,
+    setCurrentLevel,
+  } = useQuranGameProgress("letter-match");
+
   const [cards, setCards] = useState([]);
   const [flipped, setFlipped] = useState([]);
   const [matched, setMatched] = useState([]);
   const [moves, setMoves] = useState(0);
   const [isWon, setIsWon] = useState(false);
-  const [levelStars, setLevelStars] = useState(() => {
-    try {
-      const saved = localStorage.getItem("noor_kids_memory_stars");
-      return saved ? JSON.parse(saved) : {};
-    } catch {
-      return {};
-    }
-  });
+  const [isCelebrationOpen, setIsCelebrationOpen] = useState(false);
+  const [newlyEarnedComponent, setNewlyEarnedComponent] = useState(null);
+  const [isTeachModalOpen, setIsTeachModalOpen] = useState(false);
+  const [earnedStarsCount, setEarnedStarsCount] = useState(3);
+  const [earnedScore, setEarnedScore] = useState(50);
 
-  const activeLevel = KIDS_MEMORY_GAME_LEVELS.find((l) => l.id === currentLevelId) || KIDS_MEMORY_GAME_LEVELS[0];
+  const activeLevel =
+    KIDS_MEMORY_GAME_LEVELS.find((l) => l.id === currentLevelId) ||
+    KIDS_MEMORY_GAME_LEVELS[0];
 
-  const initGame = useCallback(() => {
+  const getSourcePool = useCallback(() => {
     let sourcePool = KIDS_ARABIC_LETTERS;
     if (activeLevel.id === 3) {
       sourcePool = KIDS_HARAKAT_DRILL_DATA;
@@ -55,6 +67,11 @@ export default function MemoryMatchGame({ onBack, onEarnReward }) {
         return item;
       });
     }
+    return sourcePool;
+  }, [activeLevel]);
+
+  const initGame = useCallback(() => {
+    const sourcePool = getSourcePool();
 
     // Pick pairsCount unique items
     const shuffledPool = [...sourcePool].sort(() => 0.5 - Math.random());
@@ -73,28 +90,54 @@ export default function MemoryMatchGame({ onBack, onEarnReward }) {
     setMatched([]);
     setMoves(0);
     setIsWon(false);
-  }, [activeLevel]);
+  }, [activeLevel, getSourcePool]);
 
   useEffect(() => {
     initGame();
   }, [currentLevelId, initGame]);
 
+  // Open teach modal if level not completed yet
+  useEffect(() => {
+    if (!completedLevels.includes(currentLevelId)) {
+      setIsTeachModalOpen(true);
+    }
+  }, [currentLevelId, completedLevels]);
+
+  const playCardAudio = (targetCard) => {
+    if (!targetCard) return;
+    if (targetCard.audio) {
+      universalAudioEngine.playWord(targetCard.audio, {
+        onError: () => {
+          if (targetCard.ar) playArabicSound(targetCard.ar);
+        },
+      });
+    } else if (targetCard.ar) {
+      playArabicSound(targetCard.ar);
+    }
+  };
+
   const handleCardClick = (idx) => {
-    if (flipped.length >= 2 || flipped.includes(idx) || matched.includes(idx) || isWon) {
+    if (
+      flipped.length >= 2 ||
+      flipped.includes(idx) ||
+      matched.includes(idx) ||
+      isWon ||
+      isCelebrationOpen ||
+      isTeachModalOpen
+    ) {
       return;
     }
 
     playTapSound();
     const targetCard = cards[idx];
-    if (targetCard && targetCard.ar) {
-      playArabicSound(targetCard.ar);
-    }
+    playCardAudio(targetCard);
 
     const newFlipped = [...flipped, idx];
     setFlipped(newFlipped);
 
     if (newFlipped.length === 2) {
-      setMoves((m) => m + 1);
+      const nextMoves = moves + 1;
+      setMoves(nextMoves);
       const [firstIdx, secondIdx] = newFlipped;
       if (cards[firstIdx].pairId === cards[secondIdx].pairId) {
         // Matched!
@@ -107,17 +150,29 @@ export default function MemoryMatchGame({ onBack, onEarnReward }) {
         // Check if all pairs are matched
         if (newMatched.length === cards.length && cards.length > 0) {
           setIsWon(true);
-          fireCelebrationConfetti();
-          playMaShaAllahCelebration();
 
           // Calculate 1 to 3 stars based on moves
           const maxOptimalMoves = activeLevel.pairsCount + 2;
-          const earnedStars = moves <= maxOptimalMoves ? 3 : moves <= maxOptimalMoves + 3 ? 2 : 1;
-          const updatedStars = { ...levelStars, [currentLevelId]: Math.max(levelStars[currentLevelId] || 0, earnedStars) };
-          setLevelStars(updatedStars);
-          try {
-            localStorage.setItem("noor_kids_memory_stars", JSON.stringify(updatedStars));
-          } catch {}
+          const starsEarned =
+            nextMoves <= maxOptimalMoves
+              ? 3
+              : nextMoves <= maxOptimalMoves + 3
+              ? 2
+              : 1;
+          const calculatedScore =
+            starsEarned * 20 + Math.max(10, 50 - nextMoves * 2);
+
+          setEarnedStarsCount(starsEarned);
+          setEarnedScore(calculatedScore);
+
+          const rewardResult = completeLevel(
+            currentLevelId,
+            starsEarned,
+            calculatedScore,
+            KIDS_MEMORY_GAME_LEVELS.length
+          );
+          setNewlyEarnedComponent(rewardResult.newlyEarnedComponent);
+          setIsCelebrationOpen(true);
 
           if (onEarnReward) onEarnReward(30);
         }
@@ -131,12 +186,30 @@ export default function MemoryMatchGame({ onBack, onEarnReward }) {
   };
 
   const handleNextLevel = () => {
+    setIsCelebrationOpen(false);
     if (currentLevelId < KIDS_MEMORY_GAME_LEVELS.length) {
-      setCurrentLevelId((l) => l + 1);
+      setCurrentLevel(currentLevelId + 1);
     } else {
-      if (onBack) onBack();
+      setCurrentLevel(1);
     }
   };
+
+  const handleRetryLevel = () => {
+    setIsCelebrationOpen(false);
+    initGame();
+  };
+
+  const learningPool = getSourcePool().slice(0, 6);
+
+  // Responsive grid class
+  const gridLayout =
+    activeLevel.pairsCount === 2
+      ? "grid-cols-2 max-w-xs"
+      : activeLevel.pairsCount === 3
+      ? "grid-cols-2 sm:grid-cols-3 max-w-md"
+      : activeLevel.pairsCount <= 4
+      ? "grid-cols-2 sm:grid-cols-4 max-w-lg"
+      : "grid-cols-3 sm:grid-cols-4 max-w-xl";
 
   return (
     <div className="w-full max-w-2xl mx-auto p-3 sm:p-6 rounded-2xl sm:rounded-[2.75rem] bg-gradient-to-b from-[#FFFDF7] via-white to-[#F0FBF7] border-3 sm:border-4 border-teal-400 shadow-xl space-y-3.5 sm:space-y-4 animate-kids-pop select-none">
@@ -144,6 +217,7 @@ export default function MemoryMatchGame({ onBack, onEarnReward }) {
       <div className="flex items-center justify-between border-b-2 border-teal-100 pb-2.5 sm:pb-3 flex-wrap gap-2">
         <button
           type="button"
+          data-testid="game-back-btn"
           onClick={onBack}
           className="px-3.5 py-1.5 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-950 font-black text-xs flex items-center gap-1.5 cursor-pointer transition active:scale-95"
         >
@@ -151,13 +225,30 @@ export default function MemoryMatchGame({ onBack, onEarnReward }) {
           <span>গেম মেনু</span>
         </button>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
+          {/* Journey Badge */}
+          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 rounded-full bg-teal-100/80 text-teal-900 text-xs font-bold border border-teal-200">
+            <span>{journey.icon}</span>
+            <span>{earnedRewardIds.length}/{journey.totalMilestones} উপাদান</span>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => setIsTeachModalOpen(true)}
+            className="px-2.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-900 text-xs font-bold flex items-center gap-1 cursor-pointer"
+            title="হরফ ও পাঠ দেখে নাও"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>শিখে নাও</span>
+          </button>
+
           <span className="kids-font text-xs font-bold text-slate-700 bg-teal-50 px-3 py-1 rounded-full border border-teal-200">
             মুভ: {moves} · জোড়া: {matched.length / 2}/{activeLevel.pairsCount}
           </span>
+
           <button
             type="button"
-            onClick={initGame}
+            onClick={handleRetryLevel}
             className="p-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
             title="নতুন করে শুরু"
           >
@@ -168,120 +259,117 @@ export default function MemoryMatchGame({ onBack, onEarnReward }) {
 
       {/* ── LEVEL SELECTOR ── */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        {KIDS_MEMORY_GAME_LEVELS.map((lvl) => {
-          const stars = levelStars[lvl.id] || 0;
+        {KIDS_MEMORY_GAME_LEVELS.map((lvl, idx) => {
+          const lvlStars = stars[lvl.id] || 0;
           const isActive = lvl.id === currentLevelId;
+          const unlocked = isLevelUnlocked(lvl.id, idx);
+
           return (
             <button
               key={lvl.id}
               type="button"
+              disabled={!unlocked}
               onClick={() => {
+                if (!unlocked) return;
                 playTapSound();
-                setCurrentLevelId(lvl.id);
+                setCurrentLevel(lvl.id);
               }}
               className={`px-3 py-1.5 rounded-2xl text-xs font-black shrink-0 transition-all cursor-pointer flex items-center gap-1.5 border-2 ${
                 isActive
                   ? "bg-teal-600 border-teal-700 text-white shadow-md scale-105"
-                  : "bg-white border-teal-200 text-teal-900 hover:bg-teal-50"
+                  : unlocked
+                  ? "bg-white border-teal-200 text-teal-900 hover:bg-teal-50"
+                  : "bg-slate-100 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed"
               }`}
             >
-              <span>লেভেল {lvl.id}</span>
-              {stars > 0 && <span className="text-amber-300 text-[10px]">{"⭐".repeat(stars)}</span>}
+              <span>{unlocked ? `লেভেল ${lvl.id}` : `🔒 লেভেল ${lvl.id}`}</span>
+              {lvlStars > 0 && (
+                <span className="text-amber-300 text-[10px]">
+                  {"⭐".repeat(lvlStars)}
+                </span>
+              )}
             </button>
           );
         })}
       </div>
 
+      {/* ── 🏡 INTERACTIVE NOOR COTTAGE BUILDING SCENE ── */}
+      <InteractiveBuildingVisualizer
+        gameId="letter-match"
+        earnedRewardIds={earnedRewardIds}
+        currentLevel={currentLevelId}
+      />
+
       {/* ── LEVEL OBJECTIVE ── */}
       <div className="text-center space-y-0.5">
-        <h2 className="text-sm sm:text-base font-black text-teal-950">{activeLevel.title}</h2>
-        <p className="text-xs text-slate-600 font-medium">{activeLevel.instructionBn}</p>
+        <h2 className="text-sm sm:text-base font-black text-teal-950">
+          {activeLevel.title}
+        </h2>
+        <p className="text-xs text-slate-600 font-medium">
+          {activeLevel.instructionBn}
+        </p>
       </div>
 
-      {!isWon ? (
-        <div className={`grid ${activeLevel.gridClass || "grid-cols-3"} gap-2.5 sm:gap-3.5 max-w-lg mx-auto py-2`}>
-          {cards.map((card, idx) => {
-            const isFlipped = flipped.includes(idx) || matched.includes(idx);
-            const isMatched = matched.includes(idx);
+      {/* ── CARDS GRID ── */}
+      <div className={`grid ${gridLayout} gap-2.5 sm:gap-3.5 mx-auto py-2`}>
+        {cards.map((card, idx) => {
+          const isFlipped = flipped.includes(idx) || matched.includes(idx);
+          const isMatched = matched.includes(idx);
 
-            return (
-              <button
-                key={card.uniqueId}
-                type="button"
-                onClick={() => handleCardClick(idx)}
-                className={`aspect-square rounded-2xl sm:rounded-3xl border-3 flex items-center justify-center transition-all duration-300 cursor-pointer transform ${
-                  isFlipped
-                    ? isMatched
-                      ? "bg-emerald-100 border-emerald-500 scale-95 shadow-xs"
-                      : "bg-white border-teal-500 shadow-md scale-100 ring-4 ring-teal-200"
-                    : "bg-gradient-to-tr from-teal-500 to-emerald-500 border-teal-600 shadow-[0_5px_0_0_#0D9488] hover:scale-105 active:translate-y-1 active:shadow-none"
-                }`}
-              >
-                {isFlipped ? (
-                  <div className="text-center animate-kids-pop px-1">
-                    <span className={`font-uthmani font-bold text-teal-950 leading-tight block ${
-                      card.ar.length > 2 ? "text-xl sm:text-3xl md:text-4xl" : "text-3xl sm:text-5xl"
-                    }`}>
-                      {card.ar}
-                    </span>
-                    {card.nameBn && (
-                      <p className="text-[9px] sm:text-[10px] font-black text-teal-700 mt-0.5 truncate max-w-full">
-                        {card.nameBn}
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <span className="text-2xl sm:text-3xl select-none opacity-80">❓</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-      ) : (
-        /* ── LEVEL COMPLETE MODAL ── */
-        <div className="p-6 rounded-3xl bg-gradient-to-b from-teal-950 to-emerald-950 text-white text-center space-y-4 shadow-2xl animate-kids-pop">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-amber-400 to-yellow-300 mx-auto flex items-center justify-center text-3xl shadow-lg animate-bounce">
-            🏆
-          </div>
-
-          <div className="space-y-1">
-            <h3 className="text-xl font-black text-amber-300">মাশাআল্লাহ! অসাধারণ স্মৃতিশক্তি!</h3>
-            <p className="text-xs text-teal-200">
-              তুমি মাত্র {moves}টি মুভে সব জোড়া মিলিয়েছো!
-            </p>
-          </div>
-
-          <div className="flex justify-center gap-2 text-2xl py-2">
-            {"⭐".repeat(levelStars[currentLevelId] || 3)}
-          </div>
-
-          <div className="flex items-center justify-center gap-3 pt-2">
+          return (
             <button
+              key={card.uniqueId}
               type="button"
-              onClick={initGame}
-              className="px-4 py-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+              data-testid={`memory-card-${idx}`}
+              data-pair-id={card.pairId}
+              data-card-ar={card.ar}
+              onClick={() => handleCardClick(idx)}
+              className={`aspect-square min-h-[4.5rem] sm:min-h-[6.5rem] rounded-2xl sm:rounded-3xl border-3 flex items-center justify-center transition-all duration-300 cursor-pointer transform ${
+                isFlipped
+                  ? isMatched
+                    ? "bg-emerald-100 border-emerald-500 scale-95 shadow-xs"
+                    : "bg-white border-teal-500 shadow-md scale-100 ring-4 ring-teal-200"
+                  : "bg-gradient-to-tr from-teal-500 to-emerald-500 border-teal-600 shadow-[0_5px_0_0_#0D9488] hover:scale-105 active:translate-y-1 active:shadow-none"
+              }`}
             >
-              <RotateCcw className="w-4 h-4" />
-              <span>আবার খেলো</span>
+              {isFlipped ? (
+                <div className="text-center animate-kids-pop px-1">
+                  <span
+                    className={`font-uthmani font-bold text-teal-950 leading-tight block ${
+                      card.ar && card.ar.length > 2
+                        ? "text-xl sm:text-3xl md:text-4xl"
+                        : "text-3xl sm:text-5xl"
+                    }`}
+                  >
+                    {card.ar}
+                  </span>
+                  {card.nameBn && (
+                    <p className="text-[9px] sm:text-[10px] font-black text-teal-700 mt-0.5 truncate max-w-full">
+                      {card.nameBn}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <span className="text-2xl sm:text-3xl select-none opacity-80">
+                  ❓
+                </span>
+              )}
             </button>
-
-            <button
-              type="button"
-              onClick={handleNextLevel}
-              className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 text-white font-black text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-900/40 cursor-pointer active:scale-95"
-            >
-              <span>পরবর্তী লেভেল</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
+          );
+        })}
+      </div>
 
       {/* Mascot Guidance */}
       <div className="flex justify-center pt-1">
         <NuruMascot
           size="sm"
-          mood={isWon ? "celebrating" : matched.length > 0 ? "happy" : "thinking"}
+          mood={
+            isWon
+              ? "celebrating"
+              : matched.length > 0
+              ? "happy"
+              : "thinking"
+          }
           dialogue={
             isWon
               ? "মাশাআল্লাহ! তোমার স্মৃতিশক্তি দারুণ! পরের লেভেলে আরও বড় চ্যালেঞ্জ আছে!"
@@ -289,6 +377,33 @@ export default function MemoryMatchGame({ onBack, onEarnReward }) {
           }
         />
       </div>
+
+      {/* ── TEACH BEFORE PLAY MODAL ── */}
+      <TeachBeforePlayModal
+        isOpen={isTeachModalOpen}
+        title={activeLevel.title}
+        instructionsBn={activeLevel.instructionBn}
+        learningItems={learningPool}
+        onStartGame={() => setIsTeachModalOpen(false)}
+      />
+
+      {/* ── BUILDING REWARD CELEBRATION MODAL ── */}
+      <BuildingRewardCelebrationModal
+        isOpen={isCelebrationOpen}
+        journey={journey}
+        earnedStars={earnedStarsCount}
+        earnedScore={earnedScore}
+        newlyEarnedComponent={newlyEarnedComponent}
+        earnedRewardIds={earnedRewardIds}
+        journeyProgressPercent={Math.min(
+          100,
+          Math.round((earnedRewardIds.length / journey.totalMilestones) * 100)
+        )}
+        isJourneyComplete={earnedRewardIds.length >= journey.totalMilestones}
+        onNextLevel={handleNextLevel}
+        onRetryLevel={handleRetryLevel}
+        onBackToMenu={onBack}
+      />
     </div>
   );
 }

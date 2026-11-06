@@ -157,39 +157,48 @@ export function useLearningProgress() {
 
   // Complete a lesson, award XP, record stars (1-3), and unlock next
   const completeLesson = useCallback((lessonId, score = 90, stars = 3) => {
-    // 1. Mark lesson as completed
+    const isNewCompletion = !completedLessons.includes(lessonId);
+    const hadThreeStars = (lessonStars[lessonId] || 0) >= 3;
+
+    // 1. Mark lesson as completed (prevent duplicate entries)
     setCompletedLessons((prev) => {
-      const next = prev.includes(lessonId) ? prev : [...prev, lessonId];
+      if (prev.includes(lessonId)) {
+        return prev;
+      }
+      const next = [...prev, lessonId];
       try {
         localStorage.setItem("noor_completed_lessons", JSON.stringify(next));
       } catch {}
       return next;
     });
 
-    // 2. Save 3-Star Rating reflecting actual performance
+    // 2. Save 3-Star Rating reflecting actual performance (retain highest stars)
     setLessonStars((prev) => {
-      const next = { ...prev, [lessonId]: stars };
+      const bestStars = Math.max(prev[lessonId] || 0, stars);
+      const next = { ...prev, [lessonId]: bestStars };
       try {
         localStorage.setItem("noor_lesson_stars", JSON.stringify(next));
       } catch {}
       return next;
     });
 
-    // 3. If achieved 3 Stars, reward +1 Heart (Life)
-    if (stars === 3) {
+    // 3. If achieved 3 Stars for the first time on this lesson, reward +1 Heart (Life)
+    if (stars === 3 && !hadThreeStars) {
       gainLife();
     }
 
-    // 4. Award XP
-    const earnedXp = Math.max(10, Math.round(score / 5));
-    setXp((prev) => {
-      const nextXp = prev + earnedXp;
-      try {
-        localStorage.setItem("noor_learning_xp", String(nextXp));
-      } catch {}
-      return nextXp;
-    });
-  }, [gainLife]);
+    // 4. Award XP only on new completion (do not duplicate rewards on replay)
+    if (isNewCompletion) {
+      const earnedXp = Math.max(10, Math.round(score / 5));
+      setXp((prev) => {
+        const nextXp = prev + earnedXp;
+        try {
+          localStorage.setItem("noor_learning_xp", String(nextXp));
+        } catch {}
+        return nextXp;
+      });
+    }
+  }, [completedLessons, lessonStars, gainLife]);
 
   const recordMistake = useCallback((mistakeItem) => {
     setMistakeQueue((prev) => {

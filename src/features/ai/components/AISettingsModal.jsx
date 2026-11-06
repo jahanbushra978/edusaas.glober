@@ -204,6 +204,18 @@ export default function AISettingsModal({ open, onOpenChange, config, onSave }) 
               </div>
             )}
 
+            {/* Friendly Bengali Guide on How to Get Free Gemini API Key */}
+            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-950 dark:text-emerald-100 space-y-1.5 shadow-2xs">
+              <div className="font-extrabold flex items-center gap-1.5 text-emerald-800 dark:text-emerald-300">
+                <span>💡 গুগল জেমিনি API Key কীভাবে পাবেন? (১০০% ফ্রি)</span>
+              </div>
+              <p className="text-[11px] leading-relaxed opacity-95">
+                ১. <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" className="font-bold underline text-emerald-700 dark:text-emerald-300">aistudio.google.com/app/apikey</a> লিংকে ক্লিক করে আপনার গুগল একাউন্ট দিয়ে ঢুকুন।<br/>
+                ২. <strong>&apos;Create API key&apos;</strong> বাটনে চাপ দিয়ে কী কপি করুন।<br/>
+                ৩. নিচের ঘরে পেস্ট করে <strong>&apos;সংরক্ষণ করুন&apos;</strong> চাপুন। এটি সরাসরি আপনার ব্রাউজারে সুরক্ষিত থাকবে।
+              </p>
+            </div>
+
             {/* BYOK API Key Input */}
             <div>
               <div className="flex items-center justify-between">

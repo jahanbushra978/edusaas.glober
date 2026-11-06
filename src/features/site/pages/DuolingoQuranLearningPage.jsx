@@ -12,6 +12,7 @@ import {
   Gift,
   Gamepad2,
   Radio,
+  Play,
 } from "lucide-react";
 import {
   LearningStatsBar,
@@ -32,6 +33,7 @@ import {
   KidsHome,
   TajweedLearningView,
   SifatLearningModule,
+  BeginnerLearningJourney,
 } from "@/features/ai-learning";
 
 // Reusing existing powerful sub-engines cleanly
@@ -62,6 +64,8 @@ export default function DuolingoQuranLearningPage() {
   const [showBlackboardView, setShowBlackboardView] = useState(false);
   const [isQuestsOpen, setIsQuestsOpen] = useState(false);
   const [isLeaderboardOpen, setIsLeaderboardOpen] = useState(false);
+  const [isBeginnerPilotOpen, setIsBeginnerPilotOpen] = useState(false);
+  const [beginnerPilotLessonId, setBeginnerPilotLessonId] = useState("lesson_alif");
 
   const { isKidsMode, enableKidsMode, disableKidsMode } = useKidsMode();
 
@@ -224,12 +228,67 @@ export default function DuolingoQuranLearningPage() {
           </div>
         ) : activePath === "qaida" ? (
           /* VIEW 2: NOORANI QAIDA DUOLINGO LEARNING PATH MAP */
-          <div className="w-full flex flex-col items-center animate-fade-in">
+          <div className="w-full flex flex-col items-center animate-fade-in space-y-4">
+            {/* ── 🌟 BEGINNER PILOT BANNER: ALIF, BAA, TAA & THAA (10-STAGE PEDAGOGY) ── */}
+            <div className="w-full max-w-xl p-4 rounded-3xl bg-gradient-to-r from-emerald-900 via-teal-900 to-[#071912] border-2 border-emerald-500/40 text-white shadow-xl flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-600 flex items-center justify-center text-slate-950 font-black shadow-lg shrink-0">
+                  <span className="font-amiri text-lg font-black">ا ب ت ث</span>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs sm:text-sm font-black text-amber-300">
+                      শিক্ষানবিস পাঠ: আলিফ, বা, তা ও ছা
+                    </span>
+                    <span className="text-[10px] bg-amber-400 text-slate-950 font-black px-2 py-0.5 rounded-full">
+                      ১০টি ধাপ
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-emerald-200/90 mt-0.5">
+                    পরিচয় ➔ মাখরাজ ➔ শোনা ➔ স্পর্শ ➔ খেলা ➔ পরীক্ষা ➔ মাশাআল্লাহ!
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setBeginnerPilotLessonId("lesson_alif");
+                  setIsBeginnerPilotOpen(true);
+                }}
+                className="shrink-0 px-4 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-black text-xs shadow-md active:scale-95 transition cursor-pointer flex items-center gap-1.5"
+              >
+                <span>পাঠ শুরু</span>
+                <Play className="w-3.5 h-3.5 fill-slate-950" />
+              </button>
+            </div>
+
             <LearningPathMap
               modules={NOORANI_QAIDA_MODULES}
               completedLessons={completedLessons}
               lessonStars={lessonStars}
               onSelectLesson={(lesson) => {
+                // If user clicks any of the 4 foundation lessons, launch the authentic 10-stage journey!
+                if (lesson.id === "l1-1" || lesson.id === "lesson_alif") {
+                  setBeginnerPilotLessonId("lesson_alif");
+                  setIsBeginnerPilotOpen(true);
+                  return;
+                }
+                if (lesson.id === "l1-2" || lesson.id === "lesson_baa") {
+                  setBeginnerPilotLessonId("lesson_baa");
+                  setIsBeginnerPilotOpen(true);
+                  return;
+                }
+                if (lesson.id === "l1-3" || lesson.id === "lesson_taa") {
+                  setBeginnerPilotLessonId("lesson_taa");
+                  setIsBeginnerPilotOpen(true);
+                  return;
+                }
+                if (lesson.id === "l1-4" || lesson.id === "lesson_thaa") {
+                  setBeginnerPilotLessonId("lesson_thaa");
+                  setIsBeginnerPilotOpen(true);
+                  return;
+                }
                 if (lives <= 0) {
                   toast.info(
                     lang === "en"
@@ -320,6 +379,20 @@ export default function DuolingoQuranLearningPage() {
       </main>
 
       {/* ── MODALS ── */}
+      {/* ── 🌟 BEGINNER PILOT MODAL: 10-STAGE LEARNING FLOW (ALIF & BAA) ── */}
+      {isBeginnerPilotOpen && (
+        <BeginnerLearningJourney
+          isOpen={isBeginnerPilotOpen}
+          initialLessonId={beginnerPilotLessonId}
+          completedLessons={completedLessons}
+          lessonStars={lessonStars}
+          onClose={() => setIsBeginnerPilotOpen(false)}
+          onLessonComplete={(lessonId, stars) => {
+            completeLesson(lessonId, 100, stars);
+          }}
+        />
+      )}
+
       {selectedLesson && (
         <LessonExperienceModal
           lesson={selectedLesson}

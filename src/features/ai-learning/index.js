@@ -12,8 +12,11 @@ export { default as LeagueLeaderboardModal } from "./components/LeagueLeaderboar
 export { default as ParentCelebrationCard } from "./components/ParentCelebrationCard";
 export { default as QuranGamesHub } from "./components/QuranGamesHub";
 export { default as QuranThematicSearch } from "./components/QuranThematicSearch";
+export { default as QuraniAmalPlatform } from "./components/amal/QuraniAmalPlatform";
+export { default as BeginnerLearningJourney, BEGINNER_PILOT_LESSONS } from "./components/beginner/BeginnerLearningJourney";
 
 // Tajweed & Sifat Modules
+export { default as TajweedLearningPlatform } from "./components/tajweed/TajweedLearningPlatform";
 export { default as TajweedLearningView } from "./components/tajweed/TajweedLearningView";
 export { default as SifatLearningModule } from "./components/sifat/SifatLearningModule";
 

@@ -45,11 +45,30 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
     }
 
-    // ── Read incoming 5MB chunk form ──
+    // Role verification: Only authorized teachers and platform admins can upload videos
+    const isPlatformAdmin = session.role === "admin" || session.role === "platform_owner";
+    const isTeacher = session.role === "teacher" || isPlatformAdmin;
+    if (!isTeacher) {
+      return NextResponse.json(
+        { ok: false, message: "Forbidden: Only verified teachers and administrators may upload video content." },
+        { status: 403 }
+      );
+    }
+
+    const canonicalTeacherId = String(session.teacher_id || session.profileId || session.authUserId || session.id);
+
+    // ── Read incoming chunk form ──
     const formData = await request.formData();
     const chunk = formData.get("chunk");
-    const folder = String(formData.get("folder") || "videos");
-    const uploadId = String(formData.get("upload_id") || `vid_${Date.now()}`);
+    const rawFolder = String(formData.get("folder") || "videos");
+    const isClip = rawFolder.includes("clips");
+    // Server-controlled path strictly scoped to this teacher
+    const folder = `teacher_posts/${canonicalTeacherId.replace(/[^a-zA-Z0-9_-]/g, "")}/${isClip ? "clips" : "videos"}`;
+
+    const rawUploadId = String(formData.get("upload_id") || `vid_${Date.now()}`);
+    // Bind upload ID to caller's canonical identity to prevent cross-account chunk continuation
+    const uploadId = `up_${canonicalTeacherId.replace(/[^a-zA-Z0-9]/g, "").slice(0, 8)}_${rawUploadId.replace(/[^a-zA-Z0-9_-]/g, "")}`;
+
     const reqTimestamp = Number(formData.get("timestamp"));
     const timestamp = !isNaN(reqTimestamp) && reqTimestamp > 0 ? reqTimestamp : Math.floor(Date.now() / 1000);
     const start = Number(formData.get("start") || 0);
@@ -61,13 +80,25 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, message: "No video chunk provided." }, { status: 400 });
     }
 
-    // 500MB max raw video check
-    const MAX_VIDEO_BYTES = 500 * 1024 * 1024;
+    // Enforce 300MB maximum video limit strictly on server
+    const MAX_VIDEO_BYTES = 300 * 1024 * 1024;
     if (totalSize > MAX_VIDEO_BYTES) {
       return NextResponse.json(
-        { ok: false, message: `Video is too large (${Math.round(totalSize / (1024 * 1024))}MB). Maximum allowed is 500MB.` },
+        { ok: false, message: `Video is too large (${Math.round(totalSize / (1024 * 1024))}MB). Maximum allowed is 300MB.` },
         { status: 400 },
       );
+    }
+
+    // Convert chunk File/Blob to clean Buffer and validate boundaries
+    const chunkArrayBuffer = await chunk.arrayBuffer();
+    const chunkSize = chunkArrayBuffer.byteLength;
+
+    if (chunkSize > 10 * 1024 * 1024) {
+      return NextResponse.json({ ok: false, message: "Individual chunk size exceeds 10MB limit." }, { status: 400 });
+    }
+
+    if (start < 0 || end <= start || end > totalSize || chunkSize !== (end - start)) {
+      return NextResponse.json({ ok: false, message: "Invalid Content-Range or chunk size mismatch." }, { status: 400 });
     }
 
     const { cloudName, apiKey, apiSecret } = getCloudinaryVideoConfig();
@@ -75,8 +106,6 @@ export async function POST(request) {
     const signParams = { folder, timestamp };
     const signature = signCloudinaryParams(signParams, apiSecret);
 
-    // Convert chunk File/Blob to a clean Buffer and Blob for Node.js multipart serialization
-    const chunkArrayBuffer = await chunk.arrayBuffer();
     const chunkBuffer = Buffer.from(chunkArrayBuffer);
     const chunkBlob = new Blob([chunkBuffer], { type: chunk.type || "video/mp4" });
 
@@ -117,10 +146,20 @@ export async function POST(request) {
       );
     }
 
-    // Generate video thumbnail URL (frame at 1.5s as JPG)
+    // Generate video thumbnail URL (frame at 1.5s as JPG) and adaptive formats
     let thumbnail_url = "";
+    let hls_url = "";
+    let variants = null;
+
     if (cData.public_id) {
       thumbnail_url = `https://res.cloudinary.com/${cloudName}/video/upload/w_640,h_360,c_fill,so_1.5,f_jpg/${cData.public_id}.jpg`;
+      hls_url = `https://res.cloudinary.com/${cloudName}/video/upload/sp_auto/f_m3u8/${cData.public_id}.m3u8`;
+      variants = {
+        "360p": `https://res.cloudinary.com/${cloudName}/video/upload/w_640,h_360,c_limit,q_auto,f_auto/${cData.public_id}.mp4`,
+        "480p": `https://res.cloudinary.com/${cloudName}/video/upload/w_854,h_480,c_limit,q_auto,f_auto/${cData.public_id}.mp4`,
+        "720p": `https://res.cloudinary.com/${cloudName}/video/upload/w_1280,h_720,c_limit,q_auto,f_auto/${cData.public_id}.mp4`,
+        "1080p": `https://res.cloudinary.com/${cloudName}/video/upload/w_1920,h_1080,c_limit,q_auto,f_auto/${cData.public_id}.mp4`,
+      };
     }
 
     return NextResponse.json({
@@ -128,6 +167,8 @@ export async function POST(request) {
       secure_url: cData.secure_url || "",
       public_id: cData.public_id || "",
       thumbnail_url,
+      hls_url,
+      variants,
     });
   } catch (error) {
     console.error("[video-chunk] Unexpected error:", error);

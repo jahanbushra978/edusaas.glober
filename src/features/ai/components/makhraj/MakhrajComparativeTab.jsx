@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Volume2, AlertTriangle, Sparkles, BookOpen } from "lucide-react";
+import { Volume2, AlertTriangle, Award, BookOpen } from "lucide-react";
 import { COMPARATIVE_PAIRS } from "./makhrajComparativeData";
 import { universalAudioEngine } from "@/lib/quran/audio";
 
@@ -44,7 +44,7 @@ export default function MakhrajComparativeTab({ activeShaykhId = "husary_muallim
       <div className="bg-gradient-to-r from-teal-50 via-emerald-50 to-amber-50 dark:from-emerald-950/40 dark:to-teal-950/30 border border-emerald-200 dark:border-emerald-800 rounded-3xl p-5 shadow-xs">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-            <Sparkles className="w-5 h-5" />
+            <Award className="w-5 h-5" />
           </div>
           <div>
             <h3 className="text-base font-black text-slate-900 dark:text-white">

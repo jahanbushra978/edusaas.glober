@@ -21,6 +21,7 @@ import {
 import { toast } from "sonner";
 import { ALL_SURAHS } from "@/lib/quran/quran-meta";
 import { getSurahData } from "@/lib/quran/quran-service";
+import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 import {
   SHAYKH_REGISTRY,
   DEFAULT_SHAYKH_ID,
@@ -252,7 +253,9 @@ export default function AdvancedHifzAssistant({ studentContext, className = "" }
     setHintLevel(nextLevel);
     setHesitationCount((prev) => prev + 1);
 
-    const words = (currentAyah.text || "").split(" ").filter(Boolean);
+    const words = splitArabicAyahWords(
+      currentAyah.words && currentAyah.words.length > 0 ? currentAyah.words : currentAyah.text
+    );
     const firstWord = words[0] || "";
 
     if (nextLevel === 1) {
@@ -351,11 +354,11 @@ export default function AdvancedHifzAssistant({ studentContext, className = "" }
 
             // Real-time evaluation against current ayah
             if (currentAyah?.text) {
-              const targetNorm = normalizeArabic(currentAyah.text);
-              const spokenNorm = normalizeArabic(clean);
-
-              const targetWords = targetNorm.split(" ").filter(Boolean);
-              const spokenWords = spokenNorm.split(" ").filter(Boolean);
+              const rawWords = splitArabicAyahWords(
+                currentAyah.words && currentAyah.words.length > 0 ? currentAyah.words : currentAyah.text
+              );
+              const targetWords = rawWords.map(normalizeArabic).filter(Boolean);
+              const spokenWords = normalizeArabic(clean).split(" ").filter(Boolean);
 
               let matchedCount = 0;
               targetWords.forEach((tw) => {

@@ -5,6 +5,7 @@
 
 import { getQariAudioUrl } from "@/lib/ai/qari-registry";
 import { ALL_SURAHS } from "./quran-meta";
+import { splitArabicAyahWords } from "./quran-audio-timing";
 
 // Curated Local Fallback Dataset for instant offline rendering of popular and essential Surahs
 const LOCAL_FALLBACK_SURAHS = {
@@ -367,12 +368,16 @@ export async function getSurahData(surahNumber) {
   // 1. Check browser localStorage
   if (typeof window !== "undefined") {
     try {
-      const cacheKey = `rahmania_quran_surah_v1_${surahNum}`;
-      const cached = localStorage.getItem(cacheKey);
+      const cacheKey = `rahmania_quran_surah_v2_${surahNum}`;
+      const cached = localStorage.getItem(cacheKey) || localStorage.getItem(`rahmania_quran_surah_v1_${surahNum}`);
       if (cached) {
         const parsed = JSON.parse(cached);
         if (parsed?.ayahs?.length > 0) {
-          return { ...meta, ...parsed };
+          const syncedAyahs = parsed.ayahs.map((a) => ({
+            ...a,
+            words: a.words && a.words.length > 0 ? a.words : splitArabicAyahWords(a.text),
+          }));
+          return { ...meta, ...parsed, ayahs: syncedAyahs };
         }
       }
     } catch {}
@@ -408,15 +413,26 @@ export async function getSurahData(surahNumber) {
         const ayahs = arEdition.ayahs.map((a, i) => {
           const bnAyah = bnEdition.ayahs?.[i]?.text || "";
           const enAyah = enEdition.ayahs?.[i]?.text || "";
+          let cleanText = a.text || "";
+
+          // Strip duplicate Bismillah from Ayah 1 of Surahs 2..114 (except Surah 9)
+          if (surahNum > 1 && surahNum !== 9 && a.numberInSurah === 1) {
+            const BISMILLAH_PREFIX = "بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ";
+            if (cleanText.startsWith(BISMILLAH_PREFIX)) {
+              cleanText = cleanText.slice(BISMILLAH_PREFIX.length).trim();
+            }
+          }
+
           return {
             numberInSurah: a.numberInSurah,
-            text: a.text,
+            text: cleanText,
             bengali: bnAyah,
             english: enAyah,
             juz: a.juz,
             page: a.page,
             hizbQuarter: a.hizbQuarter,
-            sajda: a.sajda || false
+            sajda: a.sajda || false,
+            words: splitArabicAyahWords(cleanText),
           };
         });
 
@@ -433,7 +449,7 @@ export async function getSurahData(surahNumber) {
         if (typeof window !== "undefined") {
           try {
             localStorage.setItem(
-              `rahmania_quran_surah_v1_${surahNum}`,
+              `rahmania_quran_surah_v2_${surahNum}`,
               JSON.stringify(formatted)
             );
           } catch {}

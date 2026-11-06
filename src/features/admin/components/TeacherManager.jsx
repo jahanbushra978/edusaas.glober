@@ -13,7 +13,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import {
   Plus, Pencil, Trash2, UserCheck, UserX, Users, Loader2, Eye, EyeOff,
-  Gift, Upload, Briefcase, Phone, Award
+  Gift, Upload, Briefcase, Phone, Award, Globe, ShieldCheck, Star
 } from "lucide-react";
 import { toast } from "sonner";
 import ImageUpload from "./ImageUpload";
@@ -22,6 +22,7 @@ import Link from "next/link";
 import { createPageUrl } from "@/utils";
 import { SearchInput } from "@/components/ui/search-input";
 import { useSearch } from "@/hooks/useSearch";
+import { REAL_TEACHERS_10 } from "@/features/teachers/data/marketplaceSeedData";
 
 /* ── CV Upload Component ── */
 function CVUpload({ value, onChange, label = "Upload CV (PDF/DOC/DOCX)" }) {
@@ -1056,11 +1057,172 @@ function AssignStudentsDialog({ teacher, students, teachers = [], branches, onCl
 
 /* ── Main TeacherManager Component ── */
 export default function TeacherManager({ students, currentUser }) {
+  const [activeTabMode, setActiveTabMode] = useState("institutional"); // "institutional" | "marketplace"
   const [showForm, setShowForm] = useState(false);
   const [editingTeacher, setEditingTeacher] = useState(null);
   const [assignTeacher, setAssignTeacher] = useState(null);
   const [visibleLimit, setVisibleLimit] = useState(50);
+  const [marketplaceSearch, setMarketplaceSearch] = useState("");
+  const [showAddMarketplaceModal, setShowAddMarketplaceModal] = useState(false);
+  const [newMarketplaceForm, setNewMarketplaceForm] = useState({
+    name_bn: "",
+    name_en: "",
+    title_bn: "আন্তর্জাতিক সনদপ্রাপ্ত ক্বারী ও শিক্ষক",
+    hourly_fee: 350,
+    monthly_fee: 2500,
+    experience_years: 6,
+    specialties: "হিফজুল কুরআন, তাজবীদ ও মাখরাজ",
+    bio: "সহীহ ও বিশুদ্ধ তারতীলে শিক্ষার্থীদের ১-অন-১ কুরআন ও তাজবীদ শিক্ষা দিচ্ছি।",
+  });
+  const [isSubmittingMarketplace, setIsSubmittingMarketplace] = useState(false);
   const queryClient = useQueryClient();
+
+  // ── MARKETPLACE TEACHERS QUERY ──
+  const {
+    data: marketplaceTeachers = [],
+    isLoading: isMarketplaceLoading,
+    refetch: refetchMarketplace,
+  } = useQuery({
+    queryKey: ["admin-marketplace-teachers"],
+    queryFn: async () => {
+      try {
+        const res = await fetch("/api/teacher-marketplace");
+        const json = await res.json();
+        const dbList = Array.isArray(json?.teachers) ? json.teachers : [];
+
+        let localRegistered = [];
+        try {
+          localRegistered = JSON.parse(localStorage.getItem("edusaas_registered_teachers") || "[]");
+        } catch {}
+
+        const merged = [...dbList];
+        for (const t of localRegistered) {
+          if (!merged.some((m) => m.id === t.id || m.teacher_id === t.teacher_id)) {
+            merged.push(t);
+          }
+        }
+        for (const t of REAL_TEACHERS_10) {
+          if (!merged.some((m) => m.id === t.id || m.teacher_id === t.teacher_id)) {
+            merged.push({
+              id: t.id,
+              teacher_id: t.teacher_id || t.id,
+              name_bn: t.name_bn || t.nameBn,
+              name_en: t.name_en || t.nameEn,
+              title_bn: t.title_bn || t.titleBn,
+              avatar_url: t.avatar_url || t.avatar,
+              cover_url: t.cover_url || t.coverPhoto,
+              hourly_fee: t.hourly_fee || 350,
+              monthly_fee: t.monthly_fee || 2500,
+              status: t.status || "approved",
+              rating: t.rating || 5.0,
+              total_students: t.total_students || 120,
+              total_classes: t.total_classes || 300,
+              specialties: Array.isArray(t.specialties) ? t.specialties : ["হিফজ", "তাজবীদ"],
+              bio: t.bio || "",
+            });
+          }
+        }
+        return merged;
+      } catch (err) {
+        return REAL_TEACHERS_10.map((t) => ({
+          id: t.id,
+          teacher_id: t.teacher_id || t.id,
+          name_bn: t.name_bn || t.nameBn,
+          name_en: t.name_en || t.nameEn,
+          title_bn: t.title_bn || t.titleBn,
+          avatar_url: t.avatar_url || t.avatar,
+          cover_url: t.cover_url || t.coverPhoto,
+          hourly_fee: t.hourly_fee || 350,
+          monthly_fee: t.monthly_fee || 2500,
+          status: t.status || "approved",
+          rating: t.rating || 5.0,
+          total_students: t.total_students || 120,
+          total_classes: t.total_classes || 300,
+          specialties: Array.isArray(t.specialties) ? t.specialties : ["হিফজ", "তাজবীদ"],
+        }));
+      }
+    },
+  });
+
+  // Filtered Marketplace Teachers
+  const filteredMarketplaceTeachers = marketplaceTeachers.filter((t) => {
+    if (!marketplaceSearch.trim()) return true;
+    const q = marketplaceSearch.toLowerCase();
+    const nameBn = (t.name_bn || "").toLowerCase();
+    const nameEn = (t.name_en || "").toLowerCase();
+    const tid = (t.teacher_id || t.id || "").toLowerCase();
+    const title = (t.title_bn || "").toLowerCase();
+    const spec = Array.isArray(t.specialties) ? t.specialties.join(" ").toLowerCase() : (t.specialties || "").toLowerCase();
+    return nameBn.includes(q) || nameEn.includes(q) || tid.includes(q) || title.includes(q) || spec.includes(q);
+  });
+
+  // ── MARKETPLACE TEACHER DELETE MUTATION ──
+  const deleteMarketplaceTeacherMut = useMutation({
+    mutationFn: async (teacherId) => {
+      const res = await fetch(`/api/teacher-marketplace?teacher_id=${encodeURIComponent(teacherId)}`, {
+        method: "DELETE",
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "শিক্ষক মুছে ফেলা সম্ভব হয়নি");
+      }
+      return data;
+    },
+    onSuccess: (data, teacherId) => {
+      try {
+        const stored = JSON.parse(localStorage.getItem("edusaas_registered_teachers") || "[]");
+        const filtered = stored.filter((t) => t.id !== teacherId && t.teacher_id !== teacherId);
+        localStorage.setItem("edusaas_registered_teachers", JSON.stringify(filtered));
+        const currSession = JSON.parse(localStorage.getItem("edusaas_current_teacher_session") || "null");
+        if (currSession && (currSession.id === teacherId || currSession.teacher_id === teacherId)) {
+          localStorage.removeItem("edusaas_current_teacher_session");
+        }
+      } catch {}
+      refetchMarketplace();
+      toast.success("মার্কেটপ্লেস শিক্ষক প্রোফাইল সফলভাবে মুছে ফেলা হয়েছে!");
+    },
+    onError: (err) => {
+      toast.error(err.message || "মুছে ফেলতে ব্যর্থ হয়েছে");
+    },
+  });
+
+  // Handle Add New Marketplace Teacher from Admin Console
+  const handleCreateMarketplaceTeacher = async (e) => {
+    e.preventDefault();
+    if (!newMarketplaceForm.name_bn.trim()) {
+      toast.error("শিক্ষকের নাম বাংলায় প্রদান করা আবশ্যক");
+      return;
+    }
+    setIsSubmittingMarketplace(true);
+    try {
+      const res = await fetch("/api/teacher-marketplace", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(newMarketplaceForm),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.ok) {
+        throw new Error(data.error || "শিক্ষক যোগ করা সম্ভব হয়নি");
+      }
+      toast.success("নতুন মার্কেটপ্লেস শিক্ষক সফলভাবে তৈরি হয়েছে!");
+      setShowAddMarketplaceModal(false);
+      setNewMarketplaceForm({
+        name_bn: "",
+        name_en: "",
+        title_bn: "আন্তর্জাতিক সনদপ্রাপ্ত ক্বারী ও শিক্ষক",
+        hourly_fee: 350,
+        monthly_fee: 2500,
+        experience_years: 6,
+        specialties: "হিফজুল কুরআন, তাজবীদ ও মাখরাজ",
+        bio: "সহীহ ও বিশুদ্ধ তারতীলে শিক্ষার্থীদের ১-অন-১ কুরআন ও তাজবীদ শিক্ষা দিচ্ছি।",
+      });
+      refetchMarketplace();
+    } catch (err) {
+      toast.error(err.message || "সংরক্ষণে সমস্যা হয়েছে");
+    } finally {
+      setIsSubmittingMarketplace(false);
+    }
+  };
 
   const { data: rawTeachers = [], isLoading } = useQuery({
     queryKey: ["admin-teachers", currentUser?.branch_id, visibleLimit],
@@ -1229,24 +1391,295 @@ export default function TeacherManager({ students, currentUser }) {
 
   return (
     <div className="space-y-4">
-      {/* Search and Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4 bg-white dark:bg-slate-900 p-4 border border-slate-100 rounded-2xl shadow-sm">
-        <div>
-          <h2 className="text-lg font-bold text-primary">Teacher Management</h2>
-          <p className="text-xs text-muted-foreground">{teachers.length} teachers registered</p>
-        </div>
-        <div className="flex items-center gap-2 flex-wrap flex-1 sm:flex-initial">
-          <SearchInput
-            value={searchQuery}
-            onChange={setSearchQuery}
-            placeholder="Search by Name, ID, Mobile..."
-            className="h-9 text-xs"
-          />
-          <Button onClick={() => { setEditingTeacher(null); setShowForm(true); }} className="gap-2 text-xs h-9 rounded-xl bg-primary hover:bg-primary/95 text-white">
-            <Plus className="h-4 w-4" /> Add Teacher
-          </Button>
-        </div>
+      {/* ── TOP LEVEL SUB-TAB SWITCHER: INSTITUTIONAL VS MARKETPLACE ── */}
+      <div className="flex items-center gap-2 p-1.5 bg-slate-100 dark:bg-slate-800 rounded-2xl w-fit">
+        <button
+          type="button"
+          onClick={() => setActiveTabMode("institutional")}
+          className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${
+            activeTabMode === "institutional"
+              ? "bg-white dark:bg-slate-900 text-primary shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:text-slate-900"
+          }`}
+        >
+          <Briefcase className="h-4 w-4" />
+          <span>প্রাতিষ্ঠানিক শিক্ষকগণ ({teachers.length})</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTabMode("marketplace")}
+          className={`px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer flex items-center gap-2 ${
+            activeTabMode === "marketplace"
+              ? "bg-emerald-700 text-white shadow-xs"
+              : "text-slate-600 dark:text-slate-400 hover:text-emerald-700"
+          }`}
+        >
+          <Globe className="h-4 w-4" />
+          <span>মার্কেটপ্লেস ও হিউম্যান উস্তাদগণ ({marketplaceTeachers.length})</span>
+        </button>
       </div>
+
+      {activeTabMode === "marketplace" ? (
+        /* ══════════════════════════════════════════════════════════════════════
+           MARKETPLACE TEACHERS MANAGEMENT PANEL (consol.admin)
+        ══════════════════════════════════════════════════════════════════════ */
+        <div className="space-y-4">
+          <div className="flex items-center justify-between flex-wrap gap-4 bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm">
+            <div>
+              <h2 className="text-lg font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                <Globe className="h-5 w-5 text-emerald-600" />
+                <span>উন্মুক্ত কুরআন মার্কেটপ্লেস শিক্ষক তালিকা</span>
+              </h2>
+              <p className="text-xs text-muted-foreground">
+                দেশ-বিদেশের শিক্ষার্থী ও অভিভাবকদের জন্য উন্মুক্ত হিউম্যান টিচার প্রোফাইল পরিচালনা ও মুছে ফেলা ({marketplaceTeachers.length} জন)
+              </p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap flex-1 sm:flex-initial">
+              <SearchInput
+                value={marketplaceSearch}
+                onChange={setMarketplaceSearch}
+                placeholder="উস্তাদের নাম বা আইডি দিয়ে খুঁজুন..."
+                className="h-9 text-xs w-64"
+              />
+              <Button
+                onClick={() => setShowAddMarketplaceModal(true)}
+                className="gap-2 text-xs h-9 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white cursor-pointer"
+              >
+                <Plus className="h-4 w-4" /> নতুন শিক্ষক যোগ করুন
+              </Button>
+            </div>
+          </div>
+
+          {isMarketplaceLoading ? (
+            <div className="flex justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+            </div>
+          ) : filteredMarketplaceTeachers.length === 0 ? (
+            <Card className="rounded-2xl border-slate-100">
+              <CardContent className="py-16 text-center text-muted-foreground text-sm">
+                {marketplaceSearch
+                  ? "আপনার অনুসন্ধানের সাথে কোনো মার্কেটপ্লেস শিক্ষক মেলেনি।"
+                  : "কোনো মার্কেটপ্লেস শিক্ষক পাওয়া যায়নি।"}
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {filteredMarketplaceTeachers.map((teacher) => {
+                const tid = teacher.teacher_id || teacher.id;
+                return (
+                  <Card key={tid} className="rounded-2xl border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden flex flex-col justify-between hover:border-emerald-500/50 transition">
+                    <CardHeader className="pb-3 border-b border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={teacher.avatar_url || "https://images.unsplash.com/photo-1566492031773-4f4e44671857?auto=format&fit=crop&w=400&q=80"}
+                            alt={teacher.name_bn}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-emerald-600 shadow-xs"
+                          />
+                          <div>
+                            <div className="flex items-center gap-1.5">
+                              <CardTitle className="text-sm font-extrabold text-slate-900 dark:text-white">
+                                {teacher.name_bn}
+                              </CardTitle>
+                              <ShieldCheck className="h-4 w-4 text-blue-500 fill-blue-500 text-white" />
+                            </div>
+                            <p className="text-xs text-muted-foreground truncate max-w-[240px]">
+                              {teacher.title_bn}
+                            </p>
+                            <span className="text-[10px] font-mono text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-1.5 py-0.5 rounded border border-emerald-200 dark:border-emerald-800">
+                              #{tid}
+                            </span>
+                          </div>
+                        </div>
+                        <Badge
+                          variant="outline"
+                          className={
+                            teacher.status === "approved"
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-300 font-bold text-[10px]"
+                              : "bg-amber-50 text-amber-800 border-amber-300 font-bold text-[10px]"
+                          }
+                        >
+                          {teacher.status === "approved" ? "অনুমোদিত (Approved)" : "যাচাইাধীন (Pending)"}
+                        </Badge>
+                      </div>
+                    </CardHeader>
+
+                    <CardContent className="pt-3 pb-4 space-y-3 flex-1 flex flex-col justify-between">
+                      <div className="space-y-2 text-xs">
+                        <div className="grid grid-cols-2 gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 text-[11px]">
+                          <div>
+                            <span className="text-slate-400 font-bold">ঘণ্টাপ্রতি হাদিয়া:</span>
+                            <p className="font-black text-emerald-800 dark:text-emerald-300">
+                              {teacher.hourly_fee ? `${teacher.hourly_fee} ৳ / ঘণ্টা` : "৩৫০ ৳ / ঘণ্টা"}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-slate-400 font-bold">রেটিং ও ক্লাস:</span>
+                            <p className="font-black text-amber-600 flex items-center gap-1">
+                              <Star className="h-3 w-3 fill-amber-500 text-amber-500" />
+                              <span>{teacher.rating || 5.0} ({teacher.total_classes || 150}+ ক্লাস)</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        {teacher.specialties && (
+                          <div className="flex flex-wrap gap-1">
+                            {(Array.isArray(teacher.specialties) ? teacher.specialties : String(teacher.specialties).split(",")).map((sp, idx) => (
+                              <span key={idx} className="text-[10px] px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium">
+                                {sp.trim()}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Action Bar: Delete Button */}
+                      <div className="pt-2 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                        <span className="text-[11px] text-muted-foreground">
+                          {teacher.total_students ? `${teacher.total_students} জন শিক্ষার্থী` : "১০০+ শিক্ষার্থী"}
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-red-600 hover:bg-red-50 hover:text-red-700 border-red-200 dark:border-red-900 gap-1.5 h-8 text-xs font-bold cursor-pointer transition active:scale-95"
+                            onClick={() => {
+                              if (window.confirm(`আপনি কি নিশ্চিতভাবে "${teacher.name_bn}"-কে মার্কেটপ্লেস থেকে স্থায়ীভাবে মুছে ফেলতে চান? এটি মুছে ফেললে তাঁর ওয়ালেট ও প্রোফাইল ডাটাবেজ থেকে মুছে যাবে।`)) {
+                                deleteMarketplaceTeacherMut.mutate(tid);
+                              }
+                            }}
+                          >
+                            <Trash2 className="h-3.5 w-3.5" />
+                            <span>মুছে ফেলুন (Delete)</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          {/* Modal for Creating New Marketplace Teacher */}
+          <Dialog open={showAddMarketplaceModal} onOpenChange={setShowAddMarketplaceModal}>
+            <DialogContent className="w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto rounded-3xl">
+              <DialogHeader>
+                <DialogTitle className="text-base font-bold text-emerald-800 dark:text-emerald-300 flex items-center gap-2">
+                  <Plus className="h-5 w-5 text-emerald-600" />
+                  <span>নতুন মার্কেটপ্লেস শিক্ষক প্রোফাইল তৈরি</span>
+                </DialogTitle>
+              </DialogHeader>
+
+              <form onSubmit={handleCreateMarketplaceTeacher} className="space-y-3.5 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs font-bold">নাম (বাংলায়) *</Label>
+                    <Input
+                      required
+                      value={newMarketplaceForm.name_bn}
+                      onChange={(e) => setNewMarketplaceForm((prev) => ({ ...prev, name_bn: e.target.value }))}
+                      placeholder="যেমন: হাফেজ ক্বারী আব্দুল কাইয়ূম"
+                      className="h-9 text-xs mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold">নাম (English)</Label>
+                    <Input
+                      value={newMarketplaceForm.name_en}
+                      onChange={(e) => setNewMarketplaceForm((prev) => ({ ...prev, name_en: e.target.value }))}
+                      placeholder="e.g. Hafez Qari Abdul Kaiyum"
+                      className="h-9 text-xs mt-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-bold">পদবি / উপাধি</Label>
+                  <Input
+                    value={newMarketplaceForm.title_bn}
+                    onChange={(e) => setNewMarketplaceForm((prev) => ({ ...prev, title_bn: e.target.value }))}
+                    placeholder="যেমন: আন্তর্জাতিক সনদপ্রাপ্ত ক্বারী ও শিক্ষক"
+                    className="h-9 text-xs mt-1"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs font-bold">ঘণ্টাপ্রতি হাদিয়া (টাকা)</Label>
+                    <Input
+                      type="number"
+                      value={newMarketplaceForm.hourly_fee}
+                      onChange={(e) => setNewMarketplaceForm((prev) => ({ ...prev, hourly_fee: Number(e.target.value) }))}
+                      className="h-9 text-xs mt-1"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs font-bold">অভিজ্ঞতা (বছর)</Label>
+                    <Input
+                      type="number"
+                      value={newMarketplaceForm.experience_years}
+                      onChange={(e) => setNewMarketplaceForm((prev) => ({ ...prev, experience_years: Number(e.target.value) }))}
+                      className="h-9 text-xs mt-1"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <Label className="text-xs font-bold">বিশেষজ্ঞতা (কমা দিয়ে লিখুন)</Label>
+                  <Input
+                    value={newMarketplaceForm.specialties}
+                    onChange={(e) => setNewMarketplaceForm((prev) => ({ ...prev, specialties: e.target.value }))}
+                    placeholder="হিফজুল কুরআন, তাজবীদ, নূরানী কায়দা"
+                    className="h-9 text-xs mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-xs font-bold">সংক্ষিপ্ত পরিচিতি ও বায়ো</Label>
+                  <Textarea
+                    rows={2}
+                    value={newMarketplaceForm.bio}
+                    onChange={(e) => setNewMarketplaceForm((prev) => ({ ...prev, bio: e.target.value }))}
+                    className="text-xs mt-1 resize-none"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setShowAddMarketplaceModal(false)}>
+                    বাতিল
+                  </Button>
+                  <Button type="submit" size="sm" disabled={isSubmittingMarketplace} className="bg-emerald-700 hover:bg-emerald-800 text-white font-bold">
+                    {isSubmittingMarketplace ? "সংরক্ষণ হচ্ছে..." : "মার্কেটপ্লেসে প্রকাশ করুন"}
+                  </Button>
+                </div>
+              </form>
+            </DialogContent>
+          </Dialog>
+        </div>
+      ) : (
+        /* ══════════════════════════════════════════════════════════════════════
+           INSTITUTIONAL TEACHERS PANEL (MADRASA STAFF)
+        ══════════════════════════════════════════════════════════════════════ */
+        <div className="space-y-4">
+          {/* Search and Header */}
+          <div className="flex items-center justify-between flex-wrap gap-4 bg-white dark:bg-slate-900 p-4 border border-slate-100 dark:border-slate-800 rounded-2xl shadow-sm">
+            <div>
+              <h2 className="text-lg font-bold text-primary">Teacher Management</h2>
+              <p className="text-xs text-muted-foreground">{teachers.length} teachers registered</p>
+            </div>
+            <div className="flex items-center gap-2 flex-wrap flex-1 sm:flex-initial">
+              <SearchInput
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Search by Name, ID, Mobile..."
+                className="h-9 text-xs"
+              />
+              <Button onClick={() => { setEditingTeacher(null); setShowForm(true); }} className="gap-2 text-xs h-9 rounded-xl bg-primary hover:bg-primary/95 text-white">
+                <Plus className="h-4 w-4" /> Add Teacher
+              </Button>
+            </div>
+          </div>
 
       {isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
@@ -1359,6 +1792,8 @@ export default function TeacherManager({ students, currentUser }) {
           >
             Load More Teachers
           </Button>
+        </div>
+      )}
         </div>
       )}
 

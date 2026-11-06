@@ -7,6 +7,7 @@ import BigChoiceButton from "./BigChoiceButton";
 import NuruMascot from "./NuruMascot";
 import ParentGate from "./ParentGate";
 import KidsLesson from "./KidsLesson";
+import BeginnerLearningJourney from "../beginner/BeginnerLearningJourney";
 import StarJar from "./StarJar";
 import MemoryMatchGame from "../games/MemoryMatchGame";
 import SoundDetectiveGame from "../games/SoundDetectiveGame";
@@ -31,6 +32,7 @@ export default function KidsHome({
   const [hasStartedAudio, setHasStartedAudio] = useState(false);
   const [isParentGateOpen, setIsParentGateOpen] = useState(false);
   const [isLessonOpen, setIsLessonOpen] = useState(false);
+  const [isBeginnerPilotOpen, setIsBeginnerPilotOpen] = useState(false);
   const [isStagesMenuOpen, setIsStagesMenuOpen] = useState(false);
   const [selectedStage, setSelectedStage] = useState("stage-huruf");
   const [isStarJarOpen, setIsStarJarOpen] = useState(false);
@@ -343,6 +345,39 @@ export default function KidsHome({
               </h3>
             </div>
 
+            {/* ── 🌟 FEATURED BEGINNER PILOT: 10-STAGE JOURNEY (ALIF & BAA) ── */}
+            <div className="p-4 rounded-3xl bg-gradient-to-r from-emerald-900 via-teal-900 to-[#071912] text-white border-3 border-amber-400 shadow-xl flex items-center justify-between text-left gap-3">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-amber-400 text-slate-950 font-amiri text-2xl font-black flex items-center justify-center shrink-0 shadow-md">
+                  ا ب
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="kids-font text-sm font-black text-amber-300">
+                      প্রথম পাঠ: আলিফ ও বা
+                    </span>
+                    <span className="text-[10px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-black">
+                      ১০ ধাপ
+                    </span>
+                  </div>
+                  <p className="kids-font text-xs text-emerald-200 mt-0.5">
+                    খাঁটি ক্বারীর কন্ঠে ১০-ধাপের পরিপূর্ণ শিক্ষানবিস শিখন পদ্ধতি
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  playTapSound();
+                  setIsStagesMenuOpen(false);
+                  setIsBeginnerPilotOpen(true);
+                }}
+                className="kids-tap shrink-0 px-4 py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 kids-font text-xs font-black shadow-md cursor-pointer"
+              >
+                শুরু করো ➔
+              </button>
+            </div>
+
             {/* 8 Maktab Stage Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 text-left">
               {KIDS_CURRICULUM_STAGES.map((stg) => {
@@ -395,6 +430,18 @@ export default function KidsHome({
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── 🌟 BEGINNER PILOT MODAL: 10-STAGE JOURNEY (ALIF & BAA) ── */}
+      {isBeginnerPilotOpen && (
+        <BeginnerLearningJourney
+          isOpen={isBeginnerPilotOpen}
+          initialLessonId="lesson_alif"
+          onClose={() => setIsBeginnerPilotOpen(false)}
+          onLessonComplete={(lessonId, starsEarned) => {
+            handleEarnStars(starsEarned);
+          }}
+        />
       )}
 
       {/* ── KIDS LESSON EXPERIENCE MODAL ── */}
