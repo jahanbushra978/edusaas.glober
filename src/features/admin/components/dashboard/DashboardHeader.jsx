@@ -13,7 +13,8 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Layers,
-  Bot
+  Bot,
+  BookOpen
 } from "lucide-react";
 import ThemeToggle from "@/components/ui-custom/ThemeToggle";
 import GlobalSearchBar from "../../components/GlobalSearchBar";
@@ -28,6 +29,8 @@ export default function DashboardHeader({
   combinedNotifications = [],
   setActiveTab,
   exportCSV,
+  onOpenTutorial,
+  isTutorialGlobalEnabled = true,
 }) {
   return (
     <header className="sticky top-0 z-40 bg-white/95 border-b border-gray-100 px-4 sm:px-6 py-4 flex items-center justify-between gap-4 shadow-sm select-none">
@@ -62,7 +65,23 @@ export default function DashboardHeader({
       </div>
 
       {/* Right Side: Session Badge, Notification, Actions */}
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2.5 sm:gap-3">
+        {/* Dynamic In-App How-To-Use Guide Button (Global Visibility Controlled) */}
+        {isTutorialGlobalEnabled && onOpenTutorial && (
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="border-emerald-600/40 bg-emerald-50/90 hover:bg-emerald-100 text-emerald-950 dark:text-emerald-300 dark:bg-emerald-950/40 text-xs font-black shadow-xs h-8 px-2.5 sm:px-3 gap-1.5 cursor-pointer transition-all active:scale-95"
+            onClick={onOpenTutorial}
+            title="বর্তমান পেজের ব্যবহার নির্দেশিকা ও টিউটোরিয়াল দেখুন"
+          >
+            <BookOpen size={14} className="text-emerald-700 shrink-0" />
+            <span className="hidden md:inline">কীভাবে ব্যবহার করবেন?</span>
+            <span className="md:hidden">গাইড</span>
+          </Button>
+        )}
+
         {/* Quick Page Builder Button */}
         <Link href={`/admin/website/page-builder?slug=${activeSchoolSlug}`}>
           <Button size="sm" className="bg-teal-600 hover:bg-teal-500 text-white text-xs font-semibold shadow-sm h-8 px-3">

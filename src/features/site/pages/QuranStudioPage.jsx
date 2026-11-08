@@ -37,6 +37,8 @@ import {
 import { toast } from "sonner";
 import AISettingsModal from "@/features/ai/components/AISettingsModal";
 import SiteFeedbackModal from "@/components/common/SiteFeedbackModal";
+import PageTutorialModal from "@/features/admin/components/tutorials/PageTutorialModal";
+import PageTutorialBanner from "@/features/admin/components/tutorials/PageTutorialBanner";
 import { getSavedAIConfig, saveAIConfigToStorage } from "@/features/ai/lib/aiConfigHelper";
 
 // Real Sub-engines & Components (Zero Fake Data)
@@ -208,6 +210,24 @@ export default function QuranStudioPage() {
   // 🔑 AI Settings & API Key Modal State
   const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
   const [aiConfig, setAiConfig] = useState(null);
+
+  // 📖 Dynamic In-App How-To-Use Tutorial State (Nur AI & Studio Guide)
+  const [isTutorialOpen, setIsTutorialOpen] = useState(false);
+  const [tutorialConfig, setTutorialConfig] = useState({ globalEnabled: true, customVideos: {} });
+
+  useEffect(() => {
+    fetch("/api/platform/tutorials")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.ok) {
+          setTutorialConfig({
+            globalEnabled: data.globalEnabled !== false,
+            customVideos: data.customVideos || {},
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const activeStageRef = useRef(null);
 
@@ -615,6 +635,21 @@ export default function QuranStudioPage() {
               {aiConfig?.apiKey ? "কী সক্রিয়" : "API Key দিন"}
             </span>
           </button>
+
+          {/* 📖 Dynamic How-To-Use Tutorial Guide Button (AI Nur & Studio Guide) */}
+          {tutorialConfig.globalEnabled && (
+            <button
+              type="button"
+              suppressHydrationWarning
+              onClick={() => setIsTutorialOpen(true)}
+              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-2xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs bg-emerald-600/10 hover:bg-emerald-600/20 border-emerald-600/40 text-emerald-900 dark:text-emerald-200 active:scale-95"
+              title="নূর এআই ও কুরআন স্টুডিও ব্যবহারের নিয়মাবলী ও ভিডিও টিউটোরিয়াল দেখুন"
+            >
+              <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span className="text-[11px] sm:text-xs font-bold hidden sm:inline">ব্যবহার নির্দেশিকা</span>
+              <span className="text-[11px] sm:text-xs font-bold sm:hidden">গাইড</span>
+            </button>
+          )}
 
           {/* 🎨 THEME CHANGER DROPDOWN (As Requested by User) */}
           {/* 💡 Site Feedback / Suggestion Trigger */}
@@ -1326,6 +1361,14 @@ export default function QuranStudioPage() {
                 </div>
               </div>
 
+              {/* 📖 Prominent How-To-Use Banner for Nur AI & Quran Studio */}
+              <PageTutorialBanner
+                activeRouteKey={activeFeature || "quran-studio"}
+                onOpenTutorial={() => setIsTutorialOpen(true)}
+                isGlobalEnabled={tutorialConfig.globalEnabled}
+                hasVideo={Boolean(tutorialConfig.customVideos?.[activeFeature || "quran-studio"])}
+              />
+
               {/* Categorized Card Sections */}
               <div className="space-y-6">
                 {FEATURE_CATEGORIES.map((cat) => {
@@ -1467,6 +1510,14 @@ export default function QuranStudioPage() {
         <SiteFeedbackModal
           isOpen={isFeedbackOpen}
           onClose={() => setIsFeedbackOpen(false)}
+        />
+
+        {/* 4. 📖 Dynamic In-App How-To-Use & Video Tutorial Modal (Nur AI & Studio) */}
+        <PageTutorialModal
+          isOpen={isTutorialOpen}
+          onClose={() => setIsTutorialOpen(false)}
+          activeRouteKey={activeFeature || "quran-studio"}
+          customVideos={tutorialConfig.customVideos}
         />
 
         {/* 🌟 Floating Persistent Feedback Button (Accessible Anytime) */}

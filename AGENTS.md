@@ -420,7 +420,24 @@ git status
 5. **No Sparkles Policy**: Never use `Sparkles` icon from `lucide-react` or ✨ sparkle emojis. Use semantic icons: `Bot`, `Cpu`, `Zap`, `BookOpen`, `GraduationCap`, `Award`, `Volume2`.
 6. **100% Functional UI Controls**: Every button, link, and interactive element must execute real state or backend logic. Never build placeholder or mock buttons.
 7. **Zero-Trust Multi-Tenancy**: Always resolve tenant context from verified server-side JWT or validated Host mapping. Never trust client-supplied tenant IDs.
-8. **Verification Gate**: Before marking any task complete, always run `npm run typecheck` and `npm run lint` and verify that both exit with code 0.
+8. **Dynamic In-App How-To-Use & Tutorial System**: Every admin module must have structured, non-technical, everyday Bengali user guides (`src/features/admin/tutorials/pageTutorialRegistry.js`) with 4 mandatory pillars (১. মূল কাজ কী, ২. ধাপে ধাপে ব্যবহার নির্দেশিকা, ৩. প্রাতিষ্ঠানিক টিপস, ৪. এআই সহকারীর সাহায্য). Dual UI surface (prominent dismissible page banner + permanent top nav button). Platform Super Admin possesses master visibility control (`tutorial_guide_global_enabled`) to show/hide platform-wide.
+9. **Verification Gate**: Before marking any task complete, always run `npm run typecheck` and `npm run lint` and verify that both exit with code 0.
+
+---
+
+## 18. Dynamic In-App How-To-Use & Video Tutorial System (Invariant Specification)
+
+- **Centralized Registry**: `src/features/admin/tutorials/pageTutorialRegistry.js` maps all admin routes to 100% everyday plain Bengali guides without developer jargon.
+- **Dual UI Surface**:
+  1. *Page Header Banner* (`PageTutorialBanner.jsx`): Rendered at top of admin page content with `BookOpen` badge, title, purpose, "কীভাবে ব্যবহার করবেন?" button, and `[X]` session-dismiss control.
+  2. *Top Navigation Action Button* (`DashboardHeader.jsx`): Permanent "কীভাবে ব্যবহার করবেন?" button in top header bar and mobile drawer.
+- **Super Admin Global Visibility Control**: Master switch `tutorial_guide_global_enabled` in `/platform-console/settings` and `/api/platform/tutorials`. When OFF, banners and buttons immediately disappear across all store/madrasa admin panels (zero UI clutter). When ON, restored for all.
+- **Content Standard (4 Mandatory Pillars)**:
+  1. ১. মূল কাজ কী (Core Purpose)
+  2. ২. ধাপে ধাপে ব্যবহার নির্দেশিকা (Step-by-Step Practical Steps with ১, ২, ৩...)
+  3. ৩. প্রাতিষ্ঠানিক টিপস (Actionable Practical Tips with `Lightbulb`)
+  4. ৪. এআই সহকারীর সাহায্য (AI Assistant Prompt Guidance with one-click copyable prompts)
+- **Dynamic Video Engine**: YouTube/Cloudinary URL per route. When configured, responsive video player renders above steps. When absent, renders clean text only (strict ban on empty/broken video frames).
 
 ---
 

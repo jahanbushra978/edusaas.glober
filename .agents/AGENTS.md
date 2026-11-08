@@ -51,6 +51,11 @@
   - Strict metric separation: $\text{Revenue} \neq \text{Cash Collected} \neq \text{Gross Profit} \neq \text{Net Profit}$.
   - Weighted Average Costing (WAC) for inventory; sales consume stock at current cost basis without modifying WAC.
   - Order items and fee receipts record immutable historical cost, price, and margin snapshots.
+- **Dynamic In-App How-To-Use & Tutorial System (With Global Visibility Control)**:
+  - Every admin module must have structured, everyday non-technical Bengali guides (`src/features/admin/tutorials/pageTutorialRegistry.js`) with 4 mandatory pillars: (1) ১. মূল কাজ কী, (2) ২. ধাপে ধাপে ব্যবহার নির্দেশিকা, (3) ৩. প্রাতিষ্ঠানিক টিপস, (4) ৪. এআই সহকারীর সাহায্য।
+  - Dual UI Surface: Prominent dismissible page banner (`PageTutorialBanner.jsx`) + permanent top nav button (`DashboardHeader.jsx`).
+  - Super Admin Master Control: Toggle switch `tutorial_guide_global_enabled` in `/platform-console/settings` and `/api/platform/tutorials` to show/hide platform-wide.
+  - Dynamic Video Engine: YouTube/Cloudinary URL per route. When absent, renders clean text only with zero broken/empty video frames.
 - **The Four Security Clarifications (Mandatory Enforcement)**:
   - (1) *Server-Side Tenant Resolution*: Verified session JWT or validated Host domain mapping only; client tenant IDs untrusted.
   - (2) *Insecure Public Table Exposure Elimination*: Public tables read-only for published content; private tables strictly RBAC protected; secrets in `app_settings`/`branches` masked.

@@ -17,6 +17,8 @@ import StudentsTab from "@/features/admin/components/dashboard/StudentsTab";
 import DashboardTabsContent from "@/features/admin/components/dashboard/DashboardTabsContent";
 import StudentDialogs from "@/features/admin/components/dashboard/StudentDialogs";
 import AccountSuspendedScreen from "@/features/admin/components/dashboard/AccountSuspendedScreen";
+import PageTutorialBanner from "@/features/admin/components/tutorials/PageTutorialBanner";
+import PageTutorialModal from "@/features/admin/components/tutorials/PageTutorialModal";
 import { useActiveTenant } from "@/features/admin/hooks/useActiveTenant";
 import { useDashboardMetrics } from "@/features/admin/hooks/useDashboardMetrics";
 import { useAdminDashboardData } from "@/features/admin/hooks/useAdminDashboardData";
@@ -53,6 +55,23 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
     if (typeof window !== "undefined") return sessionStorage.getItem("admin_active_tab") || initialTab;
     return initialTab;
   });
+
+  const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
+  const [tutorialConfig, setTutorialConfig] = useState({ globalEnabled: true, customVideos: {} });
+
+  useEffect(() => {
+    fetch("/api/platform/tutorials")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.ok) {
+          setTutorialConfig({
+            globalEnabled: data.globalEnabled !== false,
+            customVideos: data.customVideos || {},
+          });
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -296,10 +315,20 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
             combinedNotifications={combinedNotifications}
             setActiveTab={setActiveTab}
             exportCSV={() => exportStudentsAndTeachersCSV({ students, allTeachers })}
+            onOpenTutorial={() => setIsTutorialModalOpen(true)}
+            isTutorialGlobalEnabled={tutorialConfig.globalEnabled}
           />
 
           {/* Main Content Area */}
           <main className="flex-1 px-4 sm:px-6 py-4 sm:py-6 space-y-6">
+            {/* Prominent How-To-Use Page Header Banner (Dismissible & Global-Switch-Aware) */}
+            <PageTutorialBanner
+              activeRouteKey={activeTab}
+              onOpenTutorial={() => setIsTutorialModalOpen(true)}
+              isGlobalEnabled={tutorialConfig.globalEnabled}
+              hasVideo={Boolean(tutorialConfig.customVideos?.[activeTab])}
+            />
+
             {warningNotice && (
               <div className="p-4 rounded-2xl bg-amber-500 text-slate-950 font-bold shadow-lg border border-amber-400 flex items-center justify-between gap-4 animate-in fade-in">
                 <div className="flex items-center gap-3">
@@ -379,6 +408,14 @@ export default function AdminDashboard({ initialTab = "analytics" }) {
         />
 
         <SearchOverlay />
+
+        {/* Dynamic In-App How-To-Use & Video Tutorial Modal */}
+        <PageTutorialModal
+          isOpen={isTutorialModalOpen}
+          onClose={() => setIsTutorialModalOpen(false)}
+          activeRouteKey={activeTab}
+          customVideos={tutorialConfig.customVideos}
+        />
       </div>
     </SearchProvider>
   );

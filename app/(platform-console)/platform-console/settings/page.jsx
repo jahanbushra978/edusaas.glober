@@ -9,7 +9,8 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Building2, CreditCard, MessageSquare, ShieldAlert,
-  Save, CheckCircle2, RefreshCw, Send, PhoneCall, Mail, MapPin, AlertTriangle, Users, Percent, Video
+  Save, CheckCircle2, RefreshCw, Send, PhoneCall, Mail, MapPin, AlertTriangle, Users, Percent, Video,
+  BookOpen, PlayCircle, Eye, EyeOff
 } from "lucide-react";
 
 const DEFAULT_SETTINGS = {
@@ -32,6 +33,10 @@ const DEFAULT_SETTINGS = {
   teacherMinHourlyRate: 200,
   teacherPayoutSchedule: "সাপ্তাহিক (প্রতি বৃহস্পতিবার)",
   teacherCallingEnabled: true,
+
+  // Dynamic In-App How-To-Use & Video Tutorial Global Controls
+  tutorialGuideGlobalEnabled: true,
+  tutorialCustomVideos: {},
 
   // Payment Gateways
   bkashEnabled: true,
@@ -80,11 +85,25 @@ export default function PlatformSettingsPage() {
     try {
       const saved = localStorage.getItem("edusaas_platform_settings");
       if (saved) {
-        setSettings({ ...DEFAULT_SETTINGS, ...JSON.parse(saved) });
+        setSettings((prev) => ({ ...prev, ...JSON.parse(saved) }));
       }
     } catch (e) {
       console.warn("Could not load local settings", e);
     }
+
+    // Fetch authoritative tutorial config
+    fetch("/api/platform/tutorials")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.ok) {
+          setSettings((prev) => ({
+            ...prev,
+            tutorialGuideGlobalEnabled: data.globalEnabled !== false,
+            tutorialCustomVideos: data.customVideos || {},
+          }));
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const showToast = (msg) => {
@@ -95,6 +114,17 @@ export default function PlatformSettingsPage() {
   const handleSaveSettings = (e) => {
     e.preventDefault();
     setIsSaving(true);
+
+    // Sync tutorial settings to backend
+    fetch("/api/platform/tutorials", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        globalEnabled: settings.tutorialGuideGlobalEnabled !== false,
+        customVideos: settings.tutorialCustomVideos || {},
+      }),
+    }).catch(() => {});
+
     setTimeout(() => {
       try {
         localStorage.setItem("edusaas_platform_settings", JSON.stringify(settings));
@@ -102,7 +132,7 @@ export default function PlatformSettingsPage() {
         console.warn("Save error", err);
       }
       setIsSaving(false);
-      showToast("✅ প্ল্যাটফর্ম কনফিগারেশন সফলভাবে আপডেট ও সংরক্ষিত হয়েছে!");
+      showToast("✅ প্ল্যাটফর্ম কনফিগারেশন ও ব্যবহার বিধি সেটিংস সফলভাবে আপডেট হয়েছে!");
     }, 600);
   };
 
@@ -219,6 +249,18 @@ export default function PlatformSettingsPage() {
         >
           <Users size={15} />
           <span>হিউম্যান টিচার ও কমিশন কন্ট্রোল</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab("tutorials")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+            activeTab === "tutorials"
+              ? "bg-slate-900 text-white shadow-sm"
+              : "bg-white text-slate-600 hover:bg-slate-100 border border-slate-200"
+          }`}
+        >
+          <BookOpen size={15} />
+          <span>ব্যবহার বিধি ও ভিডিও টিউটোরিয়াল</span>
         </button>
       </div>
 
@@ -828,6 +870,169 @@ export default function PlatformSettingsPage() {
                     className="text-xs"
                   />
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Tab 6: Dynamic In-App How-To-Use & Video Tutorials */}
+      {activeTab === "tutorials" && (
+        <div className="space-y-6 max-w-4xl">
+          {/* Master Visibility Switch */}
+          <Card className="rounded-3xl border-slate-200 shadow-sm">
+            <CardHeader className="p-6 pb-4 border-b border-slate-100">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <CardTitle className="text-base font-black text-slate-900 flex items-center gap-2">
+                    <BookOpen size={18} className="text-teal-600" />
+                    <span>ইন-অ্যাপ ব্যবহার নির্দেশিকা ও ভিডিও টিউটোরিয়াল (গ্লোবাল কন্ট্রোল)</span>
+                  </CardTitle>
+                  <CardDescription className="text-xs text-slate-500 mt-1">
+                    সকল দোকানের মালিক ও মাদরাসা পরিচালকদের এডমিন প্যানেলে সহায়িকা ব্যানার ও বোতাম নিয়ন্ত্রণ করুন
+                  </CardDescription>
+                </div>
+                <Badge
+                  className={`text-xs font-bold px-3 py-1 rounded-full ${
+                    settings.tutorialGuideGlobalEnabled !== false
+                      ? "bg-emerald-100 text-emerald-800 border-emerald-300"
+                      : "bg-rose-100 text-rose-800 border-rose-300"
+                  }`}
+                >
+                  {settings.tutorialGuideGlobalEnabled !== false ? "সক্রিয় (Visible to All)" : "লুকায়িত (Hidden)"}
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-5 text-xs">
+              <div className="flex items-center justify-between p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-2xl">
+                <div className="space-y-1 max-w-xl">
+                  <p className="font-black text-slate-900 text-sm flex items-center gap-2">
+                    {settings.tutorialGuideGlobalEnabled !== false ? (
+                      <Eye size={16} className="text-emerald-700" />
+                    ) : (
+                      <EyeOff size={16} className="text-rose-600" />
+                    )}
+                    <span>মাস্টার সুইচ: প্ল্যাটফর্ম-ব্যাপী ব্যবহার বিধি প্রদর্শন</span>
+                  </p>
+                  <p className="text-slate-600 text-xs leading-relaxed">
+                    {settings.tutorialGuideGlobalEnabled !== false
+                      ? "বর্তমানে চালু রয়েছে: সকল প্রতিষ্ঠান ও মাদরাসার এডমিনরা প্রতিটি পেজের উপরে 'কীভাবে ব্যবহার করবেন?' ব্যানার ও হেডার বাটন দেখতে পাচ্ছেন।"
+                      : "বর্তমানে বন্ধ রয়েছে: সকল এডমিন প্যানেল থেকে সহায়িকা ব্যানার ও বাটন সম্পূর্ণ অদৃশ্য (Hidden) রয়েছে (জিরো ইউআই ক্লাটার)।"}
+                  </p>
+                </div>
+                <div className="flex items-center gap-3">
+                  <input
+                    type="checkbox"
+                    checked={settings.tutorialGuideGlobalEnabled !== false}
+                    onChange={(e) => updateSetting("tutorialGuideGlobalEnabled", e.target.checked)}
+                    className="h-6 w-6 rounded-md text-teal-600 cursor-pointer accent-teal-600"
+                    aria-label="টিউটোরিয়াল গ্লোবাল সুইচ"
+                  />
+                </div>
+              </div>
+
+              <div className="p-4 bg-slate-50 rounded-2xl border border-slate-100 space-y-2">
+                <p className="font-bold text-slate-900 flex items-center gap-1.5">
+                  <PlayCircle size={15} className="text-teal-600" />
+                  <span>৪টি মূল স্তম্ভ সমৃদ্ধ বাংলা নির্দেশিকা মানদণ্ড</span>
+                </p>
+                <p className="text-slate-500 text-[11px] leading-relaxed">
+                  প্রতিটি পেজে কোনো টেকনিক্যাল শব্দ ছাড়া ১. মূল কাজ কী, ২. ধাপে ধাপে ব্যবহার নির্দেশিকা, ৩. প্রাতিষ্ঠানিক টিপস এবং ৪. এআই সহকারীর সাহায্য স্বয়ংক্রিয়ভাবে সাজানো রয়েছে।
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Dynamic Video Configuration per Route */}
+          <Card className="rounded-3xl border-slate-200 shadow-sm">
+            <CardHeader className="p-6 pb-4 border-b border-slate-100">
+              <CardTitle className="text-base font-black text-slate-900 flex items-center gap-2">
+                <PlayCircle size={18} className="text-teal-600" />
+                <span>পেজভিত্তিক ভিডিও টিউটোরিয়াল লিংক (YouTube / Cloudinary)</span>
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                যেকোনো পেজের জন্য ইউটিউব বা ক্লাউডিনারি ভিডিও লিংক দিন। লিংক না দিলে স্বয়ংক্রিয়ভাবে শুধু লিখিত গাইড প্রদর্শিত হবে (কোনো ভাঙা ফ্রেম দেখাবে না)।
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-4 text-xs">
+              {[
+                { key: "analytics", label: "ড্যাশবোর্ড ওভারভিউ (Dashboard Analytics)", defaultTip: "সারা দিনের সারসংক্ষেপ ও কাজ" },
+                { key: "students", label: "শিক্ষার্থী তালিকা ও প্রোফাইল (Students)", defaultTip: "নতুন ভর্তি ও ছাত্র ব্যবস্থাপনা" },
+                { key: "fees", label: "ফি ও হিসাব-নিকাশ (Fees & Accounts)", defaultTip: "বেতন গ্রহণ ও বকেয়া তালিকা" },
+                { key: "student-attendance", label: "শিক্ষার্থী দৈনিক হাজিরা (Attendance)", defaultTip: "উপস্থিতি গ্রহণ ও এসএমএস" },
+                { key: "attendance", label: "বায়োমেট্রিক হাজিরা ডিভাইস (Biometrics)", defaultTip: "মেশিন কানেকশন ও ডাটা সিঙ্ক" },
+                { key: "teachers", label: "শিক্ষক ও উস্তাদ পরিচিতি (Teachers)", defaultTip: "শিক্ষক প্রোফাইল ও হাদিয়া" },
+                { key: "exams", label: "পরীক্ষা ও ফলাফল প্রস্তুতকরণ (Exams)", defaultTip: "নম্বর ইনপুট ও রেজাল্ট শিট" },
+                { key: "notices", label: "জরুরি নোটিশ ও ঘোষণা (Notices)", defaultTip: "ওয়েবসাইটে নোটিশ প্রকাশ" },
+              ].map((route) => {
+                const currentVideo = settings.tutorialCustomVideos?.[route.key] || "";
+                return (
+                  <div key={route.key} className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <div>
+                        <span className="font-black text-slate-900 text-xs">{route.label}</span>
+                        <span className="text-[11px] text-slate-500 ml-2">({route.defaultTip})</span>
+                      </div>
+                      {currentVideo && (
+                        <a
+                          href={currentVideo}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-[11px] text-teal-600 hover:underline font-bold flex items-center gap-1"
+                        >
+                          ভিডিও টেস্ট <PlayCircle size={12} />
+                        </a>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="url"
+                        placeholder="https://www.youtube.com/watch?v=... অথবা ক্লাউডিনারি MP4 লিংক"
+                        value={currentVideo}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          setSettings((prev) => ({
+                            ...prev,
+                            tutorialCustomVideos: {
+                              ...(prev.tutorialCustomVideos || {}),
+                              [route.key]: val,
+                            },
+                          }));
+                        }}
+                        className="text-xs bg-white"
+                      />
+                      {currentVideo && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setSettings((prev) => {
+                              const updated = { ...(prev.tutorialCustomVideos || {}) };
+                              delete updated[route.key];
+                              return { ...prev, tutorialCustomVideos: updated };
+                            });
+                          }}
+                          className="text-rose-600 hover:text-rose-700 hover:bg-rose-50 text-xs px-2.5 shrink-0"
+                          title="ভিডিও লিংক মুছে ফেলুন"
+                        >
+                          মুছুন
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+
+              <div className="pt-2 flex justify-end">
+                <Button
+                  onClick={handleSaveSettings}
+                  disabled={isSaving}
+                  className="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs h-9 px-5 rounded-xl shadow-xs flex items-center gap-2"
+                >
+                  {isSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                  <span>টিউটোরিয়াল সেটিংস সংরক্ষণ করুন</span>
+                </Button>
               </div>
             </CardContent>
           </Card>
