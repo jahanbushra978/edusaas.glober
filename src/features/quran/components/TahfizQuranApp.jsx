@@ -32,9 +32,13 @@ import {
   HAFIZI_PARAS,
   TOTAL_UTHMANI_PAGES,
   getHafiziPageMeta,
-  getHafiziLocationForAyah
+  getHafiziLocationForAyah,
+  getHafiziPageTarget,
+  parseHafiziSearchQuery
 } from "@/lib/quran/hafizi-pages";
-import { getSurahData } from "@/lib/quran/quran-service";
+import { getSurahData, getAyahAudioUrl } from "@/lib/quran/quran-service";
+import { QARI_REGISTRY, getStoredQariPreference, setStoredQariPreference } from "@/lib/ai/qari-registry";
+import AmbientFloatingOrbs from "./AmbientFloatingOrbs";
 import HafiziMushafSheet from "./HafiziMushafSheet";
 import QuranReader from "./QuranReader";
 
@@ -57,10 +61,25 @@ export default function TahfizQuranApp({ onClose }) {
   const [pageFilter, setPageFilter] = useState("night"); // 'night' | 'day' | 'sepia'
   const [readingNavStyle, setReadingNavStyle] = useState("flip"); // 'flip' | 'scroll'
 
-  // Search Modals State
+  // Universal Authentic Audio Engine State
+  const [selectedQari, setSelectedQari] = useState(() => {
+    return getStoredQariPreference() || "alafasy";
+  });
+  const [playingAyahNumber, setPlayingAyahNumber] = useState(null);
+  const [playingSurahId, setPlayingSurahId] = useState(null);
+  const [isPlayingAudio, setIsPlayingAudio] = useState(false);
+  const [activeWordIndex, setActiveWordIndex] = useState(0);
+  const audioRef = useRef(null);
+
+  // Search Modals State (3-Tabbed Unified Search Engine)
   const [isPageSearchOpen, setIsPageSearchOpen] = useState(false);
-  const [searchParaInput, setSearchParaInput] = useState("");
-  const [searchPageInput, setSearchPageInput] = useState("");
+  const [searchModalTab, setSearchModalTab] = useState("para"); // 'para' | 'surah' | 'page'
+  const [searchParaNum, setSearchParaNum] = useState(1);
+  const [searchParaPageNum, setSearchParaPageNum] = useState("1");
+  const [searchSurahId, setSearchSurahId] = useState(2);
+  const [searchAyahNum, setSearchAyahNum] = useState("");
+  const [searchDirectPage, setSearchDirectPage] = useState("");
+  const [targetHighlightAyah, setTargetHighlightAyah] = useState(null);
   const [surahSearchQuery, setSurahSearchQuery] = useState("");
   const [paraSearchQuery, setParaSearchQuery] = useState("");
 
@@ -202,35 +221,127 @@ export default function TahfizQuranApp({ onClose }) {
     }, 2500);
   };
 
-  // Jump to specific Para & Page
-  const handleJumpToParaAndPage = (para, page) => {
-    const p = Math.max(1, Math.min(30, Number(para) || 1));
-    const paraInfo = HAFIZI_PARAS[p - 1];
+  // Audio Engine Playback Handlers
+  const handlePlayAyah = (ayahNum, surahId) => {
+    const sId = surahId || readerSurahId;
+    const aNum = ayahNum || 1;
 
-    let targetPage;
-    const customPage = parseInt(String(page).trim(), 10);
-    if (!isNaN(customPage) && customPage >= 1 && customPage <= TOTAL_UTHMANI_PAGES) {
-      targetPage = customPage;
-    } else {
-      targetPage = Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((paraInfo.startPage / 610) * TOTAL_UTHMANI_PAGES)));
+    // Toggle pause if clicking same playing Ayah
+    if (playingAyahNumber === aNum && playingSurahId === sId && isPlayingAudio && audioRef.current) {
+      audioRef.current.pause();
+      setIsPlayingAudio(false);
+      return;
     }
 
-    setReaderPageNum(targetPage);
-    setReaderSurahId(paraInfo.startSurah || 1);
+    try {
+      const audioUrl = getAyahAudioUrl(sId, aNum, selectedQari);
+      if (!audioRef.current) {
+        audioRef.current = new Audio();
+      }
+      audioRef.current.src = audioUrl;
+      audioRef.current.currentTime = 0;
+      audioRef.current
+        .play()
+        .then(() => {
+          setIsPlayingAudio(true);
+          setPlayingAyahNumber(aNum);
+          setPlayingSurahId(sId);
+        })
+        .catch((err) => {
+          console.error("Audio playback error:", err);
+          toast.error("ক্বারীর তিলাওয়াত বাজাতে সমস্যা হয়েছে");
+        });
+
+      audioRef.current.onended = () => {
+        const sMeta = ALL_SURAHS.find((s) => s.id === sId);
+        if (sMeta && aNum < sMeta.versesCount) {
+          handlePlayAyah(aNum + 1, sId);
+        } else {
+          setIsPlayingAudio(false);
+          setPlayingAyahNumber(null);
+        }
+      };
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleStopAudio = () => {
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      } catch {}
+    }
+    setIsPlayingAudio(false);
+    setPlayingAyahNumber(null);
+  };
+
+  // Jump to specific Para & Page (হাফেজী বিন্যাস: ১নং পারায় ২১ পৃষ্ঠা, ২৯নং এ ২৪, ৩০নং এ ২৫, বাকিগুলোতে ২০ পৃষ্ঠা করে)
+  const handleJumpToParaAndPage = (para, pageInParaInput) => {
+    const p = Math.max(1, Math.min(30, Number(para) || 1));
+    const target = getHafiziPageTarget(p, pageInParaInput || 1);
+    const uthmaniPage = Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((target.globalPage / 610) * TOTAL_UTHMANI_PAGES)));
+
+    setReaderPageNum(uthmaniPage);
+    setReaderSurahId(target.surah);
+    setTargetHighlightAyah({ surah: target.surah, ayah: target.ayah });
     setReaderMode("mushaf");
 
     // Update last read
     setLastRead({
-      surahId: paraInfo.startSurah || 1,
-      ayah: 1,
+      surahId: target.surah,
+      ayah: target.ayah,
       para: p,
+      page: uthmaniPage,
+      percentage: Math.min(100, Math.round((uthmaniPage / TOTAL_UTHMANI_PAGES) * 100))
+    });
+
+    setIsPageSearchOpen(false);
+    setCurrentScreen("reader");
+    toast.success(`হাফেজী পারা ${toBn(p)}, পৃষ্ঠা ${toBn(target.paraPage)} — পৃষ্ঠা ${toBn(uthmaniPage)}-এ যাওয়া হয়েছে`);
+  };
+
+  // Jump to specific Surah & Ayah (সূরা ও আয়াত ভিত্তিক সার্চ)
+  const handleJumpToSurahAndAyah = (surahId, ayahNum) => {
+    const sId = Math.max(1, Math.min(114, Number(surahId) || 1));
+    const aNum = Math.max(1, Number(ayahNum) || 1);
+    const loc = getHafiziLocationForAyah(sId, aNum);
+    const targetPage = loc.uthmaniPage || Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((loc.globalPage / 610) * TOTAL_UTHMANI_PAGES)));
+
+    setReaderSurahId(sId);
+    setReaderPageNum(targetPage);
+    setTargetHighlightAyah({ surah: sId, ayah: aNum });
+    setReaderMode("mushaf");
+
+    setLastRead({
+      surahId: sId,
+      ayah: aNum,
+      para: loc.para,
       page: targetPage,
       percentage: Math.min(100, Math.round((targetPage / TOTAL_UTHMANI_PAGES) * 100))
     });
 
     setIsPageSearchOpen(false);
     setCurrentScreen("reader");
-    toast.success(`হাফেজী ${paraInfo.nameBn} (${paraInfo.nameAr}) — পৃষ্ঠা ${toBn(targetPage)}-এ যাওয়া হয়েছে`);
+    toast.success(`সূরা ${ALL_SURAHS.find((s) => s.id === sId)?.nameBn || sId}, আয়াত ${toBn(aNum)} — পৃষ্ঠা ${toBn(targetPage)}`);
+  };
+
+  // Jump directly to global page (১ থেকে ৬১০)
+  const handleJumpToDirectPage = (pageNumInput) => {
+    const bnToEnMap = { '০':'0', '১':'1', '২':'2', '৩':'3', '৪':'4', '৫':'5', '৬':'6', '৭':'7', '৮':'8', '৯':'9' };
+    const normalized = String(pageNumInput).replace(/[০-৯]/g, (d) => bnToEnMap[d] || d).trim();
+    const rawPage = parseInt(normalized, 10);
+    if (isNaN(rawPage) || rawPage < 1 || rawPage > 610) {
+      toast.error("১ থেকে ৬১০-এর মধ্যে সঠিক পৃষ্ঠা নম্বর লিখুন");
+      return;
+    }
+    const targetPage = Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((rawPage / 610) * TOTAL_UTHMANI_PAGES)));
+    setReaderPageNum(targetPage);
+    setReaderMode("mushaf");
+    setIsPageSearchOpen(false);
+    setCurrentScreen("reader");
+    toast.success(`পৃষ্ঠা ${toBn(rawPage)}-এ যাওয়া হয়েছে`);
   };
 
   // Jump to specific Surah
@@ -305,8 +416,11 @@ export default function TahfizQuranApp({ onClose }) {
   }, [paraSearchQuery]);
 
   return (
-    <div className="w-full min-h-screen bg-gradient-to-b from-[#041412] via-[#051c19] to-[#08221e] text-slate-100 flex justify-center selection:bg-teal-500/30 selection:text-teal-200">
-      <div className="w-full max-w-md sm:max-w-lg min-h-screen flex flex-col justify-between relative shadow-2xl overflow-x-hidden border-x border-teal-950/60 pb-20">
+    <div className="w-full min-h-screen bg-gradient-to-b from-[#041412] via-[#051c19] to-[#08221e] text-slate-100 flex justify-center selection:bg-teal-500/30 selection:text-teal-200 relative overflow-hidden">
+      {/* ── AMBIENT FLOATING ORBS / BUBBLES ANIMATION (নিচ থেকে সুন্দর ছোট ছোট বল উঠবে) ── */}
+      <AmbientFloatingOrbs count={16} />
+
+      <div className="w-full max-w-md sm:max-w-lg min-h-screen flex flex-col justify-between relative z-10 shadow-2xl overflow-x-hidden border-x border-teal-950/60 pb-20">
 
         {/* ── SCREEN 1: HOME DASHBOARD ── */}
         {currentScreen === "home" && (
@@ -328,10 +442,10 @@ export default function TahfizQuranApp({ onClose }) {
                 <div className="w-2.5 h-8 bg-gradient-to-b from-[#00d2b8] to-[#14b8a6] rounded-full shadow-[0_0_12px_rgba(0,210,184,0.6)]" />
                 <div>
                   <h1 className="text-base sm:text-lg font-black text-white tracking-wide flex items-center gap-1.5">
-                    <span>তাহফিজ কুরআন শরীফ</span>
+                    <span>নূর কুরআন শরীফ</span>
                   </h1>
                   <p className="text-[11px] text-teal-300/80 font-medium tracking-tight">
-                    সহজ পাঠে পবিত্র কুরআন
+                    সহজে ও স্পষ্ট পবিত্র কুরআন
                   </p>
                 </div>
               </div>
@@ -1023,7 +1137,7 @@ export default function TahfizQuranApp({ onClose }) {
             </div>
 
             {/* The Quran Reader Content */}
-            <div className="flex-1 p-1 sm:p-3">
+            <div className="flex-1 p-1 sm:p-3 pb-24">
               {readerMode === "mushaf" ? (
                 <HafiziMushafSheet
                   pageNum={readerPageNum}
@@ -1035,6 +1149,12 @@ export default function TahfizQuranApp({ onClose }) {
                       percentage: Math.min(100, Math.round((p / TOTAL_UTHMANI_PAGES) * 100))
                     }));
                   }}
+                  onPlayAyah={handlePlayAyah}
+                  playingAyahNumber={playingAyahNumber}
+                  playingSurahId={playingSurahId}
+                  isPlayingAudio={isPlayingAudio}
+                  activeWordIndex={activeWordIndex}
+                  targetHighlightAyah={targetHighlightAyah}
                   readerTheme={pageFilter === "day" ? "day" : "night"}
                   getSurahData={getSurahData}
                 />
@@ -1044,6 +1164,74 @@ export default function TahfizQuranApp({ onClose }) {
                 />
               )}
             </div>
+
+            {/* ── FLOATING QARI AUDIO CONTROLLER BAR ── */}
+            {playingAyahNumber && (
+              <div className="fixed bottom-16 inset-x-2 z-40 p-2.5 rounded-2xl bg-[#08221c]/95 border-2 border-amber-500/60 backdrop-blur-md shadow-2xl flex items-center justify-between gap-2 animate-fadeIn text-white max-w-md mx-auto">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 flex items-center justify-center shrink-0">
+                    <Volume2 className="w-4 h-4 animate-pulse" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-black truncate text-amber-300">
+                      সূরা {ALL_SURAHS.find((s) => s.id === playingSurahId)?.nameBn || "আল-বাকারা"} — আয়াত {toBn(playingAyahNumber)}
+                    </p>
+                    {/* Qari Selector Dropdown */}
+                    <select
+                      value={selectedQari}
+                      onChange={(e) => {
+                        const qId = e.target.value;
+                        setSelectedQari(qId);
+                        setStoredQariPreference(qId);
+                        handlePlayAyah(playingAyahNumber, playingSurahId);
+                      }}
+                      className="text-[10px] bg-black/50 text-teal-300 border border-teal-500/30 rounded px-1.5 py-0.5 mt-0.5 font-bold focus:outline-none cursor-pointer"
+                    >
+                      {QARI_REGISTRY.map((q) => (
+                        <option key={q.id} value={q.id} className="bg-slate-900 text-white">
+                          {q.nameBn}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => handlePlayAyah(Math.max(1, playingAyahNumber - 1), playingSurahId)}
+                    className="p-1.5 rounded-lg bg-teal-950 hover:bg-teal-900 border border-teal-500/30 text-teal-300 transition cursor-pointer"
+                    title="পূর্ববর্তী আয়াত"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePlayAyah(playingAyahNumber, playingSurahId)}
+                    className="p-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black shadow-md hover:from-amber-400 hover:to-amber-500 active:scale-95 transition cursor-pointer"
+                    title={isPlayingAudio ? "থামান" : "বাজান"}
+                  >
+                    {isPlayingAudio ? <Pause className="w-4 h-4 fill-current" /> : <Play className="w-4 h-4 fill-current" />}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePlayAyah(playingAyahNumber + 1, playingSurahId)}
+                    className="p-1.5 rounded-lg bg-teal-950 hover:bg-teal-900 border border-teal-500/30 text-teal-300 transition cursor-pointer"
+                    title="পরবর্তী আয়াত"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleStopAudio}
+                    className="p-1.5 rounded-lg hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 transition cursor-pointer"
+                    title="অডিও বন্ধ করুন"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1119,82 +1307,213 @@ export default function TahfizQuranApp({ onClose }) {
           </button>
         </div>
 
-        {/* ── MODAL 1: SMART PAGE SEARCH MODAL ("পৃষ্ঠায় যান") ── */}
+        {/* ── MODAL 1: SMART 3-TABBED PAGE SEARCH MODAL ("পৃষ্ঠা ও আয়াত সন্ধান") ── */}
         {isPageSearchOpen && (
-          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
+          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
             <div className="w-full max-w-sm rounded-3xl bg-[#09221e] border-2 border-teal-500/40 p-5 shadow-2xl space-y-4">
               <div className="flex items-center justify-between pb-3 border-b border-teal-900/60">
                 <div className="flex items-center gap-2">
                   <Search className="w-4 h-4 text-[#00d2b8]" />
-                  <h3 className="font-black text-sm text-white">পৃষ্ঠায় যান</h3>
+                  <h3 className="font-black text-sm text-white">সন্ধান ও পৃষ্ঠা নির্বাচন</h3>
                 </div>
                 <button
                   type="button"
                   onClick={() => setIsPageSearchOpen(false)}
-                  className="p-1 rounded-lg hover:bg-teal-900/50 text-slate-400 hover:text-white"
+                  className="p-1 rounded-lg hover:bg-teal-900/50 text-slate-400 hover:text-white cursor-pointer"
                 >
                   <X className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="space-y-3">
-                {/* Input 1: পারা নং */}
-                <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
-                    পারা নং (১-৩০):
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="30"
-                    value={searchParaInput}
-                    onChange={(e) => setSearchParaInput(e.target.value)}
-                    placeholder="পারা নং (১-৩০)"
-                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-teal-500/30 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-[#00d2b8]"
-                  />
-                </div>
-
-                {/* Input 2: পৃষ্ঠা নং */}
-                <div>
-                  <label className="text-xs font-bold text-slate-300 block mb-1">
-                    পৃষ্ঠা নং:
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max={TOTAL_UTHMANI_PAGES}
-                    value={searchPageInput}
-                    onChange={(e) => setSearchPageInput(e.target.value)}
-                    placeholder={searchParaInput ? "পৃষ্ঠা নম্বর লিখুন" : "আগে পারা দিন"}
-                    className="w-full px-3 py-2 rounded-xl bg-black/40 border border-teal-500/30 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-[#00d2b8]"
-                  />
-                </div>
-
-                {/* Dynamic Helper Banner */}
-                {searchParaInput && Number(searchParaInput) >= 1 && Number(searchParaInput) <= 30 && (
-                  <div className="p-2.5 rounded-xl bg-teal-950/80 border border-teal-500/30 text-teal-300 text-xs font-bold">
-                    {toBn(searchParaInput)} নং পারায় ১ থেকে {toBn(HAFIZI_PARAS[Number(searchParaInput) - 1]?.totalPages || 20)} পর্যন্ত পৃষ্ঠা আছে
-                  </div>
-                )}
-
-                {/* Buttons: বাতিল & পৃষ্ঠায় যান */}
-                <div className="flex items-center gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsPageSearchOpen(false)}
-                    className="flex-1 py-2.5 rounded-xl bg-black/40 border border-slate-700 text-slate-300 font-bold text-xs hover:bg-black/60 transition cursor-pointer"
-                  >
-                    বাতিল
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleJumpToParaAndPage(searchParaInput || 1, searchPageInput)}
-                    className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#00d2b8] to-[#14b8a6] text-slate-950 font-black text-xs shadow-md active:scale-95 transition cursor-pointer"
-                  >
-                    পৃষ্ঠায় যান
-                  </button>
-                </div>
+              {/* 3 Tabs Header: পারা ও পৃষ্ঠা | সূরা ও আয়াত | সরাসরি পৃষ্ঠা */}
+              <div className="grid grid-cols-3 gap-1 bg-black/40 p-1 rounded-xl border border-teal-500/20">
+                <button
+                  type="button"
+                  onClick={() => setSearchModalTab("para")}
+                  className={`py-1.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                    searchModalTab === "para"
+                      ? "bg-[#00d2b8] text-slate-950 font-black shadow-sm"
+                      : "text-slate-300 hover:text-white"
+                  }`}
+                >
+                  পারা ও পৃষ্ঠা
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchModalTab("surah")}
+                  className={`py-1.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                    searchModalTab === "surah"
+                      ? "bg-[#00d2b8] text-slate-950 font-black shadow-sm"
+                      : "text-slate-300 hover:text-white"
+                  }`}
+                >
+                  সূরা ও আয়াত
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSearchModalTab("page")}
+                  className={`py-1.5 text-[11px] font-bold rounded-lg transition-all cursor-pointer ${
+                    searchModalTab === "page"
+                      ? "bg-[#00d2b8] text-slate-950 font-black shadow-sm"
+                      : "text-slate-300 hover:text-white"
+                  }`}
+                >
+                  পৃষ্ঠা নম্বর
+                </button>
               </div>
+
+              {/* ── TAB 1: PARA & PAGE (হাফেজী নিয়ম: ১নং এ ২১, ২৯নং এ ২৪, ৩০নং এ ২৫, বাকিগুলো ২০) ── */}
+              {searchModalTab === "para" && (
+                <div className="space-y-3 animate-fadeIn">
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
+                      পারা নির্বাচন করুন:
+                    </label>
+                    <select
+                      value={searchParaNum}
+                      onChange={(e) => setSearchParaNum(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl bg-black/50 border border-teal-500/30 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-[#00d2b8] cursor-pointer"
+                    >
+                      {HAFIZI_PARAS.map((p) => (
+                        <option key={p.juz} value={p.juz} className="bg-slate-900 text-white">
+                          {p.nameBn} • {p.nameAr} ({toBn(p.totalPages)} পৃষ্ঠা)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
+                      এই পারার কততম পৃষ্ঠা? (১ থেকে {toBn(HAFIZI_PARAS[searchParaNum - 1]?.totalPages || 20)}):
+                    </label>
+                    <input
+                      type="text"
+                      value={searchParaPageNum}
+                      onChange={(e) => setSearchParaPageNum(e.target.value)}
+                      placeholder={`১ থেকে ${HAFIZI_PARAS[searchParaNum - 1]?.totalPages || 20}`}
+                      className="w-full px-3 py-2 rounded-xl bg-black/50 border border-teal-500/30 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-[#00d2b8]"
+                    />
+                  </div>
+
+                  {/* Calculation Badge */}
+                  <div className="p-2.5 rounded-xl bg-teal-950/80 border border-teal-500/30 text-teal-300 text-xs font-bold space-y-0.5">
+                    <p>
+                      {toBn(searchParaNum)}নং পারা • পৃষ্ঠা {toBn(searchParaPageNum || 1)}
+                    </p>
+                    <p className="text-[11px] text-amber-300">
+                      = সম্পূর্ণ কুরআনের {toBn((HAFIZI_PARAS[searchParaNum - 1]?.startPage || 1) + (Number(searchParaPageNum || 1) - 1))} নম্বর পৃষ্ঠা
+                    </p>
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsPageSearchOpen(false)}
+                      className="flex-1 py-2.5 rounded-xl bg-black/40 border border-slate-700 text-slate-300 font-bold text-xs"
+                    >
+                      বাতিল
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleJumpToParaAndPage(searchParaNum, searchParaPageNum)}
+                      className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#00d2b8] to-[#14b8a6] text-slate-950 font-black text-xs shadow-md active:scale-95 transition cursor-pointer"
+                    >
+                      পৃষ্ঠায় যান
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── TAB 2: SURAH & AYAH (সূরা ও আয়াত নির্বাচন) ── */}
+              {searchModalTab === "surah" && (
+                <div className="space-y-3 animate-fadeIn">
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
+                      সূরা নির্বাচন করুন:
+                    </label>
+                    <select
+                      value={searchSurahId}
+                      onChange={(e) => setSearchSurahId(Number(e.target.value))}
+                      className="w-full px-3 py-2 rounded-xl bg-black/50 border border-teal-500/30 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-[#00d2b8] cursor-pointer"
+                    >
+                      {ALL_SURAHS.map((s) => (
+                        <option key={s.id} value={s.id} className="bg-slate-900 text-white">
+                          {toBn(s.id)}. সূরা {s.nameBn} ({s.nameAr}) — {toBn(s.versesCount)} আয়াত
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
+                      আয়াত নম্বর লিখুন (১ থেকে {toBn(ALL_SURAHS.find((s) => s.id === searchSurahId)?.versesCount || 7)}):
+                    </label>
+                    <input
+                      type="text"
+                      value={searchAyahNum}
+                      onChange={(e) => setSearchAyahNum(e.target.value)}
+                      placeholder="আয়াত নম্বর (যেমন: ২৫৫)"
+                      className="w-full px-3 py-2 rounded-xl bg-black/50 border border-teal-500/30 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-[#00d2b8]"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsPageSearchOpen(false)}
+                      className="flex-1 py-2.5 rounded-xl bg-black/40 border border-slate-700 text-slate-300 font-bold text-xs"
+                    >
+                      বাতিল
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleJumpToSurahAndAyah(searchSurahId, searchAyahNum || 1)}
+                      className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs shadow-md active:scale-95 transition cursor-pointer"
+                    >
+                      সরাসরি আয়াতে যান
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ── TAB 3: DIRECT GLOBAL PAGE (সরাসরি পৃষ্ঠা ১-৬১০) ── */}
+              {searchModalTab === "page" && (
+                <div className="space-y-3 animate-fadeIn">
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
+                      পৃষ্ঠা নম্বর লিখুন (১ থেকে ৬১০):
+                    </label>
+                    <input
+                      type="text"
+                      value={searchDirectPage}
+                      onChange={(e) => setSearchDirectPage(e.target.value)}
+                      placeholder="যেমন: ৪২ বা ১৮২"
+                      className="w-full px-3 py-2 rounded-xl bg-black/50 border border-teal-500/30 text-xs font-bold text-white focus:outline-none focus:ring-1 focus:ring-[#00d2b8]"
+                    />
+                  </div>
+
+                  <div className="p-2.5 rounded-xl bg-teal-950/80 border border-teal-500/30 text-teal-300 text-xs font-bold">
+                    হাফেজী কুরআন ৬১০ পৃষ্ঠার স্ট্যান্ডার্ড অনুযায়ী নির্ধারিত পৃষ্ঠায় সরাসরি নিয়ে যাবে।
+                  </div>
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setIsPageSearchOpen(false)}
+                      className="flex-1 py-2.5 rounded-xl bg-black/40 border border-slate-700 text-slate-300 font-bold text-xs"
+                    >
+                      বাতিল
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleJumpToDirectPage(searchDirectPage)}
+                      className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-[#00d2b8] to-[#14b8a6] text-slate-950 font-black text-xs shadow-md active:scale-95 transition cursor-pointer"
+                    >
+                      পৃষ্ঠায় যান
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
         )}

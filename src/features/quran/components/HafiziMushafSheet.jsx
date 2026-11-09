@@ -24,6 +24,14 @@ import {
   getHafiziLocation,
   HAFIZI_PARAS
 } from "@/lib/quran/hafizi-pages";
+import {
+  getHafiziHeaderMetadata,
+  MUTASHABIHAT_REGISTRY,
+  WAQF_IBTIDA_REGISTRY,
+  getThematicSummaryForPage,
+  toBnNum,
+  toArNum
+} from "@/lib/quran/hafizi-annotations";
 import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 
 export default function HafiziMushafSheet({
@@ -51,6 +59,17 @@ export default function HafiziMushafSheet({
   const pageMeta = useMemo(() => {
     return getHafiziPageMeta(pageNum);
   }, [pageNum]);
+
+  // Hafizi Header 4-Point Metadata
+  const headerMeta = useMemo(() => {
+    const currentPara = HAFIZI_PARAS.find((p) => p.juz === pageMeta.para) || HAFIZI_PARAS[0];
+    return getHafiziHeaderMetadata(pageNum, currentPara, pageMeta.firstSurahMeta);
+  }, [pageNum, pageMeta]);
+
+  // Thematic Page Banner
+  const thematicSummary = useMemo(() => {
+    return getThematicSummaryForPage(pageNum, pageMeta.firstSurahMeta);
+  }, [pageNum, pageMeta]);
 
   // Sync jump input when pageNum changes externally
   useEffect(() => {
@@ -122,6 +141,40 @@ export default function HafiziMushafSheet({
       isCancelled = true;
     };
   }, [pageMeta, getSurahData]);
+
+  // Find Mutashabihat matches on this page
+  const pageMutashabihat = useMemo(() => {
+    if (!pageAyahs || pageAyahs.length === 0) return [];
+    const matched = [];
+    MUTASHABIHAT_REGISTRY.forEach((entry, idx) => {
+      const foundInAyah = pageAyahs.find((a) => {
+        const fullText = (a.text || "").replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "");
+        const cleanPhrase = entry.phraseClean.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "");
+        return fullText.includes(cleanPhrase) || (a.text && a.text.includes(entry.phraseAr));
+      });
+      if (foundInAyah) {
+        matched.push({
+          ...entry,
+          refNo: idx + 1,
+          ayahNumber: foundInAyah.numberInSurah,
+          surahId: foundInAyah.surahId,
+        });
+      }
+    });
+    return matched;
+  }, [pageAyahs]);
+
+  // Look up Waqf & Ibtida markers for ayahs on this page
+  const waqfIbtidaMap = useMemo(() => {
+    const map = {};
+    pageAyahs.forEach((a) => {
+      const key = `${a.surahId}-${a.numberInSurah}`;
+      if (WAQF_IBTIDA_REGISTRY[key]) {
+        map[key] = WAQF_IBTIDA_REGISTRY[key];
+      }
+    });
+    return map;
+  }, [pageAyahs]);
 
   // Handle page jump
   const handleJumpSubmit = (e) => {
@@ -319,44 +372,59 @@ export default function HafiziMushafSheet({
         <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-amber-500/60 rounded-bl-sm pointer-events-none" />
         <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-amber-500/60 rounded-br-sm pointer-events-none" />
 
-        {/* ── TOP RUNNING HEADER OF HAFIZI PAGE ── */}
+        {/* ── TOP RUNNING HEADER OF HAFIZI PAGE (১. হাফেজী কুরআন হেডার ও মেটাডাটা) ── */}
         <div
-          className={`px-3 sm:px-8 py-2.5 sm:py-3 border-b-2 flex items-center justify-between text-xs font-bold ${
+          className={`px-3 sm:px-6 py-2.5 sm:py-3 border-b-2 flex items-center justify-between text-xs font-bold ${
             isDay
               ? "bg-[#F3EEE2] border-amber-600/40 text-stone-800"
               : "bg-[#06140e] border-amber-500/40 text-emerald-200"
           }`}
         >
-          {/* Top Left: Para Info */}
-          <div className="flex items-center gap-1.5">
-            <span className="text-amber-600 dark:text-amber-400 font-extrabold">
-              {pageMeta.paraNameBn}
-            </span>
-            <span className="font-hafizi-quran text-sm opacity-90 hidden xs:inline">
-              ({pageMeta.paraNameAr})
-            </span>
-          </div>
-
-          {/* Top Center: 15 Lines Badge */}
-          <div className="text-center">
-            <span className={`text-[11px] px-2.5 py-0.5 rounded-full border ${
-              isDay
-                ? "bg-amber-100 text-amber-950 border-amber-300 font-black"
-                : "bg-emerald-950 text-amber-300 border-amber-500/40 font-bold"
-            }`}>
-              হাফেজী মুসহাফ • {pageMeta.expectedLines} লাইন
-            </span>
-          </div>
-
-          {/* Top Right: Surah Name */}
-          <div className="flex items-center gap-1.5">
+          {/* Top Left: পারার নাম এবং মুনজিল নম্বর (যেমন: تلك الرسل - منزل ١) */}
+          <div className="flex flex-col items-start leading-tight">
             <span className="font-hafizi-quran text-base sm:text-lg text-amber-600 dark:text-amber-300 font-bold">
-              {pageMeta.firstSurahMeta.nameAr}
+              {headerMeta.headerLeftAr}
             </span>
-            <span className="hidden sm:inline text-xs opacity-80">
-              ({pageMeta.firstSurahMeta.nameBn})
+            <span className="text-[10px] sm:text-xs opacity-75">
+              {headerMeta.headerLeftBn}
             </span>
           </div>
+
+          {/* Top Center: সম্পূর্ণ কুরআন শরীফের মূল পৃষ্ঠা নম্বর ও ১৫ লাইন */}
+          <div className="text-center flex flex-col items-center">
+            <span className={`text-xs sm:text-sm font-black px-3 py-0.5 rounded-full border shadow-xs ${
+              isDay
+                ? "bg-amber-100 text-amber-950 border-amber-400 font-black"
+                : "bg-emerald-950 text-amber-300 border-amber-500/60 font-black"
+            }`}>
+              পৃষ্ঠা {toBn(pageNum)}
+            </span>
+            <span className="text-[9px] sm:text-[10px] opacity-75 mt-0.5 font-bold">
+              ১৫ লাইন • আয়াতুল খতম
+            </span>
+          </div>
+
+          {/* Top Right: সূরার নাম ও সূরা নম্বর, বর্তমান পারা নম্বর এবং ওই পারার কততম পৃষ্ঠা */}
+          <div className="flex flex-col items-end leading-tight text-right">
+            <span className="font-hafizi-quran text-base sm:text-lg text-amber-600 dark:text-amber-300 font-bold" dir="rtl">
+              {headerMeta.headerRightAr}
+            </span>
+            <span className="text-[10px] sm:text-xs opacity-75">
+              {headerMeta.headerRightBn}
+            </span>
+          </div>
+        </div>
+
+        {/* ── THEMATIC BANNER (৪. বিষয়ভিত্তিক কুরআনিক শিরোনাম) ── */}
+        <div className={`px-4 py-2 border-b text-center text-xs font-bold flex items-center justify-center gap-1.5 shadow-2xs ${
+          isDay
+            ? "bg-amber-50/80 border-amber-300 text-stone-800"
+            : "bg-[#09221b]/90 border-emerald-800/60 text-emerald-300"
+        }`}>
+          <span className="text-amber-500 text-sm">📖</span>
+          <span className="tracking-wide">
+            {thematicSummary}
+          </span>
         </div>
 
         {/* ── PAGE CONTENT AREA ── */}
@@ -426,6 +494,12 @@ export default function HafiziMushafSheet({
                           targetHighlightAyah.surah === ayah.surahId &&
                           targetHighlightAyah.ayah === ayah.numberInSurah;
 
+                        // Check Waqf & Ibtida for this Ayah
+                        const ayahWaqfList = waqfIbtidaMap[`${ayah.surahId}-${ayah.numberInSurah}`] || [];
+                        const ayahMutashabihat = pageMutashabihat.filter(
+                          (m) => m.ayahNumber === ayah.numberInSurah && m.surahId === ayah.surahId
+                        );
+
                         return (
                           <span
                             key={`${ayah.surahId}-${ayah.numberInSurah}`}
@@ -434,27 +508,67 @@ export default function HafiziMushafSheet({
                             className="inline cursor-pointer select-text transition-colors"
                             title={`সূরা ${ayah.surahNameBn}, আয়াত ${toBn(ayah.numberInSurah)} শুনতে ক্লিক করুন`}
                           >
+                            {/* Mutashabihat Badge if present */}
+                            {ayahMutashabihat.length > 0 && (
+                              <sup className="inline-block px-1 py-0.5 rounded-full bg-cyan-950 border border-cyan-400 text-cyan-300 text-[10px] font-black mx-1 select-none">
+                                [{toBn(ayahMutashabihat[0].refNo)}]
+                              </sup>
+                            )}
+
                             {ayah.words.map((word, wIdx) => {
                               const isThisWordActive =
                                 isThisAyahActive && activeWordIndex === wIdx && activeWordIndex >= 0;
+
+                              // Check if word is a Waqf stop point
+                              const waqfStop = ayahWaqfList.find((w) =>
+                                word.includes(w.stopAfterWord) || w.stopAfterWord.includes(word)
+                              );
+                              // Check if word is an Ibtida resume point
+                              const waqfResume = ayahWaqfList.find((w) =>
+                                word.includes(w.resumeAtWord) || w.resumeAtWord.includes(word)
+                              );
+
                               return (
-                                <span
-                                  key={wIdx}
-                                  className={`inline-block transition-all duration-150 px-0.5 mx-[1.5px] rounded-sm ${
-                                    isThisWordActive
-                                      ? "bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-500/40 ring-2 ring-amber-200 scale-105"
-                                      : isTargetJump
-                                      ? "text-amber-400 dark:text-amber-300 font-black"
-                                      : isThisAyahActive
-                                      ? isDay
-                                        ? "text-amber-900 font-bold"
-                                        : "text-amber-300 font-bold"
-                                      : isDay
-                                      ? "text-stone-950"
-                                      : "text-white"
-                                  }`}
-                                >
-                                  {word}
+                                <span key={wIdx} className="inline-block">
+                                  {/* Ibtida Restart Marker [✓] */}
+                                  {waqfResume && (
+                                    <span
+                                      className="inline-flex items-center text-[10px] font-black px-1 mx-0.5 rounded bg-emerald-500/25 border border-emerald-400 text-emerald-300 select-none shadow-xs"
+                                      title={`পুনরায় তিলাওয়াত শুরুর স্থান (ইবতিদা): ${word}`}
+                                    >
+                                      ✓
+                                    </span>
+                                  )}
+
+                                  <span
+                                    className={`inline-block transition-all duration-150 px-0.5 mx-[1.5px] rounded-sm ${
+                                      isThisWordActive
+                                        ? "bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-500/40 ring-2 ring-amber-200 scale-105"
+                                        : isTargetJump
+                                        ? "text-amber-400 dark:text-amber-300 font-black"
+                                        : isThisAyahActive
+                                        ? isDay
+                                          ? "text-amber-900 font-bold"
+                                          : "text-amber-300 font-bold"
+                                        : waqfResume
+                                        ? "text-emerald-300 font-bold underline decoration-emerald-400/60"
+                                        : isDay
+                                        ? "text-stone-950"
+                                        : "text-white"
+                                    }`}
+                                  >
+                                    {word}
+                                  </span>
+
+                                  {/* Waqf Pause Marker [*] */}
+                                  {waqfStop && (
+                                    <span
+                                      className="inline-flex items-center text-[10px] font-black px-1 mx-0.5 rounded bg-amber-500/25 border border-amber-400 text-amber-300 select-none shadow-xs"
+                                      title={`দম ফেলার স্থান (ওয়াকফ): ${word}`}
+                                    >
+                                      *{waqfStop.stopSign ? ` ${waqfStop.stopSign}` : ""}
+                                    </span>
+                                  )}
                                 </span>
                               );
                             })}
@@ -476,6 +590,70 @@ export default function HafiziMushafSheet({
                   </div>
                 );
               })}
+
+              {/* ── ২. ও ৩. মার্জিন হাশিয়া (MUTASHABIHAT & WAQF-IBTIDA MARGIN NOTES) ── */}
+              {(pageMutashabihat.length > 0 || Object.keys(waqfIbtidaMap).length > 0) && (
+                <div className={`mt-6 pt-3 border-t-2 rounded-2xl p-3 sm:p-4 text-xs space-y-2.5 ${
+                  isDay
+                    ? "bg-amber-100/60 border-amber-400/60 text-stone-900"
+                    : "bg-[#061c16]/95 border-teal-500/30 text-emerald-100"
+                }`}>
+                  <div className="flex items-center justify-between border-b pb-1.5 border-amber-500/30">
+                    <h4 className="font-black text-amber-600 dark:text-amber-400 flex items-center gap-1.5">
+                      <span>📜 মার্জিন হাশিয়া (মুতাশাবিহাত রেফারেন্স ও ওয়াকফ-ইবতিদা)</span>
+                    </h4>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold border border-amber-400/40">
+                      হাফেজী ক্রস-রেফারেন্স
+                    </span>
+                  </div>
+
+                  {/* Mutashabihat Notes */}
+                  {pageMutashabihat.length > 0 && (
+                    <div className="space-y-1.5">
+                      <p className="text-[11px] font-extrabold text-teal-400">
+                        মুতাশাবিহাত সদৃশ আয়াত (কমপক্ষে ৩টি শব্দ একাধিক স্থানে পুনরাবৃত্তি):
+                      </p>
+                      {pageMutashabihat.map((m) => (
+                        <div key={m.refNo} className="flex flex-col sm:flex-row sm:items-baseline gap-1 sm:gap-2 text-[11px] bg-black/20 p-2 rounded-xl border border-teal-500/20">
+                          <span className="font-black text-amber-400 shrink-0">
+                            [{toBn(m.refNo)}] «{m.phraseAr}»
+                          </span>
+                          <div className="flex flex-wrap items-center gap-1.5">
+                            <span className="text-slate-300 font-bold">অন্যান্য স্থান:</span>
+                            {m.references.map((ref, rIdx) => (
+                              <span key={rIdx} className="px-1.5 py-0.5 rounded-md bg-teal-950/80 border border-teal-500/30 text-[#00d2b8] font-bold text-[10px]">
+                                পারা {toBn(ref.para)}, পৃষ্ঠা {toBn(ref.page)} ({ref.note})
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Waqf & Ibtida Notes */}
+                  {Object.keys(waqfIbtidaMap).length > 0 && (
+                    <div className="space-y-1 pt-1 border-t border-teal-900/40">
+                      <p className="text-[11px] font-extrabold text-amber-300">
+                        ওয়াকফে ইবতিদাইয়া (দীর্ঘ আয়াতে থামার [*] ও পুনরায় তিলাওয়াত শুরুর [✓] স্থান):
+                      </p>
+                      {Object.entries(waqfIbtidaMap).map(([k, list]) => (
+                        <div key={k} className="space-y-1">
+                          {list.map((item, idx) => (
+                            <div key={idx} className="text-[10px] sm:text-[11px] bg-black/25 px-2.5 py-1.5 rounded-lg border border-amber-500/20 flex items-center gap-1.5 text-slate-200">
+                              <span className="text-amber-400 font-black">[*] ওয়াকফ:</span>
+                              <span>{item.stopAfterWord}</span>
+                              <span className="text-emerald-400 font-black ml-2">[✓] ইবতিদা:</span>
+                              <span>{item.resumeAtWord}</span>
+                              <span className="text-slate-400 italic hidden sm:inline ml-1">({item.note})</span>
+                            </div>
+                          ))}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>
