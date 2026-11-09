@@ -431,17 +431,7 @@ export default function HafiziMushafSheet({
                             key={`${ayah.surahId}-${ayah.numberInSurah}`}
                             id={`mushaf-ayah-${ayah.surahId}-${ayah.numberInSurah}`}
                             onClick={() => onPlayAyah && onPlayAyah(ayah.numberInSurah, ayah.surahId)}
-                            className={`inline cursor-pointer transition-all duration-200 px-1 py-0.5 rounded-xl ${
-                              isThisAyahActive
-                                ? isPlayingAudio
-                                  ? "bg-amber-400/25 ring-2 ring-amber-400/90 shadow-lg"
-                                  : "bg-emerald-800/40 ring-1 ring-amber-400/60"
-                                : isTargetJump
-                                ? "bg-amber-500/30 ring-2 ring-amber-400 animate-pulse"
-                                : isDay
-                                ? "active:bg-amber-200/50 md:hover:bg-amber-100/70"
-                                : "active:bg-emerald-800/30 md:hover:bg-emerald-900/30"
-                            }`}
+                            className="inline cursor-pointer select-text transition-colors"
                             title={`সূরা ${ayah.surahNameBn}, আয়াত ${toBn(ayah.numberInSurah)} শুনতে ক্লিক করুন`}
                           >
                             {ayah.words.map((word, wIdx) => {
@@ -450,14 +440,18 @@ export default function HafiziMushafSheet({
                               return (
                                 <span
                                   key={wIdx}
-                                  className={`inline-block transition-all duration-150 px-1 mx-0.5 rounded-md ${
+                                  className={`inline-block transition-all duration-150 px-0.5 mx-[1.5px] rounded-sm ${
                                     isThisWordActive
-                                      ? "bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-500/30 ring-2 ring-amber-200 scale-105"
+                                      ? "bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-500/40 ring-2 ring-amber-200 scale-105"
+                                      : isTargetJump
+                                      ? "text-amber-400 dark:text-amber-300 font-black"
                                       : isThisAyahActive
-                                      ? "text-amber-500 dark:text-amber-300 font-bold"
+                                      ? isDay
+                                        ? "text-amber-900 font-bold"
+                                        : "text-amber-300 font-bold"
                                       : isDay
-                                      ? "text-stone-900"
-                                      : "text-slate-100"
+                                      ? "text-stone-950"
+                                      : "text-white"
                                   }`}
                                 >
                                   {word}
@@ -465,8 +459,14 @@ export default function HafiziMushafSheet({
                               );
                             })}
 
-                            {/* Verse End Ayatul Khatm Symbol */}
-                            <span className="inline-flex items-center justify-center font-hafizi-quran text-amber-600 dark:text-amber-400 font-black text-xl sm:text-2xl mx-1 select-none">
+                            {/* Verse End Ayatul Khatm Symbol (ফুল আয়াত সমাপ্তি চিহ্ন) */}
+                            <span
+                              className={`inline-flex items-center justify-center font-hafizi-quran font-black text-xl sm:text-2xl mx-1 select-none transition-all ${
+                                isThisAyahActive || isTargetJump
+                                  ? "bg-amber-500/25 border border-amber-400 text-amber-400 shadow-[0_0_12px_rgba(245,158,11,0.6)] rounded-full px-1.5 py-0.5 scale-110"
+                                  : "text-amber-600 dark:text-amber-400"
+                              }`}
+                            >
                               ۝{toBn(ayah.numberInSurah)}
                             </span>{" "}
                           </span>

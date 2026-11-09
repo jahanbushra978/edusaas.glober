@@ -49,6 +49,7 @@ import AdvancedHifzAssistant from "@/features/ai/components/AdvancedHifzAssistan
 import AiDawrTeacherCompanion from "@/features/ai/components/AiDawrTeacherCompanion";
 import QuranSemanticSearchModal from "@/features/ai/components/QuranSemanticSearchModal";
 import QuranReader from "@/features/quran/components/QuranReader";
+import TahfizQuranApp from "@/features/quran/components/TahfizQuranApp";
 import AmarProthomQuranShikkha from "@/features/ai/components/AmarProthomQuranShikkha";
 import HumanTeacherPlatform from "@/features/teachers/components/HumanTeacherPlatform";
 import { playArabicSound } from "@/features/ai-learning/lib/arabicSoundPlayer";
@@ -713,6 +714,10 @@ export default function QuranStudioPage() {
             { activeFeature === "voice-tutor" ? (
               <div ref={activeStageRef} className="w-full h-[85vh] sm:h-[88vh] mx-auto animate-fade-in flex flex-col">
                 <InteractiveVoiceTutor onClose={closeActiveFeature} className="flex-1" />
+              </div>
+            ) : activeFeature === "quran-reader" ? (
+              <div ref={activeStageRef} className="w-full min-h-[90vh] mx-auto animate-fade-in flex flex-col">
+                <TahfizQuranApp onClose={closeActiveFeature} />
               </div>
             ) : activeFeature && (
               <section

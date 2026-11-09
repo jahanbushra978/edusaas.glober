@@ -1344,9 +1344,9 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
       </div>
 
       {/* ── FLOATING MOBILE ACTION HUB & BACK TO TOP (Smart Quick Controls for Phone View) ── */}
-      <div className={`fixed right-3 sm:right-6 ${
-        playingAyahNumber !== null ? "bottom-24 sm:bottom-28" : "bottom-5"
-      } z-40 flex flex-col items-end gap-2 pointer-events-auto transition-all duration-300`}>
+      <div className={`fixed ${
+        playingAyahNumber !== null ? "bottom-24 sm:bottom-28" : "bottom-4 sm:bottom-6"
+      } left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 z-40 flex flex-col items-center sm:items-end gap-2 pointer-events-auto transition-all duration-300 max-w-[96vw]`}>
         {/* Back to Top Smooth Floating Button */}
         {showBackToTop && (
           <button
@@ -1369,7 +1369,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
           <button
             type="button"
             onClick={() => setIsFloatingBarHidden(false)}
-            className={`flex md:hidden items-center gap-1.5 px-3.5 py-2 rounded-full shadow-2xl border text-xs font-black transition-all active:scale-95 cursor-pointer animate-fadeIn ${
+            className={`flex md:hidden items-center gap-1.5 px-3 py-2 rounded-full shadow-2xl border text-xs font-black transition-all active:scale-95 cursor-pointer animate-fadeIn ${
               isDay
                 ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-300 shadow-amber-950/20"
                 : "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-400 shadow-emerald-950/40"
@@ -1378,13 +1378,13 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
           >
             <BookOpen className="w-3.5 h-3.5" />
             <span>মেনু</span>
-            <span className="text-[10px] bg-black/30 px-1.5 py-0.5 rounded-full font-bold">
+            <span className="text-[10px] bg-black/40 px-1.5 py-0.5 rounded-full font-bold">
               {viewMode === "mushaf" ? `পৃ: ${hafiziPage}` : `${selectedSurahId}`}
             </span>
           </button>
         ) : (
-          /* Full Floating Mobile Controls with [X] Hide Button */
-          <div className={`flex md:hidden items-center gap-1 p-1.5 rounded-2xl shadow-2xl border backdrop-blur-md animate-fadeIn ${
+          /* Full Floating Mobile Controls with Prominent [X] Hide Button */
+          <div className={`flex md:hidden items-center gap-1 p-1.5 rounded-2xl shadow-2xl border backdrop-blur-md animate-fadeIn max-w-[94vw] ${
             isDay
               ? "bg-white/95 border-amber-300 text-slate-900"
               : "bg-[#091f16]/95 border-emerald-700 text-white"
@@ -1393,7 +1393,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
             <button
               type="button"
               onClick={() => setIsMobileJumperOpen(true)}
-              className="px-2.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-extrabold flex items-center gap-1 active:scale-95 transition cursor-pointer shadow-xs"
+              className="px-2.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-extrabold flex items-center gap-1 active:scale-95 transition cursor-pointer shadow-xs shrink-0"
               title="সূরা, আয়াত, পারা ও পৃষ্ঠা নির্বাচন"
             >
               <Search className="w-3.5 h-3.5" />
@@ -1402,7 +1402,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
 
             {/* Quick Prev / Next Page (in Hafizi mode) */}
             {viewMode === "mushaf" && (
-              <div className="flex items-center gap-0.5">
+              <div className="flex items-center gap-0.5 shrink-0">
                 <button
                   type="button"
                   disabled={hafiziPage <= 1}
@@ -1428,7 +1428,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
             )}
 
             {/* Quick Font Size Adjust */}
-            <div className="flex items-center gap-0.5">
+            <div className="flex items-center gap-0.5 shrink-0">
               <button
                 type="button"
                 onClick={() => changeFontSize(-2)}
@@ -1447,14 +1447,15 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
               </button>
             </div>
 
-            {/* Close / Hide / Minimize Button (✕ চিহ্ন - ইচ্ছামতো হাইড ও শো করার বাটন) */}
+            {/* Close / Hide / Minimize Button (✕ চিহ্ন - স্পষ্টভাবে দৃশ্যমান ও ক্লিকেবল) */}
             <button
               type="button"
               onClick={() => setIsFloatingBarHidden(true)}
-              className="p-1.5 rounded-xl hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 active:scale-90 transition cursor-pointer ml-0.5"
+              className="w-7 h-7 rounded-full bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/40 flex items-center justify-center shrink-0 active:scale-90 transition-all cursor-pointer shadow-xs ml-0.5"
               title="কন্ট্রোল বার লুকান (হাইড করুন)"
+              aria-label="কন্ট্রোল বার লুকান"
             >
-              <X className="w-3.5 h-3.5" />
+              <X className="w-4 h-4 stroke-[2.5]" />
             </button>
           </div>
         )}
