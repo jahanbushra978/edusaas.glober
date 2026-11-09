@@ -47,6 +47,8 @@ export default function HafiziMushafSheet({
   readerTheme = "day",
   getSurahData,
   targetHighlightAyah = null,
+  selectedQari = "husary_muallim",
+  onSelectQari,
 }) {
   const isDay = readerTheme === "day";
   const [pageLoading, setPageLoading] = useState(true);
@@ -212,160 +214,85 @@ export default function HafiziMushafSheet({
     return String(num).replace(/\d/g, (d) => enToBnMap[d] || d);
   };
 
+  // Popular 5 Qaris matching the user's authentic Hafizi Quran screenshot
+  const POPULAR_QARIS = [
+    { id: "minshawy_teacher", shortNameBn: "শায়খ মুহাম্মদ সিদ্দিক আল-মিনশাবী" },
+    { id: "sudais", shortNameBn: "শায়খ সুদাইস" },
+    { id: "ghamadi", shortNameBn: "শায়খ আল-আখদার / আল-গামদী" },
+    { id: "husary_muallim", shortNameBn: "শায়খ মাহমুদ খলিল আল-হুসারী" },
+    { id: "alafasy", shortNameBn: "শায়খ মাশারি বিন রাশেদ আল-আফাসী" },
+  ];
+
+  // Distribute Mutashabihat references to Left and Right Margins (ডান ও বাম হাশিয়া)
+  const allMarginRefs = useMemo(() => {
+    const list = [];
+    pageMutashabihat.forEach((m) => {
+      m.references.forEach((ref) => {
+        list.push(ref);
+      });
+    });
+    if (list.length === 0) {
+      const p = pageMeta.para;
+      list.push({ para: p, page: pageMeta.paraPage });
+      if (p > 1) list.push({ para: p - 1, page: 20 });
+      if (p < 30) list.push({ para: p + 1, page: 1 });
+    }
+    return list;
+  }, [pageMutashabihat, pageMeta]);
+
+  const leftMarginRefs = useMemo(() => allMarginRefs.slice(0, Math.ceil(allMarginRefs.length / 2)), [allMarginRefs]);
+  const rightMarginRefs = useMemo(() => allMarginRefs.slice(Math.ceil(allMarginRefs.length / 2)), [allMarginRefs]);
+
   return (
     <div className="w-full flex flex-col items-center select-text" ref={pageContainerRef}>
-      {/* ── TOP PAGE TOOLBAR (Quick Para, Page Slider, Zoom) ── */}
-      <div className={`w-full max-w-4xl mb-4 px-2 sm:px-4 py-2.5 rounded-2xl ${
-        isDay ? "bg-stone-100/90 border border-stone-200" : "bg-black/40 border border-emerald-900/60"
-      } backdrop-blur-md flex flex-wrap items-center justify-between gap-2 shadow-xs text-xs font-bold`}>
-        {/* Left: Para Quick Selector */}
-        <div className="relative">
-          <button
-            type="button"
-            onClick={() => setIsParaDropdownOpen(!isParaDropdownOpen)}
-            className={`px-3 py-1.5 rounded-xl border flex items-center gap-1.5 transition active:scale-95 cursor-pointer ${
-              isDay
-                ? "bg-white border-amber-300 text-emerald-950 hover:bg-amber-50"
-                : "bg-emerald-950/80 border-emerald-700 text-emerald-200 hover:bg-emerald-900"
-            }`}
-          >
-            <BookOpen className="w-3.5 h-3.5 text-amber-500" />
-            <span>{pageMeta.paraNameBn}</span>
-            <span className="font-hafizi-quran text-sm text-amber-600 dark:text-amber-400">
-              ({pageMeta.paraNameAr})
-            </span>
-            <ChevronDown className="w-3 h-3 opacity-70" />
-          </button>
-
-          {/* Para Dropdown Menu */}
-          {isParaDropdownOpen && (
-            <div className="absolute top-full left-0 mt-1.5 z-40 w-64 max-h-72 overflow-y-auto rounded-2xl bg-[#091f16] border border-emerald-700/80 shadow-2xl p-1.5 space-y-1 animate-fadeIn">
-              <div className="px-3 py-1.5 text-[11px] font-bold text-emerald-400 border-b border-emerald-900/60 flex items-center justify-between">
-                <span>পারা নির্বাচন করুন (১-৩০)</span>
-                <span className="text-[10px] text-slate-400">৩০ পারা</span>
-              </div>
-              {HAFIZI_PARAS.map((p) => {
-                const isCurrent = p.juz === pageMeta.para;
-                return (
-                  <button
-                    key={p.juz}
-                    type="button"
-                    onClick={() => handleParaSelect(p.juz)}
-                    className={`w-full px-3 py-1.5 rounded-xl text-left flex items-center justify-between text-xs transition cursor-pointer ${
-                      isCurrent
-                        ? "bg-emerald-700 text-white font-extrabold"
-                        : "hover:bg-emerald-900/70 text-slate-200"
-                    }`}
-                  >
-                    <span>{p.nameBn}</span>
-                    <span className="font-hafizi-quran text-amber-300 text-sm">
-                      {p.nameAr}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Center: Quick Page Jump Input */}
-        <form onSubmit={handleJumpSubmit} className="flex items-center gap-1.5">
-          <span className={`text-[11px] ${isDay ? "text-stone-600" : "text-slate-400"}`}>পৃষ্ঠা:</span>
-          <input
-            type="text"
-            value={jumpInput}
-            onChange={handleJumpInputChange}
-            className={`w-14 px-2 py-1 text-center rounded-lg border font-bold text-xs focus:outline-none focus:ring-1 focus:ring-amber-500 ${
-              isDay
-                ? "bg-white border-amber-300 text-slate-900"
-                : "bg-emerald-950/80 border-emerald-700 text-white"
-            }`}
-            placeholder="পৃষ্ঠা"
-          />
-          <span className={`text-[11px] ${isDay ? "text-stone-500" : "text-slate-400"}`}>
-            / {toBn(TOTAL_UTHMANI_PAGES)}
-          </span>
-          <button
-            type="submit"
-            className="px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold shadow-2xs active:scale-95 cursor-pointer"
-          >
-            যান
-          </button>
-        </form>
-
-        {/* Right: Zoom & Prev/Next Page Controls */}
-        <div className="flex items-center gap-1.5">
-          {/* Zoom Controls */}
-          <div className={`flex items-center rounded-xl p-0.5 border ${
-            isDay ? "bg-white border-stone-300" : "bg-black/50 border-emerald-800/80"
-          }`}>
-            <button
-              type="button"
-              onClick={() => onChangeFontSize && onChangeFontSize(-2)}
-              className={`p-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
-                isDay ? "hover:bg-stone-100 text-stone-700" : "hover:bg-emerald-900 text-slate-300"
-              }`}
-              title="লেখা ছোট করুন"
-            >
-              <ZoomOut className="w-3.5 h-3.5" />
-            </button>
-            <span className={`px-1 text-[11px] font-black ${isDay ? "text-amber-800" : "text-amber-400"}`}>
-              {arabicFontSize}px
-            </span>
-            <button
-              type="button"
-              onClick={() => onChangeFontSize && onChangeFontSize(2)}
-              className={`p-1.5 rounded-lg text-xs font-black transition cursor-pointer ${
-                isDay ? "hover:bg-stone-100 text-stone-700" : "hover:bg-emerald-900 text-slate-300"
-              }`}
-              title="লেখা বড় করুন"
-            >
-              <ZoomIn className="w-3.5 h-3.5" />
-            </button>
-          </div>
-
-          {/* Quick Page Flip Buttons */}
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              disabled={pageNum <= 1}
-              onClick={() => onPageChange(pageNum - 1)}
-              className={`p-1.5 sm:px-2 sm:py-1.5 rounded-xl border flex items-center gap-1 transition active:scale-95 cursor-pointer disabled:opacity-30 ${
-                isDay
-                  ? "bg-white hover:bg-amber-50 border-stone-300 text-stone-800"
-                  : "bg-emerald-950/80 hover:bg-emerald-900 border-emerald-700 text-slate-200"
-              }`}
-              title="পূর্ববর্তী পৃষ্ঠা"
-            >
-              <ChevronLeft className="w-4 h-4" />
-              <span className="hidden sm:inline text-xs">আগের পাতা</span>
-            </button>
-            <button
-              type="button"
-              disabled={pageNum >= TOTAL_UTHMANI_PAGES}
-              onClick={() => onPageChange(pageNum + 1)}
-              className={`p-1.5 sm:px-2 sm:py-1.5 rounded-xl border flex items-center gap-1 transition active:scale-95 cursor-pointer disabled:opacity-30 ${
-                isDay
-                  ? "bg-white hover:bg-amber-50 border-stone-300 text-stone-800"
-                  : "bg-emerald-950/80 hover:bg-emerald-900 border-emerald-700 text-slate-200"
-              }`}
-              title="পরবর্তী পৃষ্ঠা"
-            >
-              <span className="hidden sm:inline text-xs">পরের পাতা</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
+      {/* ── TOP QARI PILL BUTTON (ক্বারীর নাম - স্ক্রিনশটের মতো ব্লু পিল) ── */}
+      <div className="mb-2 z-10">
+        <button
+          type="button"
+          onClick={() => {
+            const nextIdx = (POPULAR_QARIS.findIndex((q) => q.id === selectedQari) + 1) % POPULAR_QARIS.length;
+            if (onSelectQari) onSelectQari(POPULAR_QARIS[nextIdx].id);
+          }}
+          className="px-4 py-1.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md border border-sky-400/80 flex items-center gap-2 cursor-pointer active:scale-95 transition"
+          title="ক্বারী পরিবর্তন করতে ক্লিক করুন"
+        >
+          <span>🎙️ {POPULAR_QARIS.find((q) => q.id === selectedQari)?.shortNameBn || "শায়খ মাহমুদ খলিল আল-হুসারী"}</span>
+          <ChevronDown className="w-3.5 h-3.5" />
+        </button>
       </div>
 
-      {/* ── THE 15-LINE HAFIZI QURAN PAGE SHEET ── */}
-      <div
-        className={`w-full max-w-3xl rounded-2xl sm:rounded-3xl border-2 sm:border-4 transition-all duration-300 shadow-2xl overflow-hidden relative ${
-          isDay
-            ? "bg-[#FAF7F2] border-amber-600/60 shadow-amber-950/10 text-stone-900"
-            : "bg-[#081a13] border-amber-500/70 shadow-emerald-950/40 text-slate-100"
-        }`}
-      >
+      {/* ── AUTHENTIC MUSHAF PAGE WITH LEFT & RIGHT MARGINS (হাশিয়া) ── */}
+      <div className="w-full max-w-4xl flex items-start justify-center gap-1 sm:gap-2">
+        {/* ── LEFT MARGIN (বাম হাশিয়া - স্ক্রিনশটের হুবহু পারা ও পৃষ্ঠা টেবিল) ── */}
+        <div className="hidden md:flex flex-col gap-2 shrink-0 w-16 pt-10 select-none">
+          {leftMarginRefs.map((ref, idx) => (
+            <div
+              key={idx}
+              className={`rounded-lg border p-1 text-[10px] text-center shadow-xs transition hover:scale-105 cursor-pointer ${
+                isDay
+                  ? "bg-[#FAF7F2] border-stone-400 text-stone-900"
+                  : "bg-[#061811] border-teal-600/40 text-emerald-200"
+              }`}
+              title={`পারা ${toBn(ref.para)}, পৃষ্ঠা ${toBn(ref.page)}`}
+            >
+              <div className="font-bold border-b border-stone-300 dark:border-teal-700/50 pb-0.5 text-amber-600 dark:text-amber-400">
+                পারা | পৃষ্ঠা
+              </div>
+              <div className="font-black pt-0.5 tracking-wider">
+                {toBn(ref.para)} | {toBn(ref.page)}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ── THE 15-LINE HAFIZI QURAN PAGE SHEET (SCREENSHOT AUTHENTIC FRAME) ── */}
+        <div
+          className={`flex-1 max-w-3xl rounded-2xl sm:rounded-3xl border-2 sm:border-4 transition-all duration-300 shadow-2xl overflow-hidden relative ${
+            isDay
+              ? "bg-[#FAF7F2] border-stone-800 shadow-amber-950/10 text-stone-900"
+              : "bg-[#06140e] border-amber-500/80 shadow-emerald-950/40 text-slate-100"
+          }`}
+        >
         {/* Subtle Islamic Corner Floral Accents */}
         <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-amber-500/60 rounded-tl-sm pointer-events-none" />
         <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-amber-500/60 rounded-tr-sm pointer-events-none" />
@@ -706,6 +633,55 @@ export default function HafiziMushafSheet({
           </div>
         </div>
       </div>
+
+      {/* ── RIGHT MARGIN (ডান হাশিয়া - স্ক্রিনশটের হুবহু পারা ও পৃষ্ঠা টেবিল) ── */}
+      <div className="hidden md:flex flex-col gap-2 shrink-0 w-16 pt-10 select-none">
+        {rightMarginRefs.map((ref, idx) => (
+          <div
+            key={idx}
+            className={`rounded-lg border p-1 text-[10px] text-center shadow-xs transition hover:scale-105 cursor-pointer ${
+              isDay
+                ? "bg-[#FAF7F2] border-stone-400 text-stone-900"
+                : "bg-[#061811] border-teal-600/40 text-emerald-200"
+            }`}
+            title={`পারা ${toBn(ref.para)}, পৃষ্ঠা ${toBn(ref.page)}`}
+          >
+            <div className="font-bold border-b border-stone-300 dark:border-teal-700/50 pb-0.5 text-amber-600 dark:text-amber-400">
+              পারা | পৃষ্ঠা
+            </div>
+            <div className="font-black pt-0.5 tracking-wider">
+              {toBn(ref.para)} | {toBn(ref.page)}
+            </div>
+          </div>
+        ))}
+      </div>
     </div>
-  );
+
+    {/* ── BOTTOM ROW OF 5 BLUE QARI BUTTONS (স্ক্রিনশটের হুবহু নিচের ৫টি ক্বারী বাটন) ── */}
+    <div className="w-full max-w-3xl mt-3 grid grid-cols-2 sm:grid-cols-5 gap-1.5 px-2 select-none">
+      {POPULAR_QARIS.map((q) => {
+        const isCurrent = (selectedQari === q.id);
+        return (
+          <button
+            key={q.id}
+            type="button"
+            onClick={() => {
+              if (onSelectQari) onSelectQari(q.id);
+              if (onPlayAyah && pageAyahs[0]) {
+                onPlayAyah(pageAyahs[0].numberInSurah, pageAyahs[0].surahId);
+              }
+            }}
+            className={`py-2 px-2 rounded-xl text-[11px] font-bold text-center border shadow-sm transition active:scale-95 cursor-pointer ${
+              isCurrent
+                ? "bg-sky-500 text-white border-sky-300 ring-2 ring-sky-300 font-extrabold shadow-md"
+                : "bg-sky-700/90 hover:bg-sky-600 text-white border-sky-500"
+            }`}
+          >
+            <span>{q.shortNameBn}</span>
+          </button>
+        );
+      })}
+    </div>
+  </div>
+);
 }

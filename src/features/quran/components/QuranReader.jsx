@@ -798,10 +798,11 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
           </div>
         </div>
 
-        {/* ROW 2: NEW SMART SURAH & AYAH / HAFIZI PARA & PAGE JUMPER SEARCHER */}
-        <div className={`pt-2 border-t flex flex-wrap items-center justify-between gap-2 text-xs ${
-          isDay ? "border-amber-200/70" : "border-emerald-900/50"
-        }`}>
+        {/* ROW 2: NEW SMART SURAH & AYAH / HAFIZI PARA & PAGE JUMPER SEARCHER (Only in Ayah Mode to keep Hafizi Mushaf clean) */}
+        {viewMode === "ayah" && (
+          <div className={`pt-2 border-t flex flex-wrap items-center justify-between gap-2 text-xs ${
+            isDay ? "border-amber-200/70" : "border-emerald-900/50"
+          }`}>
           {/* Left: Mode Tabs & Jumper Form */}
           <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
             {/* Mode Toggle: Surah vs Para */}
@@ -960,6 +961,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
             </span>
           </div>
         </div>
+        )}
       </div>
 
       {/* ── MAIN CONTENT AREA ── */}
@@ -1338,6 +1340,8 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
               readerTheme={readerTheme}
               getSurahData={getSurahData}
               targetHighlightAyah={targetHighlightAyah}
+              selectedQari={selectedQari}
+              onSelectQari={(qId) => setSelectedQari(qId)}
             />
           </div>
         )}

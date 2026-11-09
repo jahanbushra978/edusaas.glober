@@ -1157,6 +1157,8 @@ export default function TahfizQuranApp({ onClose }) {
                   targetHighlightAyah={targetHighlightAyah}
                   readerTheme={pageFilter === "day" ? "day" : "night"}
                   getSurahData={getSurahData}
+                  selectedQari={selectedQari}
+                  onSelectQari={(qId) => setSelectedQari(qId)}
                 />
               ) : (
                 <QuranReader
