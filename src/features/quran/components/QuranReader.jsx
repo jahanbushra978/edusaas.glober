@@ -14,10 +14,15 @@ import {
   Bot,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   X,
   FileText,
   List,
-  ArrowRight
+  ArrowRight,
+  ArrowUp,
+  ZoomIn,
+  ZoomOut,
+  Compass
 } from "lucide-react";
 import { toast } from "sonner";
 import { ALL_SURAHS, JUZ_MAPPING } from "@/lib/quran/quran-meta";
@@ -28,8 +33,12 @@ import {
   getParaTotalPages,
   getHafiziGlobalPage,
   getHafiziPageTarget,
-  parseHafiziSearchQuery
+  parseHafiziSearchQuery,
+  getHafiziLocationForAyah,
+  TOTAL_UTHMANI_PAGES,
+  getHafiziPageMeta
 } from "@/lib/quran/hafizi-pages";
+import HafiziMushafSheet from "./HafiziMushafSheet";
 import { useBanglaAudioEngine } from "@/lib/quran/bangla-audio-engine";
 import { loadChapterSegments, getActiveArabicWordIndex, splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 import { universalAudioEngine, audioCache } from "@/lib/quran/audio";
@@ -91,6 +100,104 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
   const [hafiziPara, setHafiziPara] = useState(1);
   const [hafiziPage, setHafiziPage] = useState(1);
   const [pendingScrollAyah, setPendingScrollAyah] = useState(null);
+  const [targetHighlightAyah, setTargetHighlightAyah] = useState(null);
+
+  // Smart Surah & Ayah Jumper Searcher State
+  const [jumperSurahId, setJumperSurahId] = useState(initialSurah);
+  const [jumperAyahNum, setJumperAyahNum] = useState("");
+  const [isMobileJumperOpen, setIsMobileJumperOpen] = useState(false);
+
+  // Hafizi Para & Page Searcher State
+  const [jumperTab, setJumperTab] = useState("surah"); // 'surah' | 'para'
+  const [jumperParaNum, setJumperParaNum] = useState(1);
+  const [jumperPageNum, setJumperPageNum] = useState("1");
+
+  // Floating Bottom Toolbar Toggle (Show / Hide with [X] button)
+  const [isFloatingBarHidden, setIsFloatingBarHidden] = useState(false);
+
+  // Smart Scroll Direction Auto-Reveal & Back to Top
+  const [isNavVisible, setIsNavVisible] = useState(true);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const lastScrollY = useRef(0);
+
+  // Synchronize jumper surah with active surah
+  useEffect(() => {
+    setJumperSurahId(selectedSurahId);
+  }, [selectedSurahId]);
+
+  // Smart Scroll-Up detection to reveal top controls & show Back-to-Top
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      if (currentScrollY > 120 && currentScrollY > lastScrollY.current + 8) {
+        setIsNavVisible(false); // scrolling down
+      } else if (currentScrollY < lastScrollY.current - 6 || currentScrollY <= 40) {
+        setIsNavVisible(true); // scrolling up
+      }
+      setShowBackToTop(currentScrollY > 320);
+      lastScrollY.current = currentScrollY;
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // Direct Jump to Surah and Ayah (Smart Searcher)
+  const handleDirectAyahJump = (targetSurahId, targetAyahNumber) => {
+    const sId = Math.max(1, Math.min(114, Number(targetSurahId) || selectedSurahId));
+    const sMeta = ALL_SURAHS.find((s) => s.id === sId) || ALL_SURAHS[0];
+    const aNum = Math.max(1, Math.min(sMeta.versesCount, Number(targetAyahNumber) || 1));
+
+    setTargetHighlightAyah({ surah: sId, ayah: aNum });
+    setIsMobileJumperOpen(false);
+
+    if (viewMode === "mushaf") {
+      const loc = getHafiziLocationForAyah(sId, aNum);
+      const targetPage = loc.uthmaniPage || Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((loc.globalPage / 610) * TOTAL_UTHMANI_PAGES)));
+      setHafiziPage(targetPage);
+      setSelectedSurahId(sId);
+      toast.success(`সূরা ${sMeta.nameBn}, আয়াত ${aNum} — হাফেজী পৃষ্ঠা ${targetPage}, ${loc.nameBn}`);
+    } else {
+      if (sId !== selectedSurahId) {
+        setSelectedSurahId(sId);
+      }
+      setPendingScrollAyah(aNum);
+      toast.success(`সূরা ${sMeta.nameBn}, আয়াত ${aNum}-এ যাওয়া হচ্ছে`);
+    }
+  };
+
+  // Direct Jump to Hafizi Para & Page (হাফেজী পারা ও পৃষ্ঠা নির্বাচন)
+  const handleDirectParaPageJump = (paraNum, pageInput) => {
+    const p = Math.max(1, Math.min(30, Number(paraNum) || 1));
+    const paraInfo = HAFIZI_PARAS[p - 1];
+
+    let targetPage;
+    const customPage = parseInt(String(pageInput).trim(), 10);
+    if (!isNaN(customPage) && customPage >= 1 && customPage <= TOTAL_UTHMANI_PAGES) {
+      targetPage = customPage;
+    } else {
+      // Default to start page of that Para mapped to 604 Uthmani pages
+      targetPage = Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((paraInfo.startPage / 610) * TOTAL_UTHMANI_PAGES)));
+    }
+
+    setHafiziPage(targetPage);
+    setViewMode("mushaf");
+    setIsMobileJumperOpen(false);
+    toast.success(`হাফেজী ${paraInfo.nameBn} (${paraInfo.nameAr}) — পৃষ্ঠা ${targetPage}-এ যাওয়া হয়েছে`);
+  };
+
+  const handleSwitchToMushaf = () => {
+    const currentAyah = playingAyahNumber || pendingScrollAyah || 1;
+    const loc = getHafiziLocationForAyah(selectedSurahId, currentAyah);
+    const targetPage = loc.uthmaniPage || Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((loc.globalPage / 610) * TOTAL_UTHMANI_PAGES)));
+    setHafiziPage(targetPage);
+    setViewMode("mushaf");
+    toast.success(`হাফেজী মুসহাফ মোড — পৃষ্ঠা ${targetPage}`);
+  };
+
+  const handleSwitchToAyah = () => {
+    setViewMode("ayah");
+  };
 
   // Universal Authentic Human Male Bengali Audio Engine
   const {
@@ -548,234 +655,406 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
 
   return (
     <div className={`flex flex-col min-h-screen ${isDay ? "bg-[#FAF7F2] text-slate-900" : "bg-[#071510] text-slate-100"} ${playingAyahNumber !== null ? "pb-28" : "pb-12"} transition-colors duration-200`}>
-      {/* ── TOP CONTROL BAR ── */}
-      <div className={`sticky top-16 z-20 ${isDay ? "bg-[#FAF7F2]/95 border-b border-amber-200/80 shadow-xs" : "bg-[#091f16]/95 border-b border-emerald-900/60"} backdrop-blur-md px-3 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-2.5`}>
-        {/* Left: Surah Selector Button */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsSurahDrawerOpen(true)}
-            className={`px-3 sm:px-3.5 py-2 rounded-2xl ${isDay ? "bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-950 shadow-xs" : "bg-emerald-900/60 hover:bg-emerald-800/80 border border-emerald-700/60 text-white shadow-sm"} font-bold text-xs flex items-center gap-2 transition active:scale-95 cursor-pointer`}
-          >
-            <BookOpen className={`w-4 h-4 ${isDay ? "text-emerald-700" : "text-emerald-400"}`} />
-            <span className={`font-extrabold ${isDay ? "text-emerald-950" : "text-emerald-200"}`}>
-              {currentSurahMeta.id}. {currentSurahMeta.nameBn}
-            </span>
-            <span className={`font-hafizi-quran text-sm ${isDay ? "text-emerald-800" : "text-emerald-300"} mr-1`}>
-              ({currentSurahMeta.nameAr})
-            </span>
-            <span className={`text-[10px] ${isDay ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-emerald-950 text-emerald-400 border-emerald-800"} px-2 py-0.5 rounded-full border font-bold hidden xs:inline`}>
-              সূরা তালিকা
-            </span>
-          </button>
+      {/* ── TOP CONTROL & SMART JUMPER BAR (Auto-reveals on scroll-up) ── */}
+      <div className={`sticky top-0 z-30 transition-transform duration-300 ${isNavVisible ? "translate-y-0" : "-translate-y-full"} ${isDay ? "bg-[#FAF7F2]/95 border-b border-amber-200/90 shadow-sm" : "bg-[#091f16]/95 border-b border-emerald-900/70 shadow-md"} backdrop-blur-md px-2.5 sm:px-6 py-2.5 flex flex-col gap-2.5`}>
+        {/* ROW 1: Surah Selector, Reciter, Theme, Mode & Zoom Controls */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          {/* Left: Surah Selector Button & Quick Navigation */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <button
+              onClick={() => setIsSurahDrawerOpen(true)}
+              className={`px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-2xl ${isDay ? "bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-950 shadow-xs" : "bg-emerald-900/60 hover:bg-emerald-800/80 border border-emerald-700/60 text-white shadow-sm"} font-bold text-xs flex items-center gap-1.5 sm:gap-2 transition active:scale-95 cursor-pointer`}
+            >
+              <BookOpen className={`w-3.5 sm:w-4 h-3.5 sm:h-4 ${isDay ? "text-emerald-700" : "text-emerald-400"}`} />
+              <span className={`font-extrabold ${isDay ? "text-emerald-950" : "text-emerald-200"}`}>
+                {currentSurahMeta.id}. {currentSurahMeta.nameBn}
+              </span>
+              <span className={`font-hafizi-quran text-sm ${isDay ? "text-emerald-800" : "text-emerald-300"} mr-1 hidden xs:inline`}>
+                ({currentSurahMeta.nameAr})
+              </span>
+              <span className={`text-[10px] ${isDay ? "bg-emerald-100 text-emerald-900 border-emerald-300" : "bg-emerald-950 text-emerald-400 border-emerald-800"} px-2 py-0.5 rounded-full border font-bold hidden md:inline`}>
+                সূরা তালিকা
+              </span>
+            </button>
 
-          {/* Quick Prev / Next Surah */}
-          <div className="flex items-center gap-1">
-            <button
-              disabled={selectedSurahId <= 1}
-              onClick={() => setSelectedSurahId((s) => Math.max(1, s - 1))}
-              className={`p-2 rounded-xl ${isDay ? "bg-white hover:bg-stone-100 border border-stone-200 text-stone-700 shadow-2xs" : "bg-black/30 hover:bg-emerald-900/50 border border-emerald-900 text-slate-300"} disabled:opacity-40 transition cursor-pointer`}
-              title="পূর্ববর্তী সূরা"
+            {/* Quick Prev / Next Surah */}
+            <div className="flex items-center gap-1">
+              <button
+                disabled={selectedSurahId <= 1}
+                onClick={() => setSelectedSurahId((s) => Math.max(1, s - 1))}
+                className={`p-1.5 sm:p-2 rounded-xl ${isDay ? "bg-white hover:bg-stone-100 border border-stone-200 text-stone-700 shadow-2xs" : "bg-black/30 hover:bg-emerald-900/50 border border-emerald-900 text-slate-300"} disabled:opacity-40 transition cursor-pointer`}
+                title="পূর্ববর্তী সূরা"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <button
+                disabled={selectedSurahId >= 114}
+                onClick={() => setSelectedSurahId((s) => Math.min(114, s + 1))}
+                className={`p-1.5 sm:p-2 rounded-xl ${isDay ? "bg-white hover:bg-stone-100 border border-stone-200 text-stone-700 shadow-2xs" : "bg-black/30 hover:bg-emerald-900/50 border border-emerald-900 text-slate-300"} disabled:opacity-40 transition cursor-pointer`}
+                title="পরবর্তী সূরা"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+
+          {/* Center: Reciter Selection */}
+          <div className="flex items-center gap-1.5 hidden md:flex">
+            <span className={`text-xs font-bold ${isDay ? "text-stone-600" : "text-slate-400"}`}>ক্বারী:</span>
+            <select
+              value={selectedQari}
+              onChange={(e) => handleQariChange(e.target.value)}
+              className={`${isDay ? "bg-white text-emerald-950 border border-emerald-300 shadow-2xs" : "bg-emerald-950/90 text-emerald-200 border border-emerald-800/70"} rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500`}
             >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
+              {QARI_REGISTRY.map((qari) => (
+                <option key={qari.id} value={qari.id} className="bg-white text-slate-900">
+                  {qari.displayTitleBn} ({qari.styleBn})
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Right: View Mode, Theme & Font Zoom Controls */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Day / Night Theme Toggle */}
             <button
-              disabled={selectedSurahId >= 114}
-              onClick={() => setSelectedSurahId((s) => Math.min(114, s + 1))}
-              className={`p-2 rounded-xl ${isDay ? "bg-white hover:bg-stone-100 border border-stone-200 text-stone-700 shadow-2xs" : "bg-black/30 hover:bg-emerald-900/50 border border-emerald-900 text-slate-300"} disabled:opacity-40 transition cursor-pointer`}
-              title="পরবর্তী সূরা"
+              type="button"
+              onClick={toggleReaderTheme}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 ${
+                isDay
+                  ? "bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-950 font-black"
+                  : "bg-emerald-950/80 hover:bg-emerald-900 border-emerald-700 text-emerald-300"
+              }`}
+              title="দিনের আলো ও রাতের মোড পরিবর্তন করুন"
             >
-              <ChevronRight className="w-4 h-4" />
+              <span>{isDay ? "☀️ দিন" : "🌙 রাত"}</span>
             </button>
+
+            {/* View Mode Toggle: Ayah vs Mushaf */}
+            <div className={`flex items-center ${isDay ? "bg-stone-200/60 border border-stone-300/80" : "bg-black/40 border border-emerald-900/60"} p-0.5 sm:p-1 rounded-xl text-xs`}>
+              <button
+                onClick={handleSwitchToAyah}
+                className={`px-2 sm:px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer ${
+                  viewMode === "ayah"
+                    ? isDay ? "bg-emerald-600 text-white shadow-2xs" : "bg-emerald-600 text-white"
+                    : isDay ? "text-stone-600 hover:text-stone-900" : "text-slate-400 hover:text-slate-200"
+                }`}
+                title="আয়াতভিত্তিক পাঠ ও অনুবাদ"
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>আয়াত</span>
+              </button>
+              <button
+                onClick={handleSwitchToMushaf}
+                className={`px-2 sm:px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer ${
+                  viewMode === "mushaf"
+                    ? isDay ? "bg-emerald-600 text-white shadow-2xs" : "bg-emerald-600 text-white"
+                    : isDay ? "text-stone-600 hover:text-stone-900" : "text-slate-400 hover:text-slate-200"
+                }`}
+                title="১৫ লাইনের খাঁটি হাফেজী কুরআন মুসহাফ"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>মুসহাফ</span>
+              </button>
+            </div>
+
+            {/* Font Zoom Controls */}
+            <div className={`flex items-center ${isDay ? "bg-stone-200/60 border border-stone-300/80" : "bg-black/40 border border-emerald-900/60"} px-1.5 sm:px-2 py-1 rounded-xl text-xs gap-1 sm:gap-1.5`}>
+              <button
+                onClick={() => changeFontSize(-2)}
+                className={`px-1.5 py-0.5 rounded ${isDay ? "hover:bg-white text-stone-700" : "hover:bg-emerald-900/60 text-slate-300"} font-black cursor-pointer`}
+                title="ফন্ট ছোট করুন"
+              >
+                A-
+              </button>
+              <span className={`text-[11px] ${isDay ? "text-emerald-700" : "text-emerald-400"} font-black`}>{arabicFontSize}px</span>
+              <button
+                onClick={() => changeFontSize(2)}
+                className={`px-1.5 py-0.5 rounded ${isDay ? "hover:bg-white text-stone-700" : "hover:bg-emerald-900/60 text-slate-300"} font-black cursor-pointer`}
+                title="ফন্ট বড় করুন"
+              >
+                A+
+              </button>
+            </div>
+
+            {/* Toggle Translation Visibility (In Ayah Mode) */}
+            {viewMode === "ayah" && (
+              <button
+                onClick={() => setShowBengali((v) => !v)}
+                className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                  showBengali
+                    ? isDay
+                      ? "bg-emerald-600 border-emerald-700 text-white shadow-2xs"
+                      : "bg-emerald-900/70 border-emerald-600 text-emerald-200"
+                    : isDay
+                    ? "bg-white border-stone-200 text-stone-500"
+                    : "bg-black/30 border-emerald-900 text-slate-500"
+                }`}
+                title="বাংলা অনুবাদ দেখান বা লুকান"
+              >
+                বাংলা
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Center: Reciter Selection */}
-        <div className="flex items-center gap-2">
-          <span className={`text-xs font-bold ${isDay ? "text-stone-600" : "text-slate-400"} hidden sm:inline`}>ক্বারী:</span>
-          <select
-            value={selectedQari}
-            onChange={(e) => handleQariChange(e.target.value)}
-            className={`${isDay ? "bg-white text-emerald-950 border border-emerald-300 shadow-2xs" : "bg-emerald-950/90 text-emerald-200 border border-emerald-800/70"} rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500`}
-          >
-            {QARI_REGISTRY.map((qari) => (
-              <option key={qari.id} value={qari.id} className="bg-white text-slate-900">
-                {qari.displayTitleBn} ({qari.styleBn})
-              </option>
-            ))}
-          </select>
-        </div>
+        {/* ROW 2: NEW SMART SURAH & AYAH / HAFIZI PARA & PAGE JUMPER SEARCHER */}
+        <div className={`pt-2 border-t flex flex-wrap items-center justify-between gap-2 text-xs ${
+          isDay ? "border-amber-200/70" : "border-emerald-900/50"
+        }`}>
+          {/* Left: Mode Tabs & Jumper Form */}
+          <div className="flex flex-wrap items-center gap-2 flex-1 min-w-[280px]">
+            {/* Mode Toggle: Surah vs Para */}
+            <div className={`flex items-center rounded-xl p-0.5 border ${
+              isDay ? "bg-stone-200/70 border-stone-300" : "bg-black/40 border-emerald-900/60"
+            }`}>
+              <button
+                type="button"
+                onClick={() => setJumperTab("surah")}
+                className={`px-2.5 py-1 rounded-lg font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
+                  jumperTab === "surah"
+                    ? "bg-amber-600 text-white shadow-2xs font-black"
+                    : isDay ? "text-stone-700 hover:text-stone-950" : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <List className="w-3 h-3" />
+                <span>সূরা ও আয়াত</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setJumperTab("para")}
+                className={`px-2.5 py-1 rounded-lg font-bold text-xs transition cursor-pointer flex items-center gap-1 ${
+                  jumperTab === "para"
+                    ? "bg-amber-600 text-white shadow-2xs font-black"
+                    : isDay ? "text-stone-700 hover:text-stone-950" : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <BookOpen className="w-3 h-3" />
+                <span>পারা ও পৃষ্ঠা (হাফেজী)</span>
+              </button>
+            </div>
 
-        {/* Right: View, Font Zoom & Day/Night Toggle Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {/* Day / Night Theme Toggle */}
-          <button
-            type="button"
-            onClick={toggleReaderTheme}
-            className={`px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 ${
-              isDay
-                ? "bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-950 font-black"
-                : "bg-emerald-950/80 hover:bg-emerald-900 border-emerald-700 text-emerald-300"
-            }`}
-            title="দিনের আরামদায়ক আলো ও রাতের মোড পরিবর্তন করুন"
-          >
-            <span>{isDay ? "☀️ দিন" : "🌙 রাত"}</span>
-          </button>
+            {/* TAB 1: Surah & Ayah Jumper Form */}
+            {jumperTab === "surah" && (
+              <div className="flex flex-wrap items-center gap-1.5 animate-fadeIn">
+                <select
+                  value={jumperSurahId}
+                  onChange={(e) => {
+                    const newSurahId = Number(e.target.value);
+                    setJumperSurahId(newSurahId);
+                    setJumperAyahNum("");
+                  }}
+                  className={`rounded-xl px-2.5 py-1.5 text-xs font-bold border focus:outline-none focus:ring-1 focus:ring-amber-500 max-w-[190px] sm:max-w-[220px] truncate ${
+                    isDay
+                      ? "bg-white border-amber-300 text-slate-900 shadow-2xs"
+                      : "bg-emerald-950/90 border-emerald-700 text-white"
+                  }`}
+                >
+                  {ALL_SURAHS.map((s) => (
+                    <option key={s.id} value={s.id} className="bg-white text-slate-900">
+                      {s.id}. {s.nameBn} ({s.nameAr}) — {s.versesCount}টি আয়াত
+                    </option>
+                  ))}
+                </select>
 
-          {/* View mode toggle */}
-          <div className={`flex items-center ${isDay ? "bg-stone-200/60 border border-stone-300/80" : "bg-black/40 border border-emerald-900/60"} p-1 rounded-xl text-xs`}>
-            <button
-              onClick={() => setViewMode("ayah")}
-              className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition ${
-                viewMode === "ayah"
-                  ? isDay ? "bg-emerald-600 text-white shadow-2xs" : "bg-emerald-600 text-white"
-                  : isDay ? "text-stone-600 hover:text-stone-900" : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <List className="w-3.5 h-3.5" />
-              <span>আয়াত</span>
-            </button>
-            <button
-              onClick={() => setViewMode("mushaf")}
-              className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition ${
-                viewMode === "mushaf"
-                  ? isDay ? "bg-emerald-600 text-white shadow-2xs" : "bg-emerald-600 text-white"
-                  : isDay ? "text-stone-600 hover:text-stone-900" : "text-slate-400 hover:text-slate-200"
-              }`}
-            >
-              <FileText className="w-3.5 h-3.5" />
-              <span>মুসহাফ</span>
-            </button>
+                <input
+                  type="text"
+                  value={jumperAyahNum}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const bnToEnMap = { '০':'0', '১':'1', '২':'2', '৩':'3', '৪':'4', '৫':'5', '৬':'6', '৭':'7', '৮':'8', '৯':'9' };
+                    setJumperAyahNum(val.replace(/[০-৯]/g, (d) => bnToEnMap[d] || d));
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleDirectAyahJump(jumperSurahId, jumperAyahNum);
+                    }
+                  }}
+                  placeholder={`আয়াত (১-${ALL_SURAHS.find((s) => s.id === jumperSurahId)?.versesCount || 286})`}
+                  className={`w-24 sm:w-28 px-2.5 py-1.5 rounded-xl border text-xs font-bold text-center focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    isDay
+                      ? "bg-white border-amber-300 text-slate-900 shadow-2xs"
+                      : "bg-emerald-950/90 border-emerald-700 text-white"
+                  }`}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => handleDirectAyahJump(jumperSurahId, jumperAyahNum)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs flex items-center gap-1 shadow-sm active:scale-95 transition cursor-pointer"
+                  title="সরাসরি এই আয়াতে যান"
+                >
+                  <span>যান</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* TAB 2: Hafizi Para & Page Jumper Form */}
+            {jumperTab === "para" && (
+              <div className="flex flex-wrap items-center gap-1.5 animate-fadeIn">
+                <select
+                  value={jumperParaNum}
+                  onChange={(e) => {
+                    const p = Number(e.target.value);
+                    setJumperParaNum(p);
+                    const info = HAFIZI_PARAS[p - 1];
+                    const defP = Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((info.startPage / 610) * TOTAL_UTHMANI_PAGES)));
+                    setJumperPageNum(String(defP));
+                  }}
+                  className={`rounded-xl px-2.5 py-1.5 text-xs font-bold border focus:outline-none focus:ring-1 focus:ring-amber-500 max-w-[210px] sm:max-w-[250px] truncate ${
+                    isDay
+                      ? "bg-white border-amber-300 text-slate-900 shadow-2xs"
+                      : "bg-emerald-950/90 border-emerald-700 text-white"
+                  }`}
+                >
+                  {HAFIZI_PARAS.map((p) => (
+                    <option key={p.juz} value={p.juz} className="bg-white text-slate-900">
+                      {p.nameBn} ({p.nameAr}) — পৃ: {p.startPage}-{p.endPage}
+                    </option>
+                  ))}
+                </select>
+
+                <input
+                  type="text"
+                  value={jumperPageNum}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    const bnToEnMap = { '০':'0', '১':'1', '২':'2', '৩':'3', '৪':'4', '৫':'5', '৬':'6', '৭':'7', '৮':'8', '৯':'9' };
+                    setJumperPageNum(val.replace(/[০-৯]/g, (d) => bnToEnMap[d] || d));
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      handleDirectParaPageJump(jumperParaNum, jumperPageNum);
+                    }
+                  }}
+                  placeholder="পৃষ্ঠা (১-৬০৪)"
+                  className={`w-24 sm:w-28 px-2.5 py-1.5 rounded-xl border text-xs font-bold text-center focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                    isDay
+                      ? "bg-white border-amber-300 text-slate-900 shadow-2xs"
+                      : "bg-emerald-950/90 border-emerald-700 text-white"
+                  }`}
+                />
+
+                <button
+                  type="button"
+                  onClick={() => handleDirectParaPageJump(jumperParaNum, jumperPageNum)}
+                  className="px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs flex items-center gap-1 shadow-sm active:scale-95 transition cursor-pointer"
+                  title="সরাসরি এই হাফেজী পৃষ্ঠায় যান"
+                >
+                  <span>পৃষ্ঠায় যান</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Font Zoom Controls */}
-          <div className={`flex items-center ${isDay ? "bg-stone-200/60 border border-stone-300/80" : "bg-black/40 border border-emerald-900/60"} px-2 py-1 rounded-xl text-xs gap-1.5`}>
-            <button
-              onClick={() => changeFontSize(-2)}
-              className={`px-2 py-0.5 rounded ${isDay ? "hover:bg-white text-stone-700" : "hover:bg-emerald-900/60 text-slate-300"} font-black`}
-              title="ফন্ট ছোট করুন"
-            >
-              A-
-            </button>
-            <span className={`text-[11px] ${isDay ? "text-emerald-700" : "text-emerald-400"} font-black`}>{arabicFontSize}px</span>
-            <button
-              onClick={() => changeFontSize(2)}
-              className={`px-2 py-0.5 rounded ${isDay ? "hover:bg-white text-stone-700" : "hover:bg-emerald-900/60 text-slate-300"} font-black`}
-              title="ফন্ট বড় করুন"
-            >
-              A+
-            </button>
+          {/* Right: Hafizi / Ayah Mode Badge Indicator */}
+          <div className="flex items-center gap-2">
+            <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full border ${
+              viewMode === "mushaf"
+                ? "bg-amber-500/20 text-amber-700 dark:text-amber-300 border-amber-500/40"
+                : "bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border-emerald-500/40"
+            }`}>
+              {viewMode === "mushaf" ? "📖 ১৫ লাইনের হাফেজী কুরআন মোড" : "📜 আয়াতভিত্তিক মাশক ও পাঠ মোড"}
+            </span>
           </div>
-
-          {/* Toggle Translation Visibility */}
-          <button
-            onClick={() => setShowBengali((v) => !v)}
-            className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition ${
-              showBengali
-                ? isDay
-                  ? "bg-emerald-600 border-emerald-700 text-white shadow-2xs"
-                  : "bg-emerald-900/70 border-emerald-600 text-emerald-200"
-                : isDay
-                ? "bg-white border-stone-200 text-stone-500"
-                : "bg-black/30 border-emerald-900 text-slate-500"
-            }`}
-            title="বাংলা অনুবাদ দেখান বা লুকান"
-          >
-            বাংলা
-          </button>
         </div>
       </div>
 
       {/* ── MAIN CONTENT AREA ── */}
-      <div className="max-w-5xl mx-auto w-full px-3 sm:px-6 py-6 sm:py-8 flex-1">
-        {/* SURAH TITLE CARD */}
-        <div className={`relative mb-8 rounded-3xl ${isDay ? "bg-gradient-to-br from-[#0c533c] via-[#083e2d] to-[#05291e] text-white" : "bg-gradient-to-br from-[#0c291d] via-[#082017] to-[#04140e] text-white"} p-6 sm:p-8 border border-emerald-700/50 shadow-2xl text-center overflow-hidden`}>
-          {/* Subtle gold ornamentation glow */}
-          <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-56 h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className={`max-w-5xl mx-auto w-full ${viewMode === "mushaf" ? "px-1 sm:px-4 py-2 sm:py-6" : "px-2 sm:px-6 py-4 sm:py-8"} flex-1`}>
+        {/* SURAH TITLE CARD (Shown in Ayah View Mode) */}
+        {viewMode === "ayah" && (
+          <div className={`relative mb-8 rounded-3xl ${isDay ? "bg-gradient-to-br from-[#0c533c] via-[#083e2d] to-[#05291e] text-white" : "bg-gradient-to-br from-[#0c291d] via-[#082017] to-[#04140e] text-white"} p-5 sm:p-8 border border-emerald-700/50 shadow-2xl text-center overflow-hidden`}>
+            {/* Subtle gold ornamentation glow */}
+            <div className="absolute top-0 right-0 -mr-16 -mt-16 w-56 h-56 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 -ml-16 -mb-16 w-56 h-56 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <div className="space-y-3 relative z-10">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-[11px] font-bold text-amber-300">
-              <span>{currentSurahMeta.typeBn}</span>
-              <span>•</span>
-              <span>{currentSurahMeta.versesCount} আয়াত</span>
-              <span>•</span>
-              <span>{currentSurahMeta.juz}ম পারা</span>
-            </div>
-
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-black font-hafizi-quran text-emerald-300 tracking-wide">
-              {currentSurahMeta.nameAr}
-            </h2>
-
-            <div className="text-xl sm:text-2xl font-bold font-hind-siliguri text-white">
-              {currentSurahMeta.nameBn} —{" "}
-              <span className="text-emerald-300 font-normal italic text-lg">{currentSurahMeta.meaningBn}</span>
-            </div>
-
-            <p className="text-xs text-emerald-200/80 font-english-italic">
-              Surah {currentSurahMeta.nameEn} • Verses: {currentSurahMeta.versesCount}
-            </p>
-
-            {/* Bismillah Header (Except Surah 9) */}
-            {selectedSurahId !== 9 && (
-              <div className="pt-4 pb-2 border-t border-white/15">
-                <div className="text-2xl sm:text-3xl font-hafizi-quran text-amber-300 tracking-wider">
-                  بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
-                </div>
-                <div className="text-xs font-hind-siliguri text-emerald-200 mt-1">
-                  পরম করুণাময় ও অসীম দয়ালু আল্লাহর নামে শুরু করছি
-                </div>
+            <div className="space-y-3 relative z-10">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/15 border border-white/20 text-[11px] font-bold text-amber-300">
+                <span>{currentSurahMeta.typeBn}</span>
+                <span>•</span>
+                <span>{currentSurahMeta.versesCount} আয়াত</span>
+                <span>•</span>
+                <span>{currentSurahMeta.juz}ম পারা</span>
               </div>
-            )}
 
-            {/* 🌟 Quick Surah Audio Action Bar (Play whole Surah or stop anytime) */}
-            <div className="pt-3 flex flex-wrap items-center justify-center gap-2.5">
-              <button
-                type="button"
-                onClick={() => {
-                  if (isPlayingAudio) {
-                    togglePlayPauseAudio();
-                  } else {
-                    playAyahAudio(playingAyahNumber || 1);
-                  }
-                }}
-                className={`px-5 py-2.5 rounded-2xl font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg transition active:scale-95 cursor-pointer ${
-                  isPlayingAudio
-                    ? "bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-amber-950/30"
-                    : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-950/30"
-                }`}
-                title={isPlayingAudio ? "তিলাওয়াত সাময়িক থামান" : "সম্পূর্ণ সূরা তিলাওয়াত শুরু করুন"}
-              >
-                {isPlayingAudio ? (
-                  <>
-                    <Pause className="w-4 h-4 fill-current" />
-                    <span>তিলাওয়াত বিরতি দিন (আয়াত {playingAyahNumber || 1})</span>
-                  </>
-                ) : (
-                  <>
-                    <Play className="w-4 h-4 fill-current ml-0.5" />
-                    <span>
-                      {playingAyahNumber
-                        ? `তিলাওয়াত পুনরায় চালু করুন (আয়াত ${playingAyahNumber})`
-                        : "সম্পূর্ণ সূরা তিলাওয়াত শুনুন"}
-                    </span>
-                  </>
-                )}
-              </button>
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-black font-hafizi-quran text-emerald-300 tracking-wide">
+                {currentSurahMeta.nameAr}
+              </h2>
 
-              {playingAyahNumber !== null && (
+              <div className="text-xl sm:text-2xl font-bold font-hind-siliguri text-white">
+                {currentSurahMeta.nameBn} —{" "}
+                <span className="text-emerald-300 font-normal italic text-lg">{currentSurahMeta.meaningBn}</span>
+              </div>
+
+              <p className="text-xs text-emerald-200/80 font-english-italic">
+                Surah {currentSurahMeta.nameEn} • Verses: {currentSurahMeta.versesCount}
+              </p>
+
+              {/* Bismillah Header (Except Surah 9) */}
+              {selectedSurahId !== 9 && (
+                <div className="pt-4 pb-2 border-t border-white/15">
+                  <div className="text-2xl sm:text-3xl font-hafizi-quran text-amber-300 tracking-wider">
+                    بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                  </div>
+                  <div className="text-xs font-hind-siliguri text-emerald-200 mt-1">
+                    পরম করুণাময় ও অসীম দয়ালু আল্লাহর নামে শুরু করছি
+                  </div>
+                </div>
+              )}
+
+              {/* 🌟 Quick Surah Audio Action Bar (Play whole Surah or stop anytime) */}
+              <div className="pt-3 flex flex-wrap items-center justify-center gap-2.5">
                 <button
                   type="button"
-                  onClick={closePlayerBar}
-                  className="px-4 py-2.5 rounded-2xl bg-black/60 hover:bg-rose-950/80 border border-white/20 text-rose-300 hover:text-white font-black text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-md"
-                  title="তিলাওয়াত সম্পূর্ণ বন্ধ করুন (মাঝপথে বন্ধ)"
+                  onClick={() => {
+                    if (isPlayingAudio) {
+                      togglePlayPauseAudio();
+                    } else {
+                      playAyahAudio(playingAyahNumber || 1);
+                    }
+                  }}
+                  className={`px-5 py-2.5 rounded-2xl font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg transition active:scale-95 cursor-pointer ${
+                    isPlayingAudio
+                      ? "bg-amber-500 hover:bg-amber-600 text-slate-950 shadow-amber-950/30"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-950/30"
+                  }`}
+                  title={isPlayingAudio ? "তিলাওয়াত সাময়িক থামান" : "সম্পূর্ণ সূরা তিলাওয়াত শুরু করুন"}
                 >
-                  <X className="w-4 h-4" />
-                  <span>বন্ধ করুন</span>
+                  {isPlayingAudio ? (
+                    <>
+                      <Pause className="w-4 h-4 fill-current" />
+                      <span>তিলাওয়াত বিরতি দিন (আয়াত {playingAyahNumber || 1})</span>
+                    </>
+                  ) : (
+                    <>
+                      <Play className="w-4 h-4 fill-current ml-0.5" />
+                      <span>
+                        {playingAyahNumber
+                          ? `তিলাওয়াত পুনরায় চালু করুন (আয়াত ${playingAyahNumber})`
+                          : "সম্পূর্ণ সূরা তিলাওয়াত শুনুন"}
+                      </span>
+                    </>
+                  )}
                 </button>
-              )}
+
+                {playingAyahNumber !== null && (
+                  <button
+                    type="button"
+                    onClick={closePlayerBar}
+                    className="px-4 py-2.5 rounded-2xl bg-black/60 hover:bg-rose-950/80 border border-white/20 text-rose-300 hover:text-white font-black text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-md"
+                    title="তিলাওয়াত সম্পূর্ণ বন্ধ করুন (মাঝপথে বন্ধ)"
+                  >
+                    <X className="w-4 h-4" />
+                    <span>বন্ধ করুন</span>
+                  </button>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* LOADING STATE */}
         {isLoadingSurah && (
@@ -1031,75 +1310,330 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
           </div>
         )}
 
-        {/* ── MUSHAF PAGE VIEW MODE (Continuous Reading with Word-by-Word Highlighting) ── */}
-        {!isLoadingSurah && viewMode === "mushaf" && surahData?.ayahs && (
-          <div className="p-6 sm:p-10 rounded-3xl bg-[#091f16] border-2 border-emerald-700/60 shadow-2xl space-y-6">
-            <div className="text-center pb-4 border-b border-emerald-900/60 flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-300 font-hind-siliguri">
-                মুসহাফ পঠন মোড — সূরা {surahData.bengaliName}
-              </span>
-              <span className="text-[11px] text-slate-400 hidden sm:inline">
-                তিলাওয়াত চলাকালে শব্দ স্বয়ংক্রিয়ভাবে উজ্জ্বল সোনালী রঙে নির্দেশিত হবে
-              </span>
-            </div>
-
-            <div
-              className="font-hafizi-quran text-justify leading-[2.8] select-text text-slate-100"
-              style={{ fontSize: `${arabicFontSize + 2}px` }}
-            >
-              {surahData.ayahs.map((ayah) => {
-                const isThisAyahActive = playingAyahNumber === ayah.numberInSurah;
-                const words = splitArabicAyahWords(
-                  ayah.words && ayah.words.length > 0 ? ayah.words : ayah.text
-                );
-
-                return (
-                  <span
-                    key={ayah.numberInSurah}
-                    id={`mushaf-ayah-${ayah.numberInSurah}`}
-                    onClick={() => playAyahAudio(ayah.numberInSurah)}
-                    className={`inline cursor-pointer transition-all px-1.5 py-1 rounded-2xl ${
-                      isThisAyahActive
-                        ? isPlayingAudio
-                          ? "bg-emerald-800/70 ring-2 ring-emerald-400/90 shadow-md"
-                          : "bg-emerald-900/50 ring-1 ring-amber-400/60"
-                        : "hover:bg-emerald-800/30"
-                    }`}
-                    title={`আয়াত ${ayah.numberInSurah} শুনতে ক্লিক করুন`}
-                  >
-                    {words.map((word, wIdx) => {
-                      const isThisWordActive = isThisAyahActive && activeWordIndex === wIdx && activeWordIndex >= 0;
-                      return (
-                        <span
-                          key={wIdx}
-                          className={`inline-block transition-all duration-150 px-1.5 mx-0.5 rounded-lg ${
-                            isThisWordActive
-                              ? "bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-500/30 ring-2 ring-amber-200 scale-105"
-                              : isThisAyahActive
-                              ? "text-amber-200 font-semibold"
-                              : "text-slate-100"
-                          }`}
-                        >
-                          {word}
-                        </span>
-                      );
-                    })}
-                    <span className="inline-flex items-center justify-center font-hafizi-quran text-amber-400 font-bold text-2xl mx-1 select-none">
-                      ۝{ayah.numberInSurah}
-                    </span>{" "}
-                  </span>
-                );
-              })}
-            </div>
-
-            <div className="pt-6 border-t border-emerald-900/60 text-center">
-              <p className="text-xs font-hind-siliguri text-slate-400">
-                যেকোনো আয়াতে ক্লিক করলেই তা নির্বাচিত ক্বারীর কণ্ঠে বেজে উঠবে এবং শব্দে শব্দে হাইলাইট হবে।
-              </p>
-            </div>
+        {/* ── AUTHENTIC 15-LINE HAFIZI QURAN MUSHAF PAGE VIEW ── */}
+        {viewMode === "mushaf" && (
+          <div className="w-full flex justify-center py-2 animate-fadeIn">
+            <HafiziMushafSheet
+              pageNum={hafiziPage}
+              onPageChange={(newPage) => {
+                setHafiziPage(newPage);
+                universalAudioEngine.stopAll();
+                if (audioRef.current) {
+                  audioRef.current.pause();
+                }
+                setIsPlayingAudio(false);
+              }}
+              onPlayAyah={(ayahNum, sId) => {
+                if (sId && sId !== selectedSurahId) {
+                  setSelectedSurahId(sId);
+                }
+                playAyahAudio(ayahNum);
+              }}
+              playingAyahNumber={playingAyahNumber}
+              playingSurahId={selectedSurahId}
+              isPlayingAudio={isPlayingAudio}
+              activeWordIndex={activeWordIndex}
+              arabicFontSize={arabicFontSize}
+              onChangeFontSize={(delta) => changeFontSize(delta)}
+              readerTheme={readerTheme}
+              getSurahData={getSurahData}
+              targetHighlightAyah={targetHighlightAyah}
+            />
           </div>
         )}
       </div>
+
+      {/* ── FLOATING MOBILE ACTION HUB & BACK TO TOP (Smart Quick Controls for Phone View) ── */}
+      <div className={`fixed right-3 sm:right-6 ${
+        playingAyahNumber !== null ? "bottom-24 sm:bottom-28" : "bottom-5"
+      } z-40 flex flex-col items-end gap-2 pointer-events-auto transition-all duration-300`}>
+        {/* Back to Top Smooth Floating Button */}
+        {showBackToTop && (
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            className={`w-10 h-10 rounded-full flex items-center justify-center shadow-xl border transition active:scale-90 cursor-pointer ${
+              isDay
+                ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-400"
+                : "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-500"
+            }`}
+            title="উপরে যান (Back to Top)"
+          >
+            <ArrowUp className="w-4 h-4" />
+          </button>
+        )}
+
+        {/* Mobile Floating Quick Pill (Visible on Phone Screens) */}
+        {isFloatingBarHidden ? (
+          /* Minimized Bubble Toggle Button (কন্ট্রোল বার ফেরত আনার বাটন) */
+          <button
+            type="button"
+            onClick={() => setIsFloatingBarHidden(false)}
+            className={`flex md:hidden items-center gap-1.5 px-3.5 py-2 rounded-full shadow-2xl border text-xs font-black transition-all active:scale-95 cursor-pointer animate-fadeIn ${
+              isDay
+                ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-300 shadow-amber-950/20"
+                : "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-400 shadow-emerald-950/40"
+            }`}
+            title="কন্ট্রোল বার পুনরায় খুলুন"
+          >
+            <BookOpen className="w-3.5 h-3.5" />
+            <span>মেনু</span>
+            <span className="text-[10px] bg-black/30 px-1.5 py-0.5 rounded-full font-bold">
+              {viewMode === "mushaf" ? `পৃ: ${hafiziPage}` : `${selectedSurahId}`}
+            </span>
+          </button>
+        ) : (
+          /* Full Floating Mobile Controls with [X] Hide Button */
+          <div className={`flex md:hidden items-center gap-1 p-1.5 rounded-2xl shadow-2xl border backdrop-blur-md animate-fadeIn ${
+            isDay
+              ? "bg-white/95 border-amber-300 text-slate-900"
+              : "bg-[#091f16]/95 border-emerald-700 text-white"
+          }`}>
+            {/* Quick Jump Modal Trigger */}
+            <button
+              type="button"
+              onClick={() => setIsMobileJumperOpen(true)}
+              className="px-2.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-extrabold flex items-center gap-1 active:scale-95 transition cursor-pointer shadow-xs"
+              title="সূরা, আয়াত, পারা ও পৃষ্ঠা নির্বাচন"
+            >
+              <Search className="w-3.5 h-3.5" />
+              <span>জাম্প</span>
+            </button>
+
+            {/* Quick Prev / Next Page (in Hafizi mode) */}
+            {viewMode === "mushaf" && (
+              <div className="flex items-center gap-0.5">
+                <button
+                  type="button"
+                  disabled={hafiziPage <= 1}
+                  onClick={() => setHafiziPage((p) => Math.max(1, p - 1))}
+                  className="p-1.5 rounded-lg hover:bg-stone-200 dark:hover:bg-emerald-900 disabled:opacity-30 transition cursor-pointer"
+                  title="আগের পাতা"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <span className="text-[11px] font-black px-1 text-amber-600 dark:text-amber-400">
+                  পৃ: {hafiziPage}
+                </span>
+                <button
+                  type="button"
+                  disabled={hafiziPage >= TOTAL_UTHMANI_PAGES}
+                  onClick={() => setHafiziPage((p) => Math.min(TOTAL_UTHMANI_PAGES, p + 1))}
+                  className="p-1.5 rounded-lg hover:bg-stone-200 dark:hover:bg-emerald-900 disabled:opacity-30 transition cursor-pointer"
+                  title="পরের পাতা"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* Quick Font Size Adjust */}
+            <div className="flex items-center gap-0.5">
+              <button
+                type="button"
+                onClick={() => changeFontSize(-2)}
+                className="px-1.5 py-1 rounded text-xs font-black hover:bg-stone-200 dark:hover:bg-emerald-900 transition cursor-pointer"
+                title="ছোট করুন"
+              >
+                A-
+              </button>
+              <button
+                type="button"
+                onClick={() => changeFontSize(2)}
+                className="px-1.5 py-1 rounded text-xs font-black hover:bg-stone-200 dark:hover:bg-emerald-900 transition cursor-pointer"
+                title="বড় করুন"
+              >
+                A+
+              </button>
+            </div>
+
+            {/* Close / Hide / Minimize Button (✕ চিহ্ন - ইচ্ছামতো হাইড ও শো করার বাটন) */}
+            <button
+              type="button"
+              onClick={() => setIsFloatingBarHidden(true)}
+              className="p-1.5 rounded-xl hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 active:scale-90 transition cursor-pointer ml-0.5"
+              title="কন্ট্রোল বার লুকান (হাইড করুন)"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+      </div>
+
+      {/* ── MOBILE JUMPER BOTTOM SHEET MODAL (সূরা, আয়াত, পারা ও পৃষ্ঠা নির্বাচন) ── */}
+      {isMobileJumperOpen && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4 animate-fadeIn">
+          <div className={`w-full max-w-md rounded-t-3xl sm:rounded-3xl p-5 shadow-2xl border-t sm:border space-y-4 ${
+            isDay ? "bg-white border-amber-300 text-slate-900" : "bg-[#091f16] border-emerald-700 text-white"
+          }`}>
+            {/* Modal Header */}
+            <div className="flex items-center justify-between pb-3 border-b border-emerald-900/50">
+              <div className="flex items-center gap-2">
+                <Search className="w-4 h-4 text-amber-500" />
+                <h3 className="font-extrabold text-sm">কুরআন নেভিগেশন ও অনুসন্ধান</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileJumperOpen(false)}
+                className="p-1.5 rounded-xl hover:bg-black/10 dark:hover:bg-emerald-900 transition cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Segmented Mode Tabs: সূরা ও আয়াত vs পারা ও পৃষ্ঠা */}
+            <div className={`flex items-center rounded-2xl p-1 border gap-1 ${
+              isDay ? "bg-stone-100 border-stone-200" : "bg-black/40 border-emerald-900/60"
+            }`}>
+              <button
+                type="button"
+                onClick={() => setJumperTab("surah")}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  jumperTab === "surah"
+                    ? "bg-amber-600 text-white shadow-xs font-black"
+                    : isDay ? "text-stone-600 hover:text-stone-900" : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <List className="w-3.5 h-3.5" />
+                <span>সূরা ও আয়াত</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setJumperTab("para")}
+                className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  jumperTab === "para"
+                    ? "bg-amber-600 text-white shadow-xs font-black"
+                    : isDay ? "text-stone-600 hover:text-stone-900" : "text-slate-400 hover:text-slate-200"
+                }`}
+              >
+                <BookOpen className="w-3.5 h-3.5" />
+                <span>পারা ও পৃষ্ঠা (হাফেজী)</span>
+              </button>
+            </div>
+
+            {/* TAB 1: SURAH & AYAH SELECTION */}
+            {jumperTab === "surah" && (
+              <div className="space-y-3 animate-fadeIn">
+                <div>
+                  <label className="text-xs font-bold block mb-1">সূরা নির্বাচন করুন:</label>
+                  <select
+                    value={jumperSurahId}
+                    onChange={(e) => {
+                      setJumperSurahId(Number(e.target.value));
+                      setJumperAyahNum("");
+                    }}
+                    className={`w-full rounded-xl px-3 py-2 text-xs font-bold border focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      isDay ? "bg-stone-50 border-amber-300 text-slate-900" : "bg-emerald-950 border-emerald-700 text-white"
+                    }`}
+                  >
+                    {ALL_SURAHS.map((s) => (
+                      <option key={s.id} value={s.id} className="bg-white text-slate-900">
+                        {s.id}. {s.nameBn} ({s.nameAr}) — {s.versesCount}টি আয়াত
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold block mb-1">আয়াত নম্বর লিখুন:</label>
+                  <input
+                    type="text"
+                    value={jumperAyahNum}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const bnToEnMap = { '০':'0', '১':'1', '২':'2', '৩':'3', '৪':'4', '৫':'5', '৬':'6', '৭':'7', '৮':'8', '৯':'9' };
+                      setJumperAyahNum(val.replace(/[০-৯]/g, (d) => bnToEnMap[d] || d));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleDirectAyahJump(jumperSurahId, jumperAyahNum);
+                      }
+                    }}
+                    placeholder={`১ থেকে ${ALL_SURAHS.find((s) => s.id === jumperSurahId)?.versesCount || 286}-এর মধ্যে`}
+                    className={`w-full rounded-xl px-3 py-2 text-xs font-bold border focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      isDay ? "bg-stone-50 border-amber-300 text-slate-900" : "bg-emerald-950 border-emerald-700 text-white"
+                    }`}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleDirectAyahJump(jumperSurahId, jumperAyahNum)}
+                  className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition cursor-pointer"
+                >
+                  <span>সরাসরি এই আয়াতে যান</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+
+            {/* TAB 2: HAFIZI PARA & PAGE SELECTION (হাফেজী পারা ও পৃষ্ঠা নির্বাচন) */}
+            {jumperTab === "para" && (
+              <div className="space-y-3 animate-fadeIn">
+                <div>
+                  <label className="text-xs font-bold block mb-1">হাফেজী পারা নির্বাচন করুন:</label>
+                  <select
+                    value={jumperParaNum}
+                    onChange={(e) => {
+                      const p = Number(e.target.value);
+                      setJumperParaNum(p);
+                      const info = HAFIZI_PARAS[p - 1];
+                      const defP = Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((info.startPage / 610) * TOTAL_UTHMANI_PAGES)));
+                      setJumperPageNum(String(defP));
+                    }}
+                    className={`w-full rounded-xl px-3 py-2 text-xs font-bold border focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      isDay ? "bg-stone-50 border-amber-300 text-slate-900" : "bg-emerald-950 border-emerald-700 text-white"
+                    }`}
+                  >
+                    {HAFIZI_PARAS.map((p) => (
+                      <option key={p.juz} value={p.juz} className="bg-white text-slate-900">
+                        {p.nameBn} ({p.nameAr}) — মোট {p.totalPages} পৃষ্ঠা (পৃ: {p.startPage}-{p.endPage})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-xs font-bold">পৃষ্ঠা নম্বর লিখুন:</label>
+                    <span className="text-[11px] text-amber-600 dark:text-amber-400 font-bold">
+                      {HAFIZI_PARAS[jumperParaNum - 1]?.nameBn} এর পৃষ্ঠা: {HAFIZI_PARAS[jumperParaNum - 1]?.startPage} - {HAFIZI_PARAS[jumperParaNum - 1]?.endPage}
+                    </span>
+                  </div>
+                  <input
+                    type="text"
+                    value={jumperPageNum}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      const bnToEnMap = { '০':'0', '১':'1', '২':'2', '৩':'3', '৪':'4', '৫':'5', '৬':'6', '৭':'7', '৮':'8', '৯':'9' };
+                      setJumperPageNum(val.replace(/[০-৯]/g, (d) => bnToEnMap[d] || d));
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        handleDirectParaPageJump(jumperParaNum, jumperPageNum);
+                      }
+                    }}
+                    placeholder={`পৃষ্ঠা ১ থেকে ${TOTAL_UTHMANI_PAGES}-এর মধ্যে লিখুন`}
+                    className={`w-full rounded-xl px-3 py-2 text-xs font-bold border focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                      isDay ? "bg-stone-50 border-amber-300 text-slate-900" : "bg-emerald-950 border-emerald-700 text-white"
+                    }`}
+                  />
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => handleDirectParaPageJump(jumperParaNum, jumperPageNum)}
+                  className="w-full py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md active:scale-95 transition cursor-pointer"
+                >
+                  <BookOpen className="w-4 h-4" />
+                  <span>সরাসরি এই হাফেজী পৃষ্ঠায় যান</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* ── FIXED BOTTOM AUDIO PLAYER BAR (Always Visible & Pinned to Viewport Bottom like Qurani Amal) ── */}
       {playingAyahNumber !== null && (

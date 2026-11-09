@@ -768,7 +768,7 @@ export default function QuranStudioPage() {
                 </div>
 
                 {/* Render the Active Real Feature Component */}
-                <div className="p-2 sm:p-5">
+                <div className={activeFeature === "quran-reader" ? "p-0 sm:p-4" : "p-2 sm:p-5"}>
                   {activeFeature === "nur-teacher" ? (
                     <TajweedLearningPlatform
                       onClose={closeActiveFeature}
@@ -776,7 +776,7 @@ export default function QuranStudioPage() {
                       onOpenMakhrajVisualizer={() => setActiveFeature("makhraj-3d")}
                     />
                   ) : activeFeature === "quran-reader" ? (
-                    <div className="rounded-2xl overflow-hidden">
+                    <div className="rounded-none sm:rounded-2xl overflow-hidden">
                       <QuranReader
                         key={`reader-${readerTarget.surah}`}
                         initialSurah={readerTarget.surah}

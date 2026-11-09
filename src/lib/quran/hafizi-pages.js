@@ -7,6 +7,8 @@
  * - Para 30: 25 pages (Global 586 - 610)
  */
 
+import { ALL_SURAHS } from "./quran-meta.js";
+
 export const HAFIZI_PARAS = [
   {
     "juz": 1,
@@ -520,4 +522,62 @@ export function parseHafiziSearchQuery(inputQuery) {
   }
 
   return null;
+}
+
+export const TOTAL_UTHMANI_PAGES = 604;
+
+/**
+ * Get full Hafizi / Mushaf Page Metadata for any page (1 - 604)
+ * Returns the exact Ayah ranges, whether a new Surah begins on this page,
+ * the expected line count (13 if new Surah header present, 15 lines if regular recitation),
+ * and the corresponding Juz / Para information.
+ */
+export function getHafiziPageMeta(pageNum) {
+  const pIndex = Math.max(0, Math.min(603, (Number(pageNum) || 1) - 1));
+  const start = UTHMANI_PAGE_REFERENCES[pIndex];
+  const next = pIndex < 603 ? UTHMANI_PAGE_REFERENCES[pIndex + 1] : null;
+  const ranges = [];
+  const newSurahs = [];
+
+  if (!next) {
+    for (let s = start.surah; s <= 114; s++) {
+      const sMeta = ALL_SURAHS.find((x) => x.id === s) || { id: s, nameAr: `سورة ${s}`, nameBn: `সূরা ${s}`, versesCount: 7 };
+      const fromAyah = (s === start.surah) ? start.ayah : 1;
+      if (fromAyah === 1) newSurahs.push(sMeta);
+      ranges.push({ surah: s, fromAyah, toAyah: sMeta.versesCount, meta: sMeta });
+    }
+  } else {
+    for (let s = start.surah; s <= next.surah; s++) {
+      const sMeta = ALL_SURAHS.find((x) => x.id === s) || { id: s, nameAr: `سورة ${s}`, nameBn: `সূরা ${s}`, versesCount: 7 };
+      const fromAyah = (s === start.surah) ? start.ayah : 1;
+      let toAyah = sMeta.versesCount;
+      if (s === next.surah) {
+        toAyah = next.ayah - 1;
+      }
+      if (toAyah >= fromAyah) {
+        if (fromAyah === 1) newSurahs.push(sMeta);
+        ranges.push({ surah: s, fromAyah, toAyah, meta: sMeta });
+      }
+    }
+  }
+
+  const firstSurah = ranges[0]?.surah || 1;
+  const firstAyah = ranges[0]?.fromAyah || 1;
+  const paraLoc = getHafiziLocationForAyah(firstSurah, firstAyah);
+
+  return {
+    page: pIndex + 1,
+    totalPages: TOTAL_UTHMANI_PAGES,
+    ranges,
+    newSurahs,
+    hasNewSurah: newSurahs.length > 0,
+    expectedLines: newSurahs.length > 0 ? 13 : 15,
+    para: paraLoc.para,
+    paraNameBn: paraLoc.nameBn,
+    paraNameAr: paraLoc.nameAr,
+    paraPage: paraLoc.paraPage,
+    totalPagesInPara: paraLoc.totalPages,
+    firstSurahMeta: ranges[0]?.meta || ALL_SURAHS[0],
+    lastSurahMeta: ranges[ranges.length - 1]?.meta || ALL_SURAHS[0],
+  };
 }
