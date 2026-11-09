@@ -222,21 +222,38 @@ export default function TahfizQuranApp({ onClose }) {
   };
 
   // Audio Engine Playback Handlers
-  const handlePlayAyah = (ayahNum, surahId) => {
+  const handlePlayAyah = (ayahNum, surahId, overrideQariId = null) => {
     const sId = surahId || readerSurahId;
     const aNum = ayahNum || 1;
+    const activeQari = overrideQariId || selectedQari || "husary_muallim";
 
-    // Toggle pause if clicking same playing Ayah
-    if (playingAyahNumber === aNum && playingSurahId === sId && isPlayingAudio && audioRef.current) {
+    // Update active Qari if an override is provided
+    if (overrideQariId && overrideQariId !== selectedQari) {
+      setSelectedQari(overrideQariId);
+      setStoredQariPreference(overrideQariId);
+    }
+
+    // Toggle pause if clicking same playing Ayah with same Qari
+    if (
+      playingAyahNumber === aNum &&
+      playingSurahId === sId &&
+      isPlayingAudio &&
+      audioRef.current &&
+      (!overrideQariId || overrideQariId === selectedQari)
+    ) {
       audioRef.current.pause();
       setIsPlayingAudio(false);
       return;
     }
 
     try {
-      const audioUrl = getAyahAudioUrl(sId, aNum, selectedQari);
+      const audioUrl = getAyahAudioUrl(activeQari, sId, aNum);
       if (!audioRef.current) {
         audioRef.current = new Audio();
+      } else {
+        try {
+          audioRef.current.pause();
+        } catch {}
       }
       audioRef.current.src = audioUrl;
       audioRef.current.currentTime = 0;
@@ -249,13 +266,29 @@ export default function TahfizQuranApp({ onClose }) {
         })
         .catch((err) => {
           console.error("Audio playback error:", err);
-          toast.error("ক্বারীর তিলাওয়াত বাজাতে সমস্যা হয়েছে");
+          // Auto fallback to Alafasy or Minshawi if Husary had network issue
+          if (activeQari !== "alafasy") {
+            const fallbackUrl = getAyahAudioUrl("alafasy", sId, aNum);
+            audioRef.current.src = fallbackUrl;
+            audioRef.current
+              .play()
+              .then(() => {
+                setIsPlayingAudio(true);
+                setPlayingAyahNumber(aNum);
+                setPlayingSurahId(sId);
+              })
+              .catch(() => {
+                toast.error("ক্বারীর তিলাওয়াত বাজাতে সমস্যা হয়েছে");
+              });
+          } else {
+            toast.error("ক্বারীর তিলাওয়াত বাজাতে সমস্যা হয়েছে");
+          }
         });
 
       audioRef.current.onended = () => {
         const sMeta = ALL_SURAHS.find((s) => s.id === sId);
         if (sMeta && aNum < sMeta.versesCount) {
-          handlePlayAyah(aNum + 1, sId);
+          handlePlayAyah(aNum + 1, sId, activeQari);
         } else {
           setIsPlayingAudio(false);
           setPlayingAyahNumber(null);
@@ -281,7 +314,7 @@ export default function TahfizQuranApp({ onClose }) {
   const handleJumpToParaAndPage = (para, pageInParaInput) => {
     const p = Math.max(1, Math.min(30, Number(para) || 1));
     const target = getHafiziPageTarget(p, pageInParaInput || 1);
-    const uthmaniPage = Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((target.globalPage / 610) * TOTAL_UTHMANI_PAGES)));
+    const uthmaniPage = target.uthmaniPage || target.globalPage;
 
     setReaderPageNum(uthmaniPage);
     setReaderSurahId(target.surah);
@@ -307,7 +340,7 @@ export default function TahfizQuranApp({ onClose }) {
     const sId = Math.max(1, Math.min(114, Number(surahId) || 1));
     const aNum = Math.max(1, Number(ayahNum) || 1);
     const loc = getHafiziLocationForAyah(sId, aNum);
-    const targetPage = loc.uthmaniPage || Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((loc.globalPage / 610) * TOTAL_UTHMANI_PAGES)));
+    const targetPage = loc.uthmaniPage || loc.globalPage;
 
     setReaderSurahId(sId);
     setReaderPageNum(targetPage);
@@ -1149,6 +1182,7 @@ export default function TahfizQuranApp({ onClose }) {
                       percentage: Math.min(100, Math.round((p / TOTAL_UTHMANI_PAGES) * 100))
                     }));
                   }}
+                  onJumpToParaPage={handleJumpToParaAndPage}
                   onPlayAyah={handlePlayAyah}
                   playingAyahNumber={playingAyahNumber}
                   playingSurahId={playingSurahId}

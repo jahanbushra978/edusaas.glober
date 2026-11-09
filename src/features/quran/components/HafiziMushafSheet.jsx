@@ -37,6 +37,7 @@ import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 export default function HafiziMushafSheet({
   pageNum = 1,
   onPageChange,
+  onJumpToParaPage,
   onPlayAyah,
   playingAyahNumber = null,
   playingSurahId = null,
@@ -214,11 +215,16 @@ export default function HafiziMushafSheet({
     return String(num).replace(/\d/g, (d) => enToBnMap[d] || d);
   };
 
+  const pad2Bn = (num) => {
+    const s = String(num || 1).padStart(2, "0");
+    return toBn(s);
+  };
+
   // Popular 5 Qaris matching the user's authentic Hafizi Quran screenshot
   const POPULAR_QARIS = [
     { id: "minshawy_teacher", shortNameBn: "শায়খ মুহাম্মদ সিদ্দিক আল-মিনশাবী" },
-    { id: "sudais", shortNameBn: "শায়খ সুদাইস" },
-    { id: "ghamadi", shortNameBn: "শায়খ আল-আখদার / আল-গামদী" },
+    { id: "sudais", shortNameBn: "শায়খ আব্দুর রহমান আস-সুদাইস" },
+    { id: "ghamadi", shortNameBn: "শায়খ সা'দ আল-গামিদী" },
     { id: "husary_muallim", shortNameBn: "শায়খ মাহমুদ খলিল আল-হুসারী" },
     { id: "alafasy", shortNameBn: "শায়খ মাশারি বিন রাশেদ আল-আফাসী" },
   ];
@@ -245,41 +251,33 @@ export default function HafiziMushafSheet({
 
   return (
     <div className="w-full flex flex-col items-center select-text" ref={pageContainerRef}>
-      {/* ── TOP QARI PILL BUTTON (ক্বারীর নাম - স্ক্রিনশটের মতো ব্লু পিল) ── */}
-      <div className="mb-2 z-10">
-        <button
-          type="button"
-          onClick={() => {
-            const nextIdx = (POPULAR_QARIS.findIndex((q) => q.id === selectedQari) + 1) % POPULAR_QARIS.length;
-            if (onSelectQari) onSelectQari(POPULAR_QARIS[nextIdx].id);
-          }}
-          className="px-4 py-1.5 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-bold text-xs shadow-md border border-sky-400/80 flex items-center gap-2 cursor-pointer active:scale-95 transition"
-          title="ক্বারী পরিবর্তন করতে ক্লিক করুন"
-        >
-          <span>🎙️ {POPULAR_QARIS.find((q) => q.id === selectedQari)?.shortNameBn || "শায়খ মাহমুদ খলিল আল-হুসারী"}</span>
-          <ChevronDown className="w-3.5 h-3.5" />
-        </button>
-      </div>
-
       {/* ── AUTHENTIC MUSHAF PAGE WITH LEFT & RIGHT MARGINS (হাশিয়া) ── */}
       <div className="w-full max-w-4xl flex items-start justify-center gap-1 sm:gap-2">
         {/* ── LEFT MARGIN (বাম হাশিয়া - স্ক্রিনশটের হুবহু পারা ও পৃষ্ঠা টেবিল) ── */}
-        <div className="hidden md:flex flex-col gap-2 shrink-0 w-16 pt-10 select-none">
+        <div className="hidden md:flex flex-col gap-1.5 shrink-0 w-14 sm:w-16 pt-8 select-none">
           {leftMarginRefs.map((ref, idx) => (
             <div
               key={idx}
-              className={`rounded-lg border p-1 text-[10px] text-center shadow-xs transition hover:scale-105 cursor-pointer ${
+              onClick={() => {
+                if (onJumpToParaPage) {
+                  onJumpToParaPage(ref.para, ref.page);
+                } else if (onPageChange) {
+                  const target = getHafiziPageTarget(ref.para, ref.page);
+                  onPageChange(target.uthmaniPage || target.globalPage);
+                }
+              }}
+              className={`rounded-lg border p-1 text-[10px] text-center shadow-xs transition hover:scale-105 active:scale-95 cursor-pointer ${
                 isDay
-                  ? "bg-[#FAF7F2] border-stone-400 text-stone-900"
-                  : "bg-[#061811] border-teal-600/40 text-emerald-200"
+                  ? "bg-[#FAF7F2] border-stone-400 text-stone-900 hover:border-amber-600"
+                  : "bg-[#061811] border-teal-600/40 text-emerald-200 hover:border-amber-400"
               }`}
-              title={`পারা ${toBn(ref.para)}, পৃষ্ঠা ${toBn(ref.page)}`}
+              title={`পারা ${toBn(ref.para)}, পৃষ্ঠা ${toBn(ref.page)}-এ যান`}
             >
-              <div className="font-bold border-b border-stone-300 dark:border-teal-700/50 pb-0.5 text-amber-600 dark:text-amber-400">
+              <div className="font-bold border-b border-stone-300 dark:border-teal-700/50 pb-0.5 text-amber-600 dark:text-amber-400 text-[9px]">
                 পারা | পৃষ্ঠা
               </div>
-              <div className="font-black pt-0.5 tracking-wider">
-                {toBn(ref.para)} | {toBn(ref.page)}
+              <div className="font-black pt-0.5 tracking-wider text-[11px]">
+                {pad2Bn(ref.para)} | {pad2Bn(ref.page)}
               </div>
             </div>
           ))}
@@ -301,43 +299,72 @@ export default function HafiziMushafSheet({
 
         {/* ── TOP RUNNING HEADER OF HAFIZI PAGE (১. হাফেজী কুরআন হেডার ও মেটাডাটা) ── */}
         <div
-          className={`px-3 sm:px-6 py-2.5 sm:py-3 border-b-2 flex items-center justify-between text-xs font-bold ${
+          className={`px-3 sm:px-6 py-2 sm:py-2.5 border-b-2 flex flex-col gap-1 text-xs font-bold ${
             isDay
               ? "bg-[#F3EEE2] border-amber-600/40 text-stone-800"
               : "bg-[#06140e] border-amber-500/40 text-emerald-200"
           }`}
         >
-          {/* Top Left: পারার নাম এবং মুনজিল নম্বর (যেমন: تلك الرسل - منزل ١) */}
-          <div className="flex flex-col items-start leading-tight">
-            <span className="font-hafizi-quran text-base sm:text-lg text-amber-600 dark:text-amber-300 font-bold">
-              {headerMeta.headerLeftAr}
-            </span>
-            <span className="text-[10px] sm:text-xs opacity-75">
+          {/* Main Top Line: Left Para/Manzil | Center Qari Pill | Right CORNER Page Number */}
+          <div className="flex items-center justify-between gap-1 sm:gap-2">
+            {/* Top Left: পারার নাম এবং মুনজিল নম্বর (যেমন: تلك الرسل - منزل ١) */}
+            <div className="flex flex-col items-start leading-tight">
+              <span className="font-hafizi-quran text-base sm:text-lg text-amber-600 dark:text-amber-300 font-bold">
+                {headerMeta.headerLeftAr}
+              </span>
+              <span className="text-[10px] opacity-75">
+                {headerMeta.headerLeftBn}
+              </span>
+            </div>
+
+            {/* Top Center: Blue Qari Pill (স্ক্রিনশটের হুবহু সেন্টারের ব্লু পিল বাটন) */}
+            <div className="flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => {
+                  const nextIdx = (POPULAR_QARIS.findIndex((q) => q.id === selectedQari) + 1) % POPULAR_QARIS.length;
+                  const nextQ = POPULAR_QARIS[nextIdx];
+                  if (onSelectQari) onSelectQari(nextQ.id);
+                  if (onPlayAyah && pageAyahs[0]) {
+                    onPlayAyah(pageAyahs[0].numberInSurah, pageAyahs[0].surahId, nextQ.id);
+                  }
+                }}
+                className="px-3 sm:px-4 py-1 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-bold text-[10px] sm:text-xs shadow-md border border-sky-400/80 flex items-center gap-1.5 cursor-pointer active:scale-95 transition"
+                title="ক্বারী পরিবর্তন ও তিলাওয়াত শুরু করতে ক্লিক করুন"
+              >
+                <span>🎙️ {POPULAR_QARIS.find((q) => q.id === selectedQari)?.shortNameBn || "শায়খ মাহমুদ খলিল আল-হুসারী"}</span>
+                <ChevronDown className="w-3 h-3 opacity-80" />
+              </button>
+            </div>
+
+            {/* Top Right CORNER: পৃষ্ঠা নম্বর (কানি / কর্নারে স্ক্রিনশটের হুবহু অনুযায়ী) */}
+            <div className="flex flex-col items-end shrink-0">
+              <span
+                className={`text-xs sm:text-sm font-black px-2.5 sm:px-3 py-0.5 rounded-lg border shadow-xs ${
+                  isDay
+                    ? "bg-amber-100 text-amber-950 border-amber-500 font-black"
+                    : "bg-emerald-950/90 text-amber-300 border-amber-500/80 font-black"
+                }`}
+                title={`পৃষ্ঠা নম্বর ${toBn(pageNum)}`}
+              >
+                পৃষ্ঠা {toBn(pageNum)}
+              </span>
+              <span className="text-[9px] opacity-70 mt-0.5 hidden sm:inline">
+                ১৫ লাইন
+              </span>
+            </div>
+          </div>
+
+          {/* Sub Header: সূরার নাম ও সূরা নম্বর, বর্তমান পারা ও পারার পৃষ্ঠা */}
+          <div className="flex items-center justify-between text-[10px] sm:text-xs pt-1 border-t border-amber-500/20 opacity-90">
+            <span className="text-amber-500 font-medium">
               {headerMeta.headerLeftBn}
             </span>
-          </div>
-
-          {/* Top Center: সম্পূর্ণ কুরআন শরীফের মূল পৃষ্ঠা নম্বর ও ১৫ লাইন */}
-          <div className="text-center flex flex-col items-center">
-            <span className={`text-xs sm:text-sm font-black px-3 py-0.5 rounded-full border shadow-xs ${
-              isDay
-                ? "bg-amber-100 text-amber-950 border-amber-400 font-black"
-                : "bg-emerald-950 text-amber-300 border-amber-500/60 font-black"
-            }`}>
-              পৃষ্ঠা {toBn(pageNum)}
-            </span>
-            <span className="text-[9px] sm:text-[10px] opacity-75 mt-0.5 font-bold">
+            <span className="text-[9px] opacity-75 font-serif">
               ১৫ লাইন • আয়াতুল খতম
             </span>
-          </div>
-
-          {/* Top Right: সূরার নাম ও সূরা নম্বর, বর্তমান পারা নম্বর এবং ওই পারার কততম পৃষ্ঠা */}
-          <div className="flex flex-col items-end leading-tight text-right">
-            <span className="font-hafizi-quran text-base sm:text-lg text-amber-600 dark:text-amber-300 font-bold" dir="rtl">
+            <span className="font-hafizi-quran text-amber-600 dark:text-amber-300 font-bold" dir="rtl">
               {headerMeta.headerRightAr}
-            </span>
-            <span className="text-[10px] sm:text-xs opacity-75">
-              {headerMeta.headerRightBn}
             </span>
           </div>
         </div>
@@ -635,22 +662,30 @@ export default function HafiziMushafSheet({
       </div>
 
       {/* ── RIGHT MARGIN (ডান হাশিয়া - স্ক্রিনশটের হুবহু পারা ও পৃষ্ঠা টেবিল) ── */}
-      <div className="hidden md:flex flex-col gap-2 shrink-0 w-16 pt-10 select-none">
+      <div className="hidden sm:flex flex-col gap-1.5 shrink-0 w-14 sm:w-16 pt-8 select-none">
         {rightMarginRefs.map((ref, idx) => (
           <div
             key={idx}
-            className={`rounded-lg border p-1 text-[10px] text-center shadow-xs transition hover:scale-105 cursor-pointer ${
+            onClick={() => {
+              if (onJumpToParaPage) {
+                onJumpToParaPage(ref.para, ref.page);
+              } else if (onPageChange) {
+                const target = getHafiziPageTarget(ref.para, ref.page);
+                onPageChange(target.uthmaniPage || target.globalPage);
+              }
+            }}
+            className={`rounded-lg border p-1 text-[10px] text-center shadow-xs transition hover:scale-105 active:scale-95 cursor-pointer ${
               isDay
-                ? "bg-[#FAF7F2] border-stone-400 text-stone-900"
-                : "bg-[#061811] border-teal-600/40 text-emerald-200"
+                ? "bg-[#FAF7F2] border-stone-400 text-stone-900 hover:border-amber-600"
+                : "bg-[#061811] border-teal-600/40 text-emerald-200 hover:border-amber-400"
             }`}
-            title={`পারা ${toBn(ref.para)}, পৃষ্ঠা ${toBn(ref.page)}`}
+            title={`পারা ${toBn(ref.para)}, পৃষ্ঠা ${toBn(ref.page)}-এ যান`}
           >
-            <div className="font-bold border-b border-stone-300 dark:border-teal-700/50 pb-0.5 text-amber-600 dark:text-amber-400">
+            <div className="font-bold border-b border-stone-300 dark:border-teal-700/50 pb-0.5 text-amber-600 dark:text-amber-400 text-[9px]">
               পারা | পৃষ্ঠা
             </div>
-            <div className="font-black pt-0.5 tracking-wider">
-              {toBn(ref.para)} | {toBn(ref.page)}
+            <div className="font-black pt-0.5 tracking-wider text-[11px]">
+              {pad2Bn(ref.para)} | {pad2Bn(ref.page)}
             </div>
           </div>
         ))}
@@ -668,7 +703,7 @@ export default function HafiziMushafSheet({
             onClick={() => {
               if (onSelectQari) onSelectQari(q.id);
               if (onPlayAyah && pageAyahs[0]) {
-                onPlayAyah(pageAyahs[0].numberInSurah, pageAyahs[0].surahId);
+                onPlayAyah(pageAyahs[0].numberInSurah, pageAyahs[0].surahId, q.id);
               }
             }}
             className={`py-2 px-2 rounded-xl text-[11px] font-bold text-center border shadow-sm transition active:scale-95 cursor-pointer ${

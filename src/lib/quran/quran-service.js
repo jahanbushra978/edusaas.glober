@@ -488,7 +488,17 @@ export async function getSurahData(surahNumber) {
 
 /**
  * Returns audio recitation URL for an Ayah using EveryAyah CDN.
+ * Resiliently supports both (qariId, surahNumber, ayahNumber) and (surahNumber, ayahNumber, qariId).
  */
-export function getAyahAudioUrl(qariId, surahNumber, ayahNumber) {
-  return getQariAudioUrl(qariId, surahNumber, ayahNumber);
+export function getAyahAudioUrl(arg1, arg2, arg3) {
+  if (typeof arg1 === "string" && isNaN(Number(arg1))) {
+    return getQariAudioUrl(arg1, arg2, arg3);
+  }
+  if (typeof arg3 === "string" && isNaN(Number(arg3))) {
+    return getQariAudioUrl(arg3, arg1, arg2);
+  }
+  if (!isNaN(Number(arg1)) && !isNaN(Number(arg2))) {
+    return getQariAudioUrl("husary_muallim", arg1, arg2);
+  }
+  return getQariAudioUrl(arg1 || "husary_muallim", arg2, arg3);
 }

@@ -1325,11 +1325,35 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                 }
                 setIsPlayingAudio(false);
               }}
-              onPlayAyah={(ayahNum, sId) => {
-                if (sId && sId !== selectedSurahId) {
-                  setSelectedSurahId(sId);
+              onJumpToParaPage={(para, pageInPara) => {
+                const target = getHafiziPageTarget(para, pageInPara);
+                const newPg = target.uthmaniPage || target.globalPage;
+                setHafiziPage(newPg);
+                universalAudioEngine.stopAll();
+                if (audioRef.current) {
+                  audioRef.current.pause();
                 }
-                playAyahAudio(ayahNum);
+                setIsPlayingAudio(false);
+              }}
+              onPlayAyah={(ayahNum, sId, overrideQariId) => {
+                if (overrideQariId) {
+                  setSelectedQari(overrideQariId);
+                  selectedQariRef.current = overrideQariId;
+                }
+                const targetSurah = sId || selectedSurahId;
+                if (targetSurah !== selectedSurahId) {
+                  setSelectedSurahId(targetSurah);
+                  selectedSurahIdRef.current = targetSurah;
+                  getSurahData(targetSurah).then((data) => {
+                    if (data) {
+                      setSurahData(data);
+                      surahDataRef.current = data;
+                      startNewAyahAudio(ayahNum);
+                    }
+                  });
+                } else {
+                  playAyahAudio(ayahNum);
+                }
               }}
               playingAyahNumber={playingAyahNumber}
               playingSurahId={selectedSurahId}
