@@ -22,6 +22,7 @@ import {
   TOTAL_UTHMANI_PAGES,
   getHafiziPageMeta,
   getHafiziLocation,
+  getHafiziPageTarget,
   HAFIZI_PARAS
 } from "@/lib/quran/hafizi-pages";
 import {
@@ -56,6 +57,7 @@ export default function HafiziMushafSheet({
   const [pageAyahs, setPageAyahs] = useState([]);
   const [jumpInput, setJumpInput] = useState(String(pageNum));
   const [isParaDropdownOpen, setIsParaDropdownOpen] = useState(false);
+  const [isQariMenuOpen, setIsQariMenuOpen] = useState(false);
   const pageContainerRef = useRef(null);
 
   // Get canonical metadata for this page
@@ -201,12 +203,21 @@ export default function HafiziMushafSheet({
   // Jump to start of Para
   const handleParaSelect = (paraNum) => {
     const p = Math.max(1, Math.min(30, paraNum));
-    const info = HAFIZI_PARAS[p - 1];
-    // Map Hafizi Para start page to 604 standard
-    const targetUthmaniPage = Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((info.startPage / 610) * TOTAL_UTHMANI_PAGES)));
+    const target = getHafiziPageTarget(p, 1);
+    const targetUthmaniPage = target.uthmaniPage || target.globalPage;
     onPageChange(targetUthmaniPage);
     setIsParaDropdownOpen(false);
+    const info = HAFIZI_PARAS[p - 1];
     toast.success(`${info.nameBn} (${info.nameAr}) নির্বাচন করা হয়েছে`);
+  };
+
+  // Helper: check if a word belongs to a mutashabihat phrase
+  const isWordInPhrase = (word, phrase) => {
+    if (!word || !phrase) return false;
+    const cleanWord = word.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "").trim();
+    const cleanPhrase = phrase.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "").trim();
+    if (cleanWord.length < 2) return false;
+    return cleanPhrase.includes(cleanWord);
   };
 
   // Convert number to Bengali numerals
@@ -318,23 +329,56 @@ export default function HafiziMushafSheet({
             </div>
 
             {/* Top Center: Blue Qari Pill (স্ক্রিনশটের হুবহু সেন্টারের ব্লু পিল বাটন) */}
-            <div className="flex items-center justify-center">
+            <div className="flex items-center justify-center relative">
               <button
                 type="button"
-                onClick={() => {
-                  const nextIdx = (POPULAR_QARIS.findIndex((q) => q.id === selectedQari) + 1) % POPULAR_QARIS.length;
-                  const nextQ = POPULAR_QARIS[nextIdx];
-                  if (onSelectQari) onSelectQari(nextQ.id);
-                  if (onPlayAyah && pageAyahs[0]) {
-                    onPlayAyah(pageAyahs[0].numberInSurah, pageAyahs[0].surahId, nextQ.id);
-                  }
-                }}
+                onClick={() => setIsQariMenuOpen((prev) => !prev)}
                 className="px-3 sm:px-4 py-1 rounded-full bg-sky-600 hover:bg-sky-500 text-white font-bold text-[10px] sm:text-xs shadow-md border border-sky-400/80 flex items-center gap-1.5 cursor-pointer active:scale-95 transition"
                 title="ক্বারী পরিবর্তন ও তিলাওয়াত শুরু করতে ক্লিক করুন"
               >
                 <span>🎙️ {POPULAR_QARIS.find((q) => q.id === selectedQari)?.shortNameBn || "শায়খ মাহমুদ খলিল আল-হুসারী"}</span>
-                <ChevronDown className="w-3 h-3 opacity-80" />
+                <ChevronDown className={`w-3 h-3 opacity-80 transition-transform ${isQariMenuOpen ? "rotate-180" : ""}`} />
               </button>
+
+              {/* Interactive Qari Selection Dropdown Menu */}
+              {isQariMenuOpen && (
+                <div
+                  className={`absolute top-full mt-2 w-64 rounded-2xl shadow-2xl border-2 z-50 p-2 space-y-1 animate-in fade-in zoom-in-95 duration-150 ${
+                    isDay
+                      ? "bg-[#FAF7F2] border-sky-600 text-stone-900"
+                      : "bg-[#061812] border-sky-500/80 text-emerald-100"
+                  }`}
+                >
+                  <div className="text-[10px] font-black px-2 py-1 text-sky-500 border-b border-sky-500/30">
+                    🎙️ প্রিয় ক্বারী নির্বাচন করুন
+                  </div>
+                  {POPULAR_QARIS.map((q) => {
+                    const isSelected = selectedQari === q.id;
+                    return (
+                      <button
+                        key={q.id}
+                        type="button"
+                        onClick={() => {
+                          if (onSelectQari) onSelectQari(q.id);
+                          if (onPlayAyah && pageAyahs[0]) {
+                            onPlayAyah(pageAyahs[0].numberInSurah, pageAyahs[0].surahId, q.id);
+                          }
+                          setIsQariMenuOpen(false);
+                          toast.success(`${q.shortNameBn} নির্বাচন করা হয়েছে`);
+                        }}
+                        className={`w-full text-left px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center justify-between cursor-pointer ${
+                          isSelected
+                            ? "bg-sky-600 text-white shadow-xs font-black"
+                            : "hover:bg-sky-500/15 text-slate-200"
+                        }`}
+                      >
+                        <span className="truncate">{q.shortNameBn}</span>
+                        {isSelected && <Check className="w-3.5 h-3.5 shrink-0 ml-1" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Top Right CORNER: পৃষ্ঠা নম্বর (কানি / কর্নারে স্ক্রিনশটের হুবহু অনুযায়ী) */}
@@ -473,6 +517,11 @@ export default function HafiziMushafSheet({
                               const isThisWordActive =
                                 isThisAyahActive && activeWordIndex === wIdx && activeWordIndex >= 0;
 
+                              // Check if word belongs to a Mutashabihat phrase
+                              const mutashabihMatch = ayahMutashabihat.find(
+                                (m) => isWordInPhrase(word, m.phraseAr) || isWordInPhrase(word, m.phraseClean)
+                              );
+
                               // Check if word is a Waqf stop point
                               const waqfStop = ayahWaqfList.find((w) =>
                                 word.includes(w.stopAfterWord) || w.stopAfterWord.includes(word)
@@ -504,6 +553,8 @@ export default function HafiziMushafSheet({
                                         ? isDay
                                           ? "text-amber-900 font-bold"
                                           : "text-amber-300 font-bold"
+                                        : mutashabihMatch
+                                        ? "border-b-2 border-sky-400 text-sky-400 dark:text-sky-300 font-bold pb-0.5"
                                         : waqfResume
                                         ? "text-emerald-300 font-bold underline decoration-emerald-400/60"
                                         : isDay
