@@ -314,6 +314,65 @@ export const MUTASHABIHAT_REGISTRY = [
       { para: 2, page: 38, surah: 2, ayah: 221, note: "সূরা আল-বাকারা ২২১" },
       { para: 18, page: 360, surah: 59, ayah: 21, note: "সূরা আল-হাশর ২১" }
     ]
+  },
+  {
+    phraseAr: "وَاللَّهُ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ",
+    phraseClean: "والله على كل شيء قدير",
+    meaningBn: "আর আল্লাহ সবকিছুর ওপর ক্ষমতাবান",
+    references: [
+      { para: 2, page: 44, surah: 2, ayah: 284, note: "সূরা আল-বাকারা ২৮৪" },
+      { para: 4, page: 75, surah: 3, ayah: 189, note: "সূরা আলে-ইমরান ১৮৯" },
+      { para: 7, page: 127, surah: 5, ayah: 120, note: "সূরা আল-মায়িদাহ ১২০" },
+      { para: 10, page: 182, surah: 8, ayah: 41, note: "সূরা আল-আনফাল ৪১" }
+    ]
+  },
+  {
+    phraseAr: "وَإِنَّ اللَّهَ سَمِيعٌ عَلِيمٌ",
+    phraseClean: "وان الله سميع عليم",
+    meaningBn: "নিশ্চয় আল্লাহ সবকিছু শোনেন ও জানেন",
+    references: [
+      { para: 2, page: 28, surah: 2, ayah: 181, note: "সূরা আল-বাকারা ১৮১" },
+      { para: 2, page: 39, surah: 2, ayah: 244, note: "সূরা আল-বাকারা ২৪৪" },
+      { para: 3, page: 54, surah: 3, ayah: 34, note: "সূরা আলে-ইমরান ৩৪" },
+      { para: 10, page: 182, surah: 8, ayah: 42, note: "সূরা আল-আনফাল ৪২" }
+    ]
+  },
+  {
+    phraseAr: "إِنَّهُ عَلِيمٌ بِذَاتِ الصُّدُورِ",
+    phraseClean: "انه عليم بذات الصدور",
+    meaningBn: "নিশ্চয় তিনি অন্তরের গোপন খবর জানেন",
+    references: [
+      { para: 4, page: 65, surah: 3, ayah: 119, note: "সূরা আলে-ইমরান ১১৯" },
+      { para: 6, page: 108, surah: 5, ayah: 7, note: "সূরা আল-মায়িদাহ ৭" },
+      { para: 10, page: 182, surah: 8, ayah: 43, note: "সূরা আল-আনফাল ৪৩" },
+      { para: 12, page: 221, surah: 11, ayah: 5, note: "সূরা হুদ ৫" },
+      { para: 29, page: 563, surah: 67, ayah: 13, note: "সূরা আল-মুলক ১৩" }
+    ]
+  },
+  {
+    phraseAr: "وَإِلَى اللَّهِ تُرْجَعُ الْأُمُورُ",
+    phraseClean: "والى الله ترجع الامور",
+    meaningBn: "আর সব বিষয় আল্লাহর দিকেই প্রত্যাবর্তন করে",
+    references: [
+      { para: 2, page: 33, surah: 2, ayah: 210, note: "সূরা আল-বাকারা ২১০" },
+      { para: 4, page: 64, surah: 3, ayah: 109, note: "সূরা আলে-ইমরান ১০৯" },
+      { para: 10, page: 182, surah: 8, ayah: 44, note: "সূরা আল-আনফাল ৪৪" },
+      { para: 17, page: 341, surah: 22, ayah: 76, note: "সূরা আল-হজ ৭৬" },
+      { para: 22, page: 435, surah: 35, ayah: 4, note: "সূরা ফাতির ৪" }
+    ]
+  },
+  {
+    phraseAr: "لَّعَلَّكُمْ تُفْلِحُونَ",
+    phraseClean: "لعلكم تفلحون",
+    meaningBn: "যাতে তোমরা সফলকাম হতে পারো",
+    references: [
+      { para: 2, page: 29, surah: 2, ayah: 189, note: "সূরা আল-বাকারা ১৮৯" },
+      { para: 4, page: 66, surah: 3, ayah: 130, note: "সূরা আলে-ইমরান ১৩০" },
+      { para: 4, page: 76, surah: 3, ayah: 200, note: "সূরা আলে-ইমরান ২০০" },
+      { para: 6, page: 114, surah: 5, ayah: 35, note: "সূরা আল-মায়িদাহ ৩৫" },
+      { para: 7, page: 123, surah: 5, ayah: 90, note: "সূরা আল-মায়িদাহ ৯০" },
+      { para: 10, page: 182, surah: 8, ayah: 45, note: "সূরা আল-আনফাল ৪৫" }
+    ]
   }
 ];
 
@@ -496,6 +555,75 @@ export const WAQF_IBTIDA_REGISTRY = {
       resumeAtWord: "اللَّهُ الصَّمَدُ",
       stopSign: "ط",
       note: "আল্লাহুল আহাদ — পরিচয়ের পর থামুন"
+    }
+  ],
+  // Surah 8, Ayah 41 (Page 182 - Ghanimah Ayah)
+  "8-41": [
+    {
+      stopAfterWord: "السَّبِيلِ",
+      resumeAtWord: "إِن",
+      stopSign: "ط",
+      note: "وَابْنِ السَّبِيلِ (ওয়াকফ *) • পুনরায়: إِن كُنتُمْ آمَنتُم بِاللَّهِ (✓)"
+    },
+    {
+      stopAfterWord: "الْجَمْعَانِ",
+      resumeAtWord: "وَاللَّهُ",
+      stopSign: "ۗ",
+      note: "يَوْمَ الْتَقَى الْجَمْعَانِ (ওয়াকফ *) • পুনরায়: وَاللَّهُ عَلَىٰ كُلِّ شَيْءٍ قَدِيرٌ (✓)"
+    }
+  ],
+  // Surah 8, Ayah 42 (Page 182)
+  "8-42": [
+    {
+      stopAfterWord: "مِنكُمْ",
+      resumeAtWord: "وَلَوْ",
+      stopSign: "ۚ",
+      note: "وَالরَّكْبُ أَسْفَلَ مِنكُمْ (ওয়াকফ *) • পুনরায়: وَلَوْ تَوَاعَدتُّمْ (✓)"
+    },
+    {
+      stopAfterWord: "مَفْعُولًا",
+      resumeAtWord: "لِّيَهْلِكَ",
+      stopSign: "ۗ",
+      note: "كَانَ مَفْعُولًا (ওয়াকফ *) • পুনরায়: لِّيَهْلِكَ مَنْ هَلَكَ (✓)"
+    },
+    {
+      stopAfterWord: "بَيِّنَةٍ",
+      resumeAtWord: "وَإِنَّ",
+      stopSign: "ۗ",
+      note: "عَن بَيِّنَةٍ (ওয়াকফ *) • পুনরায়: وَإِنَّ اللَّهَ سَمِيعٌ عَلِيمٌ (✓)"
+    }
+  ],
+  // Surah 8, Ayah 43 (Page 182)
+  "8-43": [
+    {
+      stopAfterWord: "الْأَمْرِ",
+      resumeAtWord: "وَلَٰكِنَّ",
+      stopSign: "ط",
+      note: "وَلَتَنَازَعْتُمْ فِي الْأَمْرِ (ওয়াকফ *) • পুনরায়: وَلَٰكِنَّ اللَّهَ سَلَّمَ (✓)"
+    },
+    {
+      stopAfterWord: "سَلَّمَ",
+      resumeAtWord: "إِنَّهُ",
+      stopSign: "ۗ",
+      note: "وَلَٰكِنَّ اللَّهَ سَلَّمَ (ওয়াকফ *) • পুনরায়: إِنَّهُ عَلِيمٌ بِذَاتِ الصُّدُورِ (✓)"
+    }
+  ],
+  // Surah 8, Ayah 44 (Page 182)
+  "8-44": [
+    {
+      stopAfterWord: "مَفْعُولًا",
+      resumeAtWord: "وَإِلَى",
+      stopSign: "ۗ",
+      note: "كَانَ مَفْعُولًا (ওয়াকফ *) • পুনরায়: وَإِلَى اللَّهِ تُرْجَعُ الْأُمُورُ (✓)"
+    }
+  ],
+  // Surah 8, Ayah 45 (Page 182)
+  "8-45": [
+    {
+      stopAfterWord: "فَاثْبُتُوا",
+      resumeAtWord: "وَاذْكُرُوا",
+      stopSign: "ط",
+      note: "إِذَا لَقِيتُمْ فِئَةً فَاثْبُتُوا (ওয়াকফ *) • পুনরায়: وَاذْكُرُوا اللَّهَ كَثِيرًا (✓)"
     }
   ]
 };

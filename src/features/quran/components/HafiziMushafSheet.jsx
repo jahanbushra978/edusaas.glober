@@ -152,26 +152,31 @@ export default function HafiziMushafSheet({
     };
   }, [pageMeta, getSurahData]);
 
-  // Find Mutashabihat matches on this page
+  // Find Mutashabihat matches on this page (sorted from top of page, serial [১], [২], [৩]...)
   const pageMutashabihat = useMemo(() => {
     if (!pageAyahs || pageAyahs.length === 0) return [];
     const matched = [];
-    MUTASHABIHAT_REGISTRY.forEach((entry, idx) => {
-      const foundInAyah = pageAyahs.find((a) => {
-        const fullText = (a.text || "").replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "");
+    pageAyahs.forEach((a) => {
+      const fullText = (a.text || "").replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "");
+      MUTASHABIHAT_REGISTRY.forEach((entry, idx) => {
         const cleanPhrase = entry.phraseClean.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "");
-        return fullText.includes(cleanPhrase) || (a.text && a.text.includes(entry.phraseAr));
+        if (fullText.includes(cleanPhrase) || (a.text && a.text.includes(entry.phraseAr))) {
+          if (!matched.some((m) => m.phraseClean === entry.phraseClean && m.ayahNumber === a.numberInSurah)) {
+            matched.push({
+              ...entry,
+              refNo: idx + 1,
+              ayahNumber: a.numberInSurah,
+              surahId: a.surahId,
+            });
+          }
+        }
       });
-      if (foundInAyah) {
-        matched.push({
-          ...entry,
-          refNo: idx + 1,
-          ayahNumber: foundInAyah.numberInSurah,
-          surahId: foundInAyah.surahId,
-        });
-      }
     });
-    return matched;
+    // Assign 1-based serial order from the top of the page
+    return matched.map((item, sIdx) => ({
+      ...item,
+      pageSerial: sIdx + 1,
+    }));
   }, [pageAyahs]);
 
   // Look up Waqf & Ibtida markers for ayahs on this page
@@ -299,35 +304,44 @@ export default function HafiziMushafSheet({
 
         {/* ── স্ক্রিনশটের হুবহু অথেনটিক হাফেজী কুরআন হেডার বার ── */}
         <div
-          className={`px-2.5 sm:px-6 py-2 border-b-2 flex items-center justify-between gap-1 sm:gap-2 text-xs font-bold select-none ${
+          className={`w-full px-2 sm:px-4 py-1.5 sm:py-2 border-b-2 flex items-center justify-between gap-1 sm:gap-2 text-xs font-bold select-none overflow-hidden ${
             isDay
               ? "bg-[#F3EEE2] border-amber-600/40 text-stone-900"
               : "bg-[#06140e] border-amber-500/50 text-emerald-100"
           }`}
         >
-          {/* ১. বাম পাশে: সূরার নাম ও সূরা নম্বর (যেমন: البقرة ২) */}
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="font-hafizi-quran text-base sm:text-xl font-black text-amber-600 dark:text-amber-400" dir="rtl">
+          {/* বাম অংশ: সূরার নাম ও পারার পৃষ্ঠা */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink min-w-0">
+            {/* সূরার নাম ও সূরা নম্বর (যেমন: سورة الأنفال ৮ বা البقرة ২) */}
+            <span
+              className="font-hafizi-quran text-xs sm:text-sm md:text-base font-black text-amber-500 dark:text-amber-400 truncate max-w-[85px] sm:max-w-[130px] md:max-w-none"
+              dir="rtl"
+              title={`সূরা ${pageMeta.firstSurahMeta?.nameBn || "আল-বাকারা"}`}
+            >
               {pageMeta.firstSurahMeta?.nameAr || "البقرة"} {toBn(pageMeta.firstSurahMeta?.id || 2)}
             </span>
-          </div>
 
-          {/* ২. মাঝখানের বামে: পারা নম্বর ও পারার পৃষ্ঠা নম্বর (যেমন: পারা-১ পৃষ্ঠা-৩) */}
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="text-xs sm:text-sm font-black text-slate-800 dark:text-emerald-300">
+            {/* পারা ও পৃষ্ঠা (যেমন: পারা-১০ পৃষ্ঠা-১) — স্পষ্ট ও উজ্জ্বল গোল্ডেন টেক্সট */}
+            <span
+              className={`text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap shadow-2xs ${
+                isDay
+                  ? "bg-amber-200/80 text-amber-950 border border-amber-600/40"
+                  : "bg-amber-950/60 text-amber-300 border border-amber-500/40"
+              }`}
+            >
               পারা-{toBn(pageMeta.para)} পৃষ্ঠা-{toBn(pageMeta.paraPage)}
             </span>
           </div>
 
-          {/* ৩. সেন্টারে শায়েখের নাম: নীল বাটন (ক্লিক করলে শায়েখের তালিকা ড্রপডাউন আসবে, নির্বাচন করলে এটিই দেখাবে ও তিলাওয়াত বাজবে) */}
-          <div className="flex items-center justify-center relative shrink-0">
+          {/* সেন্টারে শায়েখের নাম: নীল বাটন (ক্লিক করলে ড্রপডাউন মেনু থেকে শায়েখ নির্বাচন করা যাবে) */}
+          <div className="flex items-center justify-center relative shrink-0 mx-0.5">
             <button
               type="button"
               onClick={() => setIsQariMenuOpen((prev) => !prev)}
-              className="px-2.5 sm:px-4 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-black text-[10px] sm:text-xs shadow-md border border-sky-400 flex items-center gap-1 sm:gap-1.5 cursor-pointer active:scale-95 transition"
+              className="px-2 sm:px-3 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-black text-[10px] sm:text-xs shadow-md border border-sky-400 flex items-center gap-1 cursor-pointer active:scale-95 transition"
               title="শায়েখের তিলাওয়াত নির্বাচন করতে ক্লিক করুন"
             >
-              <span className="truncate max-w-[130px] sm:max-w-none">
+              <span className="truncate max-w-[85px] sm:max-w-[130px] md:max-w-none">
                 {POPULAR_QARIS.find((q) => q.id === selectedQari)?.shortNameBn || "শায়খ মাহমুদ খলিল আল হুসারী"}
               </span>
               <ChevronDown className={`w-3 h-3 opacity-90 shrink-0 transition-transform ${isQariMenuOpen ? "rotate-180" : ""}`} />
@@ -374,24 +388,27 @@ export default function HafiziMushafSheet({
             )}
           </div>
 
-          {/* ৪. মাঝখানের ডানে: মনজিল নম্বর (যেমন: منزل ১) */}
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="font-hafizi-quran text-base sm:text-lg font-black text-amber-600 dark:text-amber-400" dir="rtl">
+          {/* ডান অংশ: মনজিল, পারার নাম এবং গ্লোবাল পৃষ্ঠা নম্বর */}
+          <div className="flex items-center gap-1 sm:gap-2 shrink min-w-0 justify-end">
+            {/* মনজিল নম্বর */}
+            <span
+              className="font-hafizi-quran text-[11px] sm:text-xs md:text-sm font-black text-amber-500 dark:text-amber-400 shrink-0 whitespace-nowrap"
+              dir="rtl"
+            >
               منزل {toBn(headerMeta.manzil)}
             </span>
-          </div>
 
-          {/* ৫. ডান পাশে: পারার নাম ও নম্বর (যেমন: المّ ১) */}
-          <div className="flex items-center gap-1 shrink-0">
-            <span className="font-hafizi-quran text-base sm:text-xl font-black text-amber-600 dark:text-amber-400" dir="rtl">
+            {/* পারার নাম ও নম্বর (যেমন: وَاعْلَمُوا ১০ বা الم ۱) */}
+            <span
+              className="font-hafizi-quran text-xs sm:text-sm md:text-base font-black text-amber-500 dark:text-amber-400 truncate max-w-[85px] sm:max-w-[120px] md:max-w-none"
+              dir="rtl"
+            >
               {currentPara?.nameAr || "الم"} {toBn(pageMeta.para)}
             </span>
-          </div>
 
-          {/* ৬. একদম ডান পাশের কর্নারে: গ্লোবাল পৃষ্ঠা নম্বর (যেমন: ৪ বা ৮) */}
-          <div className="flex items-center shrink-0">
+            {/* গ্লোবাল পৃষ্ঠা নম্বর (যেমন: ১৮২) — কখনও স্ক্রিনের বাইরে যাবে না */}
             <span
-              className={`text-xs sm:text-sm font-black px-2 py-0.5 rounded-lg border shadow-xs ${
+              className={`text-[11px] sm:text-xs md:text-sm font-black px-1.5 py-0.5 rounded-lg border shadow-xs shrink-0 whitespace-nowrap ${
                 isDay
                   ? "bg-amber-100 text-amber-950 border-amber-500"
                   : "bg-emerald-950/90 text-amber-300 border-amber-500/80"
@@ -521,20 +538,20 @@ export default function HafiziMushafSheet({
 
                               return (
                                 <span key={wIdx} className="inline-block relative">
-                                  {/* Mutashabihat Sequence Number Badge [১], [২] */}
+                                  {/* Mutashabihat Sequence Number Badge [১], [২] — পৃষ্ঠার শুরু থেকে ক্রমিক নম্বর */}
                                   {isMutashabihatStart && (
                                     <sup
-                                      className="inline-flex items-center justify-center px-1 py-0.5 rounded-full bg-cyan-950 border border-cyan-400 text-cyan-300 text-[10px] font-black mx-1 select-none shadow-xs"
-                                      title={`মুতাশাবিহাত সদৃশ আয়াত #${toBn(wordMutashabihat.refNo)}: ${wordMutashabihat.meaningBn || ""}`}
+                                      className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-emerald-950/90 border border-emerald-400 text-emerald-300 text-[10px] font-black mx-1 select-none shadow-xs"
+                                      title={`মুতাশাবিহাত সদৃশ আয়াত #${toBn(wordMutashabihat.pageSerial || wordMutashabihat.refNo)}: ${wordMutashabihat.meaningBn || ""}`}
                                     >
-                                      [{toBn(wordMutashabihat.refNo)}]
+                                      [{toBn(wordMutashabihat.pageSerial || wordMutashabihat.refNo)}]
                                     </sup>
                                   )}
 
-                                  {/* Ibtida Restart Marker [✓] */}
+                                  {/* Ibtida Restart Marker [✓] — শায়খের তেলাওয়াত শুরুর স্থান */}
                                   {waqfResume && (
                                     <span
-                                      className="inline-flex items-center text-[10px] font-black px-1.5 py-0.5 mx-0.5 rounded bg-emerald-500/25 border border-emerald-400 text-emerald-300 select-none shadow-xs"
+                                      className="inline-flex items-center justify-center w-3.5 h-3.5 mx-0.5 rounded-full bg-emerald-500/25 border border-emerald-400 text-emerald-300 text-[10px] font-black align-middle select-none shadow-xs"
                                       title={`পুনরায় তিলাওয়াত শুরুর স্থান (ইবতিদা): ${word}`}
                                     >
                                       ✓
@@ -542,9 +559,9 @@ export default function HafiziMushafSheet({
                                   )}
 
                                   <span
-                                    className={`inline-block transition-all duration-150 px-0.5 mx-[1.5px] rounded-sm ${
+                                    className={`inline-block transition-all duration-100 px-0.5 mx-[1.5px] rounded-sm ${
                                       isThisWordActive
-                                        ? "bg-amber-400 text-slate-950 font-black shadow-md shadow-amber-500/40 ring-2 ring-amber-200 scale-105"
+                                        ? "bg-amber-400/95 text-slate-950 font-black px-1.5 py-0.5 rounded-md shadow-md ring-2 ring-amber-300 scale-102"
                                         : isTargetJump
                                         ? "text-amber-400 dark:text-amber-300 font-black"
                                         : isThisAyahActive
@@ -552,7 +569,7 @@ export default function HafiziMushafSheet({
                                           ? "text-amber-900 font-bold"
                                           : "text-amber-300 font-bold"
                                         : wordMutashabihat
-                                        ? "text-sky-500 dark:text-sky-300 font-bold underline decoration-sky-400/80 decoration-2 underline-offset-4"
+                                        ? "text-emerald-500 dark:text-emerald-400 font-bold underline decoration-emerald-500/80 decoration-2 underline-offset-4"
                                         : waqfResume
                                         ? "text-emerald-400 font-bold underline decoration-emerald-400/80 decoration-wavy underline-offset-4"
                                         : isDay
@@ -563,13 +580,13 @@ export default function HafiziMushafSheet({
                                     {word}
                                   </span>
 
-                                  {/* Waqf Pause Marker [*] */}
+                                  {/* Waqf Pause Marker [★] — শায়খের দম ফেলার স্থান */}
                                   {waqfStop && (
                                     <span
-                                      className="inline-flex items-center text-[10px] font-black px-1.5 py-0.5 mx-0.5 rounded bg-amber-500/25 border border-amber-400 text-amber-300 select-none shadow-xs"
+                                      className="inline-flex items-center justify-center w-3.5 h-3.5 mx-0.5 rounded-full bg-amber-500/25 border border-amber-400 text-amber-300 text-[11px] font-black align-middle select-none shadow-xs"
                                       title={`দম ফেলার স্থান (ওয়াকফ): ${word}`}
                                     >
-                                      *{waqfStop.stopSign ? ` ${waqfStop.stopSign}` : ""}
+                                      ★
                                     </span>
                                   )}
                                 </span>

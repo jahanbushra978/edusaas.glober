@@ -32,11 +32,13 @@ import {
   HAFIZI_PARAS,
   TOTAL_UTHMANI_PAGES,
   getHafiziPageMeta,
+  getHafiziLocation,
   getHafiziLocationForAyah,
   getHafiziPageTarget,
   parseHafiziSearchQuery
 } from "@/lib/quran/hafizi-pages";
 import { getSurahData, getAyahAudioUrl } from "@/lib/quran/quran-service";
+import { loadChapterSegments, getActiveArabicWordIndex, splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 import { QARI_REGISTRY, getStoredQariPreference, setStoredQariPreference } from "@/lib/ai/qari-registry";
 import AmbientFloatingOrbs from "./AmbientFloatingOrbs";
 import HafiziMushafSheet from "./HafiziMushafSheet";
@@ -66,8 +68,9 @@ export default function TahfizQuranApp({ onClose }) {
   const [playingAyahNumber, setPlayingAyahNumber] = useState(null);
   const [playingSurahId, setPlayingSurahId] = useState(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
-  const [activeWordIndex, setActiveWordIndex] = useState(0);
+  const [activeWordIndex, setActiveWordIndex] = useState(-1);
   const audioRef = useRef(null);
+  const playingAyahWordsRef = useRef([]);
 
   // Search Modals State (3-Tabbed Unified Search Engine)
   const [isPageSearchOpen, setIsPageSearchOpen] = useState(false);
@@ -248,6 +251,7 @@ export default function TahfizQuranApp({ onClose }) {
     ) {
       audioRef.current.pause();
       setIsPlayingAudio(false);
+      setActiveWordIndex(-1);
       return;
     }
 
@@ -260,6 +264,44 @@ export default function TahfizQuranApp({ onClose }) {
           audioRef.current.pause();
         } catch {}
       }
+
+      // Preload timing segments and fetch Ayah text/words for live synchronized highlighting
+      playingAyahWordsRef.current = [];
+      loadChapterSegments(sId, activeQari).catch(() => {});
+      getSurahData(sId)
+        .then((data) => {
+          if (data && data.ayahs) {
+            const targetAyah = data.ayahs.find((a) => a.numberInSurah === aNum);
+            if (targetAyah) {
+              playingAyahWordsRef.current = splitArabicAyahWords(
+                targetAyah.words && targetAyah.words.length > 0 ? targetAyah.words : targetAyah.text
+              );
+            }
+          }
+        })
+        .catch(() => {});
+
+      // Precise live audio word-by-word tracking
+      audioRef.current.ontimeupdate = () => {
+        if (!audioRef.current) return;
+        const { currentTime, duration } = audioRef.current;
+        if (!duration || isNaN(duration)) return;
+
+        const words = playingAyahWordsRef.current;
+        if (!words || words.length === 0) return;
+
+        const computedIndex = getActiveArabicWordIndex({
+          currentTime,
+          duration,
+          surahNumber: sId,
+          ayahNumber: aNum,
+          qariId: activeQari,
+          words,
+        });
+
+        setActiveWordIndex(computedIndex);
+      };
+
       audioRef.current.src = audioUrl;
       audioRef.current.currentTime = 0;
       audioRef.current
@@ -284,13 +326,16 @@ export default function TahfizQuranApp({ onClose }) {
               })
               .catch(() => {
                 toast.error("ক্বারীর তিলাওয়াত বাজাতে সমস্যা হয়েছে");
+                setActiveWordIndex(-1);
               });
           } else {
             toast.error("ক্বারীর তিলাওয়াত বাজাতে সমস্যা হয়েছে");
+            setActiveWordIndex(-1);
           }
         });
 
       audioRef.current.onended = () => {
+        setActiveWordIndex(-1);
         const sMeta = ALL_SURAHS.find((s) => s.id === sId);
         if (sMeta && aNum < sMeta.versesCount) {
           handlePlayAyah(aNum + 1, sId, activeQari);
@@ -301,6 +346,7 @@ export default function TahfizQuranApp({ onClose }) {
       };
     } catch (e) {
       console.error(e);
+      setActiveWordIndex(-1);
     }
   };
 
@@ -313,6 +359,8 @@ export default function TahfizQuranApp({ onClose }) {
     }
     setIsPlayingAudio(false);
     setPlayingAyahNumber(null);
+    setActiveWordIndex(-1);
+    playingAyahWordsRef.current = [];
   };
 
   // Jump to specific Para & Page (হাফেজী বিন্যাস: ১নং পারায় ২১ পৃষ্ঠা, ২৯নং এ ২৪, ৩০নং এ ২৫, বাকিগুলোতে ২০ পৃষ্ঠা করে)
@@ -1114,10 +1162,10 @@ export default function TahfizQuranApp({ onClose }) {
                 </button>
                 <div className="min-w-0">
                   <h3 className="text-xs font-black text-white truncate">
-                    সূরা {ALL_SURAHS.find((s) => s.id === readerSurahId)?.nameBn || "আল-বাকারা"}
+                    সূরা {getHafiziPageMeta(readerPageNum)?.firstSurahMeta?.nameBn || ALL_SURAHS.find((s) => s.id === readerSurahId)?.nameBn || "আল-বাকারা"}
                   </h3>
                   <p className="text-[10px] text-teal-300/80 font-bold">
-                    পারা {toBn(getHafiziLocationForAyah(readerSurahId, 1).para)} • পৃষ্ঠা {toBn(readerPageNum)}
+                    পারা {toBn(getHafiziLocation(readerPageNum).para)} • পৃষ্ঠা {toBn(readerPageNum)}
                   </p>
                 </div>
               </div>
