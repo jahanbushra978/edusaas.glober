@@ -157,10 +157,18 @@ export default function HafiziMushafSheet({
     if (!pageAyahs || pageAyahs.length === 0) return [];
     const matched = [];
     pageAyahs.forEach((a) => {
-      const fullText = (a.text || "").replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "");
+      const cleanAyahWords = (a.words && a.words.length > 0 ? a.words : splitArabicAyahWords(a.text)).map((w) => cleanArabic(w));
+      const fullCleanText = cleanAyahWords.join(" ");
+
       MUTASHABIHAT_REGISTRY.forEach((entry, idx) => {
-        const cleanPhrase = entry.phraseClean.replace(/[\u064B-\u065F\u0670\u06D6-\u06ED]/g, "");
-        if (fullText.includes(cleanPhrase) || (a.text && a.text.includes(entry.phraseAr))) {
+        const cleanPhrase = cleanArabic(entry.phraseClean || entry.phraseAr);
+        const phraseWords = cleanPhrase.split(/\s+/).filter(Boolean);
+
+        const hasMatch =
+          fullCleanText.includes(cleanPhrase) ||
+          (phraseWords.length >= 2 && phraseWords.every((pw) => cleanAyahWords.some((aw) => aw.includes(pw) || pw.includes(aw))));
+
+        if (hasMatch) {
           if (!matched.some((m) => m.phraseClean === entry.phraseClean && m.ayahNumber === a.numberInSurah)) {
             matched.push({
               ...entry,
@@ -241,11 +249,15 @@ export default function HafiziMushafSheet({
     { id: "alafasy", shortNameBn: "শায়খ মাশারি বিন রাশেদ আল-আফাসী" },
   ];
 
-  // Clean Arabic text for fuzzy matching without harakat/tashkeel
+  // Clean Arabic text for robust fuzzy matching without harakat/tashkeel/waqf
   const cleanArabic = (str) =>
     (str || "")
       .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0610-\u061A]/g, "")
-      .replace(/[ـ\s+]/g, "")
+      .replace(/[\u06D6-\u06DC\u06DF-\u06E9\u06DE]/g, "")
+      .replace(/[أإآء]/g, "ا")
+      .replace(/[ىي]/g, "ي")
+      .replace(/[ةه]/g, "ه")
+      .replace(/[ـ\s+]+/g, " ")
       .trim();
 
   // Distribute Mutashabihat references to Left and Right Margins (ডান ও বাম হাশিয়া)
@@ -498,6 +510,40 @@ export default function HafiziMushafSheet({
                           (m) => m.ayahNumber === ayah.numberInSurah && m.surahId === ayah.surahId
                         );
 
+                        // Find exact [startIdx, endIdx] word slices for Mutashabihat phrases in this Ayah
+                        const cleanAyahWords = (ayah.words || []).map((w) => cleanArabic(w));
+                        const ayahWordMatches = [];
+
+                        ayahMutashabihat.forEach((m) => {
+                          const cleanPhraseWords = cleanArabic(m.phraseClean || m.phraseAr)
+                            .split(/\s+/)
+                            .filter(Boolean);
+
+                          if (cleanPhraseWords.length > 0 && cleanAyahWords.length >= cleanPhraseWords.length) {
+                            for (let i = 0; i <= cleanAyahWords.length - cleanPhraseWords.length; i++) {
+                              let isMatch = true;
+                              for (let j = 0; j < cleanPhraseWords.length; j++) {
+                                const aW = cleanAyahWords[i + j];
+                                const pW = cleanPhraseWords[j];
+                                if (aW !== pW && !aW.includes(pW) && !pW.includes(aW)) {
+                                  isMatch = false;
+                                  break;
+                                }
+                              }
+                              if (isMatch) {
+                                ayahWordMatches.push({
+                                  startIdx: i,
+                                  endIdx: i + cleanPhraseWords.length - 1,
+                                  mutashabihat: m,
+                                });
+                                break;
+                              }
+                            }
+                          }
+                        });
+
+                        const HAS_WAQF_MARK_REGEX = /[\u06D6-\u06DA\u06DC\u06E2\u06E9]|\b(قلى|صلى|ج|ط|م|لا|قف)\b/;
+
                         return (
                           <span
                             key={`${ayah.surahId}-${ayah.numberInSurah}`}
@@ -510,46 +556,53 @@ export default function HafiziMushafSheet({
                               const isThisWordActive =
                                 isThisAyahActive && activeWordIndex === wIdx && activeWordIndex >= 0;
 
-                              const cleanW = cleanArabic(word);
+                              // Check if word is part of any Mutashabihat slice in this Ayah
+                              const activeMatch = ayahWordMatches.find((m) => wIdx >= m.startIdx && wIdx <= m.endIdx);
+                              const isMutashabihatStart = activeMatch && wIdx === activeMatch.startIdx;
+                              const isMutashabihatEnd = activeMatch && wIdx === activeMatch.endIdx;
+                              const isInMutashabihat = !!activeMatch;
 
-                              // Check if word is part of any mutashabihat in ayahMutashabihat
-                              const wordMutashabihat = ayahMutashabihat.find((m) => {
-                                if (!cleanW || cleanW.length < 2) return false;
-                                const cleanP = cleanArabic(m.phraseClean || m.phraseAr);
-                                return cleanP.includes(cleanW);
-                              });
-
-                              // Is this the first word of the mutashabihat phrase in this Ayah?
-                              const isMutashabihatStart = wordMutashabihat && (
-                                wIdx === 0 ||
-                                !cleanArabic(wordMutashabihat.phraseClean || wordMutashabihat.phraseAr).includes(cleanArabic(ayah.words[wIdx - 1]))
-                              );
-
-                              // Check if word is a Waqf stop point
-                              const waqfStop = ayahWaqfList.find((w) =>
+                              // Check if word is a Waqf stop point (either explicit in registry or has Quranic Waqf sign)
+                              const wordHasWaqfSign = HAS_WAQF_MARK_REGEX.test(word);
+                              const explicitWaqfStop = ayahWaqfList.find((w) =>
                                 cleanArabic(word).includes(cleanArabic(w.stopAfterWord)) ||
                                 cleanArabic(w.stopAfterWord).includes(cleanArabic(word))
                               );
-                              // Check if word is an Ibtida resume point
-                              const waqfResume = ayahWaqfList.find((w) =>
+                              const isWaqfStopWord = !!explicitWaqfStop || wordHasWaqfSign;
+
+                              // Check if word is an Ibtida resume point (either explicit in registry or immediately follows a Waqf stop)
+                              const explicitWaqfResume = ayahWaqfList.find((w) =>
                                 cleanArabic(word).includes(cleanArabic(w.resumeAtWord)) ||
                                 cleanArabic(w.resumeAtWord).includes(cleanArabic(word))
                               );
+                              const prevWordHasWaqf = wIdx > 0 && (
+                                HAS_WAQF_MARK_REGEX.test(ayah.words[wIdx - 1]) ||
+                                ayahWaqfList.some((w) =>
+                                  cleanArabic(ayah.words[wIdx - 1]).includes(cleanArabic(w.stopAfterWord)) ||
+                                  cleanArabic(w.stopAfterWord).includes(cleanArabic(ayah.words[wIdx - 1]))
+                                )
+                              );
+                              const isIbtidaResumeWord = !!explicitWaqfResume || prevWordHasWaqf;
 
                               return (
                                 <span key={wIdx} className="inline-block relative">
-                                  {/* Mutashabihat Sequence Number Badge [১], [২] — পৃষ্ঠার শুরু থেকে ক্রমিক নম্বর */}
+                                  {/* ১. মুতাশাবিহাত শুরুর চিহ্ন: [১] সিরিয়াল নম্বর ও প্রারম্ভিক কোণ ব্র্যাকেট ┌ */}
                                   {isMutashabihatStart && (
-                                    <sup
-                                      className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-emerald-950/90 border border-emerald-400 text-emerald-300 text-[10px] font-black mx-1 select-none shadow-xs"
-                                      title={`মুতাশাবিহাত সদৃশ আয়াত #${toBn(wordMutashabihat.pageSerial || wordMutashabihat.refNo)}: ${wordMutashabihat.meaningBn || ""}`}
-                                    >
-                                      [{toBn(wordMutashabihat.pageSerial || wordMutashabihat.refNo)}]
-                                    </sup>
+                                    <span className="inline-flex items-center align-middle mx-0.5 select-none" dir="rtl">
+                                      <sup
+                                        className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-emerald-950/95 border border-emerald-400 text-emerald-300 text-[10px] font-black shadow-xs mx-0.5"
+                                        title={`মুতাশাবিহাত #${toBn(activeMatch.mutashabihat.pageSerial)}: ${activeMatch.mutashabihat.meaningBn || ""}`}
+                                      >
+                                        [{toBn(activeMatch.mutashabihat.pageSerial)}]
+                                      </sup>
+                                      <span className="text-emerald-400 font-black text-sm leading-none px-0.5" title="সদৃশ আয়াতের প্রারম্ভিক ব্র্যাকেট">
+                                        ┌
+                                      </span>
+                                    </span>
                                   )}
 
-                                  {/* Ibtida Restart Marker [✓] — শায়খের তেলাওয়াত শুরুর স্থান */}
-                                  {waqfResume && (
+                                  {/* ২. শায়খের তিলাওয়াত পুনরায় শুরুর মার্কার [✓] (ইবতিদা) */}
+                                  {isIbtidaResumeWord && (
                                     <span
                                       className="inline-flex items-center justify-center w-3.5 h-3.5 mx-0.5 rounded-full bg-emerald-500/25 border border-emerald-400 text-emerald-300 text-[10px] font-black align-middle select-none shadow-xs"
                                       title={`পুনরায় তিলাওয়াত শুরুর স্থান (ইবতিদা): ${word}`}
@@ -558,6 +611,7 @@ export default function HafiziMushafSheet({
                                     </span>
                                   )}
 
+                                  {/* ৩. মূল শব্দের টেক্সট (মুতাশাবিহাত হলে শতভাগ স্পষ্ট সবুজ রঙ!) */}
                                   <span
                                     className={`inline-block transition-all duration-100 px-0.5 mx-[1.5px] rounded-sm ${
                                       isThisWordActive
@@ -568,10 +622,8 @@ export default function HafiziMushafSheet({
                                         ? isDay
                                           ? "text-amber-900 font-bold"
                                           : "text-amber-300 font-bold"
-                                        : wordMutashabihat
+                                        : isInMutashabihat
                                         ? "text-emerald-500 dark:text-emerald-400 font-bold underline decoration-emerald-500/80 decoration-2 underline-offset-4"
-                                        : waqfResume
-                                        ? "text-emerald-400 font-bold underline decoration-emerald-400/80 decoration-wavy underline-offset-4"
                                         : isDay
                                         ? "text-stone-950"
                                         : "text-white"
@@ -580,8 +632,15 @@ export default function HafiziMushafSheet({
                                     {word}
                                   </span>
 
-                                  {/* Waqf Pause Marker [★] — শায়খের দম ফেলার স্থান */}
-                                  {waqfStop && (
+                                  {/* ৪. মুতাশাবিহাত সমাপ্তি চিহ্ন: সমাপনী কোণ ব্র্যাকেট ┘ */}
+                                  {isMutashabihatEnd && (
+                                    <span className="inline-block text-emerald-400 font-black text-sm leading-none px-0.5 select-none align-middle" title="সদৃশ আয়াতের সমাপনী ব্র্যাকেট">
+                                      ┘
+                                    </span>
+                                  )}
+
+                                  {/* ৫. শায়খের দম ফেলার স্থান: গোল্ডেন স্টার মার্কার [★] (ওয়াকফ) */}
+                                  {isWaqfStopWord && (
                                     <span
                                       className="inline-flex items-center justify-center w-3.5 h-3.5 mx-0.5 rounded-full bg-amber-500/25 border border-amber-400 text-amber-300 text-[11px] font-black align-middle select-none shadow-xs"
                                       title={`দম ফেলার স্থান (ওয়াকফ): ${word}`}

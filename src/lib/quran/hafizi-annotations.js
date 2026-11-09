@@ -72,6 +72,30 @@ export function getHafiziHeaderMetadata(pageNum, paraInfo, currentSurah) {
  */
 export const MUTASHABIHAT_REGISTRY = [
   {
+    phraseAr: "الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ",
+    phraseClean: "الحمد لله رب العالمين",
+    meaningBn: "সকল প্রশংসা বিশ্বজগতের প্রতিপালক আল্লাহর জন্য",
+    references: [
+      { para: 1, page: 1, surah: 1, ayah: 2, note: "সূরা আল-ফাতিহা ২" },
+      { para: 7, page: 133, surah: 6, ayah: 45, note: "সূরা আল-আন'আম ৪৫" },
+      { para: 11, page: 209, surah: 10, ayah: 10, note: "সূরা ইউনুস ১০" },
+      { para: 23, page: 452, surah: 37, ayah: 182, note: "সূরা আস-সাফফাত ১৮২" },
+      { para: 24, page: 467, surah: 39, ayah: 75, note: "সূরা আয-যুমার ৭৫" }
+    ]
+  },
+  {
+    phraseAr: "يَا أَيُّهَا الَّذِينَ آمَنُوا",
+    phraseClean: "يا ايها الذين امنوا",
+    meaningBn: "হে মুমিনগণ! (কুরআন শরীফে ৮৯ বার বর্ণিত)",
+    references: [
+      { para: 1, page: 16, surah: 2, ayah: 104, note: "সূরা আল-বাকারা ১০৪" },
+      { para: 2, page: 23, surah: 2, ayah: 153, note: "সূরা আল-বাকারা ১৫৩" },
+      { para: 2, page: 27, surah: 2, ayah: 178, note: "সূরা আল-বাকারা ১৭৮" },
+      { para: 6, page: 106, surah: 5, ayah: 1, note: "সূরা আল-মায়িদাহ ১" },
+      { para: 28, page: 554, surah: 62, ayah: 9, note: "সূরা আল-জুমু'আহ ৯" }
+    ]
+  },
+  {
     phraseAr: "أُولَٰئِكَ الَّذِينَ اشْتَرَوُا الضَّلَالَةَ بِالْهُدَىٰ",
     phraseClean: "اولئك الذين اشتروا الضلالة بالهدى",
     meaningBn: "এরাই তারা, যারা হেদায়েতের বিনিময়ে গোমরাহী ক্রয় করেছে",
@@ -81,12 +105,21 @@ export const MUTASHABIHAT_REGISTRY = [
     ]
   },
   {
-    phraseAr: "صُمٌّ بُكْمٌ عُمْيٌ فَهُمْ لَا",
-    phraseClean: "صم بكم عمي فهم لا",
+    phraseAr: "صُمٌّ بُكْمٌ عُمْيٌ فَهُمْ",
+    phraseClean: "صم بكم عمي فهم",
     meaningBn: "তারা বধির, মূক ও অন্ধ, সুতরাং তারা...",
     references: [
       { para: 1, page: 4, surah: 2, ayah: 18, note: "সূরা আল-বাকারা ১৮ (লা ইয়ারজি'উন)" },
       { para: 2, page: 26, surah: 2, ayah: 171, note: "সূরা আল-বাকারা ১৭১ (লা ইয়া'ক্বিলুন)" }
+    ]
+  },
+  {
+    phraseAr: "أَصَابِعَهُمْ فِي آذَانِهِم",
+    phraseClean: "اصابعهم في اذانهم",
+    meaningBn: "বজ্রপাতের শব্দে মৃত্যুর ভয়ে তাদের কানে আঙ্গুল দেয়",
+    references: [
+      { para: 1, page: 4, surah: 2, ayah: 19, note: "সূরা আল-বাকারা ১৯ (পারা ১ পৃষ্ঠা ৪)" },
+      { para: 29, page: 570, surah: 71, ayah: 7, note: "সূরা নূহ ৭ (পারা ২৯ পৃষ্ঠা ১১)" }
     ]
   },
   {
@@ -105,6 +138,15 @@ export const MUTASHABIHAT_REGISTRY = [
     references: [
       { para: 1, page: 4, surah: 2, ayah: 22, note: "সূরা আল-বাকারা ২২ (পারা ১ পৃষ্ঠা ৪)" },
       { para: 16, page: 315, surah: 20, ayah: 53, note: "সূরা ত্বা-হা ৫৩ (পারা ১৬ পৃষ্ঠা ১৪)" }
+    ]
+  },
+  {
+    phraseAr: "وَإِن كُنتُمْ فِي رَيْبٍ مِّمَّا نَزَّلْنَا",
+    phraseClean: "وان كنتم في ريب مما نزلنا",
+    meaningBn: "আমি আমার বান্দার প্রতি যা অবতীর্ণ করেছি তাতে যদি তোমাদের সন্দেহ থাকে",
+    references: [
+      { para: 1, page: 4, surah: 2, ayah: 23, note: "সূরা আল-বাকারা ২৩ (পারা ১ পৃষ্ঠা ৪)" },
+      { para: 11, page: 213, surah: 10, ayah: 38, note: "সূরা ইউনুস ৩৮ (পারা ১১ পৃষ্ঠা ৪)" }
     ]
   },
   {
@@ -383,6 +425,15 @@ export const MUTASHABIHAT_REGISTRY = [
  * - resumeWordText: The word from which recitation restarts (ইবতিদা) with a checkmark [✓]
  */
 export const WAQF_IBTIDA_REGISTRY = {
+  // Surah 2, Ayah 17 (Page 4)
+  "2-17": [
+    {
+      stopAfterWord: "بِنُورِهِمْ",
+      resumeAtWord: "وَتَرَكَهُمْ",
+      stopSign: "ط",
+      note: "فَلَمَّا أَضَاءَتْ مَا حَوْلَهُ ذَهَبَ اللَّهُ بِنُورِهِمْ (ওয়াকফ ★) • পুনরায়: وَتَرَكَهُمْ فِي ظُلُمَاتٍ (✓)"
+    }
+  ],
   // Surah 2, Ayah 19 (Page 4)
   "2-19": [
     {
@@ -408,6 +459,39 @@ export const WAQF_IBTIDA_REGISTRY = {
       resumeAtWord: "فَلَا",
       stopSign: "ج",
       note: "ফা আখরাজা বিহী মিনাছ ছামারাতি রিযকাল লাকুম (ওয়াকফ) * পুনরায়: ফালা তাজ'আলূ লিল্লাহি আন্দাদা (✓)"
+    }
+  ],
+  // Surah 2, Ayah 23 (Page 4)
+  "2-23": [
+    {
+      stopAfterWord: "مِّثْلِهِ",
+      resumeAtWord: "وَادْعُوا",
+      stopSign: "ۖ",
+      note: "ফা'তূ বিসূরাতিম মিম মিছলিহী (ওয়াকফ ★) • পুনরায়: ওয়াদ'ঊ শুহাদা-আকুম মিন দূনিল্লাহ (✓)"
+    }
+  ],
+  // Surah 2, Ayah 24 (Page 4)
+  "2-24": [
+    {
+      stopAfterWord: "وَالْحِجَارَةُ",
+      resumeAtWord: "أُعِدَّتْ",
+      stopSign: "ۖ",
+      note: "ওয়াকূদুহান নাসু ওয়াল হিজারাহ (ওয়াকফ ★) • পুনরায়: উ'ইদ্দাত লিল কাফিরীন (✓)"
+    }
+  ],
+  // Surah 2, Ayah 25 (Page 4)
+  "2-25": [
+    {
+      stopAfterWord: "الْأَنْهَارُ",
+      resumeAtWord: "كُلَّمَا",
+      stopSign: "ۖ",
+      note: "তাজরী মিন তাহতিহাল আনহার (ওয়াকফ ★) • পুনরায়: কুল্লামা রুযিকূ মিনহা (✓)"
+    },
+    {
+      stopAfterWord: "مُتَشَابِهًا",
+      resumeAtWord: "وَلَهُمْ",
+      stopSign: "ۖ",
+      note: "ওয়াউতূ বিহী মুতাশাবিহা (ওয়াকফ ★) • পুনরায়: ওয়ালাহুম ফীহা আযওয়াজুম মুতাহহারাতুন (✓)"
     }
   ],
   // Surah 2, Ayah 255 (Ayatul Kursi)
