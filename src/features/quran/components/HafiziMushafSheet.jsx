@@ -57,6 +57,7 @@ export default function HafiziMushafSheet({
   const [pageAyahs, setPageAyahs] = useState([]);
   const [jumpInput, setJumpInput] = useState(String(pageNum));
   const [isParaDropdownOpen, setIsParaDropdownOpen] = useState(false);
+  const [isQariMenuOpen, setIsQariMenuOpen] = useState(false);
   const [showMobileMargins, setShowMobileMargins] = useState(false);
   const pageContainerRef = useRef(null);
 
