@@ -62,9 +62,7 @@ export default function TahfizQuranApp({ onClose }) {
   const [readingNavStyle, setReadingNavStyle] = useState("flip"); // 'flip' | 'scroll'
 
   // Universal Authentic Audio Engine State
-  const [selectedQari, setSelectedQari] = useState(() => {
-    return getStoredQariPreference() || "alafasy";
-  });
+  const [selectedQari, setSelectedQari] = useState("husary_muallim");
   const [playingAyahNumber, setPlayingAyahNumber] = useState(null);
   const [playingSurahId, setPlayingSurahId] = useState(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -83,32 +81,41 @@ export default function TahfizQuranApp({ onClose }) {
   const [surahSearchQuery, setSurahSearchQuery] = useState("");
   const [paraSearchQuery, setParaSearchQuery] = useState("");
 
+  // Default initial states to prevent SSR Hydration Mismatch
+  const DEFAULT_BOOKMARKS = [
+    { id: "bm-1", surahId: 2, ayah: 255, para: 3, page: 42, label: "আয়াতুল কুরসী", date: "০৯ নভে ২০২৬" },
+    { id: "bm-2", surahId: 36, ayah: 1, para: 22, page: 440, label: "সূরা ইয়াসীন শুরু", date: "০৮ নভে ২০২৬" }
+  ];
+  const DEFAULT_LAST_READ = { surahId: 2, ayah: 1, para: 1, page: 2, percentage: 3 };
+
   // Bookmark State
-  const [bookmarks, setBookmarks] = useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("tahfiz_quran_bookmarks_v1");
-        if (saved) return JSON.parse(saved);
-      } catch {}
-    }
-    return [
-      { id: "bm-1", surahId: 2, ayah: 255, para: 3, page: 42, label: "আয়াতুল কুরসী", date: "০৯ নভে ২০২৬" },
-      { id: "bm-2", surahId: 36, ayah: 1, para: 22, page: 440, label: "সূরা ইয়াসীন শুরু", date: "০৮ নভে ২০২৬" }
-    ];
-  });
+  const [bookmarks, setBookmarks] = useState(DEFAULT_BOOKMARKS);
   const [isAddBookmarkOpen, setIsAddBookmarkOpen] = useState(false);
   const [newBookmarkLabel, setNewBookmarkLabel] = useState("");
 
   // Last Read State
-  const [lastRead, setLastRead] = useState(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const saved = localStorage.getItem("tahfiz_quran_last_read_v1");
-        if (saved) return JSON.parse(saved);
-      } catch {}
+  const [lastRead, setLastRead] = useState(DEFAULT_LAST_READ);
+  const hasLoadedStorageRef = useRef(false);
+
+  // Hydrate Client Storage safely after mount (Zero SSR Hydration Mismatch)
+  useEffect(() => {
+    try {
+      const savedLastRead = localStorage.getItem("tahfiz_quran_last_read_v1");
+      if (savedLastRead) {
+        setLastRead(JSON.parse(savedLastRead));
+      }
+      const savedBookmarks = localStorage.getItem("tahfiz_quran_bookmarks_v1");
+      if (savedBookmarks) {
+        setBookmarks(JSON.parse(savedBookmarks));
+      }
+      const prefQari = getStoredQariPreference();
+      if (prefQari) {
+        setSelectedQari(prefQari);
+      }
+    } catch {} finally {
+      hasLoadedStorageRef.current = true;
     }
-    return { surahId: 2, ayah: 1, para: 1, page: 2, percentage: 3 };
-  });
+  }, []);
 
   // Rewarded Ad-Free Mode State (Countdown)
   const [adFreeRemainingSeconds, setAdFreeRemainingSeconds] = useState(35820); // ~9h 57m
@@ -132,22 +139,20 @@ export default function TahfizQuranApp({ onClose }) {
     { ar: "أَسْتَغْفِرُ اللّٰهَ", bn: "আস্তাগফিরুল্লাহ", meaning: "আমি আল্লাহর কাছে ক্ষমা চাই" }
   ];
 
-  // Persist Bookmarks
+  // Persist Bookmarks (Only after initial storage load)
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("tahfiz_quran_bookmarks_v1", JSON.stringify(bookmarks));
-      } catch {}
-    }
+    if (!hasLoadedStorageRef.current) return;
+    try {
+      localStorage.setItem("tahfiz_quran_bookmarks_v1", JSON.stringify(bookmarks));
+    } catch {}
   }, [bookmarks]);
 
-  // Persist Last Read
+  // Persist Last Read (Only after initial storage load)
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        localStorage.setItem("tahfiz_quran_last_read_v1", JSON.stringify(lastRead));
-      } catch {}
-    }
+    if (!hasLoadedStorageRef.current) return;
+    try {
+      localStorage.setItem("tahfiz_quran_last_read_v1", JSON.stringify(lastRead));
+    } catch {}
   }, [lastRead]);
 
   // Countdown timer for ad-free mode
@@ -608,10 +613,10 @@ export default function TahfizQuranApp({ onClose }) {
                       <BookOpen className="w-5 h-5" />
                     </div>
                     <div>
-                      <h4 className="text-xs sm:text-sm font-black text-white group-hover:text-[#00d2b8] transition-colors">
+                      <h4 suppressHydrationWarning className="text-xs sm:text-sm font-black text-white group-hover:text-[#00d2b8] transition-colors">
                         সর্বশেষ পঠিত — সূরা {ALL_SURAHS.find((s) => s.id === lastRead.surahId)?.nameBn || "আল-বাকারা"}
                       </h4>
-                      <p className="text-[11px] text-teal-300/80 font-medium">
+                      <p suppressHydrationWarning className="text-[11px] text-teal-300/80 font-medium">
                         পারা {toBn(lastRead.para)} • পৃষ্ঠা {toBn(lastRead.page)}
                       </p>
                     </div>
@@ -628,7 +633,7 @@ export default function TahfizQuranApp({ onClose }) {
                       style={{ width: `${Math.max(3, lastRead.percentage)}%` }}
                     />
                   </div>
-                  <span className="text-[11px] font-black text-teal-300">
+                  <span suppressHydrationWarning className="text-[11px] font-black text-teal-300">
                     {toBn(lastRead.percentage)}%
                   </span>
                 </div>
