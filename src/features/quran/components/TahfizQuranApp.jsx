@@ -851,7 +851,7 @@ export default function TahfizQuranApp({ onClose }) {
               {filteredParasList.map((para) => (
                 <div
                   key={para.juz}
-                  onClick={() => handleJumpToParaAndPage(para.juz, para.startPage)}
+                  onClick={() => handleJumpToParaAndPage(para.juz, 1)}
                   className="rounded-2xl bg-[#0c2d27]/80 hover:bg-[#0f3730] border border-teal-500/20 p-3 flex items-center justify-between shadow-md transition-all cursor-pointer active:scale-[0.99] group"
                 >
                   <div className="flex items-center gap-3">
@@ -1318,8 +1318,8 @@ export default function TahfizQuranApp({ onClose }) {
           <button
             type="button"
             onClick={() => {
-              // Jump directly to Amma Para (Para 30, Page 586)
-              handleJumpToParaAndPage(30, 586);
+              // Jump directly to Amma Para (Para 30, Page 1 of Para 30)
+              handleJumpToParaAndPage(30, 1);
             }}
             className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition cursor-pointer"
           >

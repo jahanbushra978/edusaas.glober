@@ -173,12 +173,8 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
 
     let targetPage;
     const customPage = parseInt(String(pageInput).trim(), 10);
-    if (!isNaN(customPage) && customPage >= 1 && customPage <= TOTAL_UTHMANI_PAGES) {
-      targetPage = customPage;
-    } else {
-      // Default to start page of that Para mapped to 604 Uthmani pages
-      targetPage = Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((paraInfo.startPage / 610) * TOTAL_UTHMANI_PAGES)));
-    }
+    const target = getHafiziPageTarget(p, !isNaN(customPage) ? customPage : 1);
+    targetPage = target.uthmaniPage || target.globalPage;
 
     setHafiziPage(targetPage);
     setViewMode("mushaf");
@@ -1380,10 +1376,10 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-            className={`w-10 h-10 rounded-full flex items-center justify-center shadow-xl border transition active:scale-90 cursor-pointer ${
+            className={`w-9 h-9 rounded-full flex items-center justify-center shadow-xl border transition active:scale-90 cursor-pointer self-end mb-0.5 ${
               isDay
-                ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-400"
-                : "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-500"
+                ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-400 shadow-amber-950/20"
+                : "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-500 shadow-emerald-950/40"
             }`}
             title="উপরে যান (Back to Top)"
           >
@@ -1397,7 +1393,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
           <button
             type="button"
             onClick={() => setIsFloatingBarHidden(false)}
-            className={`flex md:hidden items-center gap-1.5 px-3 py-2 rounded-full shadow-2xl border text-xs font-black transition-all active:scale-95 cursor-pointer animate-fadeIn ${
+            className={`flex md:hidden items-center gap-1.5 px-3 py-1.5 rounded-full shadow-2xl border text-xs font-black transition-all active:scale-95 cursor-pointer animate-fadeIn ${
               isDay
                 ? "bg-amber-600 hover:bg-amber-700 text-white border-amber-300 shadow-amber-950/20"
                 : "bg-emerald-700 hover:bg-emerald-600 text-white border-emerald-400 shadow-emerald-950/40"
@@ -1405,14 +1401,14 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
             title="কন্ট্রোল বার পুনরায় খুলুন"
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span>মেনু</span>
+            <span>কন্ট্রোল মেনু</span>
             <span className="text-[10px] bg-black/40 px-1.5 py-0.5 rounded-full font-bold">
               {viewMode === "mushaf" ? `পৃ: ${hafiziPage}` : `${selectedSurahId}`}
             </span>
           </button>
         ) : (
           /* Full Floating Mobile Controls with Prominent [X] Hide Button */
-          <div className={`flex md:hidden items-center gap-1 p-1.5 rounded-2xl shadow-2xl border backdrop-blur-md animate-fadeIn max-w-[94vw] ${
+          <div className={`flex md:hidden items-center justify-between gap-1 p-1 sm:p-1.5 rounded-2xl shadow-2xl border backdrop-blur-md animate-fadeIn max-w-[96vw] shrink-0 ${
             isDay
               ? "bg-white/95 border-amber-300 text-slate-900"
               : "bg-[#091f16]/95 border-emerald-700 text-white"
@@ -1421,10 +1417,10 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
             <button
               type="button"
               onClick={() => setIsMobileJumperOpen(true)}
-              className="px-2.5 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-extrabold flex items-center gap-1 active:scale-95 transition cursor-pointer shadow-xs shrink-0"
+              className="px-2 py-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-extrabold flex items-center gap-1 active:scale-95 transition cursor-pointer shadow-xs shrink-0"
               title="সূরা, আয়াত, পারা ও পৃষ্ঠা নির্বাচন"
             >
-              <Search className="w-3.5 h-3.5" />
+              <Search className="w-3 h-3" />
               <span>জাম্প</span>
             </button>
 
@@ -1435,22 +1431,22 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                   type="button"
                   disabled={hafiziPage <= 1}
                   onClick={() => setHafiziPage((p) => Math.max(1, p - 1))}
-                  className="p-1.5 rounded-lg hover:bg-stone-200 dark:hover:bg-emerald-900 disabled:opacity-30 transition cursor-pointer"
+                  className="p-1 rounded-lg hover:bg-stone-200 dark:hover:bg-emerald-900 disabled:opacity-30 transition cursor-pointer shrink-0"
                   title="আগের পাতা"
                 >
-                  <ChevronLeft className="w-4 h-4" />
+                  <ChevronLeft className="w-3.5 h-3.5" />
                 </button>
-                <span className="text-[11px] font-black px-1 text-amber-600 dark:text-amber-400">
+                <span className="text-[11px] font-black px-0.5 text-amber-600 dark:text-amber-400 shrink-0">
                   পৃ: {hafiziPage}
                 </span>
                 <button
                   type="button"
                   disabled={hafiziPage >= TOTAL_UTHMANI_PAGES}
                   onClick={() => setHafiziPage((p) => Math.min(TOTAL_UTHMANI_PAGES, p + 1))}
-                  className="p-1.5 rounded-lg hover:bg-stone-200 dark:hover:bg-emerald-900 disabled:opacity-30 transition cursor-pointer"
+                  className="p-1 rounded-lg hover:bg-stone-200 dark:hover:bg-emerald-900 disabled:opacity-30 transition cursor-pointer shrink-0"
                   title="পরের পাতা"
                 >
-                  <ChevronRight className="w-4 h-4" />
+                  <ChevronRight className="w-3.5 h-3.5" />
                 </button>
               </div>
             )}
@@ -1460,7 +1456,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
               <button
                 type="button"
                 onClick={() => changeFontSize(-2)}
-                className="px-1.5 py-1 rounded text-xs font-black hover:bg-stone-200 dark:hover:bg-emerald-900 transition cursor-pointer"
+                className="px-1.5 py-0.5 rounded text-[11px] font-black hover:bg-stone-200 dark:hover:bg-emerald-900 transition cursor-pointer border border-stone-300 dark:border-emerald-800 shrink-0"
                 title="ছোট করুন"
               >
                 A-
@@ -1468,7 +1464,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
               <button
                 type="button"
                 onClick={() => changeFontSize(2)}
-                className="px-1.5 py-1 rounded text-xs font-black hover:bg-stone-200 dark:hover:bg-emerald-900 transition cursor-pointer"
+                className="px-1.5 py-0.5 rounded text-[11px] font-black hover:bg-stone-200 dark:hover:bg-emerald-900 transition cursor-pointer border border-stone-300 dark:border-emerald-800 shrink-0"
                 title="বড় করুন"
               >
                 A+
@@ -1479,7 +1475,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
             <button
               type="button"
               onClick={() => setIsFloatingBarHidden(true)}
-              className="w-7 h-7 rounded-full bg-rose-500/20 hover:bg-rose-600 text-rose-300 hover:text-white border border-rose-500/40 flex items-center justify-center shrink-0 active:scale-90 transition-all cursor-pointer shadow-xs ml-0.5"
+              className="w-7 h-7 rounded-xl bg-rose-600 hover:bg-rose-500 text-white border border-rose-400 flex items-center justify-center shrink-0 active:scale-90 transition-all cursor-pointer shadow-md ml-0.5"
               title="কন্ট্রোল বার লুকান (হাইড করুন)"
               aria-label="কন্ট্রোল বার লুকান"
             >

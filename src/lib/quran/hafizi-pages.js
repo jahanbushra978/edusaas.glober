@@ -399,24 +399,28 @@ export function getHafiziLocation(globalPage) {
 export function getHafiziPageTarget(paraNumber, paraPageNumber) {
   const p = Math.max(1, Math.min(30, Number(paraNumber) || 1));
   const info = JUZ_UTHMANI_PAGES[p - 1];
-  const pageInPara = Math.max(1, Math.min(info.totalPages, Number(paraPageNumber) || 1));
 
-  // If page 1 of Para: exact canonical start
-  if (pageInPara === 1) {
-    return {
-      surah: info.startSurah,
-      ayah: info.startAyah,
-      globalPage: info.startPg,
-      uthmaniPage: info.startPg,
-      para: p,
-      paraPage: 1,
-      totalPagesInPara: info.totalPages,
-    };
+  let rawPg = Number(paraPageNumber) || 1;
+  let pageInPara = 1;
+  let targetUthmaniPage = info.startPg;
+
+  // Polymorphic resolution: if rawPg is a global page (e.g. 182 or 586)
+  if (rawPg >= info.startPg && rawPg <= info.endPg) {
+    targetUthmaniPage = rawPg;
+    pageInPara = Math.max(1, Math.min(info.totalPages, rawPg - info.startPg + 1));
+  } else if (rawPg > info.totalPages && rawPg >= 1 && rawPg <= TOTAL_UTHMANI_PAGES) {
+    // Global page outside this Para range: find that page's actual Juz
+    targetUthmaniPage = rawPg;
+    const actualJuz = JUZ_UTHMANI_PAGES.find((j) => rawPg >= j.startPg && rawPg <= j.endPg) || info;
+    pageInPara = Math.max(1, Math.min(actualJuz.totalPages, rawPg - actualJuz.startPg + 1));
+  } else {
+    // Normal 1-based page within this Para (e.g. 1 to 20)
+    pageInPara = Math.max(1, Math.min(info.totalPages, rawPg));
+    targetUthmaniPage = Math.min(604, Math.max(1, info.startPg + pageInPara - 1));
   }
 
-  // Exact target page within this Juz
-  const targetUthmaniPage = Math.min(604, Math.max(1, info.startPg + pageInPara - 1));
-  const ref = UTHMANI_PAGE_REFERENCES[targetUthmaniPage - 1] || { surah: info.startSurah, ayah: 1 };
+  // Exact verse reference for this page
+  const ref = UTHMANI_PAGE_REFERENCES[targetUthmaniPage - 1] || { surah: info.startSurah, ayah: info.startAyah };
 
   return {
     surah: ref.surah,
