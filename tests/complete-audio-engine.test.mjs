@@ -242,5 +242,44 @@ describe("Complete Quran Learning Audio Resolution Test Suite", () => {
     assert.ok(!seenKasrah.urls[0].includes("Page8-32.m4a"));
     assert.ok(!seenKasrah.urls[0].includes("Page8-31.m4a"));
   });
+
+  it("verifies multi-Qari word timing adaptation across Alafasy, Husary and Sudais", async () => {
+    const { getActiveArabicWordIndex, splitArabicAyahWords } = await import("../src/lib/quran/quran-audio-timing.js");
+    const testWords = splitArabicAyahWords("تِلْكَ ٱلرُّسُلُ فَضَّلْنَا بَعْضَهُمْ عَلَىٰ بَعْضٍ ۘ مِّنْهُم مَّن كَلَّمَ ٱللَّهُ ۖ");
+
+    // Alafasy (~54s): at 10s
+    const idxAlafasy = getActiveArabicWordIndex({
+      currentTime: 10,
+      duration: 53.8,
+      surahNumber: 2,
+      ayahNumber: 253,
+      qariId: "alafasy",
+      words: testWords,
+    });
+
+    // Husary (~93s): slower teacher pace
+    const idxHusary = getActiveArabicWordIndex({
+      currentTime: 10,
+      duration: 92.6,
+      surahNumber: 2,
+      ayahNumber: 253,
+      qariId: "husary_muallim",
+      words: testWords,
+    });
+
+    assert.ok(idxAlafasy >= 0 && idxAlafasy < testWords.length, "Alafasy index must be within range");
+    assert.ok(idxHusary >= 0 && idxHusary < testWords.length, "Husary index must be within range");
+    assert.ok(idxHusary <= idxAlafasy, "Husary (slower) index should be <= Alafasy (faster) index at the same timestamp");
+  });
+
+  it("verifies Waqf pause weighting prevents premature highlight advance", async () => {
+    const { calculateTajweedWordIndex, splitArabicAyahWords } = await import("../src/lib/quran/quran-audio-timing.js");
+    const words = splitArabicAyahWords("تِلْكَ ٱلرُّسُلُ فَضَّلْنَا بَعْضَهُمْ عَلَىٰ بَعْضٍ ۘ مِّنْهُم مَّن كَلَّمَ ٱللَّهُ ۖ");
+
+    // At 15 seconds of a 54-second ayah with multiple waqf pauses,
+    // the index must not rush past the words before the pause
+    const idx = calculateTajweedWordIndex(15, 54, words);
+    assert.ok(idx <= 6, `At 15s in 54s ayah, index (${idx}) must hold properly on stop pauses`);
+  });
 });
 

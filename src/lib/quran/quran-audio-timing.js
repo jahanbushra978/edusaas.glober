@@ -228,7 +228,25 @@ export function getActiveArabicWordIndex({
 
   const reciterId = QDC_RECITER_MAP[qariId] || 7;
   const cacheKey = `${reciterId}:${surahNumber}`;
-  const segmentsMap = chapterSegmentsCache.get(cacheKey);
+  let segmentsMap = chapterSegmentsCache.get(cacheKey);
+
+  // Fast synchronous hydrate from localStorage if in-memory cache is cold
+  if (!segmentsMap && typeof window !== "undefined") {
+    try {
+      const storageKey = `rahmania_segments_v2_${reciterId}_${surahNumber}`;
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        segmentsMap = JSON.parse(stored);
+        chapterSegmentsCache.set(cacheKey, segmentsMap);
+      }
+    } catch {}
+
+    // Trigger async preload in the background if neither memory nor storage has it yet
+    if (!segmentsMap) {
+      loadChapterSegments(surahNumber, qariId).catch(() => {});
+    }
+  }
+
   const verseKey = `${surahNumber}:${ayahNumber}`;
 
   if (segmentsMap && segmentsMap[verseKey]) {
