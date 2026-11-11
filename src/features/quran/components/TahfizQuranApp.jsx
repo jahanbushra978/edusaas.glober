@@ -34,7 +34,7 @@ import {
   getHafiziPageTarget
 } from "@/lib/quran/hafizi-pages";
 import { getSurahData, getAyahAudioUrl } from "@/lib/quran/quran-service";
-import { loadChapterSegments, getActiveArabicWordIndex, splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
+import { loadChapterSegments, getActiveArabicWordIndex, splitArabicAyahWords, getWordStartTimeSec } from "@/lib/quran/quran-audio-timing";
 import { QARI_REGISTRY, getStoredQariPreference, setStoredQariPreference } from "@/lib/ai/qari-registry";
 import AmbientFloatingOrbs from "./AmbientFloatingOrbs";
 import HafiziMushafSheet from "./HafiziMushafSheet";
@@ -248,8 +248,8 @@ export default function TahfizQuranApp({
     }, 2500);
   };
 
-  // Audio Engine Playback Handlers
-  const handlePlayAyah = (ayahNum, surahId, overrideQariId = null, directWords = null) => {
+  // Audio Engine Playback Handlers (Supports Instant Word-Level Seeking & Playback)
+  const handlePlayAyah = (ayahNum, surahId, overrideQariId = null, directWords = null, startWordIndex = 0) => {
     const sId = surahId || readerSurahId;
     const aNum = ayahNum || 1;
     const activeQari = overrideQariId || selectedQari || "husary_muallim";
@@ -260,18 +260,45 @@ export default function TahfizQuranApp({
       setStoredQariPreference(overrideQariId);
     }
 
-    // Toggle pause if clicking same playing Ayah with same Qari
+    // 1. Instant Seek if clicking a specific word inside the currently playing Ayah
     if (
       playingAyahNumber === aNum &&
       playingSurahId === sId &&
-      isPlayingAudio &&
       audioRef.current &&
       (!overrideQariId || overrideQariId === selectedQari)
     ) {
-      audioRef.current.pause();
-      setIsPlayingAudio(false);
-      setActiveWordIndex(-1);
-      return;
+      if (startWordIndex > 0) {
+        const wordsToUse = (directWords && directWords.length > 0) ? directWords : playingAyahWordsRef.current;
+        const dur = audioRef.current.duration || 0;
+        const seekTime = getWordStartTimeSec({
+          surahNumber: sId,
+          ayahNumber: aNum,
+          wordIndex: startWordIndex,
+          qariId: activeQari,
+          duration: dur,
+          words: wordsToUse,
+        });
+        audioRef.current.currentTime = seekTime;
+        if (audioRef.current.paused) {
+          audioRef.current.play().catch(() => {});
+          setIsPlayingAudio(true);
+        }
+        setActiveWordIndex(startWordIndex);
+        return;
+      }
+
+      // If clicking word 0 on same playing Ayah, toggle pause/play
+      if (isPlayingAudio) {
+        audioRef.current.pause();
+        setIsPlayingAudio(false);
+        setActiveWordIndex(-1);
+        return;
+      } else {
+        audioRef.current.play().catch(() => {});
+        setIsPlayingAudio(true);
+        setActiveWordIndex(0);
+        return;
+      }
     }
 
     try {
@@ -325,27 +352,62 @@ export default function TahfizQuranApp({
         setActiveWordIndex(computedIndex);
       };
 
+      // Calculate initial target seek time if starting from a specific word
+      const targetStartTime = startWordIndex > 0
+        ? getWordStartTimeSec({
+            surahNumber: sId,
+            ayahNumber: aNum,
+            wordIndex: startWordIndex,
+            qariId: activeQari,
+            duration: 0,
+            words: directWords || [],
+          })
+        : 0;
+
+      const applyRefinedSeek = () => {
+        if (startWordIndex > 0 && audioRef.current) {
+          try {
+            const refinedTime = getWordStartTimeSec({
+              surahNumber: sId,
+              ayahNumber: aNum,
+              wordIndex: startWordIndex,
+              qariId: activeQari,
+              duration: audioRef.current.duration,
+              words: playingAyahWordsRef.current,
+            });
+            audioRef.current.currentTime = refinedTime;
+          } catch {}
+        }
+      };
+
+      audioRef.current.onloadedmetadata = applyRefinedSeek;
+      audioRef.current.oncanplay = applyRefinedSeek;
+
       audioRef.current.src = audioUrl;
-      audioRef.current.currentTime = 0;
+      audioRef.current.currentTime = targetStartTime;
+
       audioRef.current
         .play()
         .then(() => {
           setIsPlayingAudio(true);
           setPlayingAyahNumber(aNum);
           setPlayingSurahId(sId);
+          setActiveWordIndex(startWordIndex >= 0 ? startWordIndex : 0);
         })
         .catch((err) => {
           console.error("Audio playback error:", err);
-          // Auto fallback to Alafasy or Minshawi if Husary had network issue
+          // Auto fallback to Alafasy if original Qari had a network issue
           if (activeQari !== "alafasy") {
             const fallbackUrl = getAyahAudioUrl("alafasy", sId, aNum);
             audioRef.current.src = fallbackUrl;
+            audioRef.current.currentTime = targetStartTime;
             audioRef.current
               .play()
               .then(() => {
                 setIsPlayingAudio(true);
                 setPlayingAyahNumber(aNum);
                 setPlayingSurahId(sId);
+                setActiveWordIndex(startWordIndex >= 0 ? startWordIndex : 0);
               })
               .catch(() => {
                 toast.error("ক্বারীর তিলাওয়াত বাজাতে সমস্যা হয়েছে");
@@ -361,7 +423,7 @@ export default function TahfizQuranApp({
         setActiveWordIndex(-1);
         const sMeta = ALL_SURAHS.find((s) => s.id === sId);
         if (sMeta && aNum < sMeta.versesCount) {
-          handlePlayAyah(aNum + 1, sId, activeQari);
+          handlePlayAyah(aNum + 1, sId, activeQari, null, 0);
         } else {
           setIsPlayingAudio(false);
           setPlayingAyahNumber(null);

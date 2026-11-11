@@ -284,3 +284,87 @@ export function getActiveArabicWordIndex({
   return calculateTajweedWordIndex(currentTime, duration, cleanWords);
 }
 
+/**
+ * Calculate expected start time in seconds for a specific word based on Tajweed syllable weights
+ */
+export function calculateTajweedWordStartTime(targetWordIndex, durationSec, words = []) {
+  if (!targetWordIndex || targetWordIndex <= 0) return 0;
+  if (!words || words.length <= 1) return 0;
+
+  const totalWords = words.length;
+  const weights = words.map((w, idx) => {
+    const raw = typeof w === "string" ? w : (w.ar || w.text || "");
+    const clean = raw.replace(/[\u064B-\u065F\u0670]/g, "");
+    let wt = Math.max(2, clean.length);
+    if (/[~ٓ]/.test(raw) || clean.includes("الضالين")) wt += 14.0;
+    else if (/[اوي]/.test(clean)) wt += 1.8;
+    if (/[\u0651]/.test(raw)) wt += 1.5;
+    if (/[ۘۚۗۖۜ۞۩]/.test(raw)) wt += 12.0;
+    if (idx === totalWords - 1) wt += 5.0;
+    return wt;
+  });
+
+  const totalWeight = weights.reduce((sum, v) => sum + v, 0);
+  let accumulatedBefore = 0;
+  for (let i = 0; i < Math.min(targetWordIndex, totalWords); i++) {
+    accumulatedBefore += weights[i];
+  }
+
+  const introSilence = 0.35;
+  const outroSilence = 0.3;
+  const effectiveDuration = Math.max(0.1, (durationSec || (totalWords * 1.5)) - introSilence - outroSilence);
+  const ratio = totalWeight > 0 ? accumulatedBefore / totalWeight : 0;
+  return Math.max(0, introSilence + (ratio * effectiveDuration));
+}
+
+/**
+ * Compute the precise start timestamp (in seconds) for seeking to an exact word in an Ayah
+ */
+export function getWordStartTimeSec({
+  surahNumber,
+  ayahNumber,
+  wordIndex = 0,
+  qariId = "husary_muallim",
+  duration = 0,
+  words = [],
+}) {
+  if (!wordIndex || wordIndex <= 0) return 0;
+  const cleanWords = splitArabicAyahWords(words);
+  const totalWords = cleanWords.length || 1;
+  const targetIdx = Math.min(wordIndex, totalWords - 1);
+
+  const reciterId = QDC_RECITER_MAP[qariId] || 7;
+  const cacheKey = `${reciterId}:${surahNumber}`;
+  let segmentsMap = chapterSegmentsCache.get(cacheKey);
+
+  if (!segmentsMap && typeof window !== "undefined") {
+    try {
+      const storageKey = `rahmania_segments_v2_${reciterId}_${surahNumber}`;
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        segmentsMap = JSON.parse(stored);
+        chapterSegmentsCache.set(cacheKey, segmentsMap);
+      }
+    } catch {}
+  }
+
+  const verseKey = `${surahNumber}:${ayahNumber}`;
+  if (segmentsMap && segmentsMap[verseKey]) {
+    const rawSegments = segmentsMap[verseKey];
+    if (rawSegments && rawSegments.length > 0) {
+      const seg = rawSegments.find((s) => s.wordIndex === targetIdx);
+      if (seg) {
+        const maxSegEndMs = rawSegments[rawSegments.length - 1].endMs || (duration * 1000);
+        const audioDurationMs = duration > 0 ? duration * 1000 : maxSegEndMs;
+        const scale = (maxSegEndMs > 1000 && audioDurationMs > 1000)
+          ? audioDurationMs / maxSegEndMs
+          : 1.0;
+        return Math.max(0, (seg.startMs * scale) / 1000);
+      }
+    }
+  }
+
+  // Tajweed acoustic pacing fallback based on syllable weight
+  return calculateTajweedWordStartTime(targetIdx, duration, cleanWords);
+}
+

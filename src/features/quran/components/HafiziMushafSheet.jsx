@@ -534,13 +534,14 @@ export default function HafiziMushafSheet({
                           }
                         });
 
-                        const HAS_WAQF_MARK_REGEX = /[\u06D6-\u06DA\u06DC\u06E2\u06E9]|\b(قلى|صلى|ج|ط|م|لا|قف)\b/;
+                        // Strict Authentic Quranic Waqf Glyphs (ۖ, ۗ, ۘ, ۚ, ۛ, ۜ, قلى, صلى, ج, ط, م) - Zero false Iqlab / Tanween triggers
+                        const AUTHENTIC_WAQF_GLYPH_REGEX = /[\u06D6\u06D7\u06D8\u06DA\u06DB\u06DC]|(?:\b|\s)(?:ۖ|ۗ|ۘ|ۚ|ۛ|ۜ|قلى|صلى|ج|ط|م|قف)(?:\b|\s|$)/;
 
                         return (
                           <span
                             key={`${ayah.surahId}-${ayah.numberInSurah}`}
                             id={`mushaf-ayah-${ayah.surahId}-${ayah.numberInSurah}`}
-                            onClick={() => onPlayAyah && onPlayAyah(ayah.numberInSurah, ayah.surahId, null, ayah.words)}
+                            onClick={() => onPlayAyah && onPlayAyah(ayah.numberInSurah, ayah.surahId, null, ayah.words, 0)}
                             className="inline cursor-pointer select-text transition-colors"
                             title={`সূরা ${ayah.surahNameBn}, আয়াত ${toBn(ayah.numberInSurah)} শুনতে ক্লিক করুন`}
                           >
@@ -554,35 +555,38 @@ export default function HafiziMushafSheet({
                               const isMutashabihatEnd = activeMatch && wIdx === activeMatch.endIdx;
                               const isInMutashabihat = !!activeMatch;
 
-                              // Check if word is a Waqf stop point (either explicit in registry or has Quranic Waqf sign)
+                              // Check if word is a Waqf stop point (either explicit in registry or has authentic Quranic Waqf sign)
                               const normWord = normalizeQuranWord(word);
-                              const wordHasWaqfSign = HAS_WAQF_MARK_REGEX.test(word);
+                              const wordHasWaqfSign = AUTHENTIC_WAQF_GLYPH_REGEX.test(word);
                               const explicitWaqfStop = ayahWaqfList.find((w) =>
-                                normWord === normalizeQuranWord(w.stopAfterWord) ||
-                                normWord.includes(normalizeQuranWord(w.stopAfterWord)) ||
-                                normalizeQuranWord(w.stopAfterWord).includes(normWord)
+                                normWord === normalizeQuranWord(w.stopAfterWord)
                               );
                               const isWaqfStopWord = !!explicitWaqfStop || wordHasWaqfSign;
 
-                              // Check if word is an Ibtida resume point (either explicit in registry or immediately follows a Waqf stop)
+                              // Check if word is an Ibtida resume point (either explicit in registry or immediately follows an authentic Waqf stop)
                               const explicitWaqfResume = ayahWaqfList.find((w) =>
-                                normWord === normalizeQuranWord(w.resumeAtWord) ||
-                                normWord.includes(normalizeQuranWord(w.resumeAtWord)) ||
-                                normalizeQuranWord(w.resumeAtWord).includes(normWord)
+                                normWord === normalizeQuranWord(w.resumeAtWord)
                               );
-                              const prevWordNorm = wIdx > 0 ? normalizeQuranWord(ayah.words[wIdx - 1]) : "";
+                              const prevWord = wIdx > 0 ? ayah.words[wIdx - 1] : "";
+                              const prevWordNorm = wIdx > 0 ? normalizeQuranWord(prevWord) : "";
                               const prevWordHasWaqf = wIdx > 0 && (
-                                HAS_WAQF_MARK_REGEX.test(ayah.words[wIdx - 1]) ||
-                                ayahWaqfList.some((w) =>
-                                  prevWordNorm === normalizeQuranWord(w.stopAfterWord) ||
-                                  prevWordNorm.includes(normalizeQuranWord(w.stopAfterWord)) ||
-                                  normalizeQuranWord(w.stopAfterWord).includes(prevWordNorm)
-                                )
+                                AUTHENTIC_WAQF_GLYPH_REGEX.test(prevWord) ||
+                                ayahWaqfList.some((w) => prevWordNorm === normalizeQuranWord(w.stopAfterWord))
                               );
                               const isIbtidaResumeWord = !!explicitWaqfResume || (prevWordHasWaqf && !isWaqfStopWord);
 
                               return (
-                                <span key={wIdx} className="inline-block relative">
+                                <span
+                                  key={wIdx}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onPlayAyah) {
+                                      onPlayAyah(ayah.numberInSurah, ayah.surahId, null, ayah.words, wIdx);
+                                    }
+                                  }}
+                                  className="inline-block relative cursor-pointer group"
+                                  title={`শব্দ: ${word} (এখান থেকে তিলাওয়াত শুনতে ক্লিক করুন)`}
+                                >
                                   {/* ১. মুতাশাবিহাত শুরুর চিহ্ন: [১] সিরিয়াল নম্বর ও প্রারম্ভিক কোণ ব্র্যাকেট ┌ */}
                                   {isMutashabihatStart && (
                                     <span className="inline-flex items-center align-middle mx-0.5 select-none" dir="rtl">
@@ -601,7 +605,7 @@ export default function HafiziMushafSheet({
                                   {/* ২. শায়খের তিলাওয়াত পুনরায় শুরুর মার্কার [✓] (ইবতিদা) */}
                                   {isIbtidaResumeWord && (
                                     <span
-                                      className="inline-flex items-center justify-center w-3.5 h-3.5 mx-0.5 rounded-full bg-emerald-500/25 border border-emerald-400 text-emerald-300 text-[10px] font-black align-middle select-none shadow-xs"
+                                      className="inline-flex items-center justify-center w-4 h-4 mx-0.5 rounded-full bg-emerald-500/25 border border-emerald-400 text-emerald-400 text-[11px] font-black align-middle select-none shadow-xs"
                                       title={`পুনরায় তিলাওয়াত শুরুর স্থান (ইবতিদা): ${word}`}
                                     >
                                       ✓
@@ -641,7 +645,7 @@ export default function HafiziMushafSheet({
                                   {/* ৫. শায়খের দম ফেলার স্থান: গোল্ডেন স্টার মার্কার [★] (ওয়াকফ) */}
                                   {isWaqfStopWord && (
                                     <span
-                                      className="inline-flex items-center justify-center w-3.5 h-3.5 mx-0.5 rounded-full bg-amber-500/25 border border-amber-400 text-amber-300 text-[11px] font-black align-middle select-none shadow-xs"
+                                      className="inline-flex items-center justify-center w-4 h-4 mx-0.5 rounded-full bg-amber-500/25 border border-amber-400 text-amber-400 text-[11px] font-black align-middle select-none shadow-xs"
                                       title={`দম ফেলার স্থান (ওয়াকফ): ${word}`}
                                     >
                                       ★
