@@ -973,6 +973,15 @@ export const WAQF_IBTIDA_REGISTRY = {
       "resumeAtWord": "كَانَ",
       "note": "শায়েখের দম ফেলার বিরতি: فَإِنَّهُۥ (★) • ২য় বার শুরু: كَانَ (✓)"
     }
+  ],
+  "3-26": [
+    {
+      "stopWordIdx": 14,
+      "stopAfterWord": "تَشَاءُ",
+      "resumeWordIdx": 12,
+      "resumeAtWord": "وَتُعِزُّ",
+      "note": "শায়েখের দম ফেলার বিরতি: وَتُعِزُّ مَن تَشَاءُ (★) • ২য় বার শুরু: وَتُعِزُّ (✓)"
+    }
   ]
 };
 
