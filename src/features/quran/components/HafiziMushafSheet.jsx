@@ -555,25 +555,22 @@ export default function HafiziMushafSheet({
                               const isMutashabihatEnd = activeMatch && wIdx === activeMatch.endIdx;
                               const isInMutashabihat = !!activeMatch;
 
-                              // Check if word is a Waqf stop point (either explicit in registry or has authentic Quranic Waqf sign)
+                              // Check if word already contains a printed Quranic Waqf sign (like ج / ۚ, صلى / ۖ, قلى / ۗ, م / ۘ, ط, etc.)
                               const normWord = normalizeQuranWord(word);
-                              const wordHasWaqfSign = AUTHENTIC_WAQF_GLYPH_REGEX.test(word);
+                              const wordHasQuranicWaqfSign = AUTHENTIC_WAQF_GLYPH_REGEX.test(word);
+
+                              // ইউজার রুল: যে শব্দে কুরআনের নিজস্ব ওয়াকফ চিহ্ন আগে থেকেই আছে (যেমন: ج / ۚ), সেখানে স্টার বা টিক দেওয়া যাবে না।
+                              // স্টার (★) বসবে শুধু সেই সমস্ত মধ্যবর্তী স্থানে যেখানে কুরআনে আগে থেকে কোনো ওয়াকফ চিহ্ন নেই, কিন্তু ক্বারী দম শেষ হওয়ায় থেমেছেন
                               const explicitWaqfStop = ayahWaqfList.find((w) =>
                                 normWord === normalizeQuranWord(w.stopAfterWord)
                               );
-                              const isWaqfStopWord = !!explicitWaqfStop || wordHasWaqfSign;
+                              const isWaqfStopWord = !wordHasQuranicWaqfSign && !!explicitWaqfStop;
 
-                              // Check if word is an Ibtida resume point (either explicit in registry or immediately follows an authentic Waqf stop)
+                              // টিক (✓) বসবে ঠিক সেই শব্দে যেখান থেকে ক্বারী দম নেওয়ার পর ২য় বার মিলিয়ে শুরু করেছেন (ইবতিদা)
                               const explicitWaqfResume = ayahWaqfList.find((w) =>
                                 normWord === normalizeQuranWord(w.resumeAtWord)
                               );
-                              const prevWord = wIdx > 0 ? ayah.words[wIdx - 1] : "";
-                              const prevWordNorm = wIdx > 0 ? normalizeQuranWord(prevWord) : "";
-                              const prevWordHasWaqf = wIdx > 0 && (
-                                AUTHENTIC_WAQF_GLYPH_REGEX.test(prevWord) ||
-                                ayahWaqfList.some((w) => prevWordNorm === normalizeQuranWord(w.stopAfterWord))
-                              );
-                              const isIbtidaResumeWord = !!explicitWaqfResume || (prevWordHasWaqf && !isWaqfStopWord);
+                              const isIbtidaResumeWord = !!explicitWaqfResume;
 
                               return (
                                 <span
