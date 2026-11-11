@@ -757,15 +757,6 @@ export const WAQF_IBTIDA_REGISTRY = {
       "note": "শায়েখের দম ফেলার বিরতি: ٱللَّهَ (★) • ২য় বার শুরু: وَٱتَّقُوا۟ (✓)"
     }
   ],
-  "2-197": [
-    {
-      "stopWordIdx": 28,
-      "stopAfterWord": "ٱلْأَلْبَٰبِ",
-      "resumeWordIdx": 0,
-      "resumeAtWord": "ٱلْحَجُّ",
-      "note": "শায়েখের দম ফেলার বিরতি: ٱلْأَلْبَٰبِ (★) • ২য় বার শুরু: ٱلْحَجُّ (✓)"
-    }
-  ],
   "2-200": [
     {
       "stopWordIdx": 16,
@@ -791,15 +782,6 @@ export const WAQF_IBTIDA_REGISTRY = {
       "resumeWordIdx": 8,
       "resumeAtWord": "وَيُشْهِدُ",
       "note": "শায়েখের দম ফেলার বিরতি: قَلْبِهِۦ (★) • ২য় বার শুরু: وَيُشْهِدُ (✓)"
-    }
-  ],
-  "2-212": [
-    {
-      "stopWordIdx": 16,
-      "stopAfterWord": "مَن",
-      "resumeWordIdx": 13,
-      "resumeAtWord": "ٱلْقِيَٰمَةِ",
-      "note": "শায়েখের দম ফেলার বিরতি: مَن (★) • ২য় বার শুরু: ٱلْقِيَٰمَةِ ۗ (✓)"
     }
   ],
   "2-213": [
@@ -865,9 +847,9 @@ export const WAQF_IBTIDA_REGISTRY = {
   ],
   "2-243": [
     {
-      "stopWordIdx": 9,
+      "stopWordIdx": 10,
       "stopAfterWord": "الْمَوْتِ",
-      "resumeWordIdx": 10,
+      "resumeWordIdx": 11,
       "resumeAtWord": "فَقَالَ",
       "note": "وَهُمْ أُلُوفٌ حَذَرَ الْمَوْتِ (কুরআনে কোনো ওয়াকফ চিহ্ন নেই, দম শেষ হওয়ায় বিরতি ★) • ২য় বার শুরু: فَقَالَ لَهُمُ اللَّهُ مُوتُوا (✓)"
     }
@@ -913,22 +895,6 @@ export const WAQF_IBTIDA_REGISTRY = {
       "resumeWordIdx": 20,
       "resumeAtWord": "وَلَهُ",
       "note": "শায়েখের দম ফেলার বিরতি: ضُعَفَآءُ (★) • ২য় বার শুরু: وَلَهُۥ (✓)"
-    }
-  ],
-  "2-272": [
-    {
-      "stopWordIdx": 10,
-      "stopAfterWord": "مِنْ",
-      "resumeWordIdx": 7,
-      "resumeAtWord": "يَشَآءُ",
-      "note": "শায়েখের দম ফেলার বিরতি: مِنْ (★) • ২য় বার শুরু: يَشَآءُ ۗ (✓)"
-    },
-    {
-      "stopWordIdx": 14,
-      "stopAfterWord": "��ُنفِقُونَ",
-      "resumeWordIdx": 13,
-      "resumeAtWord": "وَمَا",
-      "note": "শায়েখের দম ফেলার বিরতি: ��ُنفِقُونَ (★) • ২য় বার শুরু: وَمَا (✓)"
     }
   ],
   "2-273": [
