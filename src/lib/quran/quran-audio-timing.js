@@ -123,7 +123,24 @@ export async function loadChapterSegments(chapterNumber, qariId = "alafasy") {
           startMs: Math.max(0, seg[1] - baseOffset),
           endMs: Math.max(0, seg[2] - baseOffset),
         }));
+        // Detect authentic pause-and-repeat (Waqf & Ibtida) from segment sequence
+        const repeats = [];
+        let prevWord = 0;
+        for (let i = 0; i < cleanSegments.length; i++) {
+          const currWord = cleanSegments[i][0];
+          if (currWord < prevWord && prevWord > 0) {
+            repeats.push({
+              stopWordIdx: prevWord - 1, // 0-based word index
+              resumeWordIdx: currWord - 1 // 0-based word index
+            });
+          }
+          prevWord = currWord;
+        }
+
         segmentMap[vt.verse_key] = normalized;
+        if (repeats.length > 0) {
+          segmentMap[`${vt.verse_key}_repeats`] = repeats;
+        }
       });
 
       chapterSegmentsCache.set(cacheKey, segmentMap);
@@ -366,5 +383,32 @@ export function getWordStartTimeSec({
 
   // Tajweed acoustic pacing fallback based on syllable weight
   return calculateTajweedWordStartTime(targetIdx, duration, cleanWords);
+}
+
+/**
+ * Get authentic reciter breath pause (Waqf) and restart (Ibtida) word indices
+ * computed dynamically from millisecond audio segments across all 114 Surahs
+ */
+export function getVerseRepeats(surahNumber, ayahNumber, qariId = "alafasy") {
+  const reciterId = QDC_RECITER_MAP[qariId] || 7;
+  const cacheKey = `${reciterId}:${surahNumber}`;
+  let segmentsMap = chapterSegmentsCache.get(cacheKey);
+
+  if (!segmentsMap && typeof window !== "undefined") {
+    try {
+      const storageKey = `rahmania_segments_v2_${reciterId}_${surahNumber}`;
+      const stored = localStorage.getItem(storageKey);
+      if (stored) {
+        segmentsMap = JSON.parse(stored);
+        chapterSegmentsCache.set(cacheKey, segmentsMap);
+      }
+    } catch {}
+  }
+
+  const verseKey = `${surahNumber}:${ayahNumber}`;
+  if (segmentsMap && segmentsMap[`${verseKey}_repeats`]) {
+    return segmentsMap[`${verseKey}_repeats`];
+  }
+  return [];
 }
 
