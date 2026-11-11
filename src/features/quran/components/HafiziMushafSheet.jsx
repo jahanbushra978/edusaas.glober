@@ -106,6 +106,16 @@ export default function HafiziMushafSheet({
     setJumpInput(String(pageNum));
   }, [pageNum]);
 
+  // Auto-scroll screen so currently recited Ayah is centered in view
+  useEffect(() => {
+    if (playingAyahNumber && playingSurahId) {
+      const el = document.getElementById(`mushaf-ayah-${playingSurahId}-${playingAyahNumber}`);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }
+  }, [playingAyahNumber, playingSurahId]);
+
   // Load ayahs for all surahs spanning this page
   useEffect(() => {
     let isCancelled = false;

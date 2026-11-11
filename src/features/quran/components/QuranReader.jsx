@@ -35,7 +35,12 @@ import {
 } from "@/lib/quran/hafizi-pages";
 import HafiziMushafSheet from "./HafiziMushafSheet";
 import { useBanglaAudioEngine } from "@/lib/quran/bangla-audio-engine";
-import { loadChapterSegments, getActiveArabicWordIndex, splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
+import {
+  loadChapterSegments,
+  getActiveArabicWordIndex,
+  splitArabicAyahWords,
+  getWordStartTimeSec
+} from "@/lib/quran/quran-audio-timing";
 import { universalAudioEngine, audioCache } from "@/lib/quran/audio";
 
 const STORAGE_LAST_READ = "rahmania_quran_last_read_v1";
@@ -85,6 +90,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
   selectedQariRef.current = selectedQari;
   const selectedSurahIdRef = useRef(selectedSurahId);
   selectedSurahIdRef.current = selectedSurahId;
+  const playbackSessionIdRef = useRef(0);
 
   // Bookmarks & Word Breakdown Modal
   const [bookmarks, setBookmarks] = useState([]);
@@ -341,11 +347,17 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
 
     const maxAyahs = currentSurah.ayahs.length;
     if (currentAyah < maxAyahs) {
-      startNewAyahAudio(currentAyah + 1);
+      const nextAyah = currentAyah + 1;
+      // Auto page flip to next Hafizi Mushaf page if next Ayah is on the next page
+      const loc = getHafiziLocationForAyah(selectedSurahIdRef.current, nextAyah);
+      if (loc && loc.uthmaniPage && loc.uthmaniPage !== hafiziPage) {
+        setHafiziPage(loc.uthmaniPage);
+      }
+      startNewAyahAudio(nextAyah, 0);
     } else {
       // Last Ayah of Surah reached
       if (repeatModeRef.current === "surah") {
-        startNewAyahAudio(1);
+        startNewAyahAudio(1, 0);
       } else {
         if (audioRef.current) {
           try {
@@ -361,25 +373,30 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
     }
   };
 
-  const startNewAyahAudio = (ayahNumber) => {
+  const startNewAyahAudio = (ayahNumber, startWordIdx = 0, words = null) => {
     const currentSurah = surahDataRef.current;
     if (!currentSurah?.ayahs?.length) return;
 
+    // 1. Monotonic session ID to eliminate ANY concurrent/overlapping playback
+    const thisSessionId = ++playbackSessionIdRef.current;
+
+    // 2. Stop ALL ongoing audios globally
     universalAudioEngine.stopAll();
-
-    const audioUrl = getAyahAudioUrl(selectedQariRef.current, selectedSurahIdRef.current, ayahNumber);
-    audioRef.current = audioCache.getOrCreate(audioUrl);
-
-    // Predictive preload next Ayah
-    if (ayahNumber < currentSurah.ayahs.length) {
-      universalAudioEngine.preload({
-        surahNumber: selectedSurahIdRef.current,
-        ayahNumber: ayahNumber + 1,
-        qariId: selectedQariRef.current,
-      });
+    stopBanglaAudio();
+    if (audioRef.current) {
+      try {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+      } catch {}
     }
 
-    // Ensure QuranCDN timing segments are loaded for active surah and qari
+    // 3. Automatically flip Hafizi Mushaf page if reciting an Ayah on another page
+    const loc = getHafiziLocationForAyah(selectedSurahIdRef.current, ayahNumber);
+    if (loc && loc.uthmaniPage && loc.uthmaniPage !== hafiziPage) {
+      setHafiziPage(loc.uthmaniPage);
+    }
+
+    // 4. Ensure QuranCDN timing segments are loaded for active surah and qari
     loadChapterSegments(selectedSurahIdRef.current, selectedQariRef.current);
 
     // Reset loop counter on newly selected or advanced Ayah
@@ -388,71 +405,106 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
 
     setPlayingAyahNumber(ayahNumber);
     playingAyahRef.current = ayahNumber;
-    setActiveWordIndex(0);
+    setActiveWordIndex(startWordIdx >= 0 ? startWordIdx : 0);
 
-    stopBanglaAudio();
+    const currentAyahObj = currentSurah.ayahs.find((a) => a.numberInSurah === ayahNumber);
+    const cleanWords = words && words.length > 0
+      ? words
+      : (currentAyahObj?.words && currentAyahObj.words.length > 0 ? currentAyahObj.words : splitArabicAyahWords(currentAyahObj?.text || ""));
 
-    try {
-      audioRef.current.pause();
-    } catch {}
+    const audioUrl = getAyahAudioUrl(selectedQariRef.current, selectedSurahIdRef.current, ayahNumber);
+    const audio = audioCache.getOrCreate(audioUrl);
+    audioRef.current = audio;
 
-    audioRef.current.src = audioUrl;
-    audioRef.current.defaultPlaybackRate = playbackSpeedRef.current;
-    audioRef.current.playbackRate = playbackSpeedRef.current;
+    audio.defaultPlaybackRate = playbackSpeedRef.current;
+    audio.playbackRate = playbackSpeedRef.current;
 
-    // Preserving playbackRate on media events
-    audioRef.current.oncanplay = () => {
-      if (audioRef.current) audioRef.current.playbackRate = playbackSpeedRef.current;
+    // Calculate word seek offset
+    const seekSec = startWordIdx > 0
+      ? getWordStartTimeSec({
+          surahNumber: selectedSurahIdRef.current,
+          ayahNumber,
+          wordIndex: startWordIdx,
+          qariId: selectedQariRef.current,
+          duration: audio.duration || 0,
+          words: cleanWords,
+        })
+      : 0;
+
+    const executePlay = () => {
+      // Abort if another click arrived in the meantime
+      if (playbackSessionIdRef.current !== thisSessionId) {
+        audio.pause();
+        return;
+      }
+
+      if (seekSec > 0) {
+        audio.currentTime = seekSec;
+        setActiveWordIndex(startWordIdx);
+      } else {
+        audio.currentTime = 0;
+        setActiveWordIndex(0);
+      }
+
+      audio.playbackRate = playbackSpeedRef.current;
+
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            if (playbackSessionIdRef.current !== thisSessionId) {
+              audio.pause();
+              return;
+            }
+            setIsPlayingAudio(true);
+            if (audioRef.current) audioRef.current.playbackRate = playbackSpeedRef.current;
+            // Scroll playing Ayah into view
+            const el = document.getElementById(`mushaf-ayah-${selectedSurahIdRef.current}-${ayahNumber}`);
+            if (el) {
+              el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+            }
+          })
+          .catch((err) => {
+            if (err.name !== "AbortError") {
+              console.warn("Audio playback interrupted or failed:", err);
+              setIsPlayingAudio(false);
+            }
+          });
+      }
     };
-    audioRef.current.onplay = () => {
-      if (audioRef.current) audioRef.current.playbackRate = playbackSpeedRef.current;
-    };
+
+    if (audio.readyState >= 1) {
+      executePlay();
+    } else {
+      audio.onloadedmetadata = () => {
+        executePlay();
+      };
+      audio.oncanplay = () => {
+        executePlay();
+      };
+    }
 
     // Precise word-by-word tracking during playback (QuranCDN Millisecond Segments + Tajweed Pacing)
-    audioRef.current.ontimeupdate = () => {
-      if (!audioRef.current) return;
-      const { currentTime, duration } = audioRef.current;
+    audio.ontimeupdate = () => {
+      if (!audioRef.current || audioRef.current !== audio) return;
+      const { currentTime, duration } = audio;
       if (!duration || isNaN(duration)) return;
-
-      const currentAyahObj = surahDataRef.current?.ayahs?.find((a) => a.numberInSurah === ayahNumber);
-      if (!currentAyahObj) return;
-
-      const words = splitArabicAyahWords(
-        currentAyahObj.words && currentAyahObj.words.length > 0
-          ? currentAyahObj.words
-          : currentAyahObj.text
-      );
 
       const computedIndex = getActiveArabicWordIndex({
         currentTime,
         duration,
-        surahNumber: selectedSurahId,
+        surahNumber: selectedSurahIdRef.current,
         ayahNumber,
-        qariId: selectedQari,
-        words,
+        qariId: selectedQariRef.current,
+        words: cleanWords,
       });
 
       setActiveWordIndex(computedIndex);
     };
 
-    // Playback with safe promise handling
-    const playPromise = audioRef.current.play();
-    if (playPromise !== undefined) {
-      playPromise
-        .then(() => {
-          setIsPlayingAudio(true);
-          if (audioRef.current) audioRef.current.playbackRate = playbackSpeedRef.current;
-        })
-        .catch((err) => {
-          if (err.name !== "AbortError") {
-            console.warn("Audio playback interrupted or failed:", err);
-            setIsPlayingAudio(false);
-          }
-        });
-    }
-
     // Dynamic onended using synchronized refs (100% immune to stale closures)
-    audioRef.current.onended = () => {
+    audio.onended = () => {
+      if (playbackSessionIdRef.current !== thisSessionId) return;
       const mode = repeatModeRef.current;
       if (mode === "1x") {
         if (repeatCounterRef.current < 1) {
@@ -493,33 +545,54 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
   };
 
   // Audio player handler
-  const playAyahAudio = (ayahNumber) => {
-    // If clicking on currently active Ayah: toggle pause or resume
-    if (playingAyahRef.current === ayahNumber) {
-      if (isPlayingAudio) {
-        if (audioRef.current) {
-          audioRef.current.pause();
-          setIsPlayingAudio(false);
-        }
-        return;
-      } else if (audioRef.current && audioRef.current.src) {
+  const playAyahAudio = (ayahNumber, startWordIdx = 0, words = null) => {
+    // If clicking on a specific word in currently active Ayah: seek immediately!
+    if (playingAyahRef.current === ayahNumber && audioRef.current) {
+      if (startWordIdx > 0) {
+        const thisSessionId = ++playbackSessionIdRef.current;
+        const dur = audioRef.current.duration || 0;
+        const currentAyahObj = surahDataRef.current?.ayahs?.find((a) => a.numberInSurah === ayahNumber);
+        const cleanWords = words && words.length > 0
+          ? words
+          : (currentAyahObj?.words && currentAyahObj.words.length > 0 ? currentAyahObj.words : splitArabicAyahWords(currentAyahObj?.text || ""));
+
+        const seekTime = getWordStartTimeSec({
+          surahNumber: selectedSurahIdRef.current,
+          ayahNumber,
+          wordIndex: startWordIdx,
+          qariId: selectedQariRef.current,
+          duration: dur,
+          words: cleanWords,
+        });
+
+        audioRef.current.currentTime = seekTime;
         audioRef.current.playbackRate = playbackSpeedRef.current;
-        const playPromise = audioRef.current.play();
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              setIsPlayingAudio(true);
-              if (audioRef.current) audioRef.current.playbackRate = playbackSpeedRef.current;
-            })
-            .catch(() => {
-              startNewAyahAudio(ayahNumber);
-            });
-        }
+        audioRef.current.play().then(() => {
+          if (playbackSessionIdRef.current === thisSessionId) {
+            setIsPlayingAudio(true);
+            setActiveWordIndex(startWordIdx);
+          }
+        }).catch(() => {});
+        return;
+      }
+
+      // If clicking word 0 on same playing Ayah: toggle pause or resume
+      if (isPlayingAudio) {
+        audioRef.current.pause();
+        setIsPlayingAudio(false);
+        return;
+      } else if (audioRef.current.src) {
+        audioRef.current.playbackRate = playbackSpeedRef.current;
+        audioRef.current.play().then(() => {
+          setIsPlayingAudio(true);
+        }).catch(() => {
+          startNewAyahAudio(ayahNumber, 0, words);
+        });
         return;
       }
     }
 
-    startNewAyahAudio(ayahNumber);
+    startNewAyahAudio(ayahNumber, startWordIdx, words);
   };
 
   // Toggle Play / Pause on currently active Ayah
@@ -1329,24 +1402,24 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                 }
                 setIsPlayingAudio(false);
               }}
-              onPlayAyah={(ayahNum, sId, overrideQariId) => {
+              onPlayAyah={(ayahNum, sId, overrideQariId, words = null, startWordIdx = 0) => {
                 if (overrideQariId) {
                   setSelectedQari(overrideQariId);
                   selectedQariRef.current = overrideQariId;
                 }
-                const targetSurah = sId || selectedSurahId;
-                if (targetSurah !== selectedSurahId) {
+                const targetSurah = sId || selectedSurahIdRef.current;
+                if (targetSurah !== selectedSurahIdRef.current) {
                   setSelectedSurahId(targetSurah);
                   selectedSurahIdRef.current = targetSurah;
                   getSurahData(targetSurah).then((data) => {
                     if (data) {
                       setSurahData(data);
                       surahDataRef.current = data;
-                      startNewAyahAudio(ayahNum);
+                      startNewAyahAudio(ayahNum, startWordIdx, words);
                     }
                   });
                 } else {
-                  playAyahAudio(ayahNum);
+                  playAyahAudio(ayahNum, startWordIdx, words);
                 }
               }}
               playingAyahNumber={playingAyahNumber}
