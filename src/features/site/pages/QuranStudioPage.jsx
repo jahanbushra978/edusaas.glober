@@ -33,6 +33,7 @@ import {
   MessageSquare,
   MessageSquarePlus,
   Lightbulb,
+  FileText,
 } from "lucide-react";
 import { toast } from "sonner";
 import AISettingsModal from "@/features/ai/components/AISettingsModal";
