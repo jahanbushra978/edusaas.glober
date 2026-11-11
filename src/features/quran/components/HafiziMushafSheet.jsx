@@ -20,7 +20,7 @@ import {
   getThematicSummaryForPage,
   normalizeQuranWord
 } from "@/lib/quran/hafizi-annotations";
-import { splitArabicAyahWords, getVerseRepeats } from "@/lib/quran/quran-audio-timing";
+import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 
 // Canonical Arabic normalizer for 100% accurate Mutashabihat and Waqf matching
 function cleanArabic(str) {
@@ -190,33 +190,17 @@ export default function HafiziMushafSheet({
     }));
   }, [pageAyahs]);
 
-  // Look up Waqf & Ibtida markers for ayahs on this page (combines preloaded authentic registry + millisecond segment audio repeats)
+  // Look up Waqf & Ibtida markers for ayahs on this page strictly from the authentic verified registry
   const waqfIbtidaMap = useMemo(() => {
     const map = {};
     pageAyahs.forEach((a) => {
       const key = `${a.surahId}-${a.numberInSurah}`;
-      const registered = WAQF_IBTIDA_REGISTRY[key] || [];
-      const dynamicRepeats = getVerseRepeats(a.surahId, a.numberInSurah, selectedQari);
-
-      const combined = [...registered];
-      dynamicRepeats.forEach((dr) => {
-        if (!combined.some((c) => c.stopWordIdx === dr.stopWordIdx && c.resumeWordIdx === dr.resumeWordIdx)) {
-          combined.push({
-            stopWordIdx: dr.stopWordIdx,
-            resumeWordIdx: dr.resumeWordIdx,
-            stopAfterWord: a.words?.[dr.stopWordIdx] || "",
-            resumeAtWord: a.words?.[dr.resumeWordIdx] || "",
-            note: "ক্বারী তিলাওয়াত ভিত্তিক বিরতি ও পুনরায় শুরু",
-          });
-        }
-      });
-
-      if (combined.length > 0) {
-        map[key] = combined;
+      if (WAQF_IBTIDA_REGISTRY[key]) {
+        map[key] = WAQF_IBTIDA_REGISTRY[key];
       }
     });
     return map;
-  }, [pageAyahs, selectedQari]);
+  }, [pageAyahs]);
 
   // Handle page jump
   const handleJumpSubmit = (e) => {
@@ -578,18 +562,20 @@ export default function HafiziMushafSheet({
                               // ইউজার রুল: যে শব্দে কুরআনের নিজস্ব ওয়াকফ চিহ্ন আগে থেকেই আছে (যেমন: ج / ۚ), সেখানে স্টার বা টিক দেওয়া যাবে না।
                               // স্টার (★) বসবে শুধু সেই সমস্ত মধ্যবর্তী স্থানে যেখানে কুরআনে আগে থেকে কোনো ওয়াকফ চিহ্ন নেই, কিন্তু ক্বারী দম শেষ হওয়ায় থেমেছেন
                               const explicitWaqfStop = ayahWaqfList.find((w) =>
-                                (w.stopWordIdx !== undefined && w.stopWordIdx === wIdx) ||
-                                normWord === normalizeQuranWord(w.stopAfterWord)
+                                w.stopWordIdx !== undefined
+                                  ? w.stopWordIdx === wIdx
+                                  : normWord === normalizeQuranWord(w.stopAfterWord)
                               );
                               const isWaqfStopWord = !wordHasQuranicWaqfSign && !!explicitWaqfStop;
 
                               // টিক (✓) বসবে ঠিক সেই শব্দে যেখান থেকে ক্বারী দম নেওয়ার পর ২য় বার মিলিয়ে শুরু করেছেন (ইবতিদা)
-                              // রুল: যেখানে স্টার আছে বা কুরআনের ছাপা ওয়াকফ চিহ্ন আছে সেখানে টিক বসবে না
+                              // রুল: যেখানে স্টার আছে বা কুরআনের ছাপা ওয়াকফ চিহ্ন আছে বা আয়াতের ১ম শব্দ (wIdx === 0) সেখানে টিক বসবে না
                               const explicitWaqfResume = ayahWaqfList.find((w) =>
-                                (w.resumeWordIdx !== undefined && w.resumeWordIdx === wIdx) ||
-                                normWord === normalizeQuranWord(w.resumeAtWord)
+                                w.resumeWordIdx !== undefined
+                                  ? w.resumeWordIdx === wIdx
+                                  : normWord === normalizeQuranWord(w.resumeAtWord)
                               );
-                              const isIbtidaResumeWord = !wordHasQuranicWaqfSign && !isWaqfStopWord && !!explicitWaqfResume;
+                              const isIbtidaResumeWord = wIdx > 0 && !wordHasQuranicWaqfSign && !isWaqfStopWord && !!explicitWaqfResume;
 
                               return (
                                 <span

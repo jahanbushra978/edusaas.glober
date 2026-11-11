@@ -482,9 +482,9 @@ export const WAQF_IBTIDA_REGISTRY = {
   ],
   "2-19": [
     {
-      "stopWordIdx": 9,
+      "stopWordIdx": 7,
       "stopAfterWord": "وَبَرْقٌ",
-      "resumeWordIdx": 10,
+      "resumeWordIdx": 8,
       "resumeAtWord": "يَجْعَلُونَ",
       "note": "أَوْ كَصَيِّبٍ مِّنَ السَّمَاءِ فِيهِ ظُلُمَاتٌ وَرَعْدٌ وَبَرْقٌ (কুরআনে ওয়াকফ চিহ্ন নেই, দম শেষ হওয়ায় বিরতি ★) • ২য় বার শুরু: يَجْعَلُونَ أَصَابِعَهُمْ (✓)"
     }
