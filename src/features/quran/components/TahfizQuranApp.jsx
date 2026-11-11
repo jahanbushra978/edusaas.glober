@@ -249,7 +249,7 @@ export default function TahfizQuranApp({
   };
 
   // Audio Engine Playback Handlers
-  const handlePlayAyah = (ayahNum, surahId, overrideQariId = null) => {
+  const handlePlayAyah = (ayahNum, surahId, overrideQariId = null, directWords = null) => {
     const sId = surahId || readerSurahId;
     const aNum = ayahNum || 1;
     const activeQari = overrideQariId || selectedQari || "husary_muallim";
@@ -284,21 +284,25 @@ export default function TahfizQuranApp({
         } catch {}
       }
 
-      // Preload timing segments and fetch Ayah text/words for live synchronized highlighting
-      playingAyahWordsRef.current = [];
-      loadChapterSegments(sId, activeQari).catch(() => {});
-      getSurahData(sId)
-        .then((data) => {
-          if (data && data.ayahs) {
-            const targetAyah = data.ayahs.find((a) => a.numberInSurah === aNum);
-            if (targetAyah) {
-              playingAyahWordsRef.current = splitArabicAyahWords(
-                targetAyah.words && targetAyah.words.length > 0 ? targetAyah.words : targetAyah.text
-              );
+      // Preload timing segments and set Ayah text/words for live synchronized highlighting
+      if (directWords && directWords.length > 0) {
+        playingAyahWordsRef.current = directWords;
+      } else {
+        playingAyahWordsRef.current = [];
+        getSurahData(sId)
+          .then((data) => {
+            if (data && data.ayahs) {
+              const targetAyah = data.ayahs.find((a) => a.numberInSurah === aNum);
+              if (targetAyah) {
+                playingAyahWordsRef.current = splitArabicAyahWords(
+                  targetAyah.words && targetAyah.words.length > 0 ? targetAyah.words : targetAyah.text
+                );
+              }
             }
-          }
-        })
-        .catch(() => {});
+          })
+          .catch(() => {});
+      }
+      loadChapterSegments(sId, activeQari).catch(() => {});
 
       // Precise live audio word-by-word tracking
       audioRef.current.ontimeupdate = () => {
@@ -1184,7 +1188,7 @@ export default function TahfizQuranApp({
                     সূরা {getHafiziPageMeta(readerPageNum)?.firstSurahMeta?.nameBn || ALL_SURAHS.find((s) => s.id === readerSurahId)?.nameBn || "আল-বাকারা"}
                   </h3>
                   <p className="text-[10px] text-teal-300/80 font-bold">
-                    পারা {toBn(getHafiziLocation(readerPageNum).para)} • পৃষ্ঠা {toBn(readerPageNum)}
+                    পারা {toBn(getHafiziPageMeta(readerPageNum)?.para || getHafiziLocation(readerPageNum).para)} • পৃষ্ঠা {toBn(readerPageNum)}
                   </p>
                 </div>
               </div>

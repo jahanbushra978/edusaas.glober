@@ -17,20 +17,14 @@ import {
   getHafiziHeaderMetadata,
   MUTASHABIHAT_REGISTRY,
   WAQF_IBTIDA_REGISTRY,
-  getThematicSummaryForPage
+  getThematicSummaryForPage,
+  normalizeQuranWord
 } from "@/lib/quran/hafizi-annotations";
 import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 
-// Clean Arabic text for robust fuzzy matching without harakat/tashkeel/waqf
+// Canonical Arabic normalizer for 100% accurate Mutashabihat and Waqf matching
 function cleanArabic(str) {
-  return (str || "")
-    .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0610-\u061A]/g, "")
-    .replace(/[\u06D6-\u06DC\u06DF-\u06E9\u06DE]/g, "")
-    .replace(/[أإآء]/g, "ا")
-    .replace(/[ىي]/g, "ي")
-    .replace(/[ةه]/g, "ه")
-    .replace(/[ـ\s+]+/g, " ")
-    .trim();
+  return normalizeQuranWord(str);
 }
 
 export default function HafiziMushafSheet({
@@ -155,25 +149,36 @@ export default function HafiziMushafSheet({
     if (!pageAyahs || pageAyahs.length === 0) return [];
     const matched = [];
     pageAyahs.forEach((a) => {
-      const cleanAyahWords = (a.words && a.words.length > 0 ? a.words : splitArabicAyahWords(a.text)).map((w) => cleanArabic(w));
-      const fullCleanText = cleanAyahWords.join(" ");
+      const ayahWords = a.words && a.words.length > 0 ? a.words : splitArabicAyahWords(a.text);
+      const cleanAyahWords = ayahWords.map((w) => normalizeQuranWord(w));
 
       MUTASHABIHAT_REGISTRY.forEach((entry, idx) => {
-        const cleanPhrase = cleanArabic(entry.phraseClean || entry.phraseAr);
-        const phraseWords = cleanPhrase.split(/\s+/).filter(Boolean);
+        const cleanPhrase = (entry.phraseClean || entry.phraseAr).replace(/يا\s+ايها/g, "ياايها");
+        const phraseWords = cleanPhrase
+          .split(/\s+/)
+          .map((pw) => normalizeQuranWord(pw))
+          .filter(Boolean);
 
-        const hasMatch =
-          fullCleanText.includes(cleanPhrase) ||
-          (phraseWords.length >= 2 && phraseWords.every((pw) => cleanAyahWords.some((aw) => aw.includes(pw) || pw.includes(aw))));
-
-        if (hasMatch) {
-          if (!matched.some((m) => m.phraseClean === entry.phraseClean && m.ayahNumber === a.numberInSurah)) {
-            matched.push({
-              ...entry,
-              refNo: idx + 1,
-              ayahNumber: a.numberInSurah,
-              surahId: a.surahId,
-            });
+        if (phraseWords.length >= 2 && cleanAyahWords.length >= phraseWords.length) {
+          for (let i = 0; i <= cleanAyahWords.length - phraseWords.length; i++) {
+            let isMatch = true;
+            for (let j = 0; j < phraseWords.length; j++) {
+              if (cleanAyahWords[i + j] !== phraseWords[j]) {
+                isMatch = false;
+                break;
+              }
+            }
+            if (isMatch) {
+              if (!matched.some((m) => m.phraseClean === entry.phraseClean && m.ayahNumber === a.numberInSurah && m.surahId === a.surahId)) {
+                matched.push({
+                  ...entry,
+                  refNo: idx + 1,
+                  ayahNumber: a.numberInSurah,
+                  surahId: a.surahId,
+                });
+              }
+              break;
+            }
           }
         }
       });
@@ -303,29 +308,29 @@ export default function HafiziMushafSheet({
 
         {/* ── স্ক্রিনশটের হুবহু অথেনটিক হাফেজী কুরআন হেডার বার ── */}
         <div
-          className={`w-full px-2 sm:px-4 py-1.5 sm:py-2 border-b-2 flex items-center justify-between gap-1 sm:gap-2 text-xs font-bold select-none overflow-hidden ${
+          className={`w-full px-2 sm:px-4 py-1.5 sm:py-2 border-b-2 flex items-center justify-between gap-1 sm:gap-2 text-xs font-bold select-none ${
             isDay
               ? "bg-[#F3EEE2] border-amber-600/40 text-stone-900"
               : "bg-[#06140e] border-amber-500/50 text-emerald-100"
           }`}
         >
           {/* বাম অংশ: সূরার নাম ও পারার পৃষ্ঠা */}
-          <div className="flex items-center gap-1 sm:gap-2 shrink min-w-0">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink min-w-0">
             {/* সূরার নাম ও সূরা নম্বর (যেমন: سورة الأنفال ৮ বা البقرة ২) */}
             <span
-              className="font-hafizi-quran text-xs sm:text-sm md:text-base font-black text-amber-500 dark:text-amber-400 truncate max-w-[85px] sm:max-w-[130px] md:max-w-none"
+              className="font-hafizi-quran text-xs sm:text-sm md:text-base font-black text-amber-600 dark:text-amber-400 truncate max-w-[90px] sm:max-w-[140px] md:max-w-none"
               dir="rtl"
               title={`সূরা ${pageMeta.firstSurahMeta?.nameBn || "আল-বাকারা"}`}
             >
               {pageMeta.firstSurahMeta?.nameAr || "البقرة"} {toBn(pageMeta.firstSurahMeta?.id || 2)}
             </span>
 
-            {/* পারা ও পৃষ্ঠা (যেমন: পারা-১০ পৃষ্ঠা-১) — স্পষ্ট ও উজ্জ্বল গোল্ডেন টেক্সট */}
+            {/* পারা ও পৃষ্ঠা (যেমন: পারা-১০ পৃষ্ঠা-১ বা পারা-১ পৃষ্ঠা-৩) — স্পষ্ট ও উজ্জ্বল টেক্সট */}
             <span
-              className={`text-[10px] sm:text-xs font-bold px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap shadow-2xs ${
+              className={`text-[10px] sm:text-xs font-black px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap shadow-xs ${
                 isDay
-                  ? "bg-amber-200/80 text-amber-950 border border-amber-600/40"
-                  : "bg-amber-950/60 text-amber-300 border border-amber-500/40"
+                  ? "bg-amber-200 text-stone-900 border border-amber-400"
+                  : "bg-amber-400 text-stone-950 border border-amber-300"
               }`}
             >
               পারা-{toBn(pageMeta.para)} পৃষ্ঠা-{toBn(pageMeta.paraPage)}
@@ -333,14 +338,14 @@ export default function HafiziMushafSheet({
           </div>
 
           {/* সেন্টারে শায়েখের নাম: নীল বাটন (ক্লিক করলে ড্রপডাউন মেনু থেকে শায়েখ নির্বাচন করা যাবে) */}
-          <div className="flex items-center justify-center relative shrink-0 mx-0.5">
+          <div className="flex items-center justify-center relative shrink min-w-0 mx-0.5">
             <button
               type="button"
               onClick={() => setIsQariMenuOpen((prev) => !prev)}
-              className="px-2 sm:px-3 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-black text-[10px] sm:text-xs shadow-md border border-sky-400 flex items-center gap-1 cursor-pointer active:scale-95 transition"
+              className="px-2 sm:px-3 py-1 rounded-lg bg-sky-600 hover:bg-sky-500 text-white font-black text-[10px] sm:text-xs shadow-md border border-sky-400 flex items-center gap-1 cursor-pointer active:scale-95 transition max-w-[130px] sm:max-w-[200px]"
               title="শায়েখের তিলাওয়াত নির্বাচন করতে ক্লিক করুন"
             >
-              <span className="truncate max-w-[85px] sm:max-w-[130px] md:max-w-none">
+              <span className="truncate">
                 {POPULAR_QARIS.find((q) => q.id === selectedQari)?.shortNameBn || "শায়খ মাহমুদ খলিল আল হুসারী"}
               </span>
               <ChevronDown className={`w-3 h-3 opacity-90 shrink-0 transition-transform ${isQariMenuOpen ? "rotate-180" : ""}`} />
@@ -367,7 +372,7 @@ export default function HafiziMushafSheet({
                       onClick={() => {
                         if (onSelectQari) onSelectQari(q.id);
                         if (onPlayAyah && pageAyahs[0]) {
-                          onPlayAyah(pageAyahs[0].numberInSurah, pageAyahs[0].surahId, q.id);
+                          onPlayAyah(pageAyahs[0].numberInSurah, pageAyahs[0].surahId, q.id, pageAyahs[0].words);
                         }
                         setIsQariMenuOpen(false);
                         toast.success(`${q.shortNameBn} নির্বাচন করা হয়েছে`);
@@ -387,32 +392,32 @@ export default function HafiziMushafSheet({
             )}
           </div>
 
-          {/* ডান অংশ: মনজিল, পারার নাম এবং গ্লোবাল পৃষ্ঠা নম্বর */}
-          <div className="flex items-center gap-1 sm:gap-2 shrink min-w-0 justify-end">
+          {/* ডান অংশ: মনজিল, পারার নাম এবং প্রথম ডান পাশের কর্নারে পৃষ্ঠা নম্বর */}
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink min-w-0 justify-end">
             {/* মনজিল নম্বর */}
             <span
-              className="font-hafizi-quran text-[11px] sm:text-xs md:text-sm font-black text-amber-500 dark:text-amber-400 shrink-0 whitespace-nowrap"
+              className="font-hafizi-quran text-[11px] sm:text-xs md:text-sm font-black text-amber-600 dark:text-amber-400 shrink-0 whitespace-nowrap"
               dir="rtl"
             >
               منزل {toBn(headerMeta.manzil)}
             </span>
 
-            {/* পারার নাম ও নম্বর (যেমন: وَاعْلَمُوا ১০ বা الم ۱) */}
+            {/* পারার নাম ও নম্বর (যেমন: وَاعْلَمُوا ১০ বা الم ১) */}
             <span
-              className="font-hafizi-quran text-xs sm:text-sm md:text-base font-black text-amber-500 dark:text-amber-400 truncate max-w-[85px] sm:max-w-[120px] md:max-w-none"
+              className="font-hafizi-quran text-xs sm:text-sm md:text-base font-black text-amber-600 dark:text-amber-400 shrink-0 whitespace-nowrap"
               dir="rtl"
             >
               {currentPara?.nameAr || "الم"} {toBn(pageMeta.para)}
             </span>
 
-            {/* গ্লোবাল পৃষ্ঠা নম্বর (যেমন: ১৮২) — কখনও স্ক্রিনের বাইরে যাবে না */}
+            {/* প্রথম ডান পাশের কর্নারে পৃষ্ঠা নম্বর (যেমন: ৪ বা ১৮২) */}
             <span
-              className={`text-[11px] sm:text-xs md:text-sm font-black px-1.5 py-0.5 rounded-lg border shadow-xs shrink-0 whitespace-nowrap ${
+              className={`text-xs sm:text-sm font-black px-2 py-0.5 rounded-lg border shadow-xs shrink-0 whitespace-nowrap ${
                 isDay
-                  ? "bg-amber-100 text-amber-950 border-amber-500"
-                  : "bg-emerald-950/90 text-amber-300 border-amber-500/80"
+                  ? "bg-amber-300 text-stone-950 border-amber-500 font-extrabold"
+                  : "bg-amber-400 text-stone-950 border-amber-300 font-extrabold"
               }`}
-              title={`গ্লোবাল পৃষ্ঠা নম্বর ${toBn(pageNum)}`}
+              title={`পৃষ্ঠা নম্বর ${toBn(pageNum)}`}
             >
               {toBn(pageNum)}
             </span>
@@ -498,21 +503,21 @@ export default function HafiziMushafSheet({
                         );
 
                         // Find exact [startIdx, endIdx] word slices for Mutashabihat phrases in this Ayah
-                        const cleanAyahWords = (ayah.words || []).map((w) => cleanArabic(w));
+                        const cleanAyahWords = (ayah.words || []).map((w) => normalizeQuranWord(w));
                         const ayahWordMatches = [];
 
                         ayahMutashabihat.forEach((m) => {
-                          const cleanPhraseWords = cleanArabic(m.phraseClean || m.phraseAr)
+                          const cleanPhrase = (m.phraseClean || m.phraseAr).replace(/يا\s+ايها/g, "ياايها");
+                          const cleanPhraseWords = cleanPhrase
                             .split(/\s+/)
+                            .map((pw) => normalizeQuranWord(pw))
                             .filter(Boolean);
 
-                          if (cleanPhraseWords.length > 0 && cleanAyahWords.length >= cleanPhraseWords.length) {
+                          if (cleanPhraseWords.length >= 2 && cleanAyahWords.length >= cleanPhraseWords.length) {
                             for (let i = 0; i <= cleanAyahWords.length - cleanPhraseWords.length; i++) {
                               let isMatch = true;
                               for (let j = 0; j < cleanPhraseWords.length; j++) {
-                                const aW = cleanAyahWords[i + j];
-                                const pW = cleanPhraseWords[j];
-                                if (aW !== pW && !aW.includes(pW) && !pW.includes(aW)) {
+                                if (cleanAyahWords[i + j] !== cleanPhraseWords[j]) {
                                   isMatch = false;
                                   break;
                                 }
@@ -535,7 +540,7 @@ export default function HafiziMushafSheet({
                           <span
                             key={`${ayah.surahId}-${ayah.numberInSurah}`}
                             id={`mushaf-ayah-${ayah.surahId}-${ayah.numberInSurah}`}
-                            onClick={() => onPlayAyah && onPlayAyah(ayah.numberInSurah, ayah.surahId)}
+                            onClick={() => onPlayAyah && onPlayAyah(ayah.numberInSurah, ayah.surahId, null, ayah.words)}
                             className="inline cursor-pointer select-text transition-colors"
                             title={`সূরা ${ayah.surahNameBn}, আয়াত ${toBn(ayah.numberInSurah)} শুনতে ক্লিক করুন`}
                           >
@@ -550,26 +555,31 @@ export default function HafiziMushafSheet({
                               const isInMutashabihat = !!activeMatch;
 
                               // Check if word is a Waqf stop point (either explicit in registry or has Quranic Waqf sign)
+                              const normWord = normalizeQuranWord(word);
                               const wordHasWaqfSign = HAS_WAQF_MARK_REGEX.test(word);
                               const explicitWaqfStop = ayahWaqfList.find((w) =>
-                                cleanArabic(word).includes(cleanArabic(w.stopAfterWord)) ||
-                                cleanArabic(w.stopAfterWord).includes(cleanArabic(word))
+                                normWord === normalizeQuranWord(w.stopAfterWord) ||
+                                normWord.includes(normalizeQuranWord(w.stopAfterWord)) ||
+                                normalizeQuranWord(w.stopAfterWord).includes(normWord)
                               );
                               const isWaqfStopWord = !!explicitWaqfStop || wordHasWaqfSign;
 
                               // Check if word is an Ibtida resume point (either explicit in registry or immediately follows a Waqf stop)
                               const explicitWaqfResume = ayahWaqfList.find((w) =>
-                                cleanArabic(word).includes(cleanArabic(w.resumeAtWord)) ||
-                                cleanArabic(w.resumeAtWord).includes(cleanArabic(word))
+                                normWord === normalizeQuranWord(w.resumeAtWord) ||
+                                normWord.includes(normalizeQuranWord(w.resumeAtWord)) ||
+                                normalizeQuranWord(w.resumeAtWord).includes(normWord)
                               );
+                              const prevWordNorm = wIdx > 0 ? normalizeQuranWord(ayah.words[wIdx - 1]) : "";
                               const prevWordHasWaqf = wIdx > 0 && (
                                 HAS_WAQF_MARK_REGEX.test(ayah.words[wIdx - 1]) ||
                                 ayahWaqfList.some((w) =>
-                                  cleanArabic(ayah.words[wIdx - 1]).includes(cleanArabic(w.stopAfterWord)) ||
-                                  cleanArabic(w.stopAfterWord).includes(cleanArabic(ayah.words[wIdx - 1]))
+                                  prevWordNorm === normalizeQuranWord(w.stopAfterWord) ||
+                                  prevWordNorm.includes(normalizeQuranWord(w.stopAfterWord)) ||
+                                  normalizeQuranWord(w.stopAfterWord).includes(prevWordNorm)
                                 )
                               );
-                              const isIbtidaResumeWord = !!explicitWaqfResume || prevWordHasWaqf;
+                              const isIbtidaResumeWord = !!explicitWaqfResume || (prevWordHasWaqf && !isWaqfStopWord);
 
                               return (
                                 <span key={wIdx} className="inline-block relative">
@@ -600,9 +610,9 @@ export default function HafiziMushafSheet({
 
                                   {/* ৩. মূল শব্দের টেক্সট (মুতাশাবিহাত হলে শতভাগ স্পষ্ট সবুজ রঙ!) */}
                                   <span
-                                    className={`inline-block transition-all duration-100 px-0.5 mx-[1.5px] rounded-sm ${
+                                    className={`inline transition-all duration-100 px-0.5 mx-[1.5px] rounded-sm ${
                                       isThisWordActive
-                                        ? "bg-amber-400/95 text-slate-950 font-black px-1.5 py-0.5 rounded-md shadow-md ring-2 ring-amber-300 scale-102"
+                                        ? "bg-amber-400 text-stone-950 font-black px-1 py-0.5 rounded shadow-sm ring-2 ring-amber-300"
                                         : isTargetJump
                                         ? "text-amber-400 dark:text-amber-300 font-black"
                                         : isThisAyahActive
@@ -610,7 +620,9 @@ export default function HafiziMushafSheet({
                                           ? "text-amber-900 font-bold"
                                           : "text-amber-300 font-bold"
                                         : isInMutashabihat
-                                        ? "text-emerald-500 dark:text-emerald-400 font-bold underline decoration-emerald-500/80 decoration-2 underline-offset-4"
+                                        ? (isDay
+                                            ? "text-emerald-700 font-black underline decoration-emerald-600 decoration-2 underline-offset-4"
+                                            : "text-emerald-400 font-black underline decoration-emerald-400 decoration-2 underline-offset-4")
                                         : isDay
                                         ? "text-stone-950"
                                         : "text-white"
@@ -818,7 +830,7 @@ export default function HafiziMushafSheet({
             onClick={() => {
               if (onSelectQari) onSelectQari(q.id);
               if (onPlayAyah && pageAyahs[0]) {
-                onPlayAyah(pageAyahs[0].numberInSurah, pageAyahs[0].surahId, q.id);
+                onPlayAyah(pageAyahs[0].numberInSurah, pageAyahs[0].surahId, q.id, pageAyahs[0].words);
               }
             }}
             className={`py-2 px-2 rounded-xl text-[11px] font-bold text-center border shadow-sm transition active:scale-95 cursor-pointer ${

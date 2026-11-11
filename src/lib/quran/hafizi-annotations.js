@@ -36,6 +36,43 @@ export const toArNum = (num) => {
 };
 
 /**
+ * Canonical Quranic Arabic Phonetic & Orthographic Normalizer
+ * Bridges the gap between Uthmani script (رسم عثماني) and Imla'i modern Arabic (رسم إملائي).
+ * Normalizes dagger alifs (\u0670), wasla (\u0671), hamzated alifs, alif maqsurah, and diacritics.
+ */
+export function normalizeQuranWord(str) {
+  if (!str) return "";
+  let s = String(str)
+    .replace(/\u0671/g, "ا") // wasla -> alif
+    .replace(/[\u0622\u0623\u0625\u0672\u0673\u0675]/g, "ا") // hamzated alif -> alif
+    .replace(/ءا/g, "ا") // hamza + alif -> alif
+    .replace(/\u0649\u0670/g, "ي") // alif maksura + dagger alif -> ya
+    .replace(/\u0670/g, "ا") // dagger alif -> alif
+    .replace(/[\u064B-\u065F\u06D6-\u06ED\u0610-\u061A]/g, "") // strip all diacritics & waqf glyphs
+    .replace(/[\u0649]/g, "ي") // alif maqsurah -> ya
+    .replace(/\u0629/g, "ه") // ta marbuta -> ha
+    .replace(/[ءؤئ]/g, "") // remove standalone/carrier hamza
+    .replace(/[\s\-_ـ\.\,\:\;]+/g, "")
+    .trim();
+
+  // Canonical Uthmani ligature exceptions
+  s = s.replace(/اولا+ك/g, "اولك"); // 'أولئك'
+  s = s.replace(/هـ?ذا+/g, "هذا");
+  s = s.replace(/هـ?ذه+/g, "هذه");
+  s = s.replace(/هـ?ؤلا+ء/g, "هولاء");
+  s = s.replace(/لـ?كن/g, "لكن");
+  s = s.replace(/يـ?ايها/g, "ياايها");
+  s = s.replace(/يا+يها/g, "ياايها");
+  s = s.replace(/يا+بتي/g, "ياابتي");
+  s = s.replace(/يا+ابتي/g, "ياابتي");
+  s = s.replace(/يا+قوم/g, "ياقوم");
+  s = s.replace(/يا+بني/g, "يابني");
+  s = s.replace(/يا+ويلتي/g, "ياويلتي");
+  s = s.replace(/يا+حسرتي/g, "ياحسرتي");
+  return s;
+}
+
+/**
  * 1. Page Header Metadata Builder
  * - Right: Surah Name, Surah Number, Para Number, Para Page Number
  * - Left: Para Name (Arabic), Manzil Number
