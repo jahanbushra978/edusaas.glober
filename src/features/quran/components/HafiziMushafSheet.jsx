@@ -5,7 +5,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Check,
-  ChevronDown
+  ChevronDown,
+  Volume2
 } from "lucide-react";
 import { toast } from "sonner";
 import {
