@@ -379,6 +379,9 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
       });
     }
 
+    // Ensure QuranCDN timing segments are loaded for active surah and qari
+    loadChapterSegments(selectedSurahIdRef.current, selectedQariRef.current);
+
     // Reset loop counter on newly selected or advanced Ayah
     repeatCounterRef.current = 0;
     setRepeatCounter(0);

@@ -151,9 +151,10 @@ export function calculateTajweedWordIndex(currentTimeSec, durationSec, words = [
   if (!words || words.length <= 1) return 0;
   if (!durationSec || durationSec <= 0) return 0;
 
-  // Account for typical introductory silence (0.25s) and trailing reverb (0.5s)
-  const introSilence = 0.25;
-  const outroSilence = 0.5;
+  // Account for typical introductory silence (0.35s) and trailing reverb (0.3s)
+  // Plus human vocalization perceptual lag so highlight never rushes ahead of the voice
+  const introSilence = 0.35;
+  const outroSilence = 0.3;
   const effectiveTime = Math.max(0, currentTimeSec - introSilence);
   const effectiveDuration = Math.max(0.1, durationSec - introSilence - outroSilence);
   const progress = Math.min(0.999, effectiveTime / effectiveDuration);
@@ -167,7 +168,7 @@ export function calculateTajweedWordIndex(currentTimeSec, durationSec, words = [
 
     // 1. Long Madd (مَدّ لازِم / متصل / منفصل) with tilde (~) or superscripts:
     if (/[~ٓ]/.test(raw) || clean.includes("الضالين")) {
-      wt += 16.0; // Madd Lazim takes 6 counts (~3-4x normal word time)
+      wt += 14.0; // Madd Lazim takes 6 counts (~3-4x normal word time)
     } else if (/[اوي]/.test(clean)) {
       wt += 1.8;
     }
@@ -177,9 +178,16 @@ export function calculateTajweedWordIndex(currentTimeSec, durationSec, words = [
       wt += 1.5;
     }
 
-    // 3. Ending word of the Ayah (Waqf & Madd Arid Lis-Sukoon):
+    // 3. Waqf breath pause marks (الوقف والتنفس: ۘ, ۚ, ۗ, ۖ, ۜ, ۞, ۩):
+    // Every Qari halts 1.5s to 3s to breathe at internal stop signs in long verses.
+    // Weighting these prevents the highlight from prematurely flying into the next sentence.
+    if (/[ۘۚۗۖۜ۞۩]/.test(raw)) {
+      wt += 12.0;
+    }
+
+    // 4. Ending word of the Ayah (Waqf & Madd Arid Lis-Sukoon):
     if (idx === totalWords - 1) {
-      wt += 4.5;
+      wt += 5.0;
     }
 
     return wt;
@@ -224,22 +232,37 @@ export function getActiveArabicWordIndex({
   const verseKey = `${surahNumber}:${ayahNumber}`;
 
   if (segmentsMap && segmentsMap[verseKey]) {
-    const segments = segmentsMap[verseKey];
-    const currentMs = currentTime * 1000;
+    const rawSegments = segmentsMap[verseKey];
+    if (rawSegments && rawSegments.length > 0) {
+      const maxSegEndMs = rawSegments[rawSegments.length - 1].endMs || (duration * 1000);
+      const audioDurationMs = duration * 1000;
 
-    for (let i = 0; i < segments.length; i++) {
-      const seg = segments[i];
-      if (currentMs >= seg.startMs && currentMs < seg.endMs) {
-        return Math.min(seg.wordIndex, totalWords - 1);
-      }
-      // If past the last segment, hold on the last word until playback ends
-      if (i === segments.length - 1 && currentMs >= seg.endMs) {
-        return totalWords - 1;
+      // Proportional scale factor between QuranCDN verse segments and actual EveryAyah audio duration
+      const scale = (maxSegEndMs > 1000 && audioDurationMs > 1000)
+        ? audioDurationMs / maxSegEndMs
+        : 1.0;
+
+      // Compensate for perceptual vocalization lag (~200ms) so highlight illuminates
+      // synchronously as the word resonates, rather than jumping ahead prematurely.
+      const currentMs = Math.max(0, (currentTime * 1000) - 200);
+
+      for (let i = 0; i < rawSegments.length; i++) {
+        const seg = rawSegments[i];
+        const segStart = seg.startMs * scale;
+        const segEnd = seg.endMs * scale;
+
+        if (currentMs >= segStart && currentMs < segEnd) {
+          return Math.min(seg.wordIndex, totalWords - 1);
+        }
+        // If past the last segment, hold on the last word until playback ends
+        if (i === rawSegments.length - 1 && currentMs >= segEnd) {
+          return totalWords - 1;
+        }
       }
     }
   }
 
-  // Fallback to Tajweed acoustic pacing
+  // Fallback to Tajweed acoustic pacing with waqf breath pauses
   return calculateTajweedWordIndex(currentTime, duration, cleanWords);
 }
 
