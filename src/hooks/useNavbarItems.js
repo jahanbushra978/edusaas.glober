@@ -52,6 +52,7 @@ const FALLBACK_MENU = (t) => [
       { label: "🌸 নূর এআই শিক্ষক পাঠশালা", to: "/quran-tutor/teacher" },
       { label: "🎯 এআই কোরআন শিক্ষা (Duolingo)", to: "/ai-quran-learning" },
       { label: "🎙️ লাইভ ভয়েস ক্লাসরুম", to: "/quran-tutor/live-class" },
+      { label: "📗 নূর কুরআন শরীফ (১৫ লাইন হাফেজী)", to: "/quran-tutor/tahfiz" },
       { label: "📖 সম্পূর্ণ কুরআন", to: "/quran-tutor/studio?tab=reader" },
       { label: "🎛️ নূর লার্নিং স্টুডিও", to: "/quran-tutor/studio" },
     ]

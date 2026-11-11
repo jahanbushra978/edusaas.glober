@@ -47,14 +47,19 @@ const toBn = (num) => {
   return String(num).replace(/\d/g, (d) => enToBnMap[d] || d);
 };
 
-export default function TahfizQuranApp({ onClose }) {
+export default function TahfizQuranApp({
+  onClose,
+  initialScreen = "home",
+  initialPage = 1,
+  initialSurah = 2
+}) {
   // Navigation Screens: 'home' | 'surahs' | 'paras' | 'reader' | 'tasbih' | 'bookmarks' | 'last-read'
-  const [currentScreen, setCurrentScreen] = useState("home");
-  const [bottomNavTab, setBottomNavTab] = useState("home");
+  const [currentScreen, setCurrentScreen] = useState(initialScreen);
+  const [bottomNavTab, setBottomNavTab] = useState(initialScreen === "reader" ? "reader" : "home");
 
   // Reader State
-  const [readerSurahId, setReaderSurahId] = useState(2);
-  const [readerPageNum, setReaderPageNum] = useState(1);
+  const [readerSurahId, setReaderSurahId] = useState(initialSurah);
+  const [readerPageNum, setReaderPageNum] = useState(initialPage);
   const [readerMode, setReaderMode] = useState("mushaf"); // 'mushaf' | 'ayah'
   const [pageFilter, setPageFilter] = useState("night"); // 'night' | 'day' | 'sepia'
   const [readingNavStyle, setReadingNavStyle] = useState("flip"); // 'flip' | 'scroll'
@@ -110,6 +115,24 @@ export default function TahfizQuranApp({ onClose }) {
       const prefQari = getStoredQariPreference();
       if (prefQari) {
         setSelectedQari(prefQari);
+      }
+
+      // Check URL query parameters on client mount
+      if (typeof window !== "undefined") {
+        const sp = new URLSearchParams(window.location.search);
+        const qScreen = sp.get("screen");
+        const qPage = sp.get("page");
+        const qSurah = sp.get("surah");
+        if (qScreen && ["home", "surahs", "paras", "reader", "tasbih", "bookmarks"].includes(qScreen)) {
+          setCurrentScreen(qScreen);
+        }
+        if (qPage && Number(qPage) >= 1 && Number(qPage) <= TOTAL_UTHMANI_PAGES) {
+          setReaderPageNum(Number(qPage));
+          setCurrentScreen("reader");
+        }
+        if (qSurah && Number(qSurah) >= 1 && Number(qSurah) <= 114) {
+          setReaderSurahId(Number(qSurah));
+        }
       }
     } catch {} finally {
       hasLoadedStorageRef.current = true;

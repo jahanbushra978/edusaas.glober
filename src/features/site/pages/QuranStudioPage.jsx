@@ -717,7 +717,7 @@ export default function QuranStudioPage() {
               </div>
             ) : activeFeature === "quran-reader" ? (
               <div ref={activeStageRef} className="w-full min-h-[90vh] mx-auto animate-fade-in flex flex-col">
-                <TahfizQuranApp onClose={closeActiveFeature} />
+                <TahfizQuranApp onClose={closeActiveFeature} initialScreen="reader" initialSurah={readerTarget.surah} />
               </div>
             ) : activeFeature && (
               <section

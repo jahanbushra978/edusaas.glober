@@ -45,6 +45,10 @@ export default function Footer({ user: userProp }) {
                 <ChevronRight className={`h-3 w-3 shrink-0 text-[#D4AF37] ${lang === "ar" ? "rotate-180" : ""}`} />
                 {lang === "bn" ? "🎯 এআই কোরআন শিক্ষা (Duolingo)" : "🎯 AI Quran Learning"}
               </Link>
+              <Link href="/quran-tutor/tahfiz" className={`flex items-center gap-1.5 text-xs italic text-teal-300 hover:text-teal-200 transition-colors duration-200 ${lang === "ar" ? "flex-row-reverse" : ""}`}>
+                <ChevronRight className={`h-3 w-3 shrink-0 text-[#D4AF37] ${lang === "ar" ? "rotate-180" : ""}`} />
+                {lang === "bn" ? "📗 নূর কুরআন শরীফ (১৫ লাইন হাফেজী)" : "📗 Nur Quran Sharif (15-Line Hafizi)"}
+              </Link>
               <Link href="/quran-tutor/live-class" className={`flex items-center gap-1.5 text-xs italic text-emerald-300 hover:text-emerald-200 transition-colors duration-200 ${lang === "ar" ? "flex-row-reverse" : ""}`}>
                 <ChevronRight className={`h-3 w-3 shrink-0 text-[#D4AF37] ${lang === "ar" ? "rotate-180" : ""}`} />
                 {lang === "bn" ? "🎙️ লাইভ ভয়েস ক্লাসরুম" : "🎙️ Live Voice Classroom"}
