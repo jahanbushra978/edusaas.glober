@@ -21,6 +21,18 @@ import {
 } from "@/lib/quran/hafizi-annotations";
 import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 
+// Clean Arabic text for robust fuzzy matching without harakat/tashkeel/waqf
+function cleanArabic(str) {
+  return (str || "")
+    .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0610-\u061A]/g, "")
+    .replace(/[\u06D6-\u06DC\u06DF-\u06E9\u06DE]/g, "")
+    .replace(/[أإآء]/g, "ا")
+    .replace(/[ىي]/g, "ي")
+    .replace(/[ةه]/g, "ه")
+    .replace(/[ـ\s+]+/g, " ")
+    .trim();
+}
+
 export default function HafiziMushafSheet({
   pageNum = 1,
   onPageChange,
@@ -234,17 +246,6 @@ export default function HafiziMushafSheet({
     { id: "husary_muallim", shortNameBn: "শায়খ মাহমুদ খলিল আল-হুসারী" },
     { id: "alafasy", shortNameBn: "শায়খ মাশারি বিন রাশেদ আল-আফাসী" },
   ];
-
-  // Clean Arabic text for robust fuzzy matching without harakat/tashkeel/waqf
-  const cleanArabic = (str) =>
-    (str || "")
-      .replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0610-\u061A]/g, "")
-      .replace(/[\u06D6-\u06DC\u06DF-\u06E9\u06DE]/g, "")
-      .replace(/[أإآء]/g, "ا")
-      .replace(/[ىي]/g, "ي")
-      .replace(/[ةه]/g, "ه")
-      .replace(/[ـ\s+]+/g, " ")
-      .trim();
 
   // Distribute Mutashabihat references to Left and Right Margins (ডান ও বাম হাশিয়া)
   const allMarginRefs = useMemo(() => {
