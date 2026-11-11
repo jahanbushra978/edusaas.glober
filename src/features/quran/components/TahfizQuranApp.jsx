@@ -1418,7 +1418,7 @@ export default function TahfizQuranApp({
               setBottomNavTab("home");
               setCurrentScreen("home");
             }}
-            className={`flex flex-col items-center gap-1 transition cursor-pointer ${
+            className={`flex flex-col items-center gap-1 transition cursor-pointer bg-transparent border-0 outline-none p-1.5 rounded-xl hover:bg-teal-950/40 ${
               currentScreen === "home" ? "text-[#00d2b8]" : "text-slate-400 hover:text-slate-200"
             }`}
           >
@@ -1434,7 +1434,7 @@ export default function TahfizQuranApp({
               setReaderPageNum(1);
               setCurrentScreen("reader");
             }}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition cursor-pointer"
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition cursor-pointer bg-transparent border-0 outline-none p-1.5 rounded-xl hover:bg-teal-950/40"
           >
             <BookOpen className="w-5 h-5" />
             <span className="text-[10px] font-bold">তাহফিজ কায়দা</span>
@@ -1459,7 +1459,7 @@ export default function TahfizQuranApp({
               // Jump directly to Amma Para (Para 30, Page 1 of Para 30)
               handleJumpToParaAndPage(30, 1);
             }}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition cursor-pointer"
+            className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition cursor-pointer bg-transparent border-0 outline-none p-1.5 rounded-xl hover:bg-teal-950/40"
           >
             <BookOpen className="w-5 h-5" />
             <span className="text-[10px] font-bold">তাহফিজ আমপারা</span>
@@ -1472,7 +1472,7 @@ export default function TahfizQuranApp({
               setBottomNavTab("tasbih");
               setCurrentScreen("tasbih");
             }}
-            className={`flex flex-col items-center gap-1 transition cursor-pointer ${
+            className={`flex flex-col items-center gap-1 transition cursor-pointer bg-transparent border-0 outline-none p-1.5 rounded-xl hover:bg-teal-950/40 ${
               currentScreen === "tasbih" ? "text-[#00d2b8]" : "text-slate-400 hover:text-slate-200"
             }`}
           >

@@ -61,7 +61,7 @@
     @apply border-border outline-ring/50;
   }
 
-  html, body, button, input, select, textarea {
+  html, body, input, select, textarea {
     @apply bg-background text-foreground;
     font-family: 'Hind Siliguri', var(--font-hind-siliguri), system-ui, -apple-system, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
@@ -69,6 +69,11 @@
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
     max-width: 100vw;
+  }
+
+  button {
+    font-family: inherit;
+    background-color: transparent;
   }
 
   /* Language specific font overrides */
