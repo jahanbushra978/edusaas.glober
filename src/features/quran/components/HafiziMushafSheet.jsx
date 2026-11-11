@@ -354,7 +354,7 @@ export default function HafiziMushafSheet({
         <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-amber-500/60 rounded-bl-sm pointer-events-none" />
         <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-amber-500/60 rounded-br-sm pointer-events-none" />
 
-        {/* ── স্ক্রিনশটের হুবহু অথেনটিক হাফেজী কুরআন হেডার বার ── */}
+        {/* ── স্ক্রিনশটের হুবহু অথেনটিক হাফেজী কুরআন হেডার বার (জোড়/বিজোড় পৃষ্ঠা অনুযায়ী দিক পরিবর্তন) ── */}
         <div
           className={`w-full px-2 sm:px-4 py-1.5 sm:py-2 border-b-2 flex items-center justify-between gap-1 sm:gap-2 text-xs font-bold select-none ${
             isDay
@@ -362,18 +362,32 @@ export default function HafiziMushafSheet({
               : "bg-[#06140e] border-amber-500/50 text-emerald-100"
           }`}
         >
-          {/* বাম অংশ: সূরার নাম ও পারার পৃষ্ঠা */}
+          {/* বাম অংশ: বিজোড় পৃষ্ঠায় সূরার নাম ও পারার পৃষ্ঠা; জোড় পৃষ্ঠায় পৃষ্ঠা নম্বর */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink min-w-0">
+            {pageNum % 2 === 0 && (
+              /* জোড় পৃষ্ঠার (বাম পৃষ্ঠা) বাম কর্নারে পৃষ্ঠা নম্বর */
+              <span
+                className={`text-xs sm:text-sm font-black px-2 py-0.5 rounded-lg border shadow-xs shrink-0 whitespace-nowrap ${
+                  isDay
+                    ? "bg-amber-300 text-stone-950 border-amber-500 font-extrabold"
+                    : "bg-amber-400 text-stone-950 border-amber-300 font-extrabold"
+                }`}
+                title={`পৃষ্ঠা নম্বর ${toBn(pageNum)}`}
+              >
+                {toBn(pageNum)}
+              </span>
+            )}
+
             {/* সূরার নাম ও সূরা নম্বর (যেমন: سورة الأنفال ৮ বা البقرة ২) */}
             <span
-              className="font-hafizi-quran text-xs sm:text-sm md:text-base font-black text-amber-600 dark:text-amber-400 truncate max-w-[90px] sm:max-w-[140px] md:max-w-none"
+              className="font-hafizi-quran text-xs sm:text-sm md:text-base font-black text-amber-600 dark:text-amber-400 truncate max-w-[80px] sm:max-w-[130px] md:max-w-none"
               dir="rtl"
               title={`সূরা ${pageMeta.firstSurahMeta?.nameBn || "আল-বাকারা"}`}
             >
               {pageMeta.firstSurahMeta?.nameAr || "البقرة"} {toBn(pageMeta.firstSurahMeta?.id || 2)}
             </span>
 
-            {/* পারা ও পৃষ্ঠা (যেমন: পারা-১০ পৃষ্ঠা-১ বা পারা-১ পৃষ্ঠা-৩) — স্পষ্ট ও উজ্জ্বল টেক্সট */}
+            {/* পারা ও পৃষ্ঠা (যেমন: পারা-১ পৃষ্ঠা-৩) — স্পষ্ট ও উজ্জ্বল টেক্সট */}
             <span
               className={`text-[10px] sm:text-xs font-black px-1.5 py-0.5 rounded shrink-0 whitespace-nowrap shadow-xs ${
                 isDay
@@ -390,7 +404,7 @@ export default function HafiziMushafSheet({
             <button
               type="button"
               onClick={() => setIsQariMenuOpen((prev) => !prev)}
-              className={`px-2.5 sm:px-3.5 py-1 sm:py-1.5 rounded-xl font-black text-[10px] sm:text-xs shadow-md border flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all max-w-[160px] sm:max-w-[260px] md:max-w-[290px] ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl font-black text-[10px] sm:text-xs shadow-md border flex items-center gap-1.5 cursor-pointer active:scale-95 transition-all max-w-[140px] sm:max-w-[220px] md:max-w-[260px] ${
                 isDay
                   ? "bg-gradient-to-r from-sky-600 via-sky-600 to-sky-700 hover:from-sky-500 hover:to-sky-600 text-white border-sky-400 shadow-sky-950/20"
                   : "bg-gradient-to-r from-sky-700 via-sky-600 to-cyan-700 hover:from-sky-600 hover:to-cyan-600 text-white border-sky-400/80 shadow-sky-950/40"
@@ -459,7 +473,7 @@ export default function HafiziMushafSheet({
             )}
           </div>
 
-          {/* ডান অংশ: মনজিল, পারার নাম এবং প্রথম ডান পাশের কর্নারে পৃষ্ঠা নম্বর */}
+          {/* ডান অংশ: মনজিল, পারার নাম এবং বিজোড় পৃষ্ঠায় ডান পাশের কর্নারে পৃষ্ঠা নম্বর */}
           <div className="flex items-center gap-1.5 sm:gap-2 shrink min-w-0 justify-end">
             {/* মনজিল নম্বর */}
             <span
@@ -477,17 +491,19 @@ export default function HafiziMushafSheet({
               {currentPara?.nameAr || "الم"} {toBn(pageMeta.para)}
             </span>
 
-            {/* প্রথম ডান পাশের কর্নারে পৃষ্ঠা নম্বর (যেমন: ৪ বা ১৮২) */}
-            <span
-              className={`text-xs sm:text-sm font-black px-2 py-0.5 rounded-lg border shadow-xs shrink-0 whitespace-nowrap ${
-                isDay
-                  ? "bg-amber-300 text-stone-950 border-amber-500 font-extrabold"
-                  : "bg-amber-400 text-stone-950 border-amber-300 font-extrabold"
-              }`}
-              title={`পৃষ্ঠা নম্বর ${toBn(pageNum)}`}
-            >
-              {toBn(pageNum)}
-            </span>
+            {/* বিজোড় পৃষ্ঠার (ডান পৃষ্ঠা) প্রথম ডান পাশের কর্নারে পৃষ্ঠা নম্বর */}
+            {pageNum % 2 !== 0 && (
+              <span
+                className={`text-xs sm:text-sm font-black px-2 py-0.5 rounded-lg border shadow-xs shrink-0 whitespace-nowrap ${
+                  isDay
+                    ? "bg-amber-300 text-stone-950 border-amber-500 font-extrabold"
+                    : "bg-amber-400 text-stone-950 border-amber-300 font-extrabold"
+                }`}
+                title={`পৃষ্ঠা নম্বর ${toBn(pageNum)}`}
+              >
+                {toBn(pageNum)}
+              </span>
+            )}
           </div>
         </div>
 
@@ -501,69 +517,26 @@ export default function HafiziMushafSheet({
               </p>
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="w-full flex flex-row items-start gap-2 sm:gap-3.5">
-              {/* ── LEFT HASHIYA MARGIN (বাম হাশিয়া - ইউজার রুল: শুধু [১] ও মুতাশাবিহার রেফারেন্স এবং ক্লিকে সরাসরি জাম্প) ── */}
+            <div className="space-y-4 relative">
+              {/* ── হাফেজী কুরআন অনুসারে পাতার পাশে খাঁটি পৃষ্ঠা নম্বর (ডান পাতায় ডানে, বাম পাতায় বামে) ── */}
               <div
-                className={`w-18 sm:w-24 md:w-28 shrink-0 flex flex-col items-center py-2 px-1 rounded-xl border ${
+                className={`hidden md:flex absolute top-6 ${
+                  pageNum % 2 !== 0 ? "-right-12 lg:-right-14" : "-left-12 lg:-left-14"
+                } flex-col items-center justify-center py-2.5 px-2 rounded-2xl border-2 shadow-lg font-black select-none z-10 transition-all ${
                   isDay
-                    ? "bg-[#f7efe3]/90 border-amber-300/80 text-stone-900 shadow-xs"
-                    : "bg-[#061e18]/90 border-emerald-500/30 text-emerald-200 shadow-xs"
-                } select-none`}
-                dir="rtl"
+                    ? "bg-gradient-to-b from-amber-200 to-amber-300 text-stone-950 border-amber-400 shadow-amber-950/15"
+                    : "bg-gradient-to-b from-[#092b21] to-[#041a14] text-amber-400 border-amber-500/50 shadow-black/50"
+                }`}
+                title={`হাফেজী কুরআন পৃষ্ঠা নম্বর ${toBn(pageNum)}`}
               >
-                <div className={`text-[9px] sm:text-[10px] font-black uppercase tracking-wider mb-2 px-1.5 py-0.5 rounded border ${
-                  isDay ? "bg-amber-200 text-stone-950 border-amber-400" : "bg-emerald-950 text-emerald-300 border-emerald-500/40"
-                }`}>
-                  হাশিয়া
-                </div>
-
-                {pageMutashabihat.length > 0 ? (
-                  <div className="w-full space-y-2.5">
-                    {pageMutashabihat.map((m) => (
-                      <div key={m.refNo} className="w-full flex flex-col items-center gap-1">
-                        {/* শুধু [১], [২] ইত্যাদি মার্কার (ইউজার রুল: পুরো আয়াত লিখতে হবেনা) */}
-                        <span
-                          className="inline-flex items-center justify-center w-5 h-5 rounded-full bg-emerald-600 text-white font-black text-[11px] shadow-xs"
-                          title={`মুতাশাবিহাত #${toBn(m.pageSerial)}`}
-                        >
-                          {toBn(m.pageSerial)}
-                        </span>
-
-                        {/* মুতাশাবিহার অন্যান্য স্থানের ক্লিকযোগ্য বাটন */}
-                        <div className="w-full flex flex-col gap-1">
-                          {m.references.map((ref, rIdx) => (
-                            <button
-                              key={rIdx}
-                              type="button"
-                              onClick={(e) => handleJumpToMutashabiha(ref.page, e)}
-                              className={`w-full py-1 px-1 rounded-md text-[9px] sm:text-[10px] font-black border transition active:scale-95 cursor-pointer leading-tight text-center ${
-                                isDay
-                                  ? "bg-white hover:bg-amber-100 text-stone-900 border-amber-300 hover:border-amber-500 shadow-2xs"
-                                  : "bg-[#0a261f] hover:bg-teal-900/90 text-[#00d2b8] hover:text-white border-teal-500/30 shadow-2xs"
-                              }`}
-                              title={`পারা ${toBn(ref.para)}, পৃষ্ঠা ${toBn(ref.page)} (${ref.note || ""})-এ সরাসরি যান`}
-                            >
-                              <span className="block">পারা {toBn(ref.para)}</span>
-                              <span className="block text-[8px] sm:text-[9px] opacity-80 font-bold">পৃ {toBn(ref.page)}</span>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex-1 flex flex-col items-center justify-center text-[9px] sm:text-[10px] opacity-60 font-bold py-6 space-y-0.5">
-                    <span>পারা {toBn(pageMeta.para)}</span>
-                    <span className="text-xs font-black">পৃ {toBn(pageMeta.paraPage)}</span>
-                  </div>
-                )}
+                <span className="text-[9px] tracking-wider opacity-80 uppercase font-bold">পৃষ্ঠা</span>
+                <span className="text-base sm:text-lg font-black font-hafizi-quran leading-tight">
+                  {toBn(pageNum)}
+                </span>
               </div>
 
-              {/* ── CENTER: 15-LINE SACRED QURANIC TEXT (মূল ১৫ লাইনের হাফেজী কুরআন) ── */}
-              <div className="flex-1 min-w-0 space-y-4">
-                {/* Group ayahs by Surah so we can insert the Surah Header plate whenever a new Surah starts */}
-                {pageMeta.ranges.map((range) => {
+              {/* Group ayahs by Surah so we can insert the Surah Header plate whenever a new Surah starts */}
+              {pageMeta.ranges.map((range) => {
                 const rangeAyahs = pageAyahs.filter((a) => a.surahId === range.surah);
                 const isNewSurahStart = range.fromAyah === 1;
 
@@ -801,8 +774,6 @@ export default function HafiziMushafSheet({
                   </div>
                 );
               })}
-              </div>
-            </div>
 
             {/* ── ২. ও ৩. মার্জিন হাশিয়া (MUTASHABIHAT & WAQF-IBTIDA MARGIN NOTES) ── */}
             {(pageMutashabihat.length > 0 || Object.keys(waqfIbtidaMap).length > 0) && (
