@@ -567,10 +567,11 @@ export default function HafiziMushafSheet({
                               const isWaqfStopWord = !wordHasQuranicWaqfSign && !!explicitWaqfStop;
 
                               // টিক (✓) বসবে ঠিক সেই শব্দে যেখান থেকে ক্বারী দম নেওয়ার পর ২য় বার মিলিয়ে শুরু করেছেন (ইবতিদা)
+                              // রুল: যেখানে স্টার আছে বা কুরআনের ছাপা ওয়াকফ চিহ্ন আছে সেখানে টিক বসবে না
                               const explicitWaqfResume = ayahWaqfList.find((w) =>
                                 normWord === normalizeQuranWord(w.resumeAtWord)
                               );
-                              const isIbtidaResumeWord = !!explicitWaqfResume;
+                              const isIbtidaResumeWord = !wordHasQuranicWaqfSign && !isWaqfStopWord && !!explicitWaqfResume;
 
                               return (
                                 <span
