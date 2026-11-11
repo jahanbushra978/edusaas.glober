@@ -4,34 +4,20 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import {
   ChevronLeft,
   ChevronRight,
-  Volume2,
-  Play,
-  Pause,
-  RotateCcw,
-  BookOpen,
-  Search,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
   Check,
   ChevronDown
 } from "lucide-react";
 import { toast } from "sonner";
-import { ALL_SURAHS } from "@/lib/quran/quran-meta";
 import {
   TOTAL_UTHMANI_PAGES,
   getHafiziPageMeta,
-  getHafiziLocation,
-  getHafiziPageTarget,
   HAFIZI_PARAS
 } from "@/lib/quran/hafizi-pages";
 import {
   getHafiziHeaderMetadata,
   MUTASHABIHAT_REGISTRY,
   WAQF_IBTIDA_REGISTRY,
-  getThematicSummaryForPage,
-  toBnNum,
-  toArNum
+  getThematicSummaryForPage
 } from "@/lib/quran/hafizi-annotations";
 import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 

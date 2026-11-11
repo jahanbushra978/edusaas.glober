@@ -7,7 +7,7 @@
  */
 
 import { ALL_SURAHS } from "./quran-meta.js";
-import { HAFIZI_PARAS, TOTAL_UTHMANI_PAGES } from "./hafizi-pages.js";
+import { HAFIZI_PARAS } from "./hafizi-pages.js";
 
 // Manzil Division (৭টি মনজিল)
 export function getManzilForSurah(surahId) {

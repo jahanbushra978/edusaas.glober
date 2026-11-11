@@ -11,13 +11,10 @@ import {
   ArrowLeft,
   ChevronRight,
   ChevronLeft,
-  Check,
   CheckCircle2,
   Volume2,
   VolumeX,
   RotateCcw,
-  Sliders,
-  Layers,
   X,
   Play,
   Pause,
@@ -34,8 +31,7 @@ import {
   getHafiziPageMeta,
   getHafiziLocation,
   getHafiziLocationForAyah,
-  getHafiziPageTarget,
-  parseHafiziSearchQuery
+  getHafiziPageTarget
 } from "@/lib/quran/hafizi-pages";
 import { getSurahData, getAyahAudioUrl } from "@/lib/quran/quran-service";
 import { loadChapterSegments, getActiveArabicWordIndex, splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";

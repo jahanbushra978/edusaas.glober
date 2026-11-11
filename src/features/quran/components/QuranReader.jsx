@@ -14,15 +14,11 @@ import {
   Bot,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
   X,
   FileText,
   List,
   ArrowRight,
-  ArrowUp,
-  ZoomIn,
-  ZoomOut,
-  Compass
+  ArrowUp
 } from "lucide-react";
 import { toast } from "sonner";
 import { ALL_SURAHS, JUZ_MAPPING } from "@/lib/quran/quran-meta";
@@ -35,8 +31,7 @@ import {
   getHafiziPageTarget,
   parseHafiziSearchQuery,
   getHafiziLocationForAyah,
-  TOTAL_UTHMANI_PAGES,
-  getHafiziPageMeta
+  TOTAL_UTHMANI_PAGES
 } from "@/lib/quran/hafizi-pages";
 import HafiziMushafSheet from "./HafiziMushafSheet";
 import { useBanglaAudioEngine } from "@/lib/quran/bangla-audio-engine";

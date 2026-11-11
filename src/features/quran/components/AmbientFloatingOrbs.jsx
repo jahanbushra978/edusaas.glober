@@ -33,7 +33,9 @@ export default function AmbientFloatingOrbs({ count = 14 }) {
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-      <style jsx>{`
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         @keyframes riseUp {
           0% {
             transform: translateY(105vh) translateX(0) scale(0.6);
@@ -57,7 +59,9 @@ export default function AmbientFloatingOrbs({ count = 14 }) {
         .orb-particle {
           animation: riseUp linear infinite;
         }
-      `}</style>
+      `,
+        }}
+      />
       {orbs.map((orb) => (
         <div
           key={orb.id}
