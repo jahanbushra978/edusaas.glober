@@ -6,7 +6,7 @@ import {
   BookOpen, Mic, Award, Compass, Volume2, Headphones, 
   BarChart3, Trophy, Users, Building2, 
   Check, X, ChevronDown, ChevronUp, Play, Square, 
-  Star, ArrowRight, ArrowLeft, Bot, Search, Menu, Baby, Gamepad2, RotateCcw, PenTool
+  Star, ArrowRight, ArrowLeft, Bot, Search, Menu, Baby, Gamepad2, RotateCcw, PenTool, FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import QuranSemanticSearchModal from "@/features/ai/components/QuranSemanticSearchModal";
@@ -69,16 +69,25 @@ export default function AIQuranTutorPage() {
     }, 800);
   };
 
-  // 8 Muslim App Highlight Features (Direct launch into Studio)
+  // 9 Highlight Features (Direct launch into Studio)
   const studioQuickFeatures = [
     {
       id: "quran-reader",
-      title: "সম্পূর্ণ কুরআন",
-      subtitle: "১১৪ সূরা ও ৩০ জুজ মুসহাফ",
+      title: "সম্পূর্ণ কুরআন (নুসখা মুসহাফ)",
+      subtitle: "১৫ লাইনের প্রামাণ্য হাফেজী মুসহাফ ও পূর্ণাঙ্গ ৩০ পারা",
       icon: BookOpen,
       iconBg: "bg-emerald-100 text-emerald-800",
-      badge: "পূর্ণাঙ্গ",
+      badge: "১৫ লাইন মুসহাফ",
       link: "/quran-tutor/studio?feature=quran-reader"
+    },
+    {
+      id: "tafseer-quran",
+      title: "তাফসীর ভিত্তিক কুরআন",
+      subtitle: "বাংলা অর্থ, শব্দার্থ, শানে নুযূল ও তাফসীর",
+      icon: FileText,
+      iconBg: "bg-amber-100 text-amber-900",
+      badge: "অর্থ ও তাফসীর",
+      link: "/quran-tutor/studio?feature=tafseer-quran"
     },
     {
       id: "nur-teacher",

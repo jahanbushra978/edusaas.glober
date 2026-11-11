@@ -167,6 +167,7 @@ function resolveFeatureTarget(p) {
   if (p === "kids" || p === "kids-book" || p === "prothom-quran") return "kids-book";
   if (p === "teacher" || p === "nur-teacher" || p === "tajweed") return "nur-teacher";
   if (p === "reader" || p === "quran" || p === "quran-reader" || p === "mushaf") return "quran-reader";
+  if (p === "tafseer" || p === "tafseer-quran" || p === "meaning" || p === "translation") return "tafseer-quran";
   if (p === "makhraj" || p === "makhraj-3d") return "makhraj-3d";
   if (p === "voice" || p === "voice-tutor") return "voice-tutor";
   if (p === "live-class") return "live-class";
@@ -344,13 +345,23 @@ export default function QuranStudioPage() {
       cards: [
         {
           id: "quran-reader",
-          title: "সম্পূর্ণ কুরআন",
-          subtitle: "১১৪ সূরা, ৩০ পারা ও মুসহাফ",
+          title: "সম্পূর্ণ কুরআন (নুসখা মুসহাফ)",
+          subtitle: "১৫ লাইনের প্রামাণ্য হাফেজী মুসহাফ ও পূর্ণাঙ্গ ৩০ পারা",
           icon: BookOpen,
           emoji: "📖",
           gradient: "from-emerald-500 to-teal-600 text-white",
-          badge: "পূর্ণাঙ্গ",
-          badgeStyle: "bg-emerald-100 text-emerald-800 border-emerald-300",
+          badge: "১৫ লাইন মুসহাফ",
+          badgeStyle: "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold",
+        },
+        {
+          id: "tafseer-quran",
+          title: "তাফসীর ভিত্তিক কুরআন",
+          subtitle: "বাংলা অর্থ, শব্দার্থ, শানে নুযূল ও তাফসীরুল কুরআন",
+          icon: FileText,
+          emoji: "📜",
+          gradient: "from-amber-600 via-amber-700 to-emerald-800 text-white",
+          badge: "অর্থ ও তাফসীর",
+          badgeStyle: "bg-amber-100 text-amber-900 border-amber-300 font-bold",
         },
         {
           id: "quran-search",
@@ -773,17 +784,17 @@ export default function QuranStudioPage() {
                 </div>
 
                 {/* Render the Active Real Feature Component */}
-                <div className={activeFeature === "quran-reader" ? "p-0 sm:p-4" : "p-2 sm:p-5"}>
+                <div className={activeFeature === "tafseer-quran" ? "p-0 sm:p-2" : "p-2 sm:p-5"}>
                   {activeFeature === "nur-teacher" ? (
                     <TajweedLearningPlatform
                       onClose={closeActiveFeature}
                       onLaunchLiveClass={() => setActiveFeature("live-class")}
                       onOpenMakhrajVisualizer={() => setActiveFeature("makhraj-3d")}
                     />
-                  ) : activeFeature === "quran-reader" ? (
+                  ) : activeFeature === "tafseer-quran" ? (
                     <div className="rounded-none sm:rounded-2xl overflow-hidden">
                       <QuranReader
-                        key={`reader-${readerTarget.surah}`}
+                        key={`tafseer-reader-${readerTarget.surah}`}
                         initialSurah={readerTarget.surah}
                         onLaunchVoiceTutor={() => setActiveFeature("live-class")}
                         onLaunchNurEngine={() => setActiveFeature("nur-teacher")}
@@ -1178,9 +1189,9 @@ export default function QuranStudioPage() {
                         if (verse?.surah) {
                           setReaderTarget(verse);
                         }
-                        setActiveFeature("quran-reader");
+                        setActiveFeature("tafseer-quran");
                         toast.success(
-                          `সূরা ${verse.surah}${verse.ayah ? `, আয়াত ${verse.ayah}` : ""} কুরআন রিডারে খোলা হয়েছে`
+                          `সূরা ${verse.surah}${verse.ayah ? `, আয়াত ${verse.ayah}` : ""} তাফসীরসহ কুরআন রিডারে খোলা হয়েছে`
                         );
                       }}
                     />
@@ -1188,7 +1199,7 @@ export default function QuranStudioPage() {
                     <QuraniAmalPlatform
                       onLaunchQuranReader={(surahNum) => {
                         setReaderTarget({ surah: surahNum, ayah: 1 });
-                        setActiveFeature("quran-reader");
+                        setActiveFeature("tafseer-quran");
                       }}
                     />
                   ) : activeFeature === "human-teacher" ? (
