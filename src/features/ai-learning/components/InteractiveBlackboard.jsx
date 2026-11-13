@@ -1,213 +1,177 @@
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import {
   Volume2,
+  VolumeX,
   RotateCcw,
   Eraser,
   PenTool,
   Download,
-  Eye,
-  EyeOff,
   Award,
   ArrowRight,
+  ChevronRight,
   CheckCircle2,
-  Target
+  Home,
+  X,
+  Play,
+  Grid,
+  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
-import { useLearningLanguage } from "../hooks/useLearningLanguage";
 import {
   playArabicSound,
   playMaShaAllahCelebration,
-  playStarPopSound
+  playStarPopSound,
 } from "../lib/arabicSoundPlayer";
 import { fireCelebrationConfetti } from "../lib/confetti";
+import { getStoredCoins, saveCoins } from "@/lib/quran/qaidaGameShop";
 
-const ARABIC_ALPHABET = [
-  { ar: "ا", nameBn: "আলিফ", nameEn: "Alif", forms: { isolated: "ا", initial: "ا", medial: "ـا", final: "ـا" } },
-  { ar: "ب", nameBn: "বা", nameEn: "Ba", forms: { isolated: "ب", initial: "بـ", medial: "ـبـ", final: "ـب" } },
-  { ar: "ت", nameBn: "তা", nameEn: "Ta", forms: { isolated: "ت", initial: "تـ", medial: "ـتـ", final: "ـت" } },
-  { ar: "ث", nameBn: "ছা", nameEn: "Tha", forms: { isolated: "ث", initial: "ثـ", medial: "ـثـ", final: "ـث" } },
-  { ar: "ج", nameBn: "জীম", nameEn: "Jeem", forms: { isolated: "ج", initial: "جـ", medial: "ـجـ", final: "ـج" } },
-  { ar: "ح", nameBn: "হা", nameEn: "Haa", forms: { isolated: "ح", initial: "حـ", medial: "ـحـ", final: "ـح" } },
-  { ar: "خ", nameBn: "খা", nameEn: "Kha", forms: { isolated: "خ", initial: "خـ", medial: "ـخـ", final: "ـخ" } },
-  { ar: "د", nameBn: "দাল", nameEn: "Dal", forms: { isolated: "د", initial: "د", medial: "ـد", final: "ـد" } },
-  { ar: "ذ", nameBn: "যাল", nameEn: "Dhal", forms: { isolated: "ذ", initial: "ذ", medial: "ـذ", final: "ـذ" } },
-  { ar: "ر", nameBn: "রা", nameEn: "Ra", forms: { isolated: "ر", initial: "ر", medial: "ـر", final: "ـر" } },
-  { ar: "ز", nameBn: "যা", nameEn: "Zay", forms: { isolated: "ز", initial: "ز", medial: "ـز", final: "ـز" } },
-  { ar: "س", nameBn: "সীন", nameEn: "Seen", forms: { isolated: "س", initial: "سـ", medial: "ـسـ", final: "ـس" } },
-  { ar: "ش", nameBn: "শীন", nameEn: "Sheen", forms: { isolated: "ش", initial: "شـ", medial: "ـشـ", final: "ـش" } },
-  { ar: "ص", nameBn: "ছোয়াদ", nameEn: "Saad", forms: { isolated: "ص", initial: "صـ", medial: "ـصـ", final: "ـص" } },
-  { ar: "ض", nameBn: "দোয়াদ", nameEn: "Daad", forms: { isolated: "ض", initial: "ضـ", medial: "ـضـ", final: "ـض" } },
-  { ar: "ط", nameBn: "ত্বোয়া", nameEn: "Taa", forms: { isolated: "ط", initial: "طـ", medial: "ـطـ", final: "ـط" } },
-  { ar: "ظ", nameBn: "যোয়া", nameEn: "Dhaa", forms: { isolated: "ظ", initial: "ظـ", medial: "ـظـ", final: "ـظ" } },
-  { ar: "ع", nameBn: "আইন", nameEn: "Ayn", forms: { isolated: "ع", initial: "عـ", medial: "ـعـ", final: "ـع" } },
-  { ar: "غ", nameBn: "গইন", nameEn: "Ghayn", forms: { isolated: "غ", initial: "غـ", medial: "ـغـ", final: "ـغ" } },
-  { ar: "ف", nameBn: "ফা", nameEn: "Fa", forms: { isolated: "ف", initial: "فـ", medial: "ـفـ", final: "ـف" } },
-  { ar: "ق", nameBn: "ক্বাফ", nameEn: "Qaaf", forms: { isolated: "ق", initial: "قـ", medial: "ـقـ", final: "ـق" } },
-  { ar: "ك", nameBn: "কাফ", nameEn: "Kaaf", forms: { isolated: "ك", initial: "كـ", medial: "ـكـ", final: "ـك" } },
-  { ar: "ل", nameBn: "লাম", nameEn: "Laam", forms: { isolated: "ل", initial: "لـ", medial: "ـلـ", final: "ـل" } },
-  { ar: "م", nameBn: "মীম", nameEn: "Meem", forms: { isolated: "م", initial: "مـ", medial: "ـمـ", final: "ـم" } },
-  { ar: "ن", nameBn: "নূন", nameEn: "Noon", forms: { isolated: "ن", initial: "نـ", medial: "ـنـ", final: "ـن" } },
-  { ar: "و", nameBn: "ওয়াও", nameEn: "Waw", forms: { isolated: "و", initial: "و", medial: "ـو", final: "ـو" } },
-  { ar: "هـ", nameBn: "হা", nameEn: "Haa", forms: { isolated: "هـ", initial: "هـ", medial: "ـهـ", final: "ـه" } },
-  { ar: "ء", nameBn: "হামযাহ", nameEn: "Hamzah", forms: { isolated: "ء", initial: "ء", medial: "ء", final: "ء" } },
-  { ar: "ي", nameBn: "ইয়া", nameEn: "Yaa", forms: { isolated: "ي", initial: "يـ", medial: "ـيـ", final: "ـي" } },
+// ── 29 ARABIC ALPHABET LETTERS ──
+export const ARABIC_ALPHABET = [
+  { ar: "ا", nameBn: "আলিফ", nameEn: "Alif", color: "#ef4444", makhraj: "কণ্ঠনালীর নীচের অংশ থেকে" },
+  { ar: "ب", nameBn: "বা", nameEn: "Ba", color: "#3b82f6", makhraj: "উভয় ঠোঁটের ভিজা অংশ মিলিয়ে" },
+  { ar: "ت", nameBn: "তা", nameEn: "Ta", color: "#10b981", makhraj: "জিহ্বার ডগা ওপরের দাঁতের গোড়ায়" },
+  { ar: "ث", nameBn: "ছা", nameEn: "Tha", color: "#f59e0b", makhraj: "জিহ্বার ডগা ওপরের দাঁতের মাথায় নরমভাবে" },
+  { ar: "ج", nameBn: "জীম", nameEn: "Jeem", color: "#8b5cf6", makhraj: "জিহ্বার মধ্যভাগ শক্ত তালুর সাথে" },
+  { ar: "ح", nameBn: "হা", nameEn: "Haa", color: "#ec4899", makhraj: "কণ্ঠনালীর মাঝখান থেকে পরিষ্কারভাবে" },
+  { ar: "خ", nameBn: "খা", nameEn: "Kha", color: "#06b6d4", makhraj: "কণ্ঠনালীর শেষ অংশ থেকে মোটা হয়ে" },
+  { ar: "د", nameBn: "দাল", nameEn: "Dal", color: "#f97316", makhraj: "জিহ্বার ডগা ওপরের দাঁতের গোড়ায়" },
+  { ar: "ذ", nameBn: "যাল", nameEn: "Dhal", color: "#14b8a6", makhraj: "জিহ্বার ডগা ওপরের দাঁতের মাথায় নরমভাবে" },
+  { ar: "ر", nameBn: "রা", nameEn: "Ra", color: "#6366f1", makhraj: "জিহ্বার পিঠ ওপরের তালুর সাথে" },
+  { ar: "ز", nameBn: "যা", nameEn: "Zay", color: "#eab308", makhraj: "জিহ্বার ডগা নিচের দাঁতের মাথায় শিস দিয়ে" },
+  { ar: "س", nameBn: "সীন", nameEn: "Seen", color: "#3b82f6", makhraj: "জিহ্বার ডগা নিচের দাঁতের মাথায় চিকন শিস" },
+  { ar: "ش", nameBn: "শীন", nameEn: "Sheen", color: "#ec4899", makhraj: "জিহ্বার মধ্যভাগ তালুর সাথে বাতাস ছড়িয়ে" },
+  { ar: "ص", nameBn: "ছোয়াদ", nameEn: "Saad", color: "#f59e0b", makhraj: "জিহ্বার ডগা নিচের দাঁতে, মুখ গোল করে মোটা" },
+  { ar: "ض", nameBn: "দোয়াদ", nameEn: "Daad", color: "#10b981", makhraj: "জিহ্বার গোড়ার পাশ ওপরের মাড়ির দাঁতে" },
+  { ar: "ط", nameBn: "ত্বোয়া", nameEn: "Taa", color: "#ef4444", makhraj: "জিহ্বার ডগা ওপরের দাঁতে, মুখ গোল ও ভারী" },
+  { ar: "ظ", nameBn: "যোয়া", nameEn: "Dhaa", color: "#8b5cf6", makhraj: "জিহ্বার ডগা ওপরের দাঁতের মাথায় নরম ও মোটা" },
+  { ar: "ع", nameBn: "আইন", nameEn: "Ayn", color: "#06b6d4", makhraj: "কণ্ঠনালীর মাঝখান থেকে চেপে" },
+  { ar: "غ", nameBn: "গইন", nameEn: "Ghayn", color: "#f97316", makhraj: "কণ্ঠনালীর শেষ অংশ থেকে মোটা স্বরে" },
+  { ar: "ف", nameBn: "ফা", nameEn: "Fa", color: "#14b8a6", makhraj: "ওপরের দাঁতের মাথা নিচের ঠোঁটের পেটে" },
+  { ar: "ق", nameBn: "ক্বাফ", nameEn: "Qaaf", color: "#6366f1", makhraj: "জিহ্বার গোড়া নরম তালুতে চেপে ভারী" },
+  { ar: "ك", nameBn: "কাফ", nameEn: "Kaaf", color: "#eab308", makhraj: "জিহ্বার গোড়ার একটু সামনে শক্ত তালুতে" },
+  { ar: "ل", nameBn: "লাম", nameEn: "Laam", color: "#3b82f6", makhraj: "জিহ্বার ডগার কিনারা ওপরের মাড়িতে" },
+  { ar: "م", nameBn: "মীম", nameEn: "Meem", color: "#ec4899", makhraj: "উভয় ঠোঁটের শুকনা অংশ মিলিয়ে" },
+  { ar: "ن", nameBn: "নূন", nameEn: "Noon", color: "#10b981", makhraj: "জিহ্বার ডগা ওপরের দাঁতের গোড়ার মাড়িতে" },
+  { ar: "و", nameBn: "ওয়াও", nameEn: "Waw", color: "#f59e0b", makhraj: "উভয় ঠোঁট গোল করে" },
+  { ar: "هـ", nameBn: "হা", nameEn: "Haa", color: "#ef4444", makhraj: "কণ্ঠনালীর শেষ নীচের বুক থেকে" },
+  { ar: "ء", nameBn: "হামযাহ", nameEn: "Hamzah", color: "#8b5cf6", makhraj: "কণ্ঠনালীর নীচের অংশ থেকে ঝটকা দিয়ে" },
+  { ar: "ي", nameBn: "ইয়া", nameEn: "Yaa", color: "#06b6d4", makhraj: "জিহ্বার মধ্যভাগ তালুর সাথে মিলিয়ে" },
 ];
 
-const HARAKAT_LIST = [
-  { id: "none", symbol: "", labelBn: "মূল রূপ", labelEn: "Base", labelAr: "الأصل" },
-  { id: "fathah", symbol: "\u064E", labelBn: "যবর (Fathah)", labelEn: "Fathah (a)", labelAr: "الفتحة" },
-  { id: "kasrah", symbol: "\u0650", labelBn: "যের (Kasrah)", labelEn: "Kasrah (i)", labelAr: "الكسرة" },
-  { id: "dammah", symbol: "\u064F", labelBn: "পেশ (Dammah)", labelEn: "Dammah (u)", labelAr: "الضمة" },
-  { id: "sukoon", symbol: "\u0652", labelBn: "জযম (Sukoon)", labelEn: "Sukoon (o)", labelAr: "السكون" },
+// ── CUTE ANIMATED MASCOTS & THEIR COLLECTIBLE FOOD ITEMS ──
+// (Directly matching the user's reference images: Elephant/Balls, Lion/Meat, Mouse/Cheese, etc.)
+export const MASCOTS = [
+  { id: "elephant", name: "হাতি ছানা", emoji: "🐘", targetItem: "⚽", targetName: "রঙিন বল" },
+  { id: "lion", name: "সিংহ ছানা", emoji: "🦁", targetItem: "🥩", targetName: "গোশত" },
+  { id: "mouse", name: "ইঁদুর ছানা", emoji: "🐭", targetItem: "🧀", targetName: "পনির" },
+  { id: "camel", name: "মরুর উট", emoji: "🐪", targetItem: "🍈", targetName: "মিষ্টি খেজুর" },
+  { id: "sheep", name: "মিষ্টি ভেড়া", emoji: "🐑", targetItem: "🍎", targetName: "লাল আপেল" },
+  { id: "dove", name: "নূরের পায়রা", emoji: "🕊️", targetItem: "🌟", targetName: "সোনার তারা" },
 ];
 
-const HARAKAT_PRONUNCIATION_MAP = {
-  "ا": { fathah: "আ", kasrah: "ই", dammah: "উ", sukoon: "আহ্" },
-  "ب": { fathah: "বা", kasrah: "বি", dammah: "বু", sukoon: "আব্ (ক্বলক্বলাহ)" },
-  "ت": { fathah: "তা", kasrah: "তি", dammah: "তু", sukoon: "আৎ" },
-  "ث": { fathah: "ছা (নরম)", kasrah: "ছি", dammah: "ছু", sukoon: "আছ্" },
-  "ج": { fathah: "জা", kasrah: "জি", dammah: "জু", sukoon: "আজ্ (ক্বলক্বলাহ)" },
-  "ح": { fathah: "হা (হলকী)", kasrah: "হি", dammah: "হু", sukoon: "আহ্" },
-  "خ": { fathah: "খা (মোটা)", kasrah: "খি", dammah: "খু", sukoon: "আখ্" },
-  "د": { fathah: "দা", kasrah: "দি", dammah: "দু", sukoon: "আদ্ (ক্বলক্বলাহ)" },
-  "ذ": { fathah: "যা (নরম)", kasrah: "যি", dammah: "যু", sukoon: "আয্" },
-  "ر": { fathah: "রা (মোটা)", kasrah: "রি", dammah: "রু (মোটা)", sukoon: "আর্" },
-  "ز": { fathah: "যা (শিস)", kasrah: "যি", dammah: "যু", sukoon: "আয্" },
-  "س": { fathah: "সা (শিস)", kasrah: "সি", dammah: "সু", sukoon: "আস্" },
-  "ش": { fathah: "শা", kasrah: "শি", dammah: "শু", sukoon: "আশ্" },
-  "ص": { fathah: "সোয়া (মোটা)", kasrah: "সি", dammah: "সু", sukoon: "আছ্" },
-  "ض": { fathah: "দোয়া (ভারী)", kasrah: "দি", dammah: "দু", sukoon: "আদ্" },
-  "ط": { fathah: "তোয়া (মোটা)", kasrah: "ত্বি", dammah: "ত্বু", sukoon: "আত্ব্ (ক্বলক্বলাহ)" },
-  "ظ": { fathah: "জোয়া (মোটা)", kasrah: "যি", dammah: "যু", sukoon: "আজ্" },
-  "ع": { fathah: "আ' (হলকী)", kasrah: "ই'", dammah: "উ'", sukoon: "আ'আ্" },
-  "غ": { fathah: "গা (মোটা)", kasrah: "গি", dammah: "গু", sukoon: "আগ্" },
-  "ف": { fathah: "ফা", kasrah: "ফি", dammah: "ফু", sukoon: "আফ্" },
-  "ق": { fathah: "ক্বা (ভারী)", kasrah: "ক্বি", dammah: "ক্বু", sukoon: "আক্ব্ (ক্বলক্বলাহ)" },
-  "ك": { fathah: "কা", kasrah: "কি", dammah: "কু", sukoon: "আক্" },
-  "ل": { fathah: "লা", kasrah: "লি", dammah: "লু", sukoon: "আল্" },
-  "م": { fathah: "মা", kasrah: "মি", dammah: "মু", sukoon: "আম্" },
-  "ن": { fathah: "না", kasrah: "নি", dammah: "নু", sukoon: "আন্" },
-  "و": { fathah: "ওয়া", kasrah: "ওয়ি", dammah: "উ", sukoon: "আও" },
-  "هـ": { fathah: "হা", kasrah: "হি", dammah: "হু", sukoon: "আহ্" },
-  "ء": { fathah: "আ", kasrah: "ই", dammah: "উ", sukoon: "আহ্" },
-  "ي": { fathah: "ইয়া", kasrah: "য়ি", dammah: "য়ু", sukoon: "আই" },
-};
-
-// ── AUTHENTIC CALLIGRAPHY STROKE ANCHORS FOR ALL 29 ARABIC LETTERS ──
-// Normalized relative coordinates [0, 1] mapped directly inside the rendered letter bounds
-const LETTER_ANCHORS = {
-  // Alif (Top to Bottom)
+// ── CALLIGRAPHY STROKE CHECKPOINTS FOR ALL 29 ARABIC LETTERS ──
+// Normalized relative coordinates [0, 1] mapped inside the hollow letter container
+export const LETTER_ANCHORS = {
   "ا": {
     start: { x: 0.50, y: 0.16 },
     waypoints: [
-      { x: 0.50, y: 0.38 },
-      { x: 0.50, y: 0.60 },
-      { x: 0.50, y: 0.76 },
+      { x: 0.50, y: 0.35 },
+      { x: 0.50, y: 0.52 },
+      { x: 0.50, y: 0.70 },
     ],
     end: { x: 0.50, y: 0.88 },
   },
-  // Baa, Taa, Thaa (Right tip -> Baseline -> Left tip)
   "ب": {
     start: { x: 0.86, y: 0.46 },
     waypoints: [
-      { x: 0.75, y: 0.58 },
-      { x: 0.55, y: 0.62 },
-      { x: 0.35, y: 0.62 },
-      { x: 0.20, y: 0.56 },
+      { x: 0.74, y: 0.60 },
+      { x: 0.50, y: 0.64 },
+      { x: 0.28, y: 0.60 },
     ],
-    end: { x: 0.12, y: 0.46 },
+    end: { x: 0.14, y: 0.46 },
   },
   "ت": {
     start: { x: 0.86, y: 0.48 },
     waypoints: [
-      { x: 0.75, y: 0.60 },
-      { x: 0.55, y: 0.64 },
-      { x: 0.35, y: 0.64 },
-      { x: 0.20, y: 0.58 },
+      { x: 0.74, y: 0.62 },
+      { x: 0.50, y: 0.66 },
+      { x: 0.28, y: 0.62 },
     ],
-    end: { x: 0.12, y: 0.48 },
+    end: { x: 0.14, y: 0.48 },
   },
   "ث": {
     start: { x: 0.86, y: 0.52 },
     waypoints: [
-      { x: 0.75, y: 0.64 },
-      { x: 0.55, y: 0.68 },
-      { x: 0.35, y: 0.68 },
-      { x: 0.20, y: 0.62 },
+      { x: 0.74, y: 0.66 },
+      { x: 0.50, y: 0.70 },
+      { x: 0.28, y: 0.66 },
     ],
-    end: { x: 0.12, y: 0.52 },
+    end: { x: 0.14, y: 0.52 },
   },
-  // Jeem, Haa, Khaa (Top brow -> center tuck -> crescent belly -> left tail tip)
   "ج": {
-    start: { x: 0.55, y: 0.26 },
+    start: { x: 0.55, y: 0.28 },
     waypoints: [
-      { x: 0.76, y: 0.28 },
-      { x: 0.62, y: 0.46 },
-      { x: 0.74, y: 0.64 },
-      { x: 0.50, y: 0.82 },
-      { x: 0.30, y: 0.80 },
+      { x: 0.76, y: 0.30 },
+      { x: 0.62, y: 0.48 },
+      { x: 0.72, y: 0.66 },
+      { x: 0.48, y: 0.82 },
     ],
-    end: { x: 0.16, y: 0.72 },
+    end: { x: 0.20, y: 0.74 },
   },
   "ح": {
-    start: { x: 0.55, y: 0.26 },
+    start: { x: 0.55, y: 0.28 },
     waypoints: [
-      { x: 0.76, y: 0.28 },
-      { x: 0.62, y: 0.46 },
-      { x: 0.74, y: 0.64 },
-      { x: 0.50, y: 0.82 },
-      { x: 0.30, y: 0.80 },
+      { x: 0.76, y: 0.30 },
+      { x: 0.62, y: 0.48 },
+      { x: 0.72, y: 0.66 },
+      { x: 0.48, y: 0.82 },
     ],
-    end: { x: 0.16, y: 0.72 },
+    end: { x: 0.20, y: 0.74 },
   },
   "خ": {
-    start: { x: 0.55, y: 0.32 },
+    start: { x: 0.55, y: 0.34 },
     waypoints: [
-      { x: 0.76, y: 0.34 },
-      { x: 0.62, y: 0.50 },
-      { x: 0.74, y: 0.68 },
-      { x: 0.50, y: 0.84 },
-      { x: 0.30, y: 0.82 },
+      { x: 0.76, y: 0.36 },
+      { x: 0.62, y: 0.52 },
+      { x: 0.72, y: 0.70 },
+      { x: 0.48, y: 0.84 },
     ],
-    end: { x: 0.16, y: 0.74 },
+    end: { x: 0.20, y: 0.76 },
   },
-  // Dal, Dhal (Top -> curve down-left)
   "د": {
-    start: { x: 0.74, y: 0.36 },
+    start: { x: 0.74, y: 0.38 },
     waypoints: [
-      { x: 0.60, y: 0.52 },
-      { x: 0.45, y: 0.64 },
+      { x: 0.60, y: 0.54 },
+      { x: 0.45, y: 0.66 },
     ],
-    end: { x: 0.24, y: 0.66 },
+    end: { x: 0.26, y: 0.68 },
   },
   "ذ": {
-    start: { x: 0.74, y: 0.44 },
-    waypoints: [
-      { x: 0.60, y: 0.58 },
-      { x: 0.45, y: 0.68 },
-    ],
-    end: { x: 0.24, y: 0.70 },
-  },
-  // Ra, Zay (Top -> curve down-left under baseline)
-  "ر": {
-    start: { x: 0.72, y: 0.42 },
-    waypoints: [
-      { x: 0.60, y: 0.56 },
-      { x: 0.44, y: 0.70 },
-    ],
-    end: { x: 0.22, y: 0.80 },
-  },
-  "ز": {
-    start: { x: 0.72, y: 0.48 },
+    start: { x: 0.74, y: 0.46 },
     waypoints: [
       { x: 0.60, y: 0.60 },
-      { x: 0.44, y: 0.74 },
+      { x: 0.45, y: 0.70 },
     ],
-    end: { x: 0.22, y: 0.82 },
+    end: { x: 0.26, y: 0.72 },
   },
-  // Seen, Sheen (Right teeth -> middle teeth -> deep bowl)
+  "ر": {
+    start: { x: 0.74, y: 0.42 },
+    waypoints: [
+      { x: 0.60, y: 0.58 },
+      { x: 0.45, y: 0.72 },
+    ],
+    end: { x: 0.24, y: 0.82 },
+  },
+  "ز": {
+    start: { x: 0.74, y: 0.48 },
+    waypoints: [
+      { x: 0.60, y: 0.62 },
+      { x: 0.45, y: 0.76 },
+    ],
+    end: { x: 0.24, y: 0.84 },
+  },
   "س": {
     start: { x: 0.88, y: 0.42 },
     waypoints: [
@@ -216,7 +180,7 @@ const LETTER_ANCHORS = {
       { x: 0.44, y: 0.66 },
       { x: 0.28, y: 0.70 },
     ],
-    end: { x: 0.12, y: 0.50 },
+    end: { x: 0.14, y: 0.52 },
   },
   "ش": {
     start: { x: 0.88, y: 0.50 },
@@ -226,96 +190,84 @@ const LETTER_ANCHORS = {
       { x: 0.44, y: 0.72 },
       { x: 0.28, y: 0.74 },
     ],
-    end: { x: 0.12, y: 0.54 },
+    end: { x: 0.14, y: 0.56 },
   },
-  // Saad, Daad (Oval loop -> tooth -> deep bowl)
   "ص": {
     start: { x: 0.75, y: 0.56 },
     waypoints: [
       { x: 0.88, y: 0.50 },
-      { x: 0.70, y: 0.46 },
-      { x: 0.54, y: 0.48 },
-      { x: 0.42, y: 0.68 },
-      { x: 0.26, y: 0.72 },
+      { x: 0.68, y: 0.46 },
+      { x: 0.52, y: 0.50 },
+      { x: 0.38, y: 0.70 },
     ],
-    end: { x: 0.12, y: 0.52 },
+    end: { x: 0.14, y: 0.54 },
   },
   "ض": {
     start: { x: 0.75, y: 0.58 },
     waypoints: [
       { x: 0.88, y: 0.54 },
-      { x: 0.70, y: 0.50 },
-      { x: 0.54, y: 0.52 },
-      { x: 0.42, y: 0.70 },
-      { x: 0.26, y: 0.74 },
+      { x: 0.68, y: 0.50 },
+      { x: 0.52, y: 0.54 },
+      { x: 0.38, y: 0.72 },
     ],
-    end: { x: 0.12, y: 0.54 },
+    end: { x: 0.14, y: 0.56 },
   },
-  // Taa, Dhaa (Vertical mast -> oval loop)
   "ط": {
     start: { x: 0.52, y: 0.18 },
     waypoints: [
       { x: 0.52, y: 0.44 },
-      { x: 0.78, y: 0.52 },
-      { x: 0.50, y: 0.64 },
+      { x: 0.78, y: 0.54 },
+      { x: 0.50, y: 0.66 },
     ],
-    end: { x: 0.20, y: 0.66 },
+    end: { x: 0.22, y: 0.68 },
   },
   "ظ": {
     start: { x: 0.52, y: 0.22 },
     waypoints: [
       { x: 0.52, y: 0.48 },
-      { x: 0.78, y: 0.56 },
-      { x: 0.50, y: 0.66 },
+      { x: 0.78, y: 0.58 },
+      { x: 0.50, y: 0.68 },
     ],
-    end: { x: 0.20, y: 0.68 },
+    end: { x: 0.22, y: 0.70 },
   },
-  // Ayn, Ghayn (Top crescent brow -> large bottom belly)
   "ع": {
     start: { x: 0.54, y: 0.28 },
     waypoints: [
       { x: 0.72, y: 0.32 },
-      { x: 0.56, y: 0.46 },
-      { x: 0.72, y: 0.64 },
-      { x: 0.50, y: 0.82 },
-      { x: 0.30, y: 0.80 },
+      { x: 0.56, y: 0.48 },
+      { x: 0.70, y: 0.66 },
+      { x: 0.48, y: 0.82 },
     ],
-    end: { x: 0.16, y: 0.74 },
+    end: { x: 0.18, y: 0.76 },
   },
   "غ": {
     start: { x: 0.54, y: 0.34 },
     waypoints: [
       { x: 0.72, y: 0.38 },
-      { x: 0.56, y: 0.50 },
-      { x: 0.72, y: 0.68 },
-      { x: 0.50, y: 0.84 },
-      { x: 0.30, y: 0.82 },
+      { x: 0.56, y: 0.52 },
+      { x: 0.70, y: 0.70 },
+      { x: 0.48, y: 0.84 },
     ],
-    end: { x: 0.16, y: 0.76 },
+    end: { x: 0.18, y: 0.78 },
   },
-  // Fa (Head circle -> baseline -> left tip)
   "ف": {
     start: { x: 0.78, y: 0.42 },
     waypoints: [
       { x: 0.88, y: 0.38 },
-      { x: 0.70, y: 0.56 },
-      { x: 0.50, y: 0.62 },
-      { x: 0.30, y: 0.62 },
+      { x: 0.68, y: 0.58 },
+      { x: 0.44, y: 0.64 },
     ],
-    end: { x: 0.14, y: 0.52 },
+    end: { x: 0.16, y: 0.54 },
   },
-  // Qaaf (Head circle -> deep bowl)
   "ق": {
     start: { x: 0.76, y: 0.40 },
     waypoints: [
       { x: 0.86, y: 0.36 },
       { x: 0.68, y: 0.54 },
-      { x: 0.46, y: 0.70 },
-      { x: 0.28, y: 0.70 },
+      { x: 0.44, y: 0.70 },
     ],
-    end: { x: 0.16, y: 0.54 },
+    end: { x: 0.18, y: 0.56 },
   },
-  // Kaaf (Top mast -> down -> baseline)
   "ك": {
     start: { x: 0.76, y: 0.22 },
     waypoints: [
@@ -323,50 +275,44 @@ const LETTER_ANCHORS = {
       { x: 0.55, y: 0.64 },
       { x: 0.35, y: 0.64 },
     ],
-    end: { x: 0.14, y: 0.58 },
+    end: { x: 0.16, y: 0.58 },
   },
-  // Laam (Top mast -> deep bowl)
   "ل": {
     start: { x: 0.72, y: 0.18 },
     waypoints: [
       { x: 0.70, y: 0.46 },
-      { x: 0.55, y: 0.68 },
-      { x: 0.35, y: 0.70 },
+      { x: 0.52, y: 0.70 },
+      { x: 0.32, y: 0.70 },
     ],
-    end: { x: 0.18, y: 0.54 },
+    end: { x: 0.20, y: 0.54 },
   },
-  // Meem (Top circle -> tail)
   "م": {
     start: { x: 0.66, y: 0.40 },
     waypoints: [
       { x: 0.78, y: 0.42 },
-      { x: 0.60, y: 0.46 },
-      { x: 0.42, y: 0.62 },
-      { x: 0.32, y: 0.80 },
+      { x: 0.58, y: 0.48 },
+      { x: 0.40, y: 0.66 },
     ],
-    end: { x: 0.28, y: 0.90 },
+    end: { x: 0.30, y: 0.90 },
   },
-  // Noon (Right tip -> deep bowl -> left tip)
   "ن": {
     start: { x: 0.82, y: 0.44 },
     waypoints: [
-      { x: 0.70, y: 0.64 },
-      { x: 0.50, y: 0.72 },
+      { x: 0.68, y: 0.66 },
+      { x: 0.48, y: 0.72 },
       { x: 0.30, y: 0.66 },
     ],
-    end: { x: 0.16, y: 0.46 },
+    end: { x: 0.18, y: 0.48 },
   },
-  // Waw (Top loop -> tail)
   "و": {
     start: { x: 0.68, y: 0.38 },
     waypoints: [
       { x: 0.80, y: 0.40 },
-      { x: 0.64, y: 0.54 },
-      { x: 0.44, y: 0.70 },
+      { x: 0.62, y: 0.56 },
+      { x: 0.42, y: 0.72 },
     ],
-    end: { x: 0.24, y: 0.80 },
+    end: { x: 0.26, y: 0.82 },
   },
-  // Haa
   "هـ": {
     start: { x: 0.76, y: 0.36 },
     waypoints: [
@@ -374,964 +320,671 @@ const LETTER_ANCHORS = {
       { x: 0.65, y: 0.56 },
       { x: 0.45, y: 0.62 },
     ],
-    end: { x: 0.22, y: 0.62 },
+    end: { x: 0.24, y: 0.62 },
   },
-  // Hamzah
   "ء": {
     start: { x: 0.68, y: 0.36 },
     waypoints: [
       { x: 0.50, y: 0.48 },
     ],
-    end: { x: 0.32, y: 0.64 },
+    end: { x: 0.34, y: 0.64 },
   },
-  // Yaa (Head -> curve -> wide tail)
   "ي": {
     start: { x: 0.76, y: 0.36 },
     waypoints: [
-      { x: 0.60, y: 0.42 },
-      { x: 0.74, y: 0.56 },
-      { x: 0.50, y: 0.72 },
-      { x: 0.30, y: 0.70 },
+      { x: 0.60, y: 0.44 },
+      { x: 0.72, y: 0.58 },
+      { x: 0.48, y: 0.72 },
     ],
-    end: { x: 0.14, y: 0.60 },
+    end: { x: 0.16, y: 0.62 },
   },
 };
 
-export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteExercise }) {
-  const { t, isRTL: _isRTL, dir, lang } = useLearningLanguage();
+export default function InteractiveBlackboard({ onClose = null, onNavigateBack = null }) {
+  // Navigation View: 'tracing' | 'selector' | 'slate'
+  const [viewMode, setViewMode] = useState("tracing");
 
-  const [selectedLetter, setSelectedLetter] = useState(ARABIC_ALPHABET[1]); // Default 'Ba'
-  const [selectedForm, setSelectedForm] = useState("isolated"); // 'isolated' | 'initial' | 'medial' | 'final'
-  const [selectedHarakat, setSelectedHarakat] = useState("none");
-  const [tool, setTool] = useState("pen"); // 'pen' | 'eraser'
-  const [penColor, setPenColor] = useState("#fbbf24"); // Rich golden amber chalk
-  const [penWidth, setPenWidth] = useState(10); // 6, 10, 16 px
-  const [showGuide, setShowGuide] = useState(true);
-  const [showLines, setShowLines] = useState(true);
+  // Selected Letter State
+  const [selectedLetterIndex, setSelectedLetterIndex] = useState(0);
+  const currentLetter = ARABIC_ALPHABET[selectedLetterIndex] || ARABIC_ALPHABET[0];
 
-  // Gamification & Real-Time Tracing Metrics
-  const [showCelebration, setShowCelebration] = useState(false);
-  const [starsRevealed, setStarsRevealed] = useState(0);
-  const [tracingProgress, setTracingProgress] = useState(0); // 0% to 100%
-  const [guideMarkers, setGuideMarkers] = useState(null); // Real pixel coordinates: { start: {x, y}, end: {x, y} }
-  const [dimensions, setDimensions] = useState({ width: 800, height: 520 });
+  // Active Mascot State (Default Elephant 🐘 matching Image 4)
+  const [activeMascotIndex, setActiveMascotIndex] = useState(0);
+  const currentMascot = MASCOTS[activeMascotIndex] || MASCOTS[0];
 
-  const boardContainerRef = useRef(null);
-  const letterSpanRef = useRef(null);
-  const drawCanvasRef = useRef(null);
+  // Tracing Progress & Gamification
+  const [hitCheckpointIndex, setHitCheckpointIndex] = useState(-1);
+  const [isCompleted, setIsCompleted] = useState(false);
+  const [showCelebrationModal, setShowCelebrationModal] = useState(false);
+  const [coins, setCoins] = useState(150);
+  const [completedLetterMap, setCompletedLetterMap] = useState({});
 
-  const isDrawingRef = useRef(false);
+  // Freehand Slate State (Classic Chalk Mode)
+  const [chalkColor, setChalkColor] = useState("#fbbf24");
+  const [chalkTool, setChalkTool] = useState("pen"); // 'pen' | 'eraser'
+  const canvasRef = useRef(null);
+  const isPointerDownRef = useRef(false);
   const lastPointRef = useRef({ x: 0, y: 0 });
-  const checkpointsRef = useRef([]);
-  const isCelebrationFiredRef = useRef(false);
 
-  // Active Arabic character with harakat
-  const activeChar = (selectedLetter.forms[selectedForm] || selectedLetter.ar) +
-    (HARAKAT_LIST.find((h) => h.id === selectedHarakat)?.symbol || "");
+  // Letter Path Container Ref
+  const stageRef = useRef(null);
 
-  // Canonical token for sound playback
-  const getAudioToken = useCallback((letterAr, harakatId) => {
-    let char = letterAr;
-    if (harakatId === "fathah") char += "َ";
-    else if (harakatId === "kasrah") char += "ِ";
-    else if (harakatId === "dammah") char += "ُ";
-    else if (harakatId === "sukoon") char += "ْ";
-    return char;
-  }, []);
-
-  // Play pronunciation
-  const playPronunciation = useCallback(() => {
+  // Load coins and completed letters on mount
+  useEffect(() => {
+    setCoins(getStoredCoins());
     try {
-      const charToSpeak = getAudioToken(selectedLetter.ar, selectedHarakat);
-      playArabicSound(charToSpeak);
+      const saved = localStorage.getItem("noor_qaida_tracing_completed");
+      if (saved) setCompletedLetterMap(JSON.parse(saved));
     } catch {}
-  }, [getAudioToken, selectedHarakat, selectedLetter]);
-
-  // Clear Canvas and reset stroke tracking
-  const handleClear = useCallback(() => {
-    const canvas = drawCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    if (checkpointsRef.current) {
-      checkpointsRef.current.forEach((cp) => {
-        cp.hit = false;
-      });
-    }
-    isCelebrationFiredRef.current = false;
-    setTracingProgress(0);
   }, []);
 
-  // ── TRIGGER MA SHA ALLAH GAME CELEBRATION (Only on 100% Genuine Completion) ──
-  const triggerCelebration = useCallback(() => {
-    if (isCelebrationFiredRef.current) return;
-    isCelebrationFiredRef.current = true;
-    setTracingProgress(100);
-    setShowCelebration(true);
-
-    // 1. Triumphant fanfare audio
-    playMaShaAllahCelebration();
-
-    // 2. Confetti explosion
-    fireCelebrationConfetti();
-
-    // 3. Sequential star pop animation
-    setStarsRevealed(0);
-    const starTimers = [1, 2, 3].map((starIdx) =>
-      setTimeout(() => {
-        setStarsRevealed(starIdx);
-        playStarPopSound(starIdx);
-      }, starIdx * 320)
-    );
-
-    // 4. Pronounce the completed letter proudly
-    setTimeout(() => {
-      playPronunciation();
-    }, 1100);
-
-    return () => starTimers.forEach(clearTimeout);
-  }, [playPronunciation]);
-
-  // ── 1. RESIZE OBSERVER: DYNAMIC 1:1 PIXEL CANVAS DIMENSIONS ──
-  useEffect(() => {
-    const updateDimensions = () => {
-      if (!boardContainerRef.current) return;
-      const rect = boardContainerRef.current.getBoundingClientRect();
-      const w = Math.max(320, Math.floor(rect.width));
-      const h = Math.max(300, Math.floor(rect.height));
-      setDimensions((prev) => {
-        if (prev.width === w && prev.height === h) return prev;
-        return { width: w, height: h };
-      });
+  // Compute Checkpoints for Current Letter
+  const checkpoints = useMemo(() => {
+    const anchor = LETTER_ANCHORS[currentLetter.ar] || {
+      start: { x: 0.5, y: 0.2 },
+      waypoints: [{ x: 0.5, y: 0.5 }],
+      end: { x: 0.5, y: 0.8 },
     };
-
-    updateDimensions();
-    window.addEventListener("resize", updateDimensions);
-    const ro = new ResizeObserver(updateDimensions);
-    if (boardContainerRef.current) ro.observe(boardContainerRef.current);
-
-    return () => {
-      window.removeEventListener("resize", updateDimensions);
-      ro.disconnect();
-    };
-  }, []);
-
-  // ── 2. SYNCHRONIZED PATH & ACCURATE TARGET MARKERS COMPUTATION ──
-  const updateLetterPathMetrics = useCallback(() => {
-    if (!letterSpanRef.current || !boardContainerRef.current) return;
-    const letterRect = letterSpanRef.current.getBoundingClientRect();
-    const boardRect = boardContainerRef.current.getBoundingClientRect();
-
-    if (letterRect.width <= 0 || letterRect.height <= 0) return;
-
-    const box = {
-      left: letterRect.left - boardRect.left,
-      top: letterRect.top - boardRect.top,
-      width: letterRect.width,
-      height: letterRect.height,
-    };
-
-    const anchor = LETTER_ANCHORS[selectedLetter.ar] || {
-      start: { x: 0.85, y: 0.45 },
-      waypoints: [
-        { x: 0.65, y: 0.55 },
-        { x: 0.45, y: 0.55 },
-      ],
-      end: { x: 0.15, y: 0.45 },
-    };
-
-    const startPt = {
-      x: Math.round(box.left + box.width * anchor.start.x),
-      y: Math.round(box.top + box.height * anchor.start.y),
-    };
-
-    const endPt = {
-      x: Math.round(box.left + box.width * anchor.end.x),
-      y: Math.round(box.top + box.height * anchor.end.y),
-    };
-
-    const waypoints = anchor.waypoints.map((wp) => ({
-      x: Math.round(box.left + box.width * wp.x),
-      y: Math.round(box.top + box.height * wp.y),
-      hit: false,
-    }));
-
-    checkpointsRef.current = [
-      { x: startPt.x, y: startPt.y, hit: false, isStart: true },
-      ...waypoints,
-      { x: endPt.x, y: endPt.y, hit: false, isEnd: true },
+    return [
+      anchor.start,
+      ...(anchor.waypoints || []),
+      anchor.end,
     ];
+  }, [currentLetter]);
 
-    setGuideMarkers({ start: startPt, end: endPt });
-  }, [selectedLetter]);
-
+  // Reset Tracing when Letter Changes
   useEffect(() => {
-    const timer = setTimeout(() => {
-      updateLetterPathMetrics();
-    }, 60);
+    setHitCheckpointIndex(-1);
+    setIsCompleted(false);
+    setShowCelebrationModal(false);
+  }, [selectedLetterIndex]);
 
-    return () => clearTimeout(timer);
-  }, [activeChar, dimensions, updateLetterPathMetrics]);
+  // Play Letter Audio
+  const playCurrentSound = useCallback(() => {
+    try {
+      playArabicSound(currentLetter.ar);
+    } catch {}
+  }, [currentLetter]);
 
-  // Coordinate normalizer for Canvas (1:1 pixel perfection)
-  const getPos = (e) => {
-    const canvas = drawCanvasRef.current;
-    if (!canvas) return { x: 0, y: 0 };
-    const rect = canvas.getBoundingClientRect();
+  // Audio effect for collecting item
+  const playCollectChime = useCallback(() => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === "suspended") ctx.resume();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(659.25, now);
+      osc.frequency.exponentialRampToValueAtTime(1318.5, now + 0.15);
+      gain.gain.setValueAtTime(0.25, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.15);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.15);
+    } catch {}
+  }, []);
+
+  // Handle Tracing Pointer Interaction
+  const handleStagePointerMove = (e) => {
+    if (isCompleted || viewMode !== "tracing") return;
+    if (!stageRef.current) return;
+
+    const rect = stageRef.current.getBoundingClientRect();
     const clientX = e.touches ? e.touches[0].clientX : e.clientX;
     const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    return {
-      x: (clientX - rect.left) * (canvas.width / rect.width),
-      y: (clientY - rect.top) * (canvas.height / rect.height),
-    };
-  };
 
-  // Drawing event handlers
-  const startDrawing = (e) => {
-    isDrawingRef.current = true;
-    const pos = getPos(e);
-    lastPointRef.current = pos;
+    const relX = (clientX - rect.left) / rect.width;
+    const relY = (clientY - rect.top) / rect.height;
 
-    // Check hit on start point
-    if (tool === "pen" && !isCelebrationFiredRef.current && checkpointsRef.current.length > 0) {
-      const cps = checkpointsRef.current;
-      for (let i = 0; i < cps.length; i++) {
-        if (!cps[i].hit && Math.hypot(pos.x - cps[i].x, pos.y - cps[i].y) < 55) {
-          cps[i].hit = true;
+    // Next required checkpoint index
+    const nextIdx = hitCheckpointIndex + 1;
+    if (nextIdx < checkpoints.length) {
+      const target = checkpoints[nextIdx];
+      const dist = Math.hypot(relX - target.x, relY - target.y);
+
+      // Hit threshold: within 16% of normalized stage dimension
+      if (dist < 0.16) {
+        setHitCheckpointIndex(nextIdx);
+        playCollectChime();
+
+        // If completed all checkpoints
+        if (nextIdx === checkpoints.length - 1) {
+          setIsCompleted(true);
+          setShowCelebrationModal(true);
+          playMaShaAllahCelebration();
+          fireCelebrationConfetti();
+          setTimeout(() => playCurrentSound(), 1000);
+
+          // Award +5 coins
+          setCoins((c) => {
+            const next = c + 5;
+            saveCoins(next);
+            return next;
+          });
+
+          // Mark completed in storage
+          setCompletedLetterMap((prev) => {
+            const next = { ...prev, [currentLetter.ar]: 3 };
+            try {
+              localStorage.setItem("noor_qaida_tracing_completed", JSON.stringify(next));
+            } catch {}
+            return next;
+          });
         }
       }
-      const hitCount = cps.filter((c) => c.hit).length;
-      setTracingProgress(Math.min(100, Math.round((hitCount / cps.length) * 100)));
     }
   };
 
-  const draw = (e) => {
-    if (!isDrawingRef.current) return;
-    const canvas = drawCanvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    const pos = getPos(e);
-
-    ctx.beginPath();
-    ctx.moveTo(lastPointRef.current.x, lastPointRef.current.y);
-    ctx.lineTo(pos.x, pos.y);
-
-    if (tool === "eraser") {
-      ctx.globalCompositeOperation = "destination-out";
-      ctx.lineWidth = penWidth * 3.5;
-      ctx.shadowBlur = 0;
-    } else {
-      ctx.globalCompositeOperation = "source-over";
-      ctx.strokeStyle = penColor;
-      ctx.lineWidth = penWidth;
-      ctx.shadowBlur = 3;
-      ctx.shadowColor = penColor;
-    }
-
-    ctx.stroke();
-
-    // ── ACCURATE REAL-TIME TRACING EVALUATION ──
-    if (tool === "pen" && !isCelebrationFiredRef.current && checkpointsRef.current.length > 0) {
-      const cps = checkpointsRef.current;
-
-      // Hit test checkpoints along the true letter stroke
-      // Waypoint radius: 44px; End target radius: 30px (tight precision so it only triggers at the actual end tip)
-      for (let i = 0; i < cps.length; i++) {
-        const cp = cps[i];
-        if (!cp.hit) {
-          const dist = Math.hypot(pos.x - cp.x, pos.y - cp.y);
-          const hitRadius = cp.isEnd ? 30 : 44;
-          if (dist < hitRadius) {
-            cp.hit = true;
-          }
-        }
-      }
-
-      const hitCount = cps.filter((c) => c.hit).length;
-      const progressPercent = Math.min(100, Math.round((hitCount / cps.length) * 100));
-      setTracingProgress(progressPercent);
-
-      // Check genuine letter completion:
-      // 1. User MUST have started near the beginning (cps[0].hit is true)
-      // 2. User MUST have traced the ENTIRE letter (hitCount >= requiredCount, at least 90% of stroke)
-      // 3. User MUST have reached the actual END tip (lastCheckpoint.hit is true OR distToEnd <= 30px)
-      const firstCheckpoint = cps[0];
-      const lastCheckpoint = cps[cps.length - 1];
-      const requiredCount = Math.max(cps.length - 1, Math.ceil(cps.length * 0.90));
-      const distToEnd = guideMarkers
-        ? Math.hypot(pos.x - guideMarkers.end.x, pos.y - guideMarkers.end.y)
-        : 999;
-
-      if (
-        firstCheckpoint.hit &&
-        hitCount >= requiredCount &&
-        (lastCheckpoint.hit || distToEnd <= 30)
-      ) {
-        triggerCelebration();
-      }
-    }
-
-    lastPointRef.current = pos;
-  };
-
-  const stopDrawing = () => {
-    isDrawingRef.current = false;
-
-    // Fallback: If user finishes tracing the entire letter and lifts chalk at the end tip
-    if (tool === "pen" && !isCelebrationFiredRef.current && checkpointsRef.current.length > 0) {
-      const cps = checkpointsRef.current;
-      const firstCheckpoint = cps[0];
-      const lastCheckpoint = cps[cps.length - 1];
-      const hitCount = cps.filter((c) => c.hit).length;
-      const requiredCount = Math.max(cps.length - 1, Math.ceil(cps.length * 0.90));
-      const distToEnd = guideMarkers
-        ? Math.hypot(lastPointRef.current.x - guideMarkers.end.x, lastPointRef.current.y - guideMarkers.end.y)
-        : 999;
-
-      if (
-        firstCheckpoint.hit &&
-        hitCount >= requiredCount &&
-        (lastCheckpoint.hit || distToEnd <= 36)
-      ) {
-        triggerCelebration();
-      }
-    }
-  };
-
-  // Next Letter Handler (moves to next of 29 letters)
+  // Move to Next Letter
   const handleNextLetter = () => {
-    const currentIndex = ARABIC_ALPHABET.findIndex((item) => item.ar === selectedLetter.ar);
-    const nextIndex = (currentIndex + 1) % ARABIC_ALPHABET.length;
-    const nextLetter = ARABIC_ALPHABET[nextIndex];
-
-    setSelectedLetter(nextLetter);
-    setShowCelebration(false);
-    handleClear();
-
-    const charToSpeak = getAudioToken(nextLetter.ar, selectedHarakat);
-    playArabicSound(charToSpeak);
-    toast.success(`মাশাআল্লাহ! পরবর্তী হরফ "${nextLetter.nameBn}" নির্বাচিত হয়েছে।`);
+    const nextIndex = (selectedLetterIndex + 1) % ARABIC_ALPHABET.length;
+    setSelectedLetterIndex(nextIndex);
   };
 
-  // Repeat current letter
-  const handleRepeatCurrentLetter = () => {
-    setShowCelebration(false);
-    handleClear();
-    playPronunciation();
+  // Move to Previous Letter
+  const handlePrevLetter = () => {
+    const prevIndex = (selectedLetterIndex - 1 + ARABIC_ALPHABET.length) % ARABIC_ALPHABET.length;
+    setSelectedLetterIndex(prevIndex);
   };
 
-  // Manual Check Button (Verifies honest letter tracing)
-  const handleManualVerify = () => {
-    if (checkpointsRef.current && checkpointsRef.current.length > 0) {
-      const cps = checkpointsRef.current;
-      const firstCheckpoint = cps[0];
-      const lastCheckpoint = cps[cps.length - 1];
-      const hitCount = cps.filter((c) => c.hit).length;
-      const requiredCount = Math.max(cps.length - 1, Math.ceil(cps.length * 0.90));
-
-      if (firstCheckpoint.hit && (lastCheckpoint.hit || hitCount >= requiredCount)) {
-        triggerCelebration();
-        return;
-      }
-    }
-    toast.info("হরফটি চক দিয়ে শুরুর মাথা থেকে শেষ মাথা পর্যন্ত সম্পূর্ণ আঁকুন।");
-  };
-
-  // Download drawn handwriting as PNG
-  const handleDownloadImage = () => {
-    const drawCanvas = drawCanvasRef.current;
-    if (!drawCanvas) return;
-    try {
-      const tempCanvas = document.createElement("canvas");
-      tempCanvas.width = dimensions.width;
-      tempCanvas.height = dimensions.height;
-      const tCtx = tempCanvas.getContext("2d");
-
-      // Draw rich chalkboard background
-      tCtx.fillStyle = "#051810";
-      tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
-
-      // Draw watermark guide if enabled
-      if (showGuide) {
-        tCtx.fillStyle = "rgba(52, 211, 153, 0.25)";
-        tCtx.font = "bold 260px 'Amiri', 'Traditional Arabic', serif";
-        tCtx.textAlign = "center";
-        tCtx.textBaseline = "middle";
-        tCtx.fillText(activeChar, tempCanvas.width / 2, tempCanvas.height / 2);
-      }
-
-      // Draw user's chalk strokes
-      tCtx.drawImage(drawCanvas, 0, 0);
-
-      const link = document.createElement("a");
-      link.download = `arabic-blackboard-${selectedLetter.nameBn || "letter"}.png`;
-      link.href = tempCanvas.toDataURL("image/png");
-      link.click();
-      toast.success("মাশাআল্লাহ! আপনার হাতের লেখার ছবি ডাউনলোড হয়েছে।");
-    } catch {
-      toast.error("ছবি সেভ করতে সমস্যা হয়েছে।");
-    }
-  };
+  // Tracing Progress Percentage
+  const progressPercent = Math.round(
+    ((hitCheckpointIndex + 1) / checkpoints.length) * 100
+  );
 
   return (
-    <div dir={dir} className="w-full flex flex-col space-y-6">
-      {/* ── TOP HEADER & CONTROLS ── */}
-      <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#091a14] via-[#0b241b] to-[#071610] border border-emerald-900/60 shadow-xl">
-        <div className="flex items-center gap-3.5">
-          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-300 font-bold text-2xl font-amiri shadow-md shadow-amber-950/40 ring-1 ring-amber-400/30">
-            {activeChar}
-          </div>
-          <div>
-            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
-              <span>{t.blackboard}</span>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-900/90 border border-emerald-600 text-emerald-200 font-bold shadow-xs">
-                {lang === "en" ? selectedLetter.nameEn : selectedLetter.nameBn}
-              </span>
-            </h2>
-            <p className="text-xs text-slate-300/80">
-              নিখুঁত ট্রেসিং গেম: <span className="text-emerald-400 font-bold">শুরুর মাথা</span> থেকে চক ঘুরিয়ে হরফটি সম্পূর্ণ করে <span className="text-amber-400 font-bold">শেষের মাথায়</span> স্পর্শ করুন! 🎮
-            </p>
-          </div>
-        </div>
+    <div className="relative w-full min-h-[82vh] rounded-3xl overflow-hidden shadow-2xl flex flex-col font-hind-siliguri select-none border-4 border-sky-400">
+      {/* ══════════════════════════════════════════════════════════
+          CARTOON MEADOW & SUNNY SKY BACKGROUND
+          (Matching exact reference images: rolling green hills, windmills, blue sky, sparkling stars)
+      ══════════════════════════════════════════════════════════ */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden z-0 bg-gradient-to-b from-[#0284c7] via-[#38bdf8] to-[#93c5fd]">
+        {/* Floating Cartoon Clouds */}
+        <div className="absolute top-8 left-12 w-32 h-14 bg-white/90 rounded-full blur-xs opacity-90 animate-pulse" />
+        <div className="absolute top-16 right-24 w-40 h-16 bg-white/85 rounded-full blur-xs opacity-90 animate-pulse" />
+        <div className="absolute top-6 left-1/2 -translate-x-1/2 w-48 h-18 bg-white/70 rounded-full blur-xs opacity-75" />
 
-        {/* Real-time Progress Bar & Audio Action */}
-        <div className="flex items-center gap-3">
-          {/* Tracing Progress Meter */}
-          <div className="flex flex-col items-end gap-1 min-w-[150px]">
-            <div className="flex items-center justify-between w-full text-[11px] font-bold">
-              <span className="text-slate-300">ট্রেসিং অগ্রগতি:</span>
-              <span className={`font-mono font-black ${tracingProgress === 100 ? "text-emerald-400" : "text-amber-400"}`}>
-                {tracingProgress}%
-              </span>
-            </div>
-            <div className="w-full h-2.5 rounded-full bg-black/60 border border-emerald-900/60 overflow-hidden shadow-inner">
-              <div
-                className={`h-full transition-all duration-300 rounded-full ${
-                  tracingProgress === 100
-                    ? "bg-gradient-to-r from-emerald-400 to-teal-300 shadow-md shadow-emerald-500/50"
-                    : "bg-gradient-to-r from-emerald-600 via-amber-500 to-amber-400"
-                }`}
-                style={{ width: `${tracingProgress}%` }}
-              />
-            </div>
-          </div>
-
-          <button
-            type="button"
-            onClick={playPronunciation}
-            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs flex items-center gap-2 transition-all shadow-lg shadow-amber-950/40 cursor-pointer active:scale-95"
-            title="বিশুদ্ধ ক্বারীর কণ্ঠে উচ্চারণ শুনুন"
+        {/* Sparkling Stars & Sunbeam */}
+        {[10, 25, 45, 70, 85].map((pos, i) => (
+          <span
+            key={i}
+            className="absolute text-white text-base animate-ping opacity-85"
+            style={{ top: `${8 + (i % 3) * 6}%`, left: `${pos}%` }}
           >
-            <Volume2 className="w-4 h-4 text-slate-950" />
-            <span>{t.listenAudio}</span>
-          </button>
+            ✦
+          </span>
+        ))}
+
+        {/* Green Rolling Grassland Hills & Windmills SVG */}
+        <div className="absolute bottom-0 left-0 right-0 h-44 sm:h-56">
+          <svg className="w-full h-full" viewBox="0 0 1200 300" preserveAspectRatio="none">
+            {/* Back Hill */}
+            <path d="M0,180 Q350,110 700,160 T1200,140 L1200,300 L0,300 Z" fill="#22c55e" opacity="0.95" />
+            {/* Front Hill */}
+            <path d="M0,210 Q400,150 850,210 T1200,190 L1200,300 L0,300 Z" fill="#16a34a" />
+
+            {/* Traditional Dutch Windmills on the right (Exact matching user images) */}
+            <g transform="translate(940, 70)">
+              {/* Main Windmill Tower */}
+              <polygon points="50,150 60,40 85,40 95,150" fill="#3e2723" stroke="#1f140e" strokeWidth="2" />
+              <polygon points="56,40 72,18 89,40" fill="#b91c1c" />
+              {/* White Fence */}
+              <line x1="20" y1="145" x2="160" y2="145" stroke="#ffffff" strokeWidth="3" />
+              <line x1="30" y1="135" x2="30" y2="155" stroke="#ffffff" strokeWidth="2.5" />
+              <line x1="50" y1="135" x2="50" y2="155" stroke="#ffffff" strokeWidth="2.5" />
+              <line x1="110" y1="135" x2="110" y2="155" stroke="#ffffff" strokeWidth="2.5" />
+              <line x1="130" y1="135" x2="130" y2="155" stroke="#ffffff" strokeWidth="2.5" />
+              {/* Rotating Blades */}
+              <g className="animate-spin origin-[72px_40px]" style={{ animationDuration: "14s" }}>
+                <line x1="25" y1="40" x2="120" y2="40" stroke="#f8fafc" strokeWidth="4.5" />
+                <line x1="72" y1="-8" x2="72" y2="88" stroke="#f8fafc" strokeWidth="4.5" />
+              </g>
+            </g>
+
+            <g transform="translate(1060, 95) scale(0.8)">
+              {/* Second Smaller Windmill */}
+              <polygon points="50,150 60,40 85,40 95,150" fill="#2e1d16" />
+              <polygon points="56,40 72,18 89,40" fill="#b91c1c" />
+              <g className="animate-spin origin-[72px_40px]" style={{ animationDuration: "18s" }}>
+                <line x1="25" y1="40" x2="120" y2="40" stroke="#f8fafc" strokeWidth="4" />
+                <line x1="72" y1="-8" x2="72" y2="88" stroke="#f8fafc" strokeWidth="4" />
+              </g>
+            </g>
+          </svg>
         </div>
       </div>
 
-      {/* ── MAIN BLACKBOARD CANVAS STAGE ── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* LEFT COLUMN: THE GRAND BLACKBOARD (col-span-8) */}
-        <div className="lg:col-span-8 flex flex-col space-y-4">
-          {/* WOODEN SLATE CASING (আসল কাঠের ফ্রেমযুক্ত ঐতিহ্যবাহী স্লেট) */}
-          <div className="relative rounded-[32px] p-2.5 sm:p-4 bg-gradient-to-b from-[#3d1f11] via-[#24130a] to-[#140a04] border-4 border-[#522a16] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95),inset_0_2px_4px_rgba(255,255,255,0.18),inset_0_-2px_4px_rgba(0,0,0,0.8)] ring-1 ring-amber-700/60 flex flex-col">
-            
-            {/* Wooden Slate Corner Studs */}
-            <div className="absolute top-2 left-2 w-3 h-3 rounded-full bg-gradient-to-br from-amber-300 to-amber-700 shadow border border-amber-900/60" />
-            <div className="absolute top-2 right-2 w-3 h-3 rounded-full bg-gradient-to-br from-amber-300 to-amber-700 shadow border border-amber-900/60" />
-            <div className="absolute bottom-2 left-2 w-3 h-3 rounded-full bg-gradient-to-br from-amber-300 to-amber-700 shadow border border-amber-900/60" />
-            <div className="absolute bottom-2 right-2 w-3 h-3 rounded-full bg-gradient-to-br from-amber-300 to-amber-700 shadow border border-amber-900/60" />
+      {/* ══════════════════════════════════════════════════════════
+          TOP NAVIGATION BAR (MATCHING REFERENCE IMAGES)
+          (Home, Mode Selector, Target Badge, Audio, Reset, Next Arrow)
+      ══════════════════════════════════════════════════════════ */}
+      <header className="relative z-30 p-2.5 sm:p-4 flex items-center justify-between gap-2 max-w-6xl mx-auto w-full">
+        {/* Left: Home Button (Switch to Letter Grid or Exit) */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <button
+            onClick={() => {
+              if (viewMode !== "selector") {
+                setViewMode("selector");
+              } else if (onClose || onNavigateBack) {
+                if (onClose) onClose();
+                else if (onNavigateBack) onNavigateBack();
+              }
+            }}
+            className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-teal-500 hover:bg-teal-600 text-white border-2 border-teal-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            title="হরফ নির্বাচন তালিকায় যান"
+          >
+            <Home className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
 
-            {/* BLACKBOARD WRITING SURFACE (উঁচু, গভীর ও প্রশস্ত স্লেট) */}
-            <div
-              ref={boardContainerRef}
-              className="relative rounded-[24px] bg-[#04140d] border-2 border-emerald-950 shadow-[inset_0_10px_30px_rgba(0,0,0,0.8)] overflow-hidden h-[460px] sm:h-[520px] md:h-[560px] w-full select-none"
+          {/* Mode Switcher Pill */}
+          <div className="flex items-center p-1 rounded-2xl bg-white/80 backdrop-blur-md border border-white/60 shadow-lg">
+            <button
+              onClick={() => setViewMode("tracing")}
+              className={`px-3 py-1.5 rounded-xl font-black text-xs transition cursor-pointer flex items-center gap-1 ${
+                viewMode === "tracing"
+                  ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-950"
+              }`}
             >
-              {/* Slate Gradient & Chalk Dust Texture */}
-              <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#092b1d] via-[#05170f] to-[#020b06] pointer-events-none" />
-
-              {/* Calligraphy Ruled Guidelines (খাতার মতো ক্যালিগ্রাফি নির্দেশিকা লাইন) */}
-              {showLines && (
-                <div className="absolute inset-0 flex flex-col justify-between py-16 sm:py-20 px-6 pointer-events-none z-0 opacity-40">
-                  {/* Top Ascender Line */}
-                  <div className="w-full border-b border-dashed border-emerald-400/35 relative">
-                    <span className="absolute -top-4 right-0 text-[10px] text-emerald-400/70 font-english-italic">
-                      Ascender Line
-                    </span>
-                  </div>
-
-                  {/* Central Baseline */}
-                  <div className="w-full border-b-2 border-amber-400/50 relative shadow-xs">
-                    <span className="absolute -top-4 right-0 text-[10px] text-amber-300/80 font-english-italic">
-                      Base Line
-                    </span>
-                  </div>
-
-                  {/* Bottom Descender Line */}
-                  <div className="w-full border-b border-dashed border-emerald-400/35 relative">
-                    <span className="absolute -top-4 right-0 text-[10px] text-emerald-400/70 font-english-italic">
-                      Descender Line
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* LAYER 1: 🌟 LUMINOUS EMERALD ARABIC GUIDE LETTER (সর্বদা স্পষ্ট ও উজ্জ্বল জলছাপ) */}
-              {showGuide && (
-                <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none z-10">
-                  <span
-                    ref={letterSpanRef}
-                    dir="rtl"
-                    className="font-amiri text-[230px] sm:text-[290px] md:text-[340px] font-bold text-emerald-400/35 drop-shadow-[0_0_35px_rgba(52,211,153,0.45)] leading-none select-none"
-                  >
-                    {activeChar}
-                  </span>
-                </div>
-              )}
-
-              {/* LAYER 2: 🎯 PRECISE START & END TARGET INDICATORS (সরাসরি হরফের মাথায় নিখুঁতভাবে স্থাপিত) */}
-              {showGuide && guideMarkers && (
-                <div className="absolute inset-0 pointer-events-none z-15">
-                  {/* 🟢 START POINT (শুরুর মাথা) */}
-                  <div
-                    className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 animate-pulse"
-                    style={{ left: `${guideMarkers.start.x}px`, top: `${guideMarkers.start.y}px` }}
-                  >
-                    <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-400 border-2 border-white shadow-lg shadow-emerald-500/80 flex items-center justify-center ring-4 ring-emerald-500/40">
-                      <div className="w-2.5 h-2.5 rounded-full bg-white shadow-xs" />
-                    </div>
-                    <span className="text-[10px] font-black text-emerald-300 bg-black/90 px-2 py-0.5 rounded-md border border-emerald-500/70 shadow whitespace-nowrap">
-                      শুরু 🟢
-                    </span>
-                  </div>
-
-                  {/* 🏁 END POINT (শেষের মাথা — এখানে এসে লাগলেই মাশাআল্লাহ সেলিব্রেশন!) */}
-                  <div
-                    className="absolute transform -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-1 animate-bounce"
-                    style={{ left: `${guideMarkers.end.x}px`, top: `${guideMarkers.end.y}px` }}
-                  >
-                    <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gradient-to-tr from-amber-400 to-amber-500 border-2 border-white shadow-xl shadow-amber-500/80 flex items-center justify-center ring-4 ring-amber-400/50">
-                      <Target className="w-4.5 h-4.5 text-slate-950 font-black" />
-                    </div>
-                    <span className="text-[10px] font-black text-amber-300 bg-black/90 px-2 py-0.5 rounded-md border border-amber-500/70 shadow whitespace-nowrap">
-                      শেষের মাথা 🏁
-                    </span>
-                  </div>
-                </div>
-              )}
-
-              {/* LAYER 3: Interactive Chalk Canvas */}
-              <canvas
-                ref={drawCanvasRef}
-                width={dimensions.width}
-                height={dimensions.height}
-                onMouseDown={startDrawing}
-                onMouseMove={draw}
-                onMouseUp={stopDrawing}
-                onMouseLeave={stopDrawing}
-                onTouchStart={startDrawing}
-                onTouchMove={draw}
-                onTouchEnd={stopDrawing}
-                className="absolute inset-0 cursor-crosshair touch-none z-20"
-              />
-
-              {/* 🌟 GAME CELEBRATION MODAL OVERLAY (মাশাআল্লাহ! ১০০% নিখুঁত সেলিব্রেশন স্ক্রিন) */}
-              {showCelebration && (
-                <div className="absolute inset-0 z-40 bg-black/85 backdrop-blur-md rounded-[24px] flex flex-col items-center justify-center p-6 text-center animate-fade-in select-none">
-                  {/* Floating celebratory ribbon */}
-                  <div className="px-5 py-2 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-sm sm:text-base shadow-2xl shadow-amber-500/60 mb-3 border-2 border-white animate-bounce">
-                    مَا شَاءَ اللَّهُ! মাশাআল্লাহ!
-                  </div>
-
-                  {/* 3 Popping Stars */}
-                  <div className="flex items-center gap-2.5 mb-3">
-                    {[1, 2, 3].map((starIdx) => (
-                      <div
-                        key={starIdx}
-                        className={`transition-all duration-300 transform ${
-                          starIdx <= starsRevealed
-                            ? "scale-110 opacity-100 text-amber-400 drop-shadow-[0_0_20px_rgba(251,191,36,0.9)]"
-                            : "scale-75 opacity-25 text-slate-600"
-                        }`}
-                      >
-                        <Award className="w-10 h-10 sm:w-12 sm:h-12 fill-current" />
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Big Arabic Letter with golden aura */}
-                  <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-emerald-900 to-[#03150d] border-2 border-amber-400/90 flex items-center justify-center font-amiri text-5xl font-extrabold text-amber-300 shadow-2xl mb-2.5 shadow-amber-500/30 ring-4 ring-emerald-500/40">
-                    {activeChar}
-                  </div>
-
-                  {/* Title & XP Badge */}
-                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-600/70 text-emerald-300 text-xs font-black mb-2 shadow-xs">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>১০০% নিখুঁত ট্রেসিং সম্পন্ন · ৩ স্টার পারফেক্ট! 🎮</span>
-                  </div>
-
-                  <h3 className="text-lg sm:text-2xl font-black text-white mb-1">
-                    দারুণ! হরফটি ক্রমান্বয়ে নিখুঁতভাবে শেষ হয়েছে!
-                  </h3>
-                  <p className="text-xs sm:text-sm text-emerald-200/90 max-w-sm mb-5">
-                    আপনি <span className="font-bold text-amber-300">"{selectedLetter.nameBn}"</span> হরফের সম্পূর্ণ রূপরেখা সুন্দরভাবে শেষ মাথা পর্যন্ত টেনে মিলিয়েছেন।
-                  </p>
-
-                  {/* Action Buttons */}
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={handleRepeatCurrentLetter}
-                      className="px-4 py-2.5 rounded-2xl bg-black/70 hover:bg-slate-800 text-slate-300 hover:text-white border border-emerald-900 font-bold text-xs flex items-center gap-2 transition cursor-pointer active:scale-95 shadow"
-                    >
-                      <RotateCcw className="w-4 h-4" />
-                      <span>আবার লিখুন</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={handleNextLetter}
-                      className="px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-xl shadow-emerald-950/80 transition cursor-pointer active:scale-95"
-                    >
-                      <span>পরবর্তী হরফ</span>
-                      <ArrowRight className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* WOODEN CHALK TRAY & TOOLBAR (স্লেটের কাঠের চক ও ডাস্টার তাক) */}
-            <div className="mt-3 p-2.5 sm:p-3 rounded-2xl bg-gradient-to-r from-black/80 via-black/70 to-black/80 backdrop-blur-md border border-amber-900/60 shadow-lg flex flex-wrap items-center justify-between gap-2.5 z-30">
-              
-              {/* Left Group: Tools & Colors */}
-              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
-                {/* Pen (Chalk) */}
-                <button
-                  type="button"
-                  onClick={() => setTool("pen")}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${
-                    tool === "pen"
-                      ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md font-black ring-1 ring-amber-300"
-                      : "text-slate-300 hover:bg-slate-800/80 bg-black/40 border border-emerald-900/50"
-                  }`}
-                  title="চকখড়ি দিয়ে লিখুন"
-                >
-                  <PenTool className="w-3.5 h-3.5" />
-                  <span>{t.pen}</span>
-                </button>
-
-                {/* Eraser (Duster) */}
-                <button
-                  type="button"
-                  onClick={() => setTool("eraser")}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95 ${
-                    tool === "eraser"
-                      ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md font-black ring-1 ring-amber-300"
-                      : "text-slate-300 hover:bg-slate-800/80 bg-black/40 border border-emerald-900/50"
-                  }`}
-                  title="ডাস্টার দিয়ে মুছুন"
-                >
-                  <Eraser className="w-3.5 h-3.5" />
-                  <span>{t.eraser}</span>
-                </button>
-
-                {/* Pen Width Selector */}
-                {tool === "pen" && (
-                  <div className="flex items-center gap-1 bg-black/50 p-1 rounded-xl border border-emerald-900/50">
-                    {[
-                      { size: 6, label: "চিকন" },
-                      { size: 10, label: "স্বাভাবিক" },
-                      { size: 16, label: "মোটা" },
-                    ].map((w) => (
-                      <button
-                        key={w.size}
-                        type="button"
-                        onClick={() => setPenWidth(w.size)}
-                        className={`px-2 py-0.5 rounded-lg text-[11px] font-bold transition cursor-pointer ${
-                          penWidth === w.size
-                            ? "bg-emerald-600 text-white shadow-xs"
-                            : "text-slate-400 hover:text-slate-200"
-                        }`}
-                        title={`চকের ঘনত্ব: ${w.label}`}
-                      >
-                        {w.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {/* Chalk Colors Palette */}
-                {tool === "pen" && (
-                  <div className="flex items-center gap-1.5 pl-2 border-l border-emerald-900/60">
-                    {[
-                      { color: "#ffffff", name: "সাদা" },
-                      { color: "#fbbf24", name: "সোনালী" },
-                      { color: "#34d399", name: "সবুজ" },
-                      { color: "#38bdf8", name: "আকাশি" },
-                      { color: "#f472b6", name: "গোলাপী" },
-                      { color: "#c084fc", name: "বেগুনী" },
-                    ].map((c) => (
-                      <button
-                        key={c.color}
-                        type="button"
-                        onClick={() => setPenColor(c.color)}
-                        style={{ backgroundColor: c.color }}
-                        className={`w-5 h-5 rounded-full border-2 transition-all cursor-pointer shadow-xs ${
-                          penColor === c.color ? "border-white scale-125 shadow-md ring-2 ring-amber-400" : "border-black/50 hover:scale-110"
-                        }`}
-                        title={`${c.name} চক`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Right Group: Action Buttons */}
-              <div className="flex items-center gap-1.5 sm:gap-2">
-                {/* Manual Verify Button */}
-                <button
-                  type="button"
-                  onClick={handleManualVerify}
-                  className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-500 hover:from-emerald-500 hover:to-teal-400 text-white font-bold text-xs flex items-center gap-1 shadow transition cursor-pointer active:scale-95"
-                  title="লেখা শেষে নিখুঁতভাবে যাচাই করুন"
-                >
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  <span>যাচাই</span>
-                </button>
-
-                {/* Tracing Toggle */}
-                <button
-                  type="button"
-                  onClick={() => setShowGuide(!showGuide)}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95 ${
-                    showGuide
-                      ? "bg-emerald-950 text-emerald-300 border border-emerald-700 shadow-xs"
-                      : "bg-slate-900/80 text-slate-400 border border-slate-800"
-                  }`}
-                  title="ট্রেসিং হরফের রূপরেখা দেখান বা লুকান"
-                >
-                  {showGuide ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
-                  <span className="hidden sm:inline">{showGuide ? "ট্রেসিং অন" : "ট্রেসিং অফ"}</span>
-                </button>
-
-                {/* Calligraphy Lines Toggle */}
-                <button
-                  type="button"
-                  onClick={() => setShowLines(!showLines)}
-                  className={`px-2.5 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95 ${
-                    showLines
-                      ? "bg-amber-950/80 text-amber-300 border border-amber-700 shadow-xs"
-                      : "bg-slate-900/80 text-slate-400 border border-slate-800"
-                  }`}
-                  title="ক্যালিগ্রাফি রুলড লাইন দেখান বা লুকান"
-                >
-                  <span className="font-mono text-xs">📏</span>
-                  <span className="hidden sm:inline">{showLines ? "দাগ অন" : "দাগ অফ"}</span>
-                </button>
-
-                {/* Save/Download Canvas Drawing */}
-                <button
-                  type="button"
-                  onClick={handleDownloadImage}
-                  className="px-2.5 py-1.5 rounded-xl bg-black/60 hover:bg-emerald-950 text-slate-300 hover:text-emerald-300 border border-emerald-900/70 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95"
-                  title="আপনার হাতের লেখা ছবি হিসেবে সেভ করুন"
-                >
-                  <Download className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">সেভ</span>
-                </button>
-
-                {/* Clear Board */}
-                <button
-                  type="button"
-                  onClick={handleClear}
-                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950 hover:text-rose-300 text-slate-300 border border-slate-800 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95"
-                  title="স্লেট পরিষ্কার করুন"
-                >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>{t.clear}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* ── LETTER FORMS SELECTION (শব্দে হরফের ৪টি রূপ — একক, শুরু, মাঝ, শেষ) ── */}
-          <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-[#091a14] via-[#071912] to-[#04120c] border border-emerald-900/60 shadow-xl flex flex-col space-y-3.5">
-            <div className="flex items-center justify-between border-b border-emerald-900/50 pb-2">
-              <span className="text-xs sm:text-sm font-extrabold text-white flex items-center gap-2">
-                <span className="text-amber-400">❖</span>
-                <span>
-                  {lang === "ar" ? "أشكال الحرف في الكلمة:" : lang === "en" ? "4 Forms of the Letter:" : "শব্দে হরফের ৪টি রূপ:"}
-                </span>
-              </span>
-              <span className="text-[11px] text-emerald-300/80">
-                হরফ ক্লিক করে বোর্ডে লেখার ধরন পরিবর্তন করুন
-              </span>
-            </div>
-
-            {/* 4 Large Rich Form Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {[
-                {
-                  id: "isolated",
-                  title: "একক রূপ",
-                  subtitle: "স্বাধীন বা পূর্ণাঙ্গ রূপ",
-                  label: t.letters.isolated,
-                  form: selectedLetter.forms.isolated,
-                },
-                {
-                  id: "initial",
-                  title: "শুরুর রূপ",
-                  subtitle: "শব্দের শুরুতে যুক্ত",
-                  label: t.letters.initial,
-                  form: selectedLetter.forms.initial,
-                },
-                {
-                  id: "medial",
-                  title: "মাঝের রূপ",
-                  subtitle: "শব্দের মাঝে দুই পাশে যুক্ত",
-                  label: t.letters.medial,
-                  form: selectedLetter.forms.medial,
-                },
-                {
-                  id: "final",
-                  title: "শেষের রূপ",
-                  subtitle: "শব্দের শেষে যুক্ত",
-                  label: t.letters.final,
-                  form: selectedLetter.forms.final,
-                },
-              ].map((f) => {
-                const isActive = selectedForm === f.id;
-                return (
-                  <button
-                    key={f.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedForm(f.id);
-                      handleClear();
-                      const charToSpeak = getAudioToken(selectedLetter.ar, selectedHarakat);
-                      playArabicSound(charToSpeak);
-                    }}
-                    className={`p-3.5 sm:p-4 rounded-2xl flex flex-col items-center justify-center gap-1.5 transition-all cursor-pointer border relative overflow-hidden group ${
-                      isActive
-                        ? "bg-gradient-to-br from-emerald-950 via-[#0a3323] to-[#051a11] border-emerald-400 text-emerald-100 shadow-xl shadow-emerald-950/60 ring-2 ring-emerald-400/60 scale-[1.02]"
-                        : "bg-[#05140d]/90 hover:bg-[#071f15] border-emerald-950 text-slate-300 hover:border-emerald-700/80 shadow-md"
-                    }`}
-                  >
-                    {isActive && (
-                      <div className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-emerald-400 animate-pulse shadow-sm" />
-                    )}
-
-                    <span className="font-amiri text-3xl sm:text-4xl font-extrabold tracking-wide py-1 text-amber-300 drop-shadow-sm group-hover:scale-110 transition-transform">
-                      {f.form}
-                    </span>
-
-                    <span className="text-xs font-bold text-white">
-                      {f.title}
-                    </span>
-
-                    <span className="text-[10px] text-slate-400 text-center leading-tight">
-                      {f.subtitle}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Harakat Overlay Selection */}
-            <div className="pt-3 border-t border-emerald-900/40 flex flex-col space-y-2.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="text-xs font-bold text-slate-300 mr-1">{t.harakat}:</span>
-                {HARAKAT_LIST.map((h) => (
-                  <button
-                    key={h.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedHarakat(h.id);
-                      handleClear();
-                      const charToSpeak = getAudioToken(selectedLetter.ar, h.id);
-                      playArabicSound(charToSpeak);
-                    }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
-                      selectedHarakat === h.id
-                        ? "bg-gradient-to-r from-amber-600 to-amber-700 border-amber-300 text-slate-950 shadow-md ring-2 ring-amber-400/50 scale-105"
-                        : "bg-[#05140d] border-emerald-900/70 text-slate-300 hover:border-emerald-600 hover:bg-emerald-950"
-                    }`}
-                  >
-                    {lang === "ar" ? h.labelAr : lang === "en" ? h.labelEn : h.labelBn}
-                  </button>
-                ))}
-              </div>
-
-              {/* Active Sound Pronunciation Indicator */}
-              <div className="w-full pt-2 flex items-center justify-between text-xs border-t border-emerald-900/40">
-                <span className="text-slate-300 font-medium">
-                  {lang === "ar" ? "النطق الصحيح:" : lang === "en" ? "Correct Pronunciation:" : "বিশুদ্ধ নূরানী উচ্চারণ গাইড:"}
-                </span>
-                <span className="font-bold text-amber-300 bg-amber-500/15 px-3 py-1 rounded-xl border border-amber-500/40 font-amiri text-sm sm:text-base flex items-center gap-2 shadow-xs">
-                  <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
-                  <span>
-                    {selectedHarakat === "none"
-                      ? (lang === "en" ? selectedLetter.nameEn : selectedLetter.nameBn)
-                      : (HARAKAT_PRONUNCIATION_MAP[selectedLetter.ar]?.[selectedHarakat] || activeChar)}
-                  </span>
-                </span>
-              </div>
-            </div>
+              <span>🎨</span>
+              <span>ট্রেসিং গেম</span>
+            </button>
+            <button
+              onClick={() => setViewMode("selector")}
+              className={`px-3 py-1.5 rounded-xl font-black text-xs transition cursor-pointer flex items-center gap-1 ${
+                viewMode === "selector"
+                  ? "bg-gradient-to-r from-emerald-500 to-teal-600 text-white shadow-xs"
+                  : "text-slate-700 hover:text-slate-950"
+              }`}
+            >
+              <Grid className="w-3.5 h-3.5" />
+              <span>হরফ তালিকা</span>
+            </button>
           </div>
         </div>
 
-        {/* RIGHT COLUMN: 29 ARABIC ALPHABET SELECTOR (col-span-4) */}
-        <div className="lg:col-span-4 flex flex-col space-y-3">
-          <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-b from-[#091a14] via-[#071a13] to-[#04120c] border border-emerald-900/60 shadow-xl flex flex-col space-y-3">
-            <h3 className="text-xs sm:text-sm font-extrabold text-white flex items-center justify-between border-b border-emerald-900/50 pb-2.5">
-              <span className="flex items-center gap-1.5">
-                <span className="text-amber-400">❖</span>
-                <span>{t.selectLetterForPractice}</span>
-              </span>
-              <span className="text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-700/60">
-                {t.lettersCount29}
-              </span>
-            </h3>
+        {/* Center: Target Letter Badge & Audio */}
+        {viewMode === "tracing" && (
+          <div className="flex items-center gap-2 sm:gap-3 bg-white/90 backdrop-blur-md px-3 sm:px-5 py-1.5 rounded-2xl sm:rounded-3xl border-2 border-sky-400 shadow-xl">
+            <span className="text-xs font-black text-slate-700 hidden sm:inline">হরফ:</span>
+            <div className="px-3 py-0.5 rounded-xl bg-gradient-to-r from-rose-500 to-red-600 text-white font-arabic font-black text-xl sm:text-2xl shadow-xs">
+              {currentLetter.ar}
+            </div>
+            <span className="text-xs sm:text-sm font-black text-slate-800">
+              {currentLetter.nameBn}
+            </span>
+            <button
+              onClick={playCurrentSound}
+              className="p-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition cursor-pointer active:scale-95"
+              title="উচ্চারণ শুনুন"
+            >
+              <Volume2 className="w-4 h-4" />
+            </button>
+          </div>
+        )}
 
-            {/* Grid of 29 Arabic Letters - Taller to match the new grand blackboard */}
-            <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-4 gap-2.5 max-h-[580px] md:max-h-[640px] overflow-y-auto pr-1 select-none">
-              {ARABIC_ALPHABET.map((item) => {
-                const isSelected = selectedLetter.ar === item.ar;
+        {/* Right: Reset & Next Letter Arrow Button (Teal Circle with Arrow matching Images 1, 2, 4) */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          {viewMode === "tracing" && (
+            <button
+              onClick={() => {
+                setHitCheckpointIndex(-1);
+                setIsCompleted(false);
+              }}
+              className="w-10 h-10 sm:w-12 sm:h-12 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 border-2 border-amber-300 shadow-lg flex items-center justify-center transition active:scale-95 cursor-pointer"
+              title="আবার নতুন করে আঁকো"
+            >
+              <RotateCcw className="w-5 h-5" />
+            </button>
+          )}
+
+          {/* ➔ Next Letter Button (Exact Teal Circle matching User Images) */}
+          <button
+            onClick={handleNextLetter}
+            className="w-11 h-11 sm:w-13 sm:h-13 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 hover:from-teal-600 hover:to-emerald-500 text-white border-3 border-white shadow-xl flex items-center justify-center transition hover:scale-105 active:scale-95 cursor-pointer"
+            title="পরবর্তী হরফে যাও"
+          >
+            <ChevronRight className="w-6 h-6 stroke-[3]" />
+          </button>
+        </div>
+      </header>
+
+      {/* ══════════════════════════════════════════════════════════
+          VIEW 1: 📋 LETTER SELECTOR GRID (MATCHING IMAGE 3)
+      ══════════════════════════════════════════════════════════ */}
+      {viewMode === "selector" && (
+        <div className="relative z-20 flex-1 max-w-5xl mx-auto w-full p-4 sm:p-6 overflow-y-auto animate-fade-in flex flex-col justify-between">
+          <div className="space-y-4">
+            {/* Title Bar matching "Select Letter" in Image 3 */}
+            <div className="text-center space-y-1">
+              <h2 className="text-2xl sm:text-3xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)] font-hind-siliguri">
+                Select Letter • আরবী হরফ নির্বাচন করুন
+              </h2>
+              <p className="text-xs sm:text-sm text-sky-100 font-bold drop-shadow">
+                যে হরফটি আঁকতে ও মাশক করতে চাও, সেটিতে ট্যাপ করো!
+              </p>
+            </div>
+
+            {/* Grid of 29 Arabic Letter Cards (Glassy with colorful borders like Image 3) */}
+            <div className="grid grid-cols-4 sm:grid-cols-7 gap-2.5 sm:gap-3.5 max-h-[55vh] overflow-y-auto p-2">
+              {ARABIC_ALPHABET.map((item, idx) => {
+                const isCurrent = idx === selectedLetterIndex;
+                const stars = completedLetterMap[item.ar] || 0;
+
+                // Color cycling borders matching Image 3 (yellow, lime, cyan, purple, orange, red)
+                const borderColors = [
+                  "border-amber-300 hover:border-amber-400 text-amber-100",
+                  "border-lime-300 hover:border-lime-400 text-lime-100",
+                  "border-cyan-300 hover:border-cyan-400 text-cyan-100",
+                  "border-purple-300 hover:border-purple-400 text-purple-100",
+                  "border-orange-300 hover:border-orange-400 text-orange-100",
+                  "border-rose-300 hover:border-rose-400 text-rose-100",
+                  "border-sky-300 hover:border-sky-400 text-sky-100",
+                ];
+                const borderColor = borderColors[idx % borderColors.length];
+
                 return (
                   <button
                     key={item.ar}
-                    type="button"
                     onClick={() => {
-                      setSelectedLetter(item);
-                      setShowCelebration(false);
-                      handleClear();
-                      const charToSpeak = getAudioToken(item.ar, selectedHarakat);
-                      playArabicSound(charToSpeak);
+                      setSelectedLetterIndex(idx);
+                      setViewMode("tracing");
                     }}
-                    className={`p-2.5 sm:p-3 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer border ${
-                      isSelected
-                        ? "bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 border-amber-200 text-slate-950 font-black shadow-lg shadow-amber-950/50 scale-105 ring-2 ring-amber-300"
-                        : "bg-[#05140d]/90 border-emerald-950/80 text-slate-200 hover:border-emerald-500 hover:bg-emerald-950/80"
+                    className={`relative p-3 rounded-2xl bg-white/20 hover:bg-white/35 backdrop-blur-md border-3 transition-all duration-200 transform hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-1 shadow-lg cursor-pointer ${borderColor} ${
+                      isCurrent ? "ring-4 ring-white shadow-2xl scale-105 bg-white/40" : ""
                     }`}
                   >
-                    <span className="font-amiri text-2xl sm:text-3xl font-extrabold drop-shadow-xs">
+                    <span className="font-arabic font-black text-3xl sm:text-4xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
                       {item.ar}
                     </span>
-                    <span
-                      className={`text-[11px] mt-0.5 font-bold ${
-                        isSelected ? "text-slate-950" : "text-slate-400"
-                      }`}
-                    >
-                      {lang === "en" ? item.nameEn : lang === "ar" ? item.ar : item.nameBn}
+                    <span className="text-[11px] sm:text-xs font-bold text-white drop-shadow">
+                      {item.nameBn}
                     </span>
+                    {stars > 0 && (
+                      <span className="text-[10px] text-amber-300 drop-shadow">
+                        ⭐⭐⭐
+                      </span>
+                    )}
                   </button>
                 );
               })}
             </div>
           </div>
+
+          {/* Footer Navigation */}
+          <div className="pt-4 text-center">
+            <button
+              onClick={() => setViewMode("tracing")}
+              className="px-6 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-sm shadow-xl active:scale-95 transition cursor-pointer"
+            >
+              <span>ট্রেসিং খেলায় ফিরে যাও</span>
+              <span className="ml-2">➔</span>
+            </button>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          VIEW 2: 🎨 ANIMATED TRACING GAME (MATCHING IMAGES 1, 2, 4)
+          (Left: Solid Reference Letter; Right: Interactive Hollow Tracing Path)
+      ══════════════════════════════════════════════════════════ */}
+      {viewMode === "tracing" && (
+        <div className="relative z-20 flex-1 max-w-5xl mx-auto w-full p-2 sm:p-4 flex flex-col justify-between">
+          {/* Mascot Selector Pill Strip */}
+          <div className="flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap mb-2">
+            <span className="text-xs font-bold text-white drop-shadow hidden xs:inline">
+              সাথী প্রাণী:
+            </span>
+            {MASCOTS.map((m, mIdx) => (
+              <button
+                key={m.id}
+                onClick={() => setActiveMascotIndex(mIdx)}
+                className={`px-2.5 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                  activeMascotIndex === mIdx
+                    ? "bg-white text-slate-900 shadow-md font-black scale-105 ring-2 ring-amber-300"
+                    : "bg-white/40 hover:bg-white/60 text-white drop-shadow"
+                }`}
+              >
+                <span>{m.emoji}</span>
+                <span className="hidden sm:inline">{m.name}</span>
+              </button>
+            ))}
+          </div>
+
+          {/* ── TWO-COLUMN SPLIT STAGE (MATCHING EXACT LAYOUT OF IMAGES 1, 2, 4) ── */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center flex-1 my-auto">
+            {/* LEFT COLUMN: SOLID BOLD REFERENCE LETTER (Image 1 Red W, Image 2 Yellow J, Image 4 Teal A) */}
+            <div className="md:col-span-5 flex flex-col items-center justify-center text-center p-4 rounded-3xl bg-white/25 backdrop-blur-md border-3 border-white/50 shadow-2xl">
+              <div
+                className="font-arabic font-black text-[130px] sm:text-[170px] md:text-[200px] leading-none drop-shadow-[0_8px_16px_rgba(0,0,0,0.5)] transition-all animate-pulse"
+                style={{
+                  color: currentLetter.color || "#ef4444",
+                  WebkitTextStroke: "4px #ffffff",
+                }}
+              >
+                {currentLetter.ar}
+              </div>
+
+              <div className="space-y-1 mt-2">
+                <div className="text-xl sm:text-2xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+                  {currentLetter.nameBn} ({currentLetter.nameEn})
+                </div>
+                <div className="text-xs text-sky-100 font-bold drop-shadow">
+                  {currentLetter.makhraj}
+                </div>
+              </div>
+
+              <button
+                onClick={playCurrentSound}
+                className="mt-3 px-4 py-2 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs shadow-lg flex items-center gap-2 active:scale-95 transition cursor-pointer"
+              >
+                <Volume2 className="w-4 h-4" />
+                <span>উচ্চারণ শোনো</span>
+              </button>
+            </div>
+
+            {/* RIGHT COLUMN: INTERACTIVE HOLLOW TRACING STAGE WITH MASCOT & COLLECTIBLES */}
+            <div className="md:col-span-7 flex flex-col items-center justify-center">
+              <div
+                ref={stageRef}
+                onPointerMove={handleStagePointerMove}
+                onTouchMove={handleStagePointerMove}
+                className="relative w-full max-w-md h-[340px] sm:h-[400px] rounded-3xl bg-white/20 backdrop-blur-md border-3 border-white/60 shadow-2xl flex items-center justify-center overflow-hidden cursor-crosshair touch-none"
+              >
+                {/* Hollow Glassy Letter Outline */}
+                <div
+                  className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                  style={{
+                    color: isCompleted ? currentLetter.color : "transparent",
+                    WebkitTextStroke: "5px rgba(255, 255, 255, 0.9)",
+                    textShadow: "0 0 20px rgba(255, 255, 255, 0.5)",
+                    transition: "color 0.4s ease",
+                  }}
+                >
+                  <span className="font-arabic font-black text-[220px] sm:text-[280px] leading-none select-none">
+                    {currentLetter.ar}
+                  </span>
+                </div>
+
+                {/* Filled Solid Color Trace Background behind completed path */}
+                {hitCheckpointIndex >= 0 && (
+                  <div
+                    className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-85 transition-all"
+                    style={{
+                      color: currentLetter.color,
+                      clipPath: `inset(0 ${100 - progressPercent}% 0 0)`,
+                    }}
+                  >
+                    <span className="font-arabic font-black text-[220px] sm:text-[280px] leading-none select-none">
+                      {currentLetter.ar}
+                    </span>
+                  </div>
+                )}
+
+                {/* Collectible Food / Items Placed along the Checkpoints */}
+                {checkpoints.map((cp, idx) => {
+                  const isHit = idx <= hitCheckpointIndex;
+                  const isNext = idx === hitCheckpointIndex + 1;
+
+                  return (
+                    <div
+                      key={idx}
+                      className={`absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 pointer-events-none ${
+                        isHit ? "scale-0 opacity-0" : isNext ? "scale-125 animate-bounce" : "scale-100"
+                      }`}
+                      style={{
+                        left: `${cp.x * 100}%`,
+                        top: `${cp.y * 100}%`,
+                      }}
+                    >
+                      <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white/80 border-2 border-amber-300 shadow-md flex items-center justify-center text-lg sm:text-xl">
+                        {currentMascot.targetItem}
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {/* Animated Cute Mascot Following Active Checkpoint */}
+                {(() => {
+                  const activePos =
+                    hitCheckpointIndex >= 0
+                      ? checkpoints[Math.min(hitCheckpointIndex, checkpoints.length - 1)]
+                      : checkpoints[0];
+
+                  return (
+                    <div
+                      className="absolute -translate-x-1/2 -translate-y-1/2 transition-all duration-300 pointer-events-none z-30"
+                      style={{
+                        left: `${activePos.x * 100}%`,
+                        top: `${activePos.y * 100}%`,
+                      }}
+                    >
+                      <div className="relative">
+                        <div className="text-4xl sm:text-5xl animate-bounce filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.5)]">
+                          {currentMascot.emoji}
+                        </div>
+                        {/* Mascot Glow Pulse */}
+                        <span className="absolute -top-1 -right-1 w-3 h-3 rounded-full bg-amber-400 ring-2 ring-white animate-ping opacity-75" />
+                      </div>
+                    </div>
+                  );
+                })()}
+
+                {/* Tracing Instruction Banner */}
+                <div className="absolute bottom-2 inset-x-2 text-center pointer-events-none">
+                  <span className="px-3 py-1 rounded-full bg-black/40 backdrop-blur-md text-[11px] sm:text-xs font-bold text-white shadow-xs">
+                    👆 {currentMascot.name}-কে পথ ধরে টেনে নিয়ে হরফটি পূর্ণ করো!
+                  </span>
+                </div>
+              </div>
+
+              {/* Tracing Progress Meter */}
+              <div className="w-full max-w-md mt-3 flex items-center justify-between gap-3 px-1">
+                <div className="flex-1 h-3 rounded-full bg-white/40 border border-white/60 overflow-hidden shadow-inner">
+                  <div
+                    className="h-full bg-gradient-to-r from-amber-400 via-emerald-400 to-teal-400 transition-all duration-200"
+                    style={{ width: `${progressPercent}%` }}
+                  />
+                </div>
+                <span className="text-xs font-black text-white drop-shadow font-mono">
+                  {progressPercent}%
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* Bottom Switcher: Jump to Previous / Next Letter */}
+          <div className="flex items-center justify-between pt-2">
+            <button
+              onClick={handlePrevLetter}
+              className="px-4 py-2 rounded-2xl bg-white/70 hover:bg-white/90 text-slate-800 font-bold text-xs shadow-md transition active:scale-95 cursor-pointer"
+            >
+              ← আগের হরফ
+            </button>
+
+            <button
+              onClick={handleNextLetter}
+              className="px-5 py-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-xs shadow-md transition active:scale-95 cursor-pointer flex items-center gap-1.5"
+            >
+              <span>পরবর্তী হরফে যাও</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          🎉 CELEBRATION MODAL (100% LETTER TRACED)
+      ══════════════════════════════════════════════════════════ */}
+      {showCelebrationModal && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-md animate-fade-in pointer-events-auto">
+          <div className="bg-[#FFFDF7] rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center space-y-4 border-4 border-amber-400 shadow-2xl">
+            <div className="w-20 h-20 mx-auto rounded-full bg-amber-100 border-4 border-amber-300 flex items-center justify-center text-4xl shadow-inner animate-bounce">
+              {currentMascot.emoji}🏆
+            </div>
+
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black text-amber-950 font-hind-siliguri">
+                مَا شَاءَ اللَّهُ (মাশাআল্লাহ!)
+              </h2>
+              <p className="text-sm font-bold text-emerald-800">
+                তুমি সফলভাবে <strong>{currentLetter.nameBn} ({currentLetter.ar})</strong> হরফটি সঠিক নিয়মে এঁকেছো!
+              </p>
+            </div>
+
+            <div className="p-3 bg-amber-50 rounded-2xl border-2 border-amber-200 flex items-center justify-around">
+              <div>
+                <span className="text-xs text-slate-500 font-bold">অর্জন</span>
+                <div className="text-xl">⭐⭐⭐</div>
+              </div>
+              <div className="h-8 w-px bg-amber-200" />
+              <div>
+                <span className="text-xs text-slate-500 font-bold">পুরস্কার</span>
+                <div className="text-sm font-black text-amber-800">+৫ 🪙 পয়েন্ট</div>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={() => {
+                  setShowCelebrationModal(false);
+                  handleNextLetter();
+                }}
+                className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <span>পরবর্তী হরফে যাও</span>
+                <ChevronRight className="w-5 h-5" />
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowCelebrationModal(false);
+                  setHitCheckpointIndex(-1);
+                  setIsCompleted(false);
+                }}
+                className="w-full py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>আবার আঁকো</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setShowCelebrationModal(false);
+                  setViewMode("selector");
+                }}
+                className="w-full py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+              >
+                হরফ তালিকায় ফেরো
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
