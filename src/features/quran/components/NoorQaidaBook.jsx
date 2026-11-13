@@ -50,6 +50,7 @@ import {
 } from "../data/noorQaidaPagesData";
 import { universalAudioEngine } from "@/lib/quran/audio";
 import NoorQaidaBubblePopGame from "./NoorQaidaBubblePopGame";
+import NoorQaidaHarufNinjaGame from "./NoorQaidaHarufNinjaGame";
 
 // Full sequence of pages including special intro pages
 const PAGE_SEQUENCE = [
@@ -81,6 +82,8 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
 
   // 🎈 Scenic Landscape Bubble / Balloon Pop Game State
   const [isBubbleGameOpen, setIsBubbleGameOpen] = useState(false);
+  // ⚔️ Fruit Ninja Style Haruf Slicer Game State (Level 2)
+  const [isNinjaGameOpen, setIsNinjaGameOpen] = useState(false);
   const [bubbleGameTarget, setBubbleGameTarget] = useState({ ar: "س", nameBn: "সীন", sound: "س" });
   const [poppingCardId, setPoppingCardId] = useState(null);
 
@@ -287,7 +290,24 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
       nameBn,
       sound: soundKey,
     });
+    setIsNinjaGameOpen(false);
     setIsBubbleGameOpen(true);
+  };
+
+  // Launch Fruit Ninja Style Haruf Slicer Game (Level 2)
+  const handleLaunchNinjaGame = (item) => {
+    if (item) {
+      const soundKey = typeof item === "string" ? item : (item.sound || item.ar);
+      const ar = typeof item === "string" ? item : (item.ar || item.sound || "س");
+      const nameBn = typeof item === "string" ? item : (item.nameBn || "হরফ");
+      setBubbleGameTarget({
+        ar,
+        nameBn,
+        sound: soundKey,
+      });
+    }
+    setIsBubbleGameOpen(false);
+    setIsNinjaGameOpen(true);
   };
 
   // Switch to Next Letter inside Bubble Game
@@ -1635,25 +1655,34 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               </div>
             )}
 
-            {/* Game 5: বুদ্বুদ ও বেলুন ওড়ানো খেলা (হরফ শিকার) */}
+            {/* Game 5: বুদ্বুদ ও হরফ নিনজা স্লাইসার খেলা */}
             {activeGameId === 5 && (
-              <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-sky-100 via-blue-50 to-teal-100 border-3 border-sky-400 text-center space-y-4 shadow-xl">
-                <div className="text-5xl animate-bounce">🎈 🫧 🍎 💣</div>
+              <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-sky-100 via-amber-50 to-teal-100 border-3 border-amber-400 text-center space-y-4 shadow-xl">
+                <div className="text-5xl animate-bounce">🎈 🫧 ⚔️ 🍎 💣</div>
                 <div className="space-y-1">
-                  <h3 className="text-xl sm:text-3xl font-black text-sky-950 font-hind-siliguri">
-                    মজার খেলা ৫: বুদ্বুদ ও বেলুন ওড়ানো খেলা!
+                  <h3 className="text-xl sm:text-3xl font-black text-amber-950 font-hind-siliguri">
+                    মজার খেলা ৫: বুদ্বুদ পপ ও হরফ নিনজা স্লাইসার!
                   </h3>
                   <p className="text-xs sm:text-sm text-slate-700 max-w-lg mx-auto font-medium">
-                    নদীর ওপর ঝুলন্ত সেতুর দৃশ্যপটে পানির নিচ থেকে রঙিন বুদ্বুদ ভেসে উঠবে। লক্ষ্য হরফ ও ফলমূল ফাটিয়ে পয়েন্ট অর্জন করো, আর লাল বোমা এড়াও!
+                    দুটি দারুণ মোডে খেলা যায়—লেভেল ১-এ নদী, মরুদ্যানে ভেসে ওঠা বুদ্বুদ ফোটাও, আর লেভেল ২-এ কাঠের দেয়ালের সামনে নিনজার মতো তলোয়ার দিয়ে ফল ও আরবি হরফ কাটো!
                   </p>
                 </div>
-                <div className="pt-3">
+                <div className="pt-3 flex flex-col sm:flex-row items-center justify-center gap-3">
                   <button
                     onClick={() => setIsBubbleGameOpen(true)}
-                    className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-600 to-emerald-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-sm sm:text-base shadow-xl flex items-center justify-center gap-2.5 mx-auto active:scale-95 transition-all cursor-pointer hover:scale-105"
+                    className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 hover:to-teal-700 text-white font-black text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer hover:scale-105"
                   >
-                    <span>🎮</span>
-                    <span>পূর্ণ পর্দায় বুদ্বুদ খেলা খেলুন</span>
+                    <span>🎈</span>
+                    <span>লেভেল ১: বুদ্বুদ ও বেলুন মোড</span>
+                    <span>➔</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleLaunchNinjaGame()}
+                    className="w-full sm:w-auto px-5 py-3 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs sm:text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer hover:scale-105"
+                  >
+                    <span>⚔️</span>
+                    <span>লেভেল ২: হরফ নিনজা স্লাইসার মোড</span>
                     <span>➔</span>
                   </button>
                 </div>
@@ -2049,12 +2078,26 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
         }
       `}</style>
 
-      {/* ── SCENIC LANDSCAPE BUBBLE & BALLOON POP GAME MODAL ── */}
+      {/* ── SCENIC LANDSCAPE BUBBLE & BALLOON POP GAME MODAL (LEVEL 1) ── */}
       {isBubbleGameOpen && (
         <NoorQaidaBubblePopGame
           targetItem={bubbleGameTarget}
           onClose={() => setIsBubbleGameOpen(false)}
           onNextLetter={handleNextLetterForGame}
+          onLaunchNinja={handleLaunchNinjaGame}
+        />
+      )}
+
+      {/* ── FRUIT NINJA STYLE HARUF SLICER GAME MODAL (LEVEL 2) ── */}
+      {isNinjaGameOpen && (
+        <NoorQaidaHarufNinjaGame
+          targetItem={bubbleGameTarget}
+          onClose={() => setIsNinjaGameOpen(false)}
+          onNextLetter={handleNextLetterForGame}
+          onSwitchToBubble={() => {
+            setIsNinjaGameOpen(false);
+            setIsBubbleGameOpen(true);
+          }}
         />
       )}
     </div>

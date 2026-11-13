@@ -88,10 +88,26 @@ const BUBBLE_THEMES = [
   },
 ];
 
+// ── SCENIC BACKGROUND THEMES (DIFFERENT SCENES PER LETTER GROUP) ──
+export const SCENE_THEMES = [
+  { id: "bridge", nameBn: "ঝুলন্ত সেতু ও শহর", icon: "🌉" },
+  { id: "oasis", nameBn: "মরুদ্যানে তারার রাত", icon: "🌙" },
+  { id: "rainbow", nameBn: "রংধনু ও সবুজ উপত্যকা", icon: "🌈" },
+  { id: "sunset", nameBn: "সূর্যাস্ত ও বাতিঘর সৈকত", icon: "🌅" },
+];
+
+function getInitialSceneForLetter(ar) {
+  if (["أ", "ب", "ت", "ث", "ج", "ح", "خ"].includes(ar)) return "bridge";
+  if (["د", "ذ", "ر", "ز", "س", "ش", "ص"].includes(ar)) return "oasis";
+  if (["ض", "ط", "ظ", "ع", "غ", "ف", "ق"].includes(ar)) return "rainbow";
+  return "sunset";
+}
+
 export default function NoorQaidaBubblePopGame({
   targetItem = { ar: "س", nameBn: "সীন", sound: "س" },
   onClose = () => {},
   onNextLetter = null,
+  onLaunchNinja = null,
 }) {
   // Game States
   const [score, setScore] = useState(0);
@@ -105,6 +121,16 @@ export default function NoorQaidaBubblePopGame({
   const [floatingNotes, setFloatingNotes] = useState([]);
   const [isShaking, setIsShaking] = useState(false);
   const [flashRed, setFlashRed] = useState(false);
+
+  // Dynamic Scenic Theme per Letter
+  const [currentScene, setCurrentScene] = useState(() => getInitialSceneForLetter(targetItem.ar));
+
+  const handleCycleScene = () => {
+    setCurrentScene((curr) => {
+      const idx = SCENE_THEMES.findIndex((s) => s.id === curr);
+      return SCENE_THEMES[(idx + 1) % SCENE_THEMES.length].id;
+    });
+  };
 
   // References
   const nextBubbleId = useRef(1);
@@ -233,41 +259,47 @@ export default function NoorQaidaBubblePopGame({
     } catch {}
   }, [isMuted]);
 
-  // ── SPAWN A BUBBLE ──
+  // ── SPAWN A BUBBLE (WITH PROGRESSIVE SPEED & INCREASING BOMBS) ──
   const spawnBubble = useCallback(() => {
     if (gameState !== "playing") return;
 
     const id = nextBubbleId.current++;
     const xPos = Math.random() * 80 + 10; // 10% to 90% horizontal position
     const size = Math.floor(Math.random() * 26) + 76; // 76px to 102px
-    const duration = Math.random() * 2.5 + 6.5; // 6.5s to 9.0s float speed
+
+    // Progressive speed: "aste aste aro druto hobe"
+    const currentLevel = score < 60 ? 1 : score < 140 ? 2 : 3;
+    const duration =
+      currentLevel === 1
+        ? Math.random() * 2.0 + 6.8  // Level 1: 6.8s - 8.8s
+        : currentLevel === 2
+        ? Math.random() * 1.8 + 4.8  // Level 2: 4.8s - 6.6s (faster)
+        : Math.random() * 1.4 + 3.4; // Level 3: 3.4s - 4.8s (super fast)
+
     const theme = BUBBLE_THEMES[Math.floor(Math.random() * BUBBLE_THEMES.length)];
 
-    // Decide bubble type:
-    // 45% Target letter
-    // 25% Fruit
-    // 15% Distractor letter
-    // 15% Danger Bomb
+    // Bomb chance increases dynamically: "bom beshi kore ashbe"
+    // Level 1: 12% bombs | Level 2: 22% bombs | Level 3: 32% bombs
+    const bombThreshold = currentLevel === 1 ? 0.88 : currentLevel === 2 ? 0.78 : 0.68;
     const rand = Math.random();
     let type = "target";
     let content = targetItem.ar || "س";
     let nameBn = targetItem.nameBn || "হরফ";
     let sound = targetItem.sound || targetItem.ar;
 
-    if (rand < 0.45) {
+    if (rand < 0.42) {
       type = "target";
       content = targetItem.ar;
       nameBn = targetItem.nameBn;
       sound = targetItem.sound || targetItem.ar;
-    } else if (rand < 0.70) {
+    } else if (rand < 0.68) {
       type = "fruit";
       const fruit = BONUS_FRUITS[Math.floor(Math.random() * BONUS_FRUITS.length)];
       content = fruit.icon;
       nameBn = fruit.nameBn;
       sound = fruit.sound;
-    } else if (rand < 0.85) {
+    } else if (rand < bombThreshold) {
       type = "distractor";
-      // Pick distractor that is NOT targetItem.ar
       const filtered = DISTRACTOR_LETTERS.filter((l) => l.ar !== targetItem.ar);
       const dist = filtered[Math.floor(Math.random() * filtered.length)] || DISTRACTOR_LETTERS[0];
       content = dist.ar;
@@ -294,7 +326,7 @@ export default function NoorQaidaBubblePopGame({
     };
 
     setActiveBubbles((prev) => [...prev, newBubble]);
-  }, [gameState, targetItem]);
+  }, [gameState, targetItem, score]);
 
   // ── CLEANUP BUBBLES THAT REACH TOP (AFTER DURATION) ──
   useEffect(() => {
@@ -307,24 +339,27 @@ export default function NoorQaidaBubblePopGame({
     return () => clearInterval(interval);
   }, []);
 
-  // ── GAME LOOP SPAWNER ──
+  // ── GAME LOOP SPAWNER (SPAWNS FASTER AS SCORE RISES) ──
   useEffect(() => {
     if (gameState !== "playing") return;
-    // Initial bubbles
+
+    // Interval speeds up from 1500ms down to 800ms
+    const intervalTime = score < 60 ? 1500 : score < 140 ? 1100 : 800;
+
     spawnBubble();
-    const timer1 = setTimeout(spawnBubble, 600);
-    const timer2 = setTimeout(spawnBubble, 1200);
+    const timer1 = setTimeout(spawnBubble, Math.floor(intervalTime * 0.4));
+    const timer2 = setTimeout(spawnBubble, Math.floor(intervalTime * 0.8));
 
     spawnTimerRef.current = setInterval(() => {
       spawnBubble();
-    }, 1600);
+    }, intervalTime);
 
     return () => {
       clearTimeout(timer1);
       clearTimeout(timer2);
       clearInterval(spawnTimerRef.current);
     };
-  }, [gameState, spawnBubble]);
+  }, [gameState, spawnBubble, score]);
 
   // ── POP BUBBLE HANDLER ──
   const handlePopBubble = (bubble, e) => {
@@ -447,7 +482,14 @@ export default function NoorQaidaBubblePopGame({
         isShaking ? "animate-shake" : ""
       }`}
       style={{
-        background: "linear-gradient(180deg, #38bdf8 0%, #7dd3fc 45%, #bae6fd 70%, #60a5fa 100%)",
+        background:
+          currentScene === "oasis"
+            ? "linear-gradient(180deg, #090d16 0%, #1e1b4b 40%, #312e81 70%, #d97706 100%)"
+            : currentScene === "rainbow"
+            ? "linear-gradient(180deg, #38bdf8 0%, #a7f3d0 45%, #6ee7b7 75%, #059669 100%)"
+            : currentScene === "sunset"
+            ? "linear-gradient(180deg, #4c1d95 0%, #c2410c 45%, #ea580c 70%, #7c2d12 100%)"
+            : "linear-gradient(180deg, #38bdf8 0%, #7dd3fc 45%, #bae6fd 70%, #60a5fa 100%)",
       }}
     >
       {/* ── RED FLASH ON BOMB HIT ── */}
@@ -456,121 +498,256 @@ export default function NoorQaidaBubblePopGame({
       )}
 
       {/* ══════════════════════════════════════════════════════════
-          SCENIC CARTOON LANDSCAPE BACKGROUND (MATCHING USER SCREENSHOT)
-          (Suspension Bridge, Skyline, Lush Hills, Blue Water & Water Reflections)
+          DYNAMIC SCENIC BACKGROUNDS (MATCHING USER REQUEST)
+          (1. Bridge & River | 2. Desert Oasis & Moon | 3. Rainbow Valley | 4. Sunset Lighthouse)
       ══════════════════════════════════════════════════════════ */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden">
-        {/* Soft Sun Ray Glow in Sky */}
-        <div className="absolute top-4 left-1/3 w-96 h-96 rounded-full bg-amber-100/30 blur-3xl" />
-        <div className="absolute top-10 right-1/4 w-72 h-72 rounded-full bg-white/30 blur-2xl" />
+        {currentScene === "oasis" ? (
+          /* ── SCENE 2: ISLAMIC OASIS & STARRY NIGHT SKY ── */
+          <>
+            {/* Glowing Golden Crescent Moon */}
+            <div className="absolute top-6 right-16 text-6xl sm:text-7xl filter drop-shadow-[0_0_25px_rgba(253,224,71,0.9)] animate-pulse">
+              🌙
+            </div>
+            {/* Twinkling Stars */}
+            {[
+              { top: "10%", left: "12%" },
+              { top: "15%", left: "28%" },
+              { top: "8%", left: "45%" },
+              { top: "20%", left: "60%" },
+              { top: "12%", left: "75%" },
+              { top: "25%", left: "88%" },
+            ].map((star, idx) => (
+              <span
+                key={idx}
+                className="absolute text-amber-200 text-sm animate-ping"
+                style={{ top: star.top, left: star.left, animationDuration: `${2 + idx * 0.5}s` }}
+              >
+                ✦
+              </span>
+            ))}
+            {/* Mosque Domes, Minarets & Palm Trees Silhouette */}
+            <div className="absolute bottom-[28%] left-0 right-0 h-44 sm:h-56">
+              <svg className="w-full h-full" viewBox="0 0 1200 300" preserveAspectRatio="none">
+                {/* Golden Desert Dunes */}
+                <path d="M0,210 Q300,160 600,200 T1200,190 L1200,300 L0,300 Z" fill="#b45309" opacity="0.8" />
+                <path d="M0,230 Q350,185 750,225 T1200,215 L1200,300 L0,300 Z" fill="#d97706" />
+                {/* Mosque Dome & Minarets */}
+                <g fill="#0f172a" opacity="0.95">
+                  <rect x="520" y="100" width="16" height="150" />
+                  <polygon points="528,60 520,100 536,100" fill="#f59e0b" />
+                  <rect x="660" y="100" width="16" height="150" />
+                  <polygon points="668,60 660,100 676,100" fill="#f59e0b" />
+                  <path d="M560,250 L560,160 Q600,100 640,160 L640,250 Z" />
+                  <circle cx="600" cy="100" r="4" fill="#f59e0b" />
+                </g>
+                {/* Date Palms 🌴 */}
+                <g fill="#022c22">
+                  <path d="M150,250 Q160,180 170,140" stroke="#78350f" strokeWidth="8" />
+                  <circle cx="170" cy="135" r="28" fill="#14532d" />
+                  <path d="M1020,250 Q1010,180 1000,140" stroke="#78350f" strokeWidth="8" />
+                  <circle cx="1000" cy="135" r="28" fill="#14532d" />
+                </g>
+              </svg>
+            </div>
+            {/* Sparkling Oasis Water */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-[28%]"
+              style={{
+                background: "linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%)",
+                boxShadow: "inset 0 10px 20px rgba(0,0,0,0.5)",
+              }}
+            >
+              <div className="absolute top-2 left-1/3 w-48 h-1 bg-amber-300/40 rounded-full blur-xs" />
+            </div>
+          </>
+        ) : currentScene === "rainbow" ? (
+          /* ── SCENE 3: RAINBOW VALLEY & WATERFALL ── */
+          <>
+            {/* Glowing Giant Arc Rainbow across Sky */}
+            <div className="absolute top-4 left-1/2 -translate-x-1/2 w-[600px] sm:w-[900px] h-[300px] pointer-events-none opacity-80">
+              <svg className="w-full h-full" viewBox="0 0 800 400">
+                <defs>
+                  <linearGradient id="rainbowGrad" x1="0" y1="0" x2="1" y2="0">
+                    <stop offset="0%" stopColor="#ef4444" />
+                    <stop offset="20%" stopColor="#f97316" />
+                    <stop offset="40%" stopColor="#eab308" />
+                    <stop offset="60%" stopColor="#22c55e" />
+                    <stop offset="80%" stopColor="#06b6d4" />
+                    <stop offset="100%" stopColor="#a855f7" />
+                  </linearGradient>
+                </defs>
+                <path
+                  d="M 50,380 A 350,350 0 0,1 750,380"
+                  fill="none"
+                  stroke="url(#rainbowGrad)"
+                  strokeWidth="32"
+                  opacity="0.75"
+                />
+              </svg>
+            </div>
+            {/* Emerald Mountains & Cascading Waterfall */}
+            <div className="absolute bottom-[28%] left-0 right-0 h-44 sm:h-56">
+              <svg className="w-full h-full" viewBox="0 0 1200 300" preserveAspectRatio="none">
+                <path d="M0,180 Q300,100 600,170 T1200,140 L1200,300 L0,300 Z" fill="#15803d" />
+                <path d="M0,210 Q400,150 800,210 T1200,190 L1200,300 L0,300 Z" fill="#22c55e" />
+                {/* Waterfall */}
+                <rect x="580" y="160" width="35" height="140" fill="#bae6fd" opacity="0.9" />
+                <rect x="588" y="160" width="18" height="140" fill="#ffffff" opacity="0.8" />
+              </svg>
+            </div>
+            {/* Lagoon Waters with Flowers */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-[28%]"
+              style={{
+                background: "linear-gradient(180deg, #059669 0%, #047857 50%, #064e3b 100%)",
+              }}
+            >
+              <div className="absolute top-2 left-1/4 w-36 h-1 bg-emerald-200/60 rounded-full blur-xs" />
+            </div>
+          </>
+        ) : currentScene === "sunset" ? (
+          /* ── SCENE 4: SUNSET SEASHORE & LIGHTHOUSE ── */
+          <>
+            {/* Blazing Golden Sun Setting */}
+            <div className="absolute bottom-[30%] left-1/2 -translate-x-1/2 w-48 h-48 rounded-full bg-gradient-to-t from-amber-400 to-rose-400 blur-md opacity-90 animate-pulse" />
+            {/* Soaring Seagulls */}
+            <div className="absolute top-12 left-1/4 text-2xl animate-float-slow">🕊️</div>
+            <div className="absolute top-20 right-1/3 text-xl animate-float-medium">🕊️</div>
+            {/* Lighthouse Tower & Rocky Cliffs */}
+            <div className="absolute bottom-[28%] left-0 right-0 h-44 sm:h-56">
+              <svg className="w-full h-full" viewBox="0 0 1200 300" preserveAspectRatio="none">
+                <path d="M0,230 Q300,180 700,230 T1200,220 L1200,300 L0,300 Z" fill="#431407" />
+                {/* Lighthouse */}
+                <g fill="#ffffff">
+                  <polygon points="980,80 965,240 1005,240" fill="#f8fafc" />
+                  <rect x="965" y="130" width="38" height="16" fill="#dc2626" />
+                  <rect x="968" y="180" width="34" height="16" fill="#dc2626" />
+                  <polygon points="980,55 968,80 992,80" fill="#b91c1c" />
+                  {/* Rotating Light Beam */}
+                  <polygon points="980,70 400,20 420,160" fill="#fef08a" opacity="0.35" />
+                </g>
+              </svg>
+            </div>
+            {/* Purple & Crimson Ocean Waves */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-[28%]"
+              style={{
+                background: "linear-gradient(180deg, #7c2d12 0%, #581c87 50%, #3b0764 100%)",
+              }}
+            >
+              <div className="absolute top-2 left-1/3 w-64 h-1.5 bg-amber-400/70 rounded-full blur-xs" />
+            </div>
+          </>
+        ) : (
+          /* ── SCENE 1: BRIDGE & SKYLINE (DEFAULT) ── */
+          <>
+            {/* Soft Sun Ray Glow in Sky */}
+            <div className="absolute top-4 left-1/3 w-96 h-96 rounded-full bg-amber-100/30 blur-3xl" />
+            <div className="absolute top-10 right-1/4 w-72 h-72 rounded-full bg-white/30 blur-2xl" />
 
-        {/* Floating Clouds Layer */}
-        <div className="absolute top-6 left-10 opacity-70 animate-float-slow">
-          <svg className="w-48 h-16 fill-white" viewBox="0 0 100 40">
-            <path d="M 20 30 Q 10 30 10 20 Q 10 10 25 12 Q 35 4 50 10 Q 65 2 75 12 Q 90 10 90 22 Q 90 30 80 30 Z" />
-          </svg>
-        </div>
-        <div className="absolute top-16 right-16 opacity-60 animate-float-medium">
-          <svg className="w-56 h-20 fill-white" viewBox="0 0 100 40">
-            <path d="M 20 30 Q 10 30 10 20 Q 10 10 25 12 Q 35 4 50 10 Q 65 2 75 12 Q 90 10 90 22 Q 90 30 80 30 Z" />
-          </svg>
-        </div>
+            {/* Floating Clouds Layer */}
+            <div className="absolute top-6 left-10 opacity-70 animate-float-slow">
+              <svg className="w-48 h-16 fill-white" viewBox="0 0 100 40">
+                <path d="M 20 30 Q 10 30 10 20 Q 10 10 25 12 Q 35 4 50 10 Q 65 2 75 12 Q 90 10 90 22 Q 90 30 80 30 Z" />
+              </svg>
+            </div>
+            <div className="absolute top-16 right-16 opacity-60 animate-float-medium">
+              <svg className="w-56 h-20 fill-white" viewBox="0 0 100 40">
+                <path d="M 20 30 Q 10 30 10 20 Q 10 10 25 12 Q 35 4 50 10 Q 65 2 75 12 Q 90 10 90 22 Q 90 30 80 30 Z" />
+              </svg>
+            </div>
 
-        {/* ── CITY SKYLINE & SUSPENSION BRIDGE (SVG) ── */}
-        <div className="absolute bottom-[28%] left-0 right-0 h-44 sm:h-56">
-          <svg
-            className="w-full h-full preserve-3d"
-            viewBox="0 0 1200 300"
-            preserveAspectRatio="none"
-          >
-            {/* Distant Hills */}
-            <path
-              d="M0,230 Q250,180 500,220 T1000,200 Q1100,190 1200,210 L1200,300 L0,300 Z"
-              fill="#86efac"
-              opacity="0.85"
-            />
-            {/* Closer Green Hills & Foliage */}
-            <path
-              d="M0,245 Q200,210 400,240 T850,225 Q1050,210 1200,235 L1200,300 L0,300 Z"
-              fill="#22c55e"
-            />
-
-            {/* City Skyline Buildings */}
-            <g fill="#93c5fd" opacity="0.9">
-              {/* Modern Skyscrapers */}
-              <rect x="700" y="120" width="35" height="150" rx="3" fill="#60a5fa" />
-              <rect x="745" y="90" width="45" height="180" rx="4" fill="#3b82f6" />
-              <rect x="800" y="130" width="30" height="140" rx="3" fill="#93c5fd" />
-              <rect x="840" y="105" width="40" height="165" rx="3" fill="#60a5fa" />
-              <rect x="890" y="140" width="50" height="130" rx="3" fill="#3b82f6" />
-              <rect x="950" y="115" width="35" height="155" rx="3" fill="#60a5fa" />
-              <rect x="995" y="150" width="45" height="120" rx="3" fill="#93c5fd" />
-
-              {/* Observation Tower (Like Tokyo Tower / Namsan Tower) */}
-              <path d="M720,240 L720,80 L725,60 L730,80 L730,240 Z" fill="#e0f2fe" />
-              <circle cx="725" cy="80" r="16" fill="#0284c7" />
-              <circle cx="725" cy="80" r="10" fill="#bae6fd" />
-              <line x1="725" y1="60" x2="725" y2="40" stroke="#0284c7" strokeWidth="3" />
-            </g>
-
-            {/* White Suspension Bridge (Spanning Across Bay) */}
-            <g stroke="#ffffff" strokeWidth="3" fill="none">
-              {/* Bridge Deck Highway */}
-              <line x1="0" y1="230" x2="680" y2="230" stroke="#e2e8f0" strokeWidth="8" />
-
-              {/* Bridge Main Tower 1 */}
-              <line x1="180" y1="270" x2="180" y2="130" stroke="#ffffff" strokeWidth="7" />
-              <line x1="195" y1="270" x2="195" y2="130" stroke="#ffffff" strokeWidth="7" />
-              <line x1="175" y1="160" x2="200" y2="160" stroke="#cbd5e1" strokeWidth="4" />
-              <line x1="175" y1="190" x2="200" y2="190" stroke="#cbd5e1" strokeWidth="4" />
-
-              {/* Bridge Main Tower 2 */}
-              <line x1="390" y1="270" x2="390" y2="130" stroke="#ffffff" strokeWidth="7" />
-              <line x1="405" y1="270" x2="405" y2="130" stroke="#ffffff" strokeWidth="7" />
-              <line x1="385" y1="160" x2="410" y2="160" stroke="#cbd5e1" strokeWidth="4" />
-              <line x1="385" y1="190" x2="410" y2="190" stroke="#cbd5e1" strokeWidth="4" />
-
-              {/* Main Suspension Cables (Curving Swoop) */}
-              <path d="M0,170 Q90,225 187,135 Q290,225 397,135 Q520,225 680,230" stroke="#ffffff" strokeWidth="3.5" />
-
-              {/* Vertical Cables */}
-              {[40, 80, 120, 155, 230, 270, 310, 350, 440, 480, 520, 560, 600, 640].map((cx) => (
-                <line key={cx} x1={cx} y1="230" x2={cx} y2="200" stroke="#ffffff" strokeWidth="1.5" opacity="0.8" />
-              ))}
-            </g>
-          </svg>
-        </div>
-
-        {/* ── SPARKLING WATER & RIVER REFLECTION ── */}
-        <div
-          className="absolute bottom-0 left-0 right-0 h-[28%]"
-          style={{
-            background: "linear-gradient(180deg, #38bdf8 0%, #0284c7 40%, #0369a1 100%)",
-            boxShadow: "inset 0 10px 20px rgba(0,0,0,0.15)",
-          }}
-        >
-          {/* Subtle Water Waves Rippling */}
-          <div className="absolute inset-0 opacity-40 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-sky-200 via-transparent to-transparent animate-pulse" />
-          {/* Sun Shimmer Glints */}
-          <div className="absolute top-2 left-1/4 w-32 h-1 bg-white/60 rounded-full blur-xs" />
-          <div className="absolute top-6 left-1/2 w-48 h-1 bg-white/50 rounded-full blur-xs" />
-          <div className="absolute top-10 right-1/4 w-40 h-1 bg-white/40 rounded-full blur-xs" />
-        </div>
+            {/* City Skyline & Suspension Bridge (SVG) */}
+            <div className="absolute bottom-[28%] left-0 right-0 h-44 sm:h-56">
+              <svg className="w-full h-full preserve-3d" viewBox="0 0 1200 300" preserveAspectRatio="none">
+                <path d="M0,230 Q250,180 500,220 T1000,200 Q1100,190 1200,210 L1200,300 L0,300 Z" fill="#86efac" opacity="0.85" />
+                <path d="M0,245 Q200,210 400,240 T850,225 Q1050,210 1200,235 L1200,300 L0,300 Z" fill="#22c55e" />
+                <g fill="#93c5fd" opacity="0.9">
+                  <rect x="700" y="120" width="35" height="150" rx="3" fill="#60a5fa" />
+                  <rect x="745" y="90" width="45" height="180" rx="4" fill="#3b82f6" />
+                  <rect x="800" y="130" width="30" height="140" rx="3" fill="#93c5fd" />
+                  <rect x="840" y="105" width="40" height="165" rx="3" fill="#60a5fa" />
+                  <rect x="890" y="140" width="50" height="130" rx="3" fill="#3b82f6" />
+                  <rect x="950" y="115" width="35" height="155" rx="3" fill="#60a5fa" />
+                  <rect x="995" y="150" width="45" height="120" rx="3" fill="#93c5fd" />
+                  <path d="M720,240 L720,80 L725,60 L730,80 L730,240 Z" fill="#e0f2fe" />
+                  <circle cx="725" cy="80" r="16" fill="#0284c7" />
+                  <circle cx="725" cy="80" r="10" fill="#bae6fd" />
+                  <line x1="725" y1="60" x2="725" y2="40" stroke="#0284c7" strokeWidth="3" />
+                </g>
+                <g stroke="#ffffff" strokeWidth="3" fill="none">
+                  <line x1="0" y1="230" x2="680" y2="230" stroke="#e2e8f0" strokeWidth="8" />
+                  <line x1="180" y1="270" x2="180" y2="130" stroke="#ffffff" strokeWidth="7" />
+                  <line x1="195" y1="270" x2="195" y2="130" stroke="#ffffff" strokeWidth="7" />
+                  <line x1="175" y1="160" x2="200" y2="160" stroke="#cbd5e1" strokeWidth="4" />
+                  <line x1="175" y1="190" x2="200" y2="190" stroke="#cbd5e1" strokeWidth="4" />
+                  <line x1="390" y1="270" x2="390" y2="130" stroke="#ffffff" strokeWidth="7" />
+                  <line x1="405" y1="270" x2="405" y2="130" stroke="#ffffff" strokeWidth="7" />
+                  <line x1="385" y1="160" x2="410" y2="160" stroke="#cbd5e1" strokeWidth="4" />
+                  <line x1="385" y1="190" x2="410" y2="190" stroke="#cbd5e1" strokeWidth="4" />
+                  <path d="M0,170 Q90,225 187,135 Q290,225 397,135 Q520,225 680,230" stroke="#ffffff" strokeWidth="3.5" />
+                  {[40, 80, 120, 155, 230, 270, 310, 350, 440, 480, 520, 560, 600, 640].map((cx) => (
+                    <line key={cx} x1={cx} y1="230" x2={cx} y2="200" stroke="#ffffff" strokeWidth="1.5" opacity="0.8" />
+                  ))}
+                </g>
+              </svg>
+            </div>
+            {/* Sparkling Water & River Reflection */}
+            <div
+              className="absolute bottom-0 left-0 right-0 h-[28%]"
+              style={{
+                background: "linear-gradient(180deg, #38bdf8 0%, #0284c7 40%, #0369a1 100%)",
+                boxShadow: "inset 0 10px 20px rgba(0,0,0,0.15)",
+              }}
+            >
+              <div className="absolute inset-0 opacity-40 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-sky-200 via-transparent to-transparent animate-pulse" />
+              <div className="absolute top-2 left-1/4 w-32 h-1 bg-white/60 rounded-full blur-xs" />
+              <div className="absolute top-6 left-1/2 w-48 h-1 bg-white/50 rounded-full blur-xs" />
+            </div>
+          </>
+        )}
       </div>
 
       {/* ══════════════════════════════════════════════════════════
           TOP GAMEBAR HUD (MATCHING USER SCREENSHOT)
-          (Home, Target Pill, Score, Hearts, Target Counter, Sound, Mute, Next)
+          (Home, Scene Switch, Ninja Switch, Target Pill, Score, Hearts, Target Counter, Sound, Mute, Next)
       ══════════════════════════════════════════════════════════ */}
       <header className="relative z-30 p-2 sm:p-4 flex items-center justify-between gap-2 max-w-6xl mx-auto w-full">
-        {/* Left: Home Button (Back to Qaida) */}
-        <button
-          onClick={onClose}
-          className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-teal-500 hover:bg-teal-600 text-white border-2 border-teal-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
-          title="কায়দায় ফিরে যান"
-        >
-          <Home className="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
+        {/* Left: Home Button & Scene Changer */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <button
+            onClick={onClose}
+            className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-teal-500 hover:bg-teal-600 text-white border-2 border-teal-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+            title="কায়দায় ফিরে যান"
+          >
+            <Home className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+
+          {/* 🌄 Scene Changer Button */}
+          <button
+            onClick={handleCycleScene}
+            className="px-2.5 sm:px-3 py-2 rounded-2xl bg-white/90 hover:bg-white text-slate-800 border-2 border-emerald-400 shadow-xl flex items-center gap-1.5 transition-all text-xs font-black hover:scale-105 active:scale-95 cursor-pointer"
+            title="দৃশ্যপট পরিবর্তন করুন"
+          >
+            <span>{SCENE_THEMES.find((s) => s.id === currentScene)?.icon}</span>
+            <span className="hidden sm:inline">
+              {SCENE_THEMES.find((s) => s.id === currentScene)?.nameBn}
+            </span>
+          </button>
+
+          {/* ⚔️ Ninja Mode Slicer Switch */}
+          {onLaunchNinja && (
+            <button
+              onClick={() => onLaunchNinja(targetItem)}
+              className="px-2.5 sm:px-3 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-2 border-amber-300 shadow-xl flex items-center gap-1.5 transition-all text-xs font-black hover:scale-105 active:scale-95 cursor-pointer animate-pulse"
+              title="হরফ নিনজা স্লাইসার খেলুন"
+            >
+              <span>⚔️</span>
+              <span className="hidden sm:inline">হরফ নিনজা</span>
+            </button>
+          )}
+        </div>
 
         {/* Center: Mission Target Letter & Status Dashboard */}
         <div className="flex items-center gap-2 sm:gap-4 bg-white/90 backdrop-blur-md px-3 sm:px-6 py-1.5 sm:py-2 rounded-2xl sm:rounded-3xl border-2 sm:border-3 border-emerald-400 shadow-2xl">
@@ -796,13 +973,24 @@ export default function NoorQaidaBubblePopGame({
             </div>
 
             <div className="space-y-2 pt-2">
+              {onLaunchNinja && (
+                <button
+                  onClick={() => onLaunchNinja(targetItem)}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-black text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 animate-pulse cursor-pointer"
+                >
+                  <span>⚔️</span>
+                  <span>পরবর্তী লেভেল: হরফ নিনজা খেলো!</span>
+                  <span>➔</span>
+                </button>
+              )}
+
               {onNextLetter && (
                 <button
                   onClick={onNextLetter}
-                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95"
+                  className="w-full py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95"
                 >
                   <span>পরবর্তী হরফে যাও</span>
-                  <ChevronRight className="w-5 h-5" />
+                  <ChevronRight className="w-4 h-4" />
                 </button>
               )}
 
