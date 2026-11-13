@@ -88,18 +88,24 @@ const BUBBLE_THEMES = [
   },
 ];
 
-// ── SCENIC BACKGROUND THEMES (DIFFERENT SCENES PER LETTER GROUP) ──
-export const SCENE_THEMES = [
-  { id: "bridge", nameBn: "ঝুলন্ত সেতু ও শহর", icon: "🌉" },
-  { id: "oasis", nameBn: "মরুদ্যানে তারার রাত", icon: "🌙" },
-  { id: "rainbow", nameBn: "রংধনু ও সবুজ উপত্যকা", icon: "🌈" },
-  { id: "sunset", nameBn: "সূর্যাস্ত ও বাতিঘর সৈকত", icon: "🌅" },
-];
-
-function getInitialSceneForLetter(ar) {
-  if (["أ", "ب", "ت", "ث", "ج", "ح", "خ"].includes(ar)) return "bridge";
-  if (["د", "ذ", "ر", "ز", "س", "ش", "ص"].includes(ar)) return "oasis";
-  if (["ض", "ط", "ظ", "ع", "غ", "ف", "ق"].includes(ar)) return "rainbow";
+// ── UNIQUE SCENIC THEME AUTOMATICALLY BOUND TO EACH ARABIC LETTER ──
+// (No manual switcher — scenes evolve progressively as the learner advances)
+function getSceneForLetter(ar) {
+  // ১. আলিফ, বা, তা: ঝুলন্ত সেতু ও নীল নদী
+  if (["ا", "أ", "ب", "ت"].includes(ar)) return "bridge";
+  // ২. ছা, জীম, হা: সবুজ উপত্যকা ও রংধনু
+  if (["ث", "ج", "ح"].includes(ar)) return "rainbow";
+  // ৩. খা, দাল, যাল, রা: মরুদ্যানে তারার রাত ও সোনালী চাঁদ
+  if (["خ", "د", "ذ", "ر"].includes(ar)) return "oasis";
+  // ৪. যা, সীন, শীন, ছোয়াদ: সূর্যাস্ত ও বাতিঘর সমুদ্র সৈকত
+  if (["ز", "س", "ش", "ص"].includes(ar)) return "sunset";
+  // ৫. দোয়াদ, তোয়া, যোয়া, আইন: ঝুলন্ত সেতু ও নীল নদী
+  if (["ض", "ط", "ظ", "ع"].includes(ar)) return "bridge";
+  // ৬. গাইন, ফা, ক্বাফ: সবুজ উপত্যকা ও রংধনু
+  if (["غ", "ف", "ق"].includes(ar)) return "rainbow";
+  // ৭. কাফ, লাম, মীম, নূন: মরুদ্যানে তারার রাত
+  if (["ك", "ل", "م", "ن"].includes(ar)) return "oasis";
+  // ৮. ওয়াও, হা, ইয়া: সূর্যাস্ত ও বাতিঘর সৈকত
   return "sunset";
 }
 
@@ -122,15 +128,8 @@ export default function NoorQaidaBubblePopGame({
   const [isShaking, setIsShaking] = useState(false);
   const [flashRed, setFlashRed] = useState(false);
 
-  // Dynamic Scenic Theme per Letter
-  const [currentScene, setCurrentScene] = useState(() => getInitialSceneForLetter(targetItem.ar));
-
-  const handleCycleScene = () => {
-    setCurrentScene((curr) => {
-      const idx = SCENE_THEMES.findIndex((s) => s.id === curr);
-      return SCENE_THEMES[(idx + 1) % SCENE_THEMES.length].id;
-    });
-  };
+  // Progressive scene strictly locked to the target letter (No manual override)
+  const currentScene = getSceneForLetter(targetItem?.ar);
 
   // References
   const nextBubbleId = useRef(1);
@@ -714,40 +713,14 @@ export default function NoorQaidaBubblePopGame({
           (Home, Scene Switch, Ninja Switch, Target Pill, Score, Hearts, Target Counter, Sound, Mute, Next)
       ══════════════════════════════════════════════════════════ */}
       <header className="relative z-30 p-2 sm:p-4 flex items-center justify-between gap-2 max-w-6xl mx-auto w-full">
-        {/* Left: Home Button & Scene Changer */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          <button
-            onClick={onClose}
-            className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-teal-500 hover:bg-teal-600 text-white border-2 border-teal-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
-            title="কায়দায় ফিরে যান"
-          >
-            <Home className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-
-          {/* 🌄 Scene Changer Button */}
-          <button
-            onClick={handleCycleScene}
-            className="px-2.5 sm:px-3 py-2 rounded-2xl bg-white/90 hover:bg-white text-slate-800 border-2 border-emerald-400 shadow-xl flex items-center gap-1.5 transition-all text-xs font-black hover:scale-105 active:scale-95 cursor-pointer"
-            title="দৃশ্যপট পরিবর্তন করুন"
-          >
-            <span>{SCENE_THEMES.find((s) => s.id === currentScene)?.icon}</span>
-            <span className="hidden sm:inline">
-              {SCENE_THEMES.find((s) => s.id === currentScene)?.nameBn}
-            </span>
-          </button>
-
-          {/* ⚔️ Ninja Mode Slicer Switch */}
-          {onLaunchNinja && (
-            <button
-              onClick={() => onLaunchNinja(targetItem)}
-              className="px-2.5 sm:px-3 py-2 rounded-2xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white border-2 border-amber-300 shadow-xl flex items-center gap-1.5 transition-all text-xs font-black hover:scale-105 active:scale-95 cursor-pointer animate-pulse"
-              title="হরফ নিনজা স্লাইসার খেলুন"
-            >
-              <span>⚔️</span>
-              <span className="hidden sm:inline">হরফ নিনজা</span>
-            </button>
-          )}
-        </div>
+        {/* Left: Home Button (Back to Qaida) */}
+        <button
+          onClick={onClose}
+          className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-teal-500 hover:bg-teal-600 text-white border-2 border-teal-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+          title="কায়দায় ফিরে যান"
+        >
+          <Home className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
 
         {/* Center: Mission Target Letter & Status Dashboard */}
         <div className="flex items-center gap-2 sm:gap-4 bg-white/90 backdrop-blur-md px-3 sm:px-6 py-1.5 sm:py-2 rounded-2xl sm:rounded-3xl border-2 sm:border-3 border-emerald-400 shadow-2xl">

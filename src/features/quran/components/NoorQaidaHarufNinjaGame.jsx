@@ -717,27 +717,14 @@ export default function NoorQaidaHarufNinjaGame({
           (Home, Target Badge, Sliced Score, Best Score, Lives, Pause)
       ══════════════════════════════════════════════════════════ */}
       <header className="relative z-30 p-2 sm:p-4 flex items-center justify-between gap-2 max-w-6xl mx-auto w-full pointer-events-auto">
-        {/* Left: Home & Mode Switch */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={onClose}
-            className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-amber-900/90 hover:bg-amber-800 text-amber-200 border-2 border-amber-600 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
-            title="কায়দায় ফিরে যান"
-          >
-            <Home className="w-5 h-5 sm:w-6 sm:h-6" />
-          </button>
-
-          {onSwitchToBubble && (
-            <button
-              onClick={onSwitchToBubble}
-              className="px-3 py-2 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs border-2 border-sky-300 shadow-xl flex items-center gap-1.5 transition-all hover:scale-105 active:scale-95"
-              title="বুদ্বুদ খেলায় যান"
-            >
-              <span>🎈</span>
-              <span className="hidden xs:inline">বুদ্বুদ মোড</span>
-            </button>
-          )}
-        </div>
+        {/* Left: Home Button (Back to Qaida) */}
+        <button
+          onClick={onClose}
+          className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-amber-900/90 hover:bg-amber-800 text-amber-200 border-2 border-amber-600 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
+          title="কায়দায় ফিরে যান"
+        >
+          <Home className="w-5 h-5 sm:w-6 sm:h-6" />
+        </button>
 
         {/* Center: Mission Target Letter & Score Box */}
         <div className="flex items-center gap-2 sm:gap-4 bg-amber-950/85 backdrop-blur-md px-3 sm:px-6 py-1.5 sm:py-2 rounded-2xl sm:rounded-3xl border-2 sm:border-3 border-amber-500 shadow-2xl text-white">
