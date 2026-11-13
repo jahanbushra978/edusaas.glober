@@ -24,12 +24,17 @@ import {
   HelpCircle,
   Trophy,
   ArrowRight,
+  ArrowLeft,
   RefreshCw,
   Bookmark,
   Gamepad2,
   LayoutGrid,
   Sliders,
   Smartphone,
+  Eye,
+  Smile,
+  Compass,
+  Heart,
 } from "lucide-react";
 import {
   NOOR_QAIDA_PARVAS,
@@ -60,12 +65,12 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
   const [isTocOpen, setIsTocOpen] = useState(false);
   const [isQuickJumpOpen, setIsQuickJumpOpen] = useState(false);
   const [tocSearch, setTocSearch] = useState("");
-  const [selectedParvaFilter, setSelectedParvaFilter] = useState("all");
 
-  // View Mode: 3D Flipbook vs Normal View
-  const [flipMode, setFlipMode] = useState("3d"); // '3d' | 'normal'
+  // 3 Distinct Reading Modes: '3d' (3D Flipbook), 'scroll' (Continuous Scroll), 'single' (Normal Card)
+  const [viewMode, setViewMode] = useState("3d"); // '3d' | 'scroll' | 'single'
   const [isFlipping, setIsFlipping] = useState(false);
   const [flipDirection, setFlipDirection] = useState("next"); // 'next' | 'prev'
+  const [flipProgress, setFlipProgress] = useState(0); // 0 to 100 for visual turn progress
   const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Playback & Sound State
@@ -88,6 +93,9 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
   const touchStartXRef = useRef(null);
   const touchStartYRef = useRef(null);
 
+  // Scroll View references
+  const scrollContainerRef = useRef(null);
+
   // Load progress on mount
   useEffect(() => {
     try {
@@ -97,8 +105,8 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
       if (savedStars) setEarnedStars(JSON.parse(savedStars));
       const savedName = localStorage.getItem("noor_qaida_student_name");
       if (savedName) setStudentName(savedName);
-      const savedMode = localStorage.getItem("noor_qaida_flip_mode");
-      if (savedMode) setFlipMode(savedMode);
+      const savedMode = localStorage.getItem("noor_qaida_view_mode");
+      if (savedMode) setViewMode(savedMode);
     } catch { }
   }, []);
 
@@ -110,39 +118,82 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
     } catch { }
   };
 
-  // Toggle Flip Mode
-  const handleToggleFlipMode = () => {
-    setFlipMode((prev) => {
-      const next = prev === "3d" ? "normal" : "3d";
-      try {
-        localStorage.setItem("noor_qaida_flip_mode", next);
-      } catch { }
-      return next;
-    });
+  // Toggle View Mode
+  const handleSetViewMode = (mode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem("noor_qaida_view_mode", mode);
+    } catch { }
   };
 
-  // Play realistic paper rustle sound on page flip
-  const playPaperTurnSound = () => {
+  // ── 1. ULTRA-REALISTIC CRISP PAPER RUSTLE SOUND SYNTHESIS ──
+  // Plays a rich, multi-layered realistic book page turn sound (noise burst + whoosh + paper flap)
+  const playCrispPaperSound = () => {
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
       const ctx = new AudioCtx();
-      const bufferSize = ctx.sampleRate * 0.12; // 120ms duration
+      if (ctx.state === "suspended") ctx.resume();
+
+      const now = ctx.currentTime;
+
+      // Layer 1: Band-pass filtered white noise for crisp paper texture
+      const bufferSize = Math.floor(ctx.sampleRate * 0.22); // 220ms
       const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
       const data = buffer.getChannelData(0);
       for (let i = 0; i < bufferSize; i++) {
-        const decay = Math.exp(-i / (ctx.sampleRate * 0.035));
-        data[i] = (Math.random() * 2 - 1) * decay * 0.22;
+        const t = i / ctx.sampleRate;
+        const envelope = Math.sin((t / 0.22) * Math.PI) * Math.exp(-t * 11);
+        data[i] = (Math.random() * 2 - 1) * envelope * 0.42;
       }
       const noise = ctx.createBufferSource();
       noise.buffer = buffer;
-      const filter = ctx.createBiquadFilter();
-      filter.type = "bandpass";
-      filter.frequency.value = 1800;
-      filter.Q.value = 1.2;
-      noise.connect(filter);
-      filter.connect(ctx.destination);
-      noise.start();
+
+      const bpf = ctx.createBiquadFilter();
+      bpf.type = "bandpass";
+      bpf.frequency.setValueAtTime(2400, now);
+      bpf.frequency.exponentialRampToValueAtTime(1200, now + 0.22);
+      bpf.Q.setValueAtTime(1.8, now);
+
+      // Layer 2: Gentle air displacement whoosh
+      const osc = ctx.createOscillator();
+      const oscGain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(180, now);
+      osc.frequency.exponentialRampToValueAtTime(80, now + 0.18);
+      oscGain.gain.setValueAtTime(0.09, now);
+      oscGain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+
+      noise.connect(bpf);
+      bpf.connect(ctx.destination);
+      osc.connect(oscGain);
+      oscGain.connect(ctx.destination);
+
+      noise.start(now);
+      osc.start(now);
+      osc.stop(now + 0.18);
+    } catch { }
+  };
+
+  // ── 2. CUTE KID-FRIENDLY BUBBLE POP SOUND FOR CLICKING TILES ──
+  const playCuteBubbleSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      if (ctx.state === "suspended") ctx.resume();
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(440, now);
+      osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+      gain.gain.setValueAtTime(0.08, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.08);
     } catch { }
   };
 
@@ -156,6 +207,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
 
   // Audio Play Function for Any Item
   const playItemSound = async (item, speed = audioSpeed) => {
+    playCuteBubbleSound();
     const soundKey = typeof item === "string" ? item : (item.sound || item.ar);
     const itemId = typeof item === "string" ? item : (item.id || item.ar);
     setActiveItemId(itemId);
@@ -202,20 +254,39 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
     } catch { }
   };
 
-  // Page Navigation Handlers with 3D Flip
+  // ── 3. VISIBLE 3D PAGE TURN NAVIGATION ──
+  // The page turning animation is distinctly visible (500ms sheet rotation with lighting & shadow)
   const navigateToPage = (targetPage, direction = "next") => {
     if (currentPage === targetPage) return;
 
-    if (flipMode === "3d") {
-      playPaperTurnSound();
+    if (viewMode === "3d") {
+      playCrispPaperSound();
       setFlipDirection(direction);
       setIsFlipping(true);
+
+      // Step 1: Flap turns over 0 -> 100%
+      setFlipProgress(50);
 
       setTimeout(() => {
         setCurrentPage(targetPage);
         setActiveTab("class");
-        setTimeout(() => setIsFlipping(false), 220);
-      }, 180);
+        setFlipProgress(100);
+
+        setTimeout(() => {
+          setIsFlipping(false);
+          setFlipProgress(0);
+        }, 260);
+      }, 240);
+    } else if (viewMode === "scroll") {
+      setCurrentPage(targetPage);
+      setActiveTab("class");
+      // Scroll smoothly to target class element
+      setTimeout(() => {
+        const el = document.getElementById(`qaida-page-${targetPage}`);
+        if (el) {
+          el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }, 80);
     } else {
       setCurrentPage(targetPage);
       setActiveTab("class");
@@ -359,19 +430,19 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
 
   return (
     <div
-      className="min-h-screen bg-[#F3EFE6] text-slate-800 font-sans select-none pb-28 sm:pb-20 relative overflow-x-hidden"
+      className="min-h-screen bg-[#FDF8EE] text-slate-800 font-sans select-none pb-28 sm:pb-20 relative overflow-x-hidden"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      {/* ── TOP PLATFORM NAVIGATION HUD ── */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-2 border-amber-200/90 shadow-sm px-3 sm:px-6 py-2.5">
+      {/* ── TOP CUTE PLATFORM NAVIGATION HUD ── */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-2 border-amber-300 shadow-sm px-3 sm:px-6 py-2.5">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
           {/* Left: Back & Title */}
           <div className="flex items-center gap-2">
             {onNavigateBack && (
               <button
                 onClick={onNavigateBack}
-                className="p-2 rounded-xl text-slate-600 hover:text-emerald-800 hover:bg-emerald-50 transition-colors"
+                className="p-2 rounded-2xl text-slate-600 hover:text-emerald-800 hover:bg-emerald-50 transition-colors shadow-2xs"
                 title="ফিরে যান"
               >
                 <ChevronLeft className="w-5 h-5" />
@@ -379,24 +450,24 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
             )}
             <div>
               <div className="flex items-center gap-1.5 sm:gap-2">
-                <span className="text-xl sm:text-2xl">📗</span>
-                <h1 className="text-base sm:text-lg font-black text-emerald-950 font-hind-siliguri tracking-tight">
-                  নূর কায়দা
+                <span className="text-2xl animate-pulse">📗</span>
+                <h1 className="text-base sm:text-lg font-black text-emerald-950 font-hind-siliguri tracking-tight flex items-center gap-1.5">
+                  <span>নূর কায়দা</span>
+                  <span className="text-xs px-2 py-0.5 rounded-full bg-amber-400 text-amber-950 font-bold hidden sm:inline shadow-xs">
+                    ছোটদের পাঠশালা
+                  </span>
                 </h1>
-                <span className="hidden md:inline-block text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                  মক্তব পাঠ্যপাঠিকা
-                </span>
               </div>
-              <p className="text-[10px] sm:text-xs text-slate-500 hidden sm:block">
+              <p className="text-[10px] sm:text-xs text-emerald-800 font-bold hidden sm:block">
                 {getPageHeaderLabel()}
               </p>
             </div>
           </div>
 
-          {/* Center / Right: Mode Switchers & Tools */}
+          {/* Center / Right: 3 Modes & Switchers */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* View Switchers (Class, Games, Chart, Certificate) */}
-            <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-bold">
+            {/* View Switchers (Book, Games, Chart, Certificate) */}
+            <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-bold shadow-inner">
               <button
                 onClick={() => setActiveTab("class")}
                 className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all ${
@@ -445,33 +516,55 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               </button>
             </div>
 
-            {/* 3D Flipbook vs Normal View Toggle Button */}
-            <button
-              onClick={handleToggleFlipMode}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-xs ${
-                flipMode === "3d"
-                  ? "bg-gradient-to-r from-emerald-700 to-teal-800 text-amber-200 border-emerald-500 shadow-md ring-2 ring-emerald-400/40"
-                  : "bg-white text-slate-700 border-slate-300 hover:bg-slate-100"
-              }`}
-              title="পাতা উল্টানোর ধরণ বদলান (৩ডি ফ্লিপ বই / সাধারণ ভিউ)"
-            >
-              {flipMode === "3d" ? (
-                <>
-                  <span className="text-sm">📖</span>
-                  <span className="hidden md:inline font-hind-siliguri">৩ডি বই</span>
-                </>
-              ) : (
-                <>
-                  <span className="text-sm">📄</span>
-                  <span className="hidden md:inline font-hind-siliguri">সাধারণ</span>
-                </>
-              )}
-            </button>
+            {/* ── 3 READING MODES TOGGLE: 3D FLIP, SCROLL, SINGLE ── */}
+            <div className="flex items-center bg-amber-100/80 p-0.5 rounded-2xl border border-amber-300 text-xs font-bold">
+              {/* 3D Flip Mode */}
+              <button
+                onClick={() => handleSetViewMode("3d")}
+                className={`px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
+                  viewMode === "3d"
+                    ? "bg-gradient-to-r from-emerald-600 to-teal-700 text-white shadow-md font-black ring-1 ring-emerald-300"
+                    : "text-amber-950 hover:bg-amber-200/50"
+                }`}
+                title="৩ডি ফ্লিপ বই (বাস্তব পাতা উল্টানোর মতো)"
+              >
+                <span>📖</span>
+                <span className="hidden md:inline font-hind-siliguri">৩ডি বই</span>
+              </button>
+
+              {/* Continuous Scroll Mode */}
+              <button
+                onClick={() => handleSetViewMode("scroll")}
+                className={`px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
+                  viewMode === "scroll"
+                    ? "bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-md font-black ring-1 ring-blue-300"
+                    : "text-amber-950 hover:bg-amber-200/50"
+                }`}
+                title="একটানা স্ক্রোল মোড (স্মুথ স্ক্রোল করে পড়া)"
+              >
+                <span>📜</span>
+                <span className="hidden md:inline font-hind-siliguri">স্ক্রোল</span>
+              </button>
+
+              {/* Single Page Normal Mode */}
+              <button
+                onClick={() => handleSetViewMode("single")}
+                className={`px-2 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
+                  viewMode === "single"
+                    ? "bg-white text-slate-900 shadow-sm font-black"
+                    : "text-amber-950 hover:bg-amber-200/50"
+                }`}
+                title="সাধারণ একক পৃষ্ঠা"
+              >
+                <span>📄</span>
+                <span className="hidden md:inline font-hind-siliguri">কার্ড</span>
+              </button>
+            </div>
 
             {/* Table of Contents (TOC) */}
             <button
               onClick={() => setIsTocOpen(true)}
-              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-800 text-white text-xs sm:text-sm font-bold shadow-sm hover:bg-emerald-900 transition"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-2xl bg-emerald-800 text-white text-xs sm:text-sm font-bold shadow-sm hover:bg-emerald-900 transition"
               title="সূচিপত্র খুলুন"
             >
               <Layers className="w-4 h-4" />
@@ -484,7 +577,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
             {/* Fullscreen Button */}
             <button
               onClick={toggleFullscreen}
-              className="p-1.5 sm:p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition hidden sm:inline-flex"
+              className="p-1.5 sm:p-2 rounded-2xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition hidden sm:inline-flex"
               title={isFullscreen ? "ফুলস্ক্রিন বন্ধ" : "ফুলস্ক্রিন মোড"}
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
@@ -493,65 +586,128 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
         </div>
       </header>
 
+      {/* ── CUTE PLAYFUL MASCOT BANNER FOR KIDS ── */}
+      <div className="max-w-4xl mx-auto px-3 sm:px-6 pt-3 flex items-center justify-between">
+        <div className="flex items-center gap-2 bg-white/90 backdrop-blur-xs px-3.5 py-1.5 rounded-full border-2 border-amber-300 shadow-xs text-xs font-bold text-amber-950">
+          <span className="text-base animate-bounce">🧒</span>
+          <span className="font-hind-siliguri">
+            নূর বন্ধু: <strong>"আজকের পাঠে মনোযোগ দাও, তারার মালা জেতো!"</strong>
+          </span>
+        </div>
+
+        {/* View Mode Indicator Tag */}
+        <div className="hidden sm:flex items-center gap-1.5 text-xs font-bold text-slate-600 bg-white/80 px-3 py-1 rounded-full border border-slate-200">
+          <span>{viewMode === "3d" ? "📖 ৩ডি পাতা উল্টানো মোড" : viewMode === "scroll" ? "📜 একটানা স্ক্রোল মোড" : "📄 সাধারণ কার্ড মোড"}</span>
+        </div>
+      </div>
+
       {/* ── CELEBRATION TOAST ── */}
       {celebrationToast && (
-        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-800 text-white px-6 py-3 rounded-3xl shadow-2xl border-2 border-amber-300 flex items-center gap-3 animate-bounce">
-          <Star className="w-6 h-6 text-amber-300 fill-amber-300" />
+        <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-800 text-white px-6 py-3.5 rounded-3xl shadow-2xl border-2 border-amber-300 flex items-center gap-3 animate-bounce">
+          <Star className="w-7 h-7 text-amber-300 fill-amber-300 animate-spin-slow" />
           <span className="text-sm font-black font-hind-siliguri">
             {celebrationToast}
           </span>
         </div>
       )}
 
-      {/* ── MAIN BOOK CONTAINER (FAITHFUL TO 104-PAGE PDF) ── */}
-      <main className="max-w-4xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6">
-        {activeTab === "class" && (
+      {/* ── MAIN BOOK CONTAINER (FAITHFUL TO 104-PAGE PDF + ULTRA CUTE) ── */}
+      <main className="max-w-4xl mx-auto px-3 sm:px-6 pt-3 sm:pt-4 relative">
+        {/* ── FLOATING LEFT & RIGHT TURN BUTTONS (DESKTOP) ── */}
+        {activeTab === "class" && viewMode === "3d" && (
+          <>
+            <button
+              onClick={handlePrevPage}
+              className="hidden lg:flex fixed left-4 top-1/2 -translate-y-1/2 z-30 flex-col items-center justify-center w-12 h-20 rounded-2xl bg-white/90 hover:bg-emerald-600 hover:text-white text-slate-700 border-2 border-amber-300 shadow-xl transition-all hover:scale-110 active:scale-95 group"
+              title="পূর্ববর্তী পাতা উল্টাও"
+            >
+              <ChevronLeft className="w-6 h-6 group-hover:-translate-x-0.5 transition-transform" />
+              <span className="text-[9px] font-bold mt-1">আগের</span>
+            </button>
+
+            <button
+              onClick={handleNextPage}
+              className="hidden lg:flex fixed right-4 top-1/2 -translate-y-1/2 z-30 flex-col items-center justify-center w-12 h-20 rounded-2xl bg-white/90 hover:bg-emerald-600 hover:text-white text-slate-700 border-2 border-amber-300 shadow-xl transition-all hover:scale-110 active:scale-95 group"
+              title="পরবর্তী পাতা উল্টাও"
+            >
+              <ChevronRight className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
+              <span className="text-[9px] font-bold mt-1">পরের</span>
+            </button>
+          </>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════
+            VIEW MODE A & C: 3D FLIPBOOK OR SINGLE CARD VIEW
+        ══════════════════════════════════════════════════════════ */}
+        {activeTab === "class" && viewMode !== "scroll" && (
           <div
             className={`transition-all duration-300 ${
-              flipMode === "3d" ? "perspective-[1600px]" : ""
+              viewMode === "3d" ? "perspective-[2000px]" : ""
             }`}
           >
-            {/* ── 3D FLIPBOOK WRAPPER ── */}
+            {/* ── 3D PHYSICAL BOOK FRAME ── */}
             <div
-              className={`relative bg-white rounded-[2rem] border-4 shadow-2xl overflow-hidden transition-all duration-350 ${
-                flipMode === "3d"
-                  ? `border-amber-400/80 shadow-[0_20px_50px_rgba(0,0,0,0.22)] ${
+              className={`relative bg-white rounded-[2.5rem] border-4 shadow-2xl overflow-hidden transition-all duration-500 ${
+                viewMode === "3d"
+                  ? `border-amber-400 shadow-[0_25px_60px_rgba(0,0,0,0.18)] ${
                       isFlipping && flipDirection === "next"
-                        ? "-rotate-y-12 scale-[0.98] -translate-x-3 shadow-[-30px_20px_40px_rgba(0,0,0,0.3)]"
+                        ? "-rotate-y-16 scale-[0.97] -translate-x-4 shadow-[-35px_25px_50px_rgba(0,0,0,0.32)]"
                         : isFlipping && flipDirection === "prev"
-                        ? "rotate-y-12 scale-[0.98] translate-x-3 shadow-[30px_20px_40px_rgba(0,0,0,0.3)]"
+                        ? "rotate-y-16 scale-[0.97] translate-x-4 shadow-[35px_25px_50px_rgba(0,0,0,0.32)]"
                         : "rotate-y-0 scale-100 translate-x-0"
                     }`
                   : "border-slate-300"
               }`}
-              style={{ transformStyle: "preserve-3d" }}
+              style={{
+                transformStyle: "preserve-3d",
+                transformOrigin: flipDirection === "next" ? "left center" : "right center",
+              }}
             >
-              {/* Realistic 3D Book Spine Shadow (Left Edge) */}
-              {flipMode === "3d" && (
-                <div className="absolute top-0 bottom-0 left-0 w-8 pointer-events-none z-30 bg-gradient-to-r from-black/20 via-black/5 to-transparent"></div>
+              {/* Realistic 3D Book Spine Shadow on Left */}
+              {viewMode === "3d" && (
+                <div className="absolute top-0 bottom-0 left-0 w-10 pointer-events-none z-30 bg-gradient-to-r from-stone-900/25 via-stone-700/10 to-transparent"></div>
+              )}
+
+              {/* Realistic 3D Dynamic Turning Flap Overlay (Visible Page Flip) */}
+              {viewMode === "3d" && isFlipping && (
+                <div
+                  className={`absolute inset-0 pointer-events-none z-40 transition-opacity duration-300 flex items-center justify-center ${
+                    flipDirection === "next"
+                      ? "bg-gradient-to-r from-transparent via-amber-100/30 to-black/20"
+                      : "bg-gradient-to-l from-transparent via-amber-100/30 to-black/20"
+                  }`}
+                >
+                  <div className="px-4 py-2 rounded-2xl bg-white/95 border-2 border-amber-400 shadow-2xl text-xs font-black text-emerald-950 font-hind-siliguri flex items-center gap-2 animate-pulse">
+                    <span>📖</span>
+                    <span>পাতা উল্টানো হচ্ছে...</span>
+                  </div>
+                </div>
               )}
 
               {/* Realistic Golden Page Flip Dog-Ear in 3D Mode */}
-              {flipMode === "3d" && (
+              {viewMode === "3d" && (
                 <button
                   onClick={handleNextPage}
-                  className="absolute top-3 right-3 z-30 hidden sm:flex items-center gap-1 px-3 py-1 rounded-full bg-amber-400/90 hover:bg-amber-300 text-amber-950 font-bold text-[11px] shadow-md transition-all hover:scale-105 active:scale-95"
+                  className="absolute top-3 right-3 z-30 hidden sm:flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs shadow-md transition-all hover:scale-105 active:scale-95 border border-amber-500"
                   title="পরবর্তী পাতা উল্টাও"
                 >
                   <span>পাতা উল্টাও</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               )}
 
               {/* ══════════════════════════════════════════════════════════
-                  PAGE TYPE 1: প্রচ্ছদ / COVER PAGE (PDF PAGE 1)
+                  PAGE 1: প্রচ্ছদ / COVER PAGE (PDF PAGE 1 + ULTRA CUTE)
               ══════════════════════════════════════════════════════════ */}
               {currentPage === "cover" && (
-                <div className="p-6 sm:p-10 bg-gradient-to-b from-emerald-50 via-amber-50/40 to-emerald-100/60 text-center space-y-6">
-                  {/* Top Illustrated Mosque & Sky Vector Motif */}
-                  <div className="relative py-4">
-                    <div className="text-5xl sm:text-6xl animate-pulse">🕌</div>
+                <div className="p-6 sm:p-10 bg-gradient-to-b from-emerald-100/70 via-amber-50/50 to-emerald-200/50 text-center space-y-6">
+                  {/* Mosque & Smiling Sun Sky Vector */}
+                  <div className="relative py-4 flex flex-col items-center">
+                    <div className="text-6xl sm:text-7xl animate-bounce select-none">
+                      🕌
+                    </div>
                     <div className="flex items-center justify-center gap-3 text-amber-400 text-2xl mt-2 select-none">
+                      <span>☀️</span>
                       <span>🌙</span>
                       <span>⭐</span>
                       <span>⭐</span>
@@ -560,64 +716,64 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
 
                   {/* Title & Badge */}
                   <div className="space-y-2">
-                    <span className="px-4 py-1 rounded-full bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm">
+                    <span className="px-4 py-1.5 rounded-full bg-emerald-700 text-white font-black text-xs uppercase tracking-wider shadow-md inline-block">
                       মক্তব শিক্ষা পাঠ্যপাঠিকা
                     </span>
-                    <h2 className="text-2xl sm:text-4xl font-extrabold text-emerald-950 font-hind-siliguri tracking-tight">
+                    <h2 className="text-3xl sm:text-5xl font-black text-emerald-950 font-hind-siliguri tracking-tight drop-shadow-xs">
                       নূর কায়দা
                     </h2>
-                    <p className="text-sm sm:text-base font-bold text-amber-900 font-hind-siliguri">
+                    <p className="text-base sm:text-lg font-black text-amber-900 font-hind-siliguri">
                       হরফ পরিচয় থেকে নাজেরা কুরআন পর্যন্ত
                     </p>
                   </div>
 
-                  {/* Cute Student Avatars & Illustrated Classroom Feature Box */}
-                  <div className="max-w-lg mx-auto bg-white/90 backdrop-blur-sm rounded-3xl p-5 border-2 border-emerald-300 shadow-md space-y-4">
-                    <div className="flex items-center justify-center gap-6 text-4xl select-none">
-                      <div className="flex flex-col items-center">
+                  {/* Cute Student Avatars & Feature Cards */}
+                  <div className="max-w-lg mx-auto bg-white/95 backdrop-blur-sm rounded-3xl p-6 border-3 border-emerald-300 shadow-xl space-y-5">
+                    <div className="flex items-center justify-center gap-8 text-5xl select-none">
+                      <div className="flex flex-col items-center hover:scale-110 transition">
                         <span>🧒</span>
-                        <span className="text-[10px] font-bold text-slate-500 mt-1">শিক্ষার্থী</span>
+                        <span className="text-xs font-black text-emerald-900 mt-1">আহমদ</span>
                       </div>
-                      <div className="text-2xl text-emerald-600 font-arabic font-bold">
+                      <div className="text-3xl text-emerald-600 font-arabic font-bold bg-emerald-50 px-4 py-2 rounded-2xl border-2 border-emerald-300">
                         ا ب ت ث
                       </div>
-                      <div className="flex flex-col items-center">
+                      <div className="flex flex-col items-center hover:scale-110 transition">
                         <span>🧕</span>
-                        <span className="text-[10px] font-bold text-slate-500 mt-1">শিক্ষার্থী</span>
+                        <span className="text-xs font-black text-emerald-900 mt-1">ফাতিমা</span>
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-2 text-left text-xs font-bold text-slate-700">
-                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-emerald-50 text-emerald-950 border border-emerald-200">
-                        <span>🔤</span>
+                    <div className="grid grid-cols-2 gap-2.5 text-left text-xs font-bold text-slate-800">
+                      <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-emerald-50 text-emerald-950 border-2 border-emerald-200">
+                        <span className="text-xl">🔤</span>
                         <span>২৯টি হরফের মাশক</span>
                       </div>
-                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-blue-50 text-blue-950 border border-blue-200">
-                        <span>🔵</span>
+                      <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-blue-50 text-blue-950 border-2 border-blue-200">
+                        <span className="text-xl">🔵</span>
                         <span>রঙ-সংকেত হরকত</span>
                       </div>
-                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-amber-50 text-amber-950 border border-amber-200">
-                        <span>🗣️</span>
+                      <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-amber-50 text-amber-950 border-2 border-amber-200">
+                        <span className="text-xl">🗣️</span>
                         <span>সচিত্র ১৭ মাখরাজ</span>
                       </div>
-                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-purple-50 text-purple-950 border border-purple-200">
-                        <span>🎮</span>
+                      <div className="flex items-center gap-2 p-2.5 rounded-2xl bg-purple-50 text-purple-950 border-2 border-purple-200">
+                        <span className="text-xl">🎮</span>
                         <span>৪টি আনন্দময় খেলা</span>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-600 font-hind-siliguri">
+                    <p className="text-xs text-slate-600 font-hind-siliguri font-bold">
                       📖 ছবি • রঙ • চার্ট • অনুশীলনী — শিক্ষক ও ছাত্র দুজনের জন্য
                     </p>
                   </div>
 
-                  {/* CTA Button to Start Reading */}
+                  {/* Big Pulsating CTA Button */}
                   <div className="pt-2">
                     <button
                       onClick={() => navigateToPage("rules", "next")}
-                      className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-sm sm:text-base shadow-xl hover:shadow-2xl transition-all hover:scale-105 active:scale-95"
+                      className="inline-flex items-center gap-3 px-8 sm:px-10 py-4 rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-base sm:text-lg shadow-xl hover:shadow-2xl transition-all hover:scale-105 active:scale-95 border-2 border-amber-300"
                     >
-                      <BookOpen className="w-5 h-5 text-amber-300" />
+                      <BookOpen className="w-6 h-6 text-amber-300" />
                       <span>বই পড়া শুরু করো ➔</span>
                     </button>
                   </div>
@@ -625,19 +781,19 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               )}
 
               {/* ══════════════════════════════════════════════════════════
-                  PAGE TYPE 2: পড়ার নিয়মাবলী (PDF PAGE 3)
+                  PAGE 2: পড়ার নিয়মাবলী (PDF PAGE 3)
               ══════════════════════════════════════════════════════════ */}
               {currentPage === "rules" && (
                 <div className="p-5 sm:p-8 space-y-6 bg-slate-50/50">
                   <div className="text-center space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 font-bold text-xs">
-                      পৃষ্ঠা ৩ • নির্দেশিকা
+                    <span className="px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-900 font-black text-xs border border-emerald-300">
+                      পৃষ্ঠা ৩ • উস্তাদ ও অভিভাবকের নির্দেশিকা
                     </span>
                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-hind-siliguri">
                       কীভাবে ব্যবহার করবেন — শিক্ষক ও অভিভাবকের জন্য
                     </h2>
-                    <p className="text-xs text-slate-500">
-                      সহজ ও কার্যকর মক্তব পাঠ্যপদ্ধতি
+                    <p className="text-xs text-slate-500 font-medium">
+                      সহজ, মিষ্টি ও কার্যকর মক্তব পাঠ্যপদ্ধতি
                     </p>
                   </div>
 
@@ -645,14 +801,14 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                     {SPECIAL_PAGES[3].items.map((item, idx) => (
                       <div
                         key={idx}
-                        className="p-4 rounded-2xl bg-white border-2 border-slate-200 shadow-2xs flex items-start gap-3 hover:border-emerald-300 transition"
+                        className="p-4 rounded-3xl bg-white border-2 border-slate-200 shadow-2xs flex items-start gap-3.5 hover:border-emerald-300 hover:shadow-md transition"
                       >
-                        <span className="text-2xl shrink-0 select-none">{item.icon}</span>
+                        <span className="text-3xl shrink-0 select-none">{item.icon}</span>
                         <div className="space-y-1">
                           <h3 className="text-sm font-black text-slate-900 font-hind-siliguri">
                             {item.title}
                           </h3>
-                          <p className="text-xs text-slate-600 leading-relaxed font-hind-siliguri">
+                          <p className="text-xs text-slate-600 leading-relaxed font-hind-siliguri font-medium">
                             {item.desc}
                           </p>
                         </div>
@@ -663,7 +819,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                   <div className="text-center pt-2">
                     <button
                       onClick={() => navigateToPage("color-code", "next")}
-                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md hover:bg-emerald-800 transition"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs sm:text-sm shadow-md transition hover:scale-105 active:scale-95"
                     >
                       <span>পরবর্তী: চিহ্ন ও রঙ-সংকেত ➔</span>
                     </button>
@@ -672,18 +828,18 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               )}
 
               {/* ══════════════════════════════════════════════════════════
-                  PAGE TYPE 3: চিহ্ন ও রঙ-সংকেতের চার্ট (PDF PAGE 5)
+                  PAGE 3: চিহ্ন ও রঙ-সংকেতের চার্ট (PDF PAGE 5)
               ══════════════════════════════════════════════════════════ */}
               {currentPage === "color-code" && (
                 <div className="p-5 sm:p-8 space-y-6">
                   <div className="text-center space-y-1">
-                    <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-900 font-bold text-xs">
+                    <span className="px-3.5 py-1 rounded-full bg-blue-100 text-blue-900 font-black text-xs border border-blue-300">
                       পৃষ্ঠা ৫ • সর্বজনীন রঙ-সংকেত
                     </span>
                     <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-hind-siliguri">
                       চিহ্ন ও রঙ-সংকেত
                     </h2>
-                    <p className="text-xs text-slate-600">
+                    <p className="text-xs text-slate-600 font-medium">
                       সারা বইয়ে একই রঙ, একই চিহ্ন — যেকোনো কার্ডে ক্লিক করলেই খাঁটি উচ্চারণ শুনবে
                     </p>
                   </div>
@@ -696,7 +852,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                         <div
                           key={idx}
                           onClick={() => playItemSound({ ar: card.ar, id: card.nameBn, sound: card.ar })}
-                          className={`p-4 rounded-3xl border-2 text-center cursor-pointer transition-all ${card.bg} ${card.border} ${
+                          className={`p-4 rounded-3xl border-3 text-center cursor-pointer transition-all ${card.bg} ${card.border} ${
                             isItemActive
                               ? "scale-105 ring-4 ring-emerald-400 shadow-xl"
                               : "hover:scale-102 hover:shadow-md"
@@ -711,7 +867,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                           <div className="text-[11px] text-slate-600 font-hind-siliguri mt-1" dir="ltr">
                             {card.ruleBn}
                           </div>
-                          <div className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/80 border border-slate-300 text-slate-700 mt-2 inline-block" dir="ltr">
+                          <div className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-white/90 border border-slate-300 text-slate-700 mt-2 inline-block shadow-2xs" dir="ltr">
                             আওয়াজ: {card.soundBn}
                           </div>
                         </div>
@@ -719,14 +875,14 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                     })}
                   </div>
 
-                  <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-center text-xs text-amber-900 font-medium">
+                  <div className="p-3.5 rounded-2xl bg-amber-50 border-2 border-amber-300 text-center text-xs text-amber-900 font-bold">
                     {SPECIAL_PAGES[5].footerTip}
                   </div>
 
                   <div className="text-center pt-2">
                     <button
                       onClick={() => navigateToPage(1, "next")}
-                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md hover:bg-emerald-800 transition"
+                      className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-emerald-700 hover:bg-emerald-800 text-white font-black text-xs sm:text-sm shadow-md transition hover:scale-105 active:scale-95"
                     >
                       <span>পরবর্তী: ক্লাস ১ (হরফ পরিচয়) ➔</span>
                     </button>
@@ -735,17 +891,16 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               )}
 
               {/* ══════════════════════════════════════════════════════════
-                  PAGE TYPE 4: CLASSES 1 TO 78 (REGULAR CURRICULUM)
+                  PAGE 4: CLASSES 1 TO 78 (REGULAR CURRICULUM PAGES)
               ══════════════════════════════════════════════════════════ */}
               {isClassPage && currentClass && (
                 <>
-                  {/* ── PDF EXACT TOP HEADER BAR ── */}
+                  {/* ── TOP HEADER BAR ── */}
                   <div
                     className={`p-4 sm:p-6 bg-gradient-to-r ${parvaTheme.headerBg} text-white relative flex items-center justify-between overflow-hidden shadow-inner`}
                   >
                     {/* Left: Round Class Badge + Titles */}
                     <div className="flex items-center gap-3 sm:gap-4 relative z-10">
-                      {/* Circular Class Badge (exact PDF circle inside rounded square) */}
                       <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white text-emerald-950 flex flex-col items-center justify-center shadow-lg border-3 border-amber-300 shrink-0">
                         <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
                           ক্লাস
@@ -782,8 +937,8 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                     </div>
                   </div>
 
-                  {/* ── TARGET BANNER: 🎯 আমি পারব / আমি জানব (PDF EXACT YELLOW DASHED BOX) ── */}
-                  <div className="p-4 sm:p-5 bg-amber-50/90 border-b-2 border-dashed border-amber-400/90 m-4 sm:m-5 rounded-2xl flex items-start gap-3 shadow-2xs">
+                  {/* ── TARGET BANNER: 🎯 আমি পারব / আমি জানব ── */}
+                  <div className="p-4 sm:p-5 bg-amber-50/90 border-b-2 border-dashed border-amber-400/90 m-4 sm:m-5 rounded-3xl flex items-start gap-3 shadow-2xs">
                     <span className="text-2xl shrink-0 select-none">🎯</span>
                     <div className="text-xs sm:text-sm text-amber-950 leading-relaxed font-hind-siliguri">
                       <strong className="font-black text-amber-900 text-sm mr-1.5">
@@ -794,35 +949,32 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                   </div>
 
                   {/* ── PLAY ALL & SPEED CONTROLS ROW ── */}
-                  <div className="px-5 py-2 flex flex-wrap items-center justify-between gap-2 text-xs border-b border-slate-100 bg-slate-50/70">
+                  <div className="px-5 py-2.5 flex flex-wrap items-center justify-between gap-2 text-xs border-b border-slate-100 bg-slate-50/70">
                     <div className="flex items-center gap-1.5 text-slate-600 font-medium">
                       <Volume2 className="w-4 h-4 text-emerald-600 animate-pulse shrink-0" />
-                      <span className="font-bold text-emerald-950 text-[11px] sm:text-xs">
-                        যেকোনো হরফ বা শব্দে ক্লিক করলেই খাঁটি ক্বারীর তিলাওয়াত বাজবে
+                      <span className="font-black text-emerald-950 text-[11px] sm:text-xs font-hind-siliguri">
+                        যেকোনো হরফ বা শব্দে ক্লিক করলেই ক্বারীর খাঁটি তিলাওয়াত বাজবে
                       </span>
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {/* Speed toggle */}
                       <button
                         onClick={() => setAudioSpeed((s) => (s === 1.0 ? 0.75 : 1.0))}
-                        className="px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 text-[11px]"
+                        className="px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 text-[11px] shadow-2xs"
                         title="গতি পরিবর্তন"
                       >
                         {audioSpeed === 0.75 ? "🐢 ০.৭৫x" : "🐇 ১.০x"}
                       </button>
 
-                      {/* Repeat toggle */}
                       <button
                         onClick={() => setRepeatMode((r) => (r === 1 ? 3 : 1))}
-                        className="px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 text-[11px]"
+                        className="px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 text-[11px] shadow-2xs"
                         title="পুনরাবৃত্তি সংখ্যা"
                       >
                         <RotateCcw className="w-3 h-3 inline mr-1 text-emerald-600" />
                         {repeatMode}x মাশক
                       </button>
 
-                      {/* Play All Button */}
                       <button
                         onClick={handlePlayAll}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold shadow-xs transition-all ${
@@ -867,10 +1019,10 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                               <div
                                 key={item.id || idx}
                                 onClick={() => playItemSound(item)}
-                                className={`group relative p-3 sm:p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer flex flex-col items-center justify-center text-center select-none ${
+                                className={`group relative p-3 sm:p-5 rounded-3xl border-3 transition-all duration-200 cursor-pointer flex flex-col items-center justify-center text-center select-none ${
                                   isItemActive
                                     ? "bg-emerald-100 border-emerald-600 ring-4 ring-emerald-400 shadow-xl scale-105"
-                                    : "bg-[#FBFDFB] border-emerald-200 hover:border-emerald-500 hover:bg-white hover:shadow-md"
+                                    : "bg-[#FBFDFB] border-emerald-200 hover:border-emerald-500 hover:bg-white hover:shadow-md hover:-translate-y-1 active:translate-y-0.5 active:border-b-2"
                                 }`}
                               >
                                 <div
@@ -882,7 +1034,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                                 >
                                   {item.ar}
                                 </div>
-                                <div className="text-[11px] sm:text-xs font-bold text-slate-700 mt-1 sm:mt-2 font-hind-siliguri">
+                                <div className="text-[11px] sm:text-xs font-black text-slate-700 mt-1 sm:mt-2 font-hind-siliguri">
                                   {item.nameBn}
                                 </div>
                                 {isItemActive && (
@@ -899,35 +1051,35 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                     ) : currentPage >= 11 && currentPage <= 15 ? (
                       /* ── TYPE B: CLASSES 11-15 (MAKHRAJ & 5 ANATOMICAL ORGANS) ── */
                       <div className="space-y-6">
-                        <div className="p-4 rounded-3xl bg-amber-50/70 border-2 border-amber-300 space-y-3">
-                          <div className="text-sm font-black text-amber-950 flex items-center gap-2">
+                        <div className="p-4 rounded-3xl bg-amber-50/70 border-3 border-amber-300 space-y-3">
+                          <div className="text-sm font-black text-amber-950 flex items-center gap-2 font-hind-siliguri">
                             <span>মাখরাজের ৫টি প্রধান অঙ্গ ও স্থান</span>
                             <span>🗣️</span>
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs font-bold">
-                            <div className="p-2.5 rounded-2xl bg-white border border-amber-300 shadow-2xs">
+                            <div className="p-2.5 rounded-2xl bg-white border-2 border-amber-300 shadow-2xs">
                               <span className="text-2xl block">🫁</span>
-                              <span className="text-amber-950 block mt-1 font-hind-siliguri">আল-হলক (কণ্ঠনালী)</span>
+                              <span className="text-amber-950 block mt-1 font-hind-siliguri">হলক (কণ্ঠনালী)</span>
                               <span className="text-[10px] text-slate-500">৬টি হরফ</span>
                             </div>
-                            <div className="p-2.5 rounded-2xl bg-white border border-amber-300 shadow-2xs">
+                            <div className="p-2.5 rounded-2xl bg-white border-2 border-amber-300 shadow-2xs">
                               <span className="text-2xl block">👅</span>
-                              <span className="text-amber-950 block mt-1 font-hind-siliguri">আল-লিসান (জিহ্বা)</span>
+                              <span className="text-amber-950 block mt-1 font-hind-siliguri">লিসান (জিহ্বা)</span>
                               <span className="text-[10px] text-slate-500">১৮টি হরফ</span>
                             </div>
-                            <div className="p-2.5 rounded-2xl bg-white border border-amber-300 shadow-2xs">
+                            <div className="p-2.5 rounded-2xl bg-white border-2 border-amber-300 shadow-2xs">
                               <span className="text-2xl block">👄</span>
                               <span className="text-amber-950 block mt-1 font-hind-siliguri">শাফাতান (ঠোঁট)</span>
                               <span className="text-[10px] text-slate-500">৪টি হরফ</span>
                             </div>
-                            <div className="p-2.5 rounded-2xl bg-white border border-amber-300 shadow-2xs">
+                            <div className="p-2.5 rounded-2xl bg-white border-2 border-amber-300 shadow-2xs">
                               <span className="text-2xl block">👃</span>
-                              <span className="text-amber-950 block mt-1 font-hind-siliguri">খয়শূম (নাকের বাঁশি)</span>
+                              <span className="text-amber-950 block mt-1 font-hind-siliguri">খয়শূম (নাক)</span>
                               <span className="text-[10px] text-slate-500">গুন্নাহর ধ্বনি</span>
                             </div>
-                            <div className="col-span-2 sm:col-span-1 p-2.5 rounded-2xl bg-white border border-amber-300 shadow-2xs">
+                            <div className="col-span-2 sm:col-span-1 p-2.5 rounded-2xl bg-white border-2 border-amber-300 shadow-2xs">
                               <span className="text-2xl block">🗣️</span>
-                              <span className="text-amber-950 block mt-1 font-hind-siliguri">আল-জওফ (মুখের খালি)</span>
+                              <span className="text-amber-950 block mt-1 font-hind-siliguri">জওফ (মুখের খালি)</span>
                               <span className="text-[10px] text-slate-500">মদের ৩ হরফ</span>
                             </div>
                           </div>
@@ -941,10 +1093,10 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                               <div
                                 key={item.id || idx}
                                 onClick={() => playItemSound(item)}
-                                className={`p-4 rounded-2xl border-2 text-center cursor-pointer transition-all ${
+                                className={`p-4 rounded-3xl border-3 text-center cursor-pointer transition-all ${
                                   isItemActive
                                     ? "bg-amber-100 border-amber-600 ring-4 ring-amber-300 shadow-lg scale-105"
-                                    : "bg-white border-slate-200 hover:border-amber-400 hover:shadow-md"
+                                    : "bg-white border-slate-200 hover:border-amber-400 hover:shadow-md hover:-translate-y-1"
                                 }`}
                               >
                                 <div className="font-arabic text-3xl sm:text-4xl font-bold text-slate-900">
@@ -969,7 +1121,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                         <div className="border-3 border-blue-300 rounded-3xl p-4 sm:p-6 bg-blue-50/40 flex flex-col md:flex-row items-center justify-between gap-6">
                           <div
                             onClick={() => playItemSound({ ar: "اَ", sound: "اَ" })}
-                            className="w-36 h-40 sm:w-40 sm:h-44 rounded-2xl bg-white border-2 border-blue-400 shadow-md flex items-center justify-center cursor-pointer hover:border-blue-600 hover:scale-105 transition shrink-0"
+                            className="w-36 h-40 sm:w-40 sm:h-44 rounded-3xl bg-white border-3 border-blue-400 shadow-md flex items-center justify-center cursor-pointer hover:border-blue-600 hover:scale-105 transition shrink-0"
                           >
                             <div className="font-arabic text-7xl font-bold text-slate-900">
                               اَ
@@ -1016,7 +1168,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                         </div>
 
                         <div className="space-y-2">
-                          <div className="text-xs font-bold text-blue-900 bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200 inline-block">
+                          <div className="text-xs font-bold text-blue-900 bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200 inline-block font-hind-siliguri">
                             এই চারটি হরফে জবর
                           </div>
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4" dir="rtl">
@@ -1024,7 +1176,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                               <div
                                 key={it.id || idx}
                                 onClick={() => playItemSound(it)}
-                                className="p-4 rounded-2xl bg-white border-2 border-blue-200 hover:border-blue-500 hover:shadow-md cursor-pointer text-center space-y-2 group"
+                                className="p-4 rounded-3xl bg-white border-2 border-blue-200 hover:border-blue-500 hover:shadow-md cursor-pointer text-center space-y-2 group transition hover:-translate-y-1"
                               >
                                 <div className="font-arabic text-4xl sm:text-5xl font-bold text-slate-900 group-hover:text-blue-700">
                                   {it.ar}
@@ -1040,7 +1192,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                     ) : currentPage === 18 ? (
                       /* ── TYPE D: CLASS 18 (জবর: দুই হরফ মিলাই + মদ-এর ছোট্ট ধারণা) ── */
                       <div className="space-y-6">
-                        <div className="p-4 sm:p-5 rounded-2xl bg-blue-50 border-2 border-blue-300 text-center font-bold">
+                        <div className="p-4 sm:p-5 rounded-3xl bg-blue-50 border-3 border-blue-300 text-center font-bold">
                           <div className="text-xs text-blue-700 mb-2 font-hind-siliguri">দুই হরফ জবর দিয়ে মিলাই</div>
                           <div className="font-arabic text-3xl sm:text-4xl text-blue-950 flex items-center justify-center gap-4">
                             <span>بَتَ</span>
@@ -1052,30 +1204,30 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                         </div>
 
                         <div className="border-3 border-amber-300 rounded-3xl p-5 bg-gradient-to-r from-amber-50 to-orange-50 space-y-3">
-                          <div className="text-sm font-black text-amber-950 flex items-center gap-2">
+                          <div className="text-sm font-black text-amber-950 flex items-center gap-2 font-hind-siliguri">
                             <span>মদ-এর ছোট্ট ধারণা</span>
                             <span className="text-amber-500">🌟</span>
                           </div>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div
                               onClick={() => playItemSound({ ar: "بَ", sound: "بَ" })}
-                              className="p-4 rounded-2xl bg-white border-2 border-amber-200 cursor-pointer hover:border-amber-400 text-center space-y-1"
+                              className="p-4 rounded-3xl bg-white border-2 border-amber-200 cursor-pointer hover:border-amber-400 text-center space-y-1 transition hover:-translate-y-1"
                             >
                               <div className="font-arabic text-4xl font-bold text-slate-900">بَ</div>
-                              <div className="text-xs font-bold text-amber-900 font-hind-siliguri">ছোট আওয়াজ • ১ হরকত</div>
-                              <div className="text-xs text-slate-500">✊ → ✋ (১ বার হাত বন্ধ ও খোলা)</div>
+                              <div className="text-xs font-black text-amber-900 font-hind-siliguri">ছোট আওয়াজ • ১ হরকত</div>
+                              <div className="text-xs text-slate-500 font-hind-siliguri">✊ → ✋ (১ বার হাত বন্ধ ও খোলা)</div>
                             </div>
 
                             <div
                               onClick={() => playItemSound({ ar: "بَا", sound: "بَا" })}
-                              className="p-4 rounded-2xl bg-white border-2 border-amber-300 cursor-pointer hover:border-amber-500 text-center space-y-1"
+                              className="p-4 rounded-3xl bg-white border-2 border-amber-300 cursor-pointer hover:border-amber-500 text-center space-y-1 transition hover:-translate-y-1"
                             >
                               <div className="font-arabic text-4xl font-bold text-slate-900">بَا</div>
-                              <div className="text-xs font-bold text-amber-900 font-hind-siliguri">টানা আওয়াজ • ২ হরকত</div>
-                              <div className="text-xs text-slate-500">✊✋ ✊✋ (২ বার হাত বন্ধ ও খোলা)</div>
+                              <div className="text-xs font-black text-amber-900 font-hind-siliguri">টানা আওয়াজ • ২ হরকত</div>
+                              <div className="text-xs text-slate-500 font-hind-siliguri">✊✋ ✊✋ (২ বার হাত বন্ধ ও খোলা)</div>
                             </div>
                           </div>
-                          <p className="text-[11px] text-amber-800 text-center font-hind-siliguri">
+                          <p className="text-[11px] text-amber-800 text-center font-hind-siliguri font-bold">
                             জবরের পরে খালি আলিফ থাকলে আওয়াজ একটু টেনে পড়তে হয়—একে বলে মদ।
                           </p>
                         </div>
@@ -1085,7 +1237,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                             <div
                               key={it.id || idx}
                               onClick={() => playItemSound(it)}
-                              className="p-3.5 rounded-2xl bg-white border-2 border-slate-200 hover:border-blue-400 text-center cursor-pointer group"
+                              className="p-3.5 rounded-3xl bg-white border-2 border-slate-200 hover:border-blue-400 text-center cursor-pointer group transition hover:-translate-y-1"
                             >
                               <div className="font-arabic text-3xl font-bold text-slate-900 group-hover:text-blue-700">
                                 {it.ar}
@@ -1102,13 +1254,13 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                       <div className="space-y-6">
                         <div className="p-5 rounded-3xl bg-teal-50 border-3 border-teal-300 flex flex-col md:flex-row items-center justify-between gap-6">
                           <div className="flex-1 space-y-2">
-                            <span className="px-3 py-1 rounded-full bg-teal-200 text-teal-950 font-bold text-xs">
+                            <span className="px-3.5 py-1 rounded-full bg-teal-200 text-teal-950 font-black text-xs">
                               ক্বলক্বলার ৫টি হরফ (قطبجد - কুতবু জাদ)
                             </span>
                             <h3 className="text-lg font-black text-teal-950 font-hind-siliguri">
                               প্রতিধ্বনি বা বল বাউন্সিংয়ের মতো আওয়াজ
                             </h3>
-                            <p className="text-xs text-slate-600 leading-relaxed font-hind-siliguri">
+                            <p className="text-xs text-slate-600 leading-relaxed font-hind-siliguri font-medium">
                               বল দেয়ালে মারলে যেমন ড্রপ খেয়ে লাফিয়ে ওঠে, তেমনি ق ط ب ج د হরফে জযম হলে আওয়াজ লাফিয়ে উঠবে!
                             </p>
                           </div>
@@ -1120,7 +1272,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                               playItemSound({ ar: "أَبْ", sound: "أَبْ" });
                               setTimeout(() => setBallBouncing(false), 1200);
                             }}
-                            className="w-32 h-32 rounded-3xl bg-white border-2 border-teal-400 shadow-md flex flex-col items-center justify-center cursor-pointer hover:bg-teal-50 transition shrink-0"
+                            className="w-32 h-32 rounded-3xl bg-white border-3 border-teal-400 shadow-md flex flex-col items-center justify-center cursor-pointer hover:bg-teal-50 transition shrink-0 hover:scale-105 active:scale-95"
                             title="ক্লিক করে বলের মতো ক্বলক্বলা শোনো"
                           >
                             <span
@@ -1130,7 +1282,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                             >
                               ⚽
                             </span>
-                            <span className="text-[10px] font-bold text-teal-800 mt-1">
+                            <span className="text-[10px] font-black text-teal-900 mt-1 font-hind-siliguri">
                               ট্যাপ করে লাফাও
                             </span>
                           </div>
@@ -1142,12 +1294,12 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                             <div
                               key={it.id || idx}
                               onClick={() => playItemSound(it)}
-                              className="p-4 rounded-2xl bg-white border-2 border-teal-200 hover:border-teal-500 hover:shadow-md cursor-pointer text-center space-y-2 group transition"
+                              className="p-4 rounded-3xl bg-white border-2 border-teal-200 hover:border-teal-500 hover:shadow-md cursor-pointer text-center space-y-2 group transition hover:-translate-y-1"
                             >
                               <div className="font-arabic text-4xl font-bold text-slate-900 group-hover:text-teal-700">
                                 {it.ar}
                               </div>
-                              <div className="text-xs font-bold text-teal-950 font-hind-siliguri" dir="ltr">
+                              <div className="text-xs font-black text-teal-950 font-hind-siliguri" dir="ltr">
                                 {it.nameBn}
                               </div>
                               {it.tip && (
@@ -1162,7 +1314,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                     ) : (currentPage >= 56 && currentPage <= 65) ? (
                       /* ── TYPE F: BROKEN-DOWN SYLLABLES (PAGES 68-85 EXACT PDF STYLE) ── */
                       <div className="space-y-4">
-                        <div className="text-xs font-bold text-emerald-900 bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300 inline-block">
+                        <div className="text-xs font-black text-emerald-900 bg-emerald-100 px-3.5 py-1.5 rounded-2xl border border-emerald-300 inline-block font-hind-siliguri">
                           শব্দ ভেঙে ভেঙে পড়ি (ডান থেকে বামে)
                         </div>
 
@@ -1177,18 +1329,18 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                             return (
                               <div
                                 key={item.id || idx}
-                                className={`p-4 rounded-3xl border-2 transition-all space-y-3 bg-white ${
+                                className={`p-4 rounded-3xl border-3 transition-all space-y-3 bg-white ${
                                   isItemActive
                                     ? "border-emerald-500 shadow-lg ring-3 ring-emerald-300"
-                                    : "border-slate-200 hover:border-emerald-300 shadow-2xs"
+                                    : "border-slate-200 hover:border-emerald-300 shadow-2xs hover:-translate-y-1"
                                 }`}
                               >
                                 {/* Full Word Top Bar */}
                                 <div
                                   onClick={() => playItemSound(item)}
-                                  className="flex items-center justify-between p-2.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100 cursor-pointer border border-emerald-200 transition"
+                                  className="flex items-center justify-between p-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 cursor-pointer border border-emerald-200 transition"
                                 >
-                                  <span className="text-xs font-bold text-emerald-800 font-hind-siliguri">
+                                  <span className="text-xs font-black text-emerald-900 font-hind-siliguri">
                                     পূর্ণ শব্দ: {item.nameBn}
                                   </span>
                                   <div className="font-arabic text-3xl font-bold text-slate-900" dir="rtl">
@@ -1214,13 +1366,13 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                                           className={`px-3 py-2 rounded-2xl border-2 cursor-pointer text-center transition flex flex-col items-center min-w-[55px] ${
                                             isSylActive
                                               ? "bg-rose-100 border-rose-500 shadow-md scale-110"
-                                              : "bg-red-50/80 border-rose-300 hover:bg-rose-100 hover:border-rose-400"
+                                              : "bg-red-50/80 border-rose-300 hover:bg-rose-100 hover:border-rose-400 hover:scale-105"
                                           }`}
                                         >
                                           <span className="font-arabic text-xl font-bold text-slate-900">
                                             {syl.ar}
                                           </span>
-                                          <span className="text-[11px] font-bold text-rose-950 font-hind-siliguri mt-0.5">
+                                          <span className="text-[11px] font-black text-rose-950 font-hind-siliguri mt-0.5">
                                             {syl.bn}
                                           </span>
                                         </div>
@@ -1228,7 +1380,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                                     })}
                                   </div>
                                 ) : (
-                                  <div className="text-center text-xs text-slate-500 font-hind-siliguri">
+                                  <div className="text-center text-xs text-slate-500 font-hind-siliguri font-medium">
                                     {item.tip}
                                   </div>
                                 )}
@@ -1255,14 +1407,14 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                             <div
                               key={item.id || idx}
                               onClick={() => playItemSound(item)}
-                              className={`group relative p-4 sm:p-5 rounded-3xl border-2 transition-all duration-300 cursor-pointer flex flex-col items-center justify-between min-h-[140px] text-center bg-white ${
+                              className={`group relative p-4 sm:p-5 rounded-3xl border-3 transition-all duration-300 cursor-pointer flex flex-col items-center justify-between min-h-[140px] text-center bg-white ${
                                 isItemActive
                                   ? "border-emerald-600 ring-4 ring-emerald-300 shadow-xl scale-105 bg-emerald-50/50"
-                                  : "border-slate-200 hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
+                                  : "border-slate-200 hover:border-emerald-400 hover:shadow-md hover:-translate-y-1"
                               }`}
                             >
                               <div className="w-full flex items-center justify-between text-xs text-slate-400">
-                                <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[10px]">
+                                <span className="w-6 h-6 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[10px]">
                                   {idx + 1}
                                 </span>
                                 <Volume2 className="w-4 h-4 text-slate-400 group-hover:text-emerald-600" />
@@ -1281,11 +1433,11 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                               </div>
 
                               <div className="mt-2" dir="ltr">
-                                <div className="text-xs sm:text-sm font-bold text-slate-800 font-hind-siliguri">
+                                <div className="text-xs sm:text-sm font-black text-slate-800 font-hind-siliguri">
                                   {item.nameBn}
                                 </div>
                                 {item.tip && (
-                                  <div className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                                  <div className="text-[10px] text-slate-500 line-clamp-1 mt-0.5 font-hind-siliguri">
                                     {item.tip}
                                   </div>
                                 )}
@@ -1296,8 +1448,8 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                       </div>
                     )}
 
-                    {/* ── EXERCISE ROW: ✏️ অনুশীলনী (PDF EXACT SECTION) ── */}
-                    <div className="p-4 rounded-2xl bg-emerald-50/70 border-2 border-emerald-300 space-y-2">
+                    {/* ── EXERCISE ROW: ✏️ অনুশীলনী ── */}
+                    <div className="p-4 rounded-3xl bg-emerald-50/70 border-3 border-emerald-300 space-y-2">
                       <div className="flex items-center gap-2 text-emerald-950 font-black text-xs sm:text-sm font-hind-siliguri">
                         <span>✏️</span>
                         <span>অনুশীলনী</span>
@@ -1318,20 +1470,19 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                       </div>
                     </div>
 
-                    {/* ── BOTTOM DUAL BOXES: আজ আমি পারলাম ⭐ & শিক্ষকের জন্য 👩‍🏫 (PDF EXACT) ── */}
+                    {/* ── BOTTOM DUAL BOXES: আজ আমি পারলাম ⭐ & শিক্ষকের জন্য 👩‍🏫 ── */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
-                      {/* Left Box: আজ আমি পারলাম ⭐ */}
                       <div
                         onClick={() => handleClaimStar(currentPage)}
-                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-2 ${
+                        className={`p-4 rounded-3xl border-3 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-2 ${
                           isClassStarEarned
                             ? "bg-amber-100 border-amber-400 text-amber-950 shadow-md scale-102"
-                            : "bg-amber-50/50 border-amber-300 text-amber-900 hover:bg-amber-100"
+                            : "bg-amber-50/50 border-amber-300 text-amber-900 hover:bg-amber-100 hover:-translate-y-0.5"
                         }`}
                         title="তারা পেতে এখানে ক্লিক করো"
                       >
                         <Star
-                          className={`w-8 h-8 transition-all ${
+                          className={`w-9 h-9 transition-all ${
                             isClassStarEarned
                               ? "text-amber-500 fill-amber-400 scale-110"
                               : "text-amber-400 fill-transparent"
@@ -1340,18 +1491,17 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                         <div className="text-xs font-black font-hind-siliguri">
                           আজ আমি পারলাম
                         </div>
-                        <div className="text-[11px] font-bold px-3 py-1 rounded-full bg-white border border-amber-300 text-amber-900">
+                        <div className="text-[11px] font-bold px-3 py-1 rounded-full bg-white border border-amber-300 text-amber-900 shadow-2xs">
                           {isClassStarEarned ? "অর্জিত! ⭐" : "ক্লিক করে তারা নাও"}
                         </div>
                       </div>
 
-                      {/* Right Box: শিক্ষকের জন্য নির্দেশিকা (PDF EXACT) */}
-                      <div className="md:col-span-3 p-4 rounded-2xl bg-slate-50 border-2 border-slate-200 text-slate-800 space-y-1.5">
+                      <div className="md:col-span-3 p-4 rounded-3xl bg-slate-50 border-2 border-slate-200 text-slate-800 space-y-1.5">
                         <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
                           <span>👩‍🏫</span>
-                          <span>শিক্ষকের জন্য (ছাত্র এই অংশ না পড়লেও চলবে)</span>
+                          <span>শিক্ষকের জন্য (উস্তাদের পরামর্শ)</span>
                         </div>
-                        <p className="text-[11px] text-slate-600 leading-relaxed font-hind-siliguri">
+                        <p className="text-[11px] text-slate-600 leading-relaxed font-hind-siliguri font-medium">
                           {currentClass.teacherNoteBn ||
                             "হরফের নাম ও মাখরাজ আলাদা করে শোনান। তাড়াহুড়ো না করে বিশুদ্ধ উচ্চারণে ছাত্রকে অভ্যস্ত করান।"}
                         </p>
@@ -1363,16 +1513,16 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                   <div className="p-4 bg-slate-100 border-t border-slate-200 hidden sm:flex items-center justify-between text-xs font-bold text-slate-700">
                     <button
                       onClick={handlePrevPage}
-                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 shadow-2xs transition"
+                      className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-white text-slate-800 border-2 border-slate-300 hover:bg-slate-50 shadow-2xs transition hover:scale-105 active:scale-95"
                     >
                       <ChevronLeft className="w-4 h-4" />
-                      <span>পূর্ববর্তী</span>
+                      <span>পূর্ববর্তী পাতা</span>
                     </button>
 
                     <div className="flex items-center gap-1.5 font-hind-siliguri">
                       <span>মক্তব শিক্ষা পাঠ্যপাঠিকা</span>
                       <span className="text-slate-400">•</span>
-                      <span className="font-mono text-emerald-800">
+                      <span className="font-mono text-emerald-800 font-black">
                         পৃষ্ঠা নং {currentPage + 7} (ক্লাস {currentClass.classNumberBn})
                       </span>
                     </div>
@@ -1380,13 +1530,13 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                     <button
                       onClick={handleNextPage}
                       disabled={currentPage >= 78}
-                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
+                      className={`flex items-center gap-1.5 px-4 py-2.5 rounded-2xl transition shadow-md hover:scale-105 active:scale-95 ${
                         currentPage >= 78
                           ? "opacity-40 cursor-not-allowed bg-slate-200 text-slate-400"
-                          : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-2xs"
+                          : "bg-emerald-600 hover:bg-emerald-700 text-white"
                       }`}
                     >
-                      <span>পরবর্তী</span>
+                      <span>পরবর্তী পাতা</span>
                       <ChevronRight className="w-4 h-4" />
                     </button>
                   </div>
@@ -1397,11 +1547,81 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
         )}
 
         {/* ══════════════════════════════════════════════════════════
+            VIEW MODE B: CONTINUOUS SCROLL MODE (একটানা স্ক্রোল)
+        ══════════════════════════════════════════════════════════ */}
+        {activeTab === "class" && viewMode === "scroll" && (
+          <div className="space-y-8" ref={scrollContainerRef}>
+            {/* Scroll Mode Sticky Helper */}
+            <div className="p-3 rounded-2xl bg-blue-50 border-2 border-blue-300 flex items-center justify-between text-xs font-bold text-blue-950">
+              <span className="flex items-center gap-1.5 font-hind-siliguri">
+                <span>📜</span>
+                <span>একটানা স্ক্রোল মোড: নিচে স্ক্রোল করে সব পাতা পড়ুন। যেকোনো হরফে ক্লিক করলেই আওয়াজ শুনবেন।</span>
+              </span>
+              <button
+                onClick={() => handleSetViewMode("3d")}
+                className="px-3 py-1 rounded-xl bg-blue-600 text-white font-bold hover:bg-blue-700 transition"
+              >
+                ৩ডি বইয়ে ফিরুন ➔
+              </button>
+            </div>
+
+            {/* Render 10 sequential classes around current page for smooth scroll */}
+            {NOOR_QAIDA_CLASSES.slice(
+              Math.max(0, (typeof currentPage === "number" ? currentPage : 1) - 4),
+              Math.min(78, (typeof currentPage === "number" ? currentPage : 1) + 8)
+            ).map((cls) => {
+              const theme = PARVA_THEMES[cls.parvaNumber] || PARVA_THEMES[1];
+              return (
+                <div
+                  key={cls.id}
+                  id={`qaida-page-${cls.classNumber}`}
+                  className="bg-white rounded-[2.5rem] border-4 border-slate-200 shadow-xl overflow-hidden scroll-mt-20"
+                >
+                  {/* Class Header */}
+                  <div className={`p-4 sm:p-5 bg-gradient-to-r ${theme.headerBg} text-white flex items-center justify-between`}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-white text-emerald-950 flex flex-col items-center justify-center font-bold text-sm shadow-md border-2 border-amber-300">
+                        <span className="text-[9px] text-slate-500">ক্লাস</span>
+                        <span className="text-base font-black font-hind-siliguri -mt-1">{cls.classNumberBn}</span>
+                      </div>
+                      <div>
+                        <h3 className="text-lg sm:text-xl font-black font-hind-siliguri">{cls.titleBn}</h3>
+                        <p className="text-xs text-emerald-100">{cls.parvaTitleBn}</p>
+                      </div>
+                    </div>
+                    <span className="text-2xl">⭐</span>
+                  </div>
+
+                  {/* Objective */}
+                  <div className="p-3.5 bg-amber-50 border-b border-amber-200 m-3 rounded-2xl text-xs text-amber-950 flex items-start gap-2">
+                    <span className="text-lg">🎯</span>
+                    <span><strong>আমি পারব:</strong> {cls.objectiveBn}</span>
+                  </div>
+
+                  {/* Items Grid */}
+                  <div className="p-4 grid grid-cols-2 sm:grid-cols-4 gap-3" dir="rtl">
+                    {cls.items.map((it, idx) => (
+                      <div
+                        key={it.id || idx}
+                        onClick={() => playItemSound(it)}
+                        className="p-3.5 rounded-2xl bg-white border-2 border-slate-200 hover:border-emerald-500 text-center cursor-pointer transition hover:shadow-md"
+                      >
+                        <div className="font-arabic text-3xl font-bold text-slate-900">{it.ar}</div>
+                        <div className="text-xs font-bold text-slate-700 font-hind-siliguri mt-1" dir="ltr">{it.nameBn}</div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* ══════════════════════════════════════════════════════════
             VIEW 2: মজার খেলা (GAMES 1, 2, 3, 4 FROM PDF)
         ══════════════════════════════════════════════════════════ */}
         {activeTab === "game" && (
-          <div className="bg-white rounded-[2rem] border-4 border-amber-400 shadow-xl p-5 sm:p-7 space-y-6">
-            {/* Game Selector Tabs */}
+          <div className="bg-white rounded-[2.5rem] border-4 border-amber-400 shadow-xl p-5 sm:p-7 space-y-6">
             <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200">
               {[1, 2, 3, 4].map((gNum) => (
                 <button
@@ -1425,7 +1645,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                   <h3 className="text-xl sm:text-2xl font-black text-amber-950 font-hind-siliguri">
                     মজার খেলা ১: হরফ চিনি, নাম মেলাই
                   </h3>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-slate-600 font-medium">
                     হরফে ক্লিক করে খাঁটি উচ্চারণ শোনো এবং ধাঁধাঁর উত্তর দাও!
                   </p>
                 </div>
@@ -1435,12 +1655,12 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                     <div
                       key={idx}
                       onClick={() => playItemSound({ ar: p.ar, sound: p.sound })}
-                      className="p-4 rounded-2xl bg-amber-50/60 border-2 border-amber-300 text-center cursor-pointer hover:border-amber-500 hover:bg-amber-100 transition space-y-1"
+                      className="p-4 rounded-3xl bg-amber-50/60 border-2 border-amber-300 text-center cursor-pointer hover:border-amber-500 hover:bg-amber-100 transition space-y-1 hover:-translate-y-1"
                     >
                       <div className="font-arabic text-4xl font-bold text-slate-900">
                         {p.ar}
                       </div>
-                      <div className="text-xs font-bold text-amber-950 font-hind-siliguri">
+                      <div className="text-xs font-black text-amber-950 font-hind-siliguri">
                         {p.bn}
                       </div>
                     </div>
@@ -1448,15 +1668,15 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                 </div>
 
                 {/* Riddles: আমি কে? */}
-                <div className="p-4 rounded-2xl bg-emerald-50 border-2 border-emerald-300 space-y-3">
-                  <div className="text-sm font-black text-emerald-950">
+                <div className="p-4 rounded-3xl bg-emerald-50 border-3 border-emerald-300 space-y-3">
+                  <div className="text-sm font-black text-emerald-950 font-hind-siliguri">
                     ❓ আমি কে? (ধাঁধাঁ যাচাই)
                   </div>
                   <div className="space-y-2">
                     {SPECIAL_PAGES[18].riddles.map((r, idx) => (
                       <div
                         key={idx}
-                        className="p-3 rounded-xl bg-white border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold"
+                        className="p-3 rounded-2xl bg-white border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold"
                       >
                         <span className="text-slate-800">{r.q}</span>
                         <div className="flex items-center gap-1.5" dir="rtl">
@@ -1470,7 +1690,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                                   setTimeout(() => setCelebrationToast(null), 2500);
                                 }
                               }}
-                              className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-emerald-500 hover:text-white font-arabic text-lg font-bold transition flex items-center justify-center border border-slate-300"
+                              className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-emerald-500 hover:text-white font-arabic text-xl font-bold transition flex items-center justify-center border border-slate-300 active:scale-95"
                             >
                               {opt}
                             </button>
@@ -1490,7 +1710,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                   <h3 className="text-xl sm:text-2xl font-black text-blue-950 font-hind-siliguri">
                     মজার খেলা ২: হরকত চিনে রঙ করি
                   </h3>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-slate-600 font-medium">
                     🔵 জবর (নীল), 🟠 যের (কমলা), 🟣 পেশ (বেগুনী) — ক্লিক করলেই উচ্চারণ শুনবে
                   </p>
                 </div>
@@ -1503,7 +1723,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                       <div
                         key={idx}
                         onClick={() => playItemSound({ ar: it.ar, sound: it.ar })}
-                        className={`p-4 rounded-2xl border-2 text-center cursor-pointer transition space-y-1 ${
+                        className={`p-4 rounded-3xl border-3 text-center cursor-pointer transition space-y-1 hover:-translate-y-1 ${
                           isJabar
                             ? "bg-blue-50 border-blue-400 hover:bg-blue-100"
                             : isZer
@@ -1531,7 +1751,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                   <h3 className="text-xl sm:text-2xl font-black text-teal-950 font-hind-siliguri">
                     মজার খেলা ৩: নিয়ম-বিঙ্গো 🎉
                   </h3>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-slate-600 font-medium">
                     যেকোনো ঘরে ক্লিক করে ক্বারীর কণ্ঠ শোনো এবং তাজবীদ নিয়ম মিলিয়ে বিঙ্গো জেতো!
                   </p>
                 </div>
@@ -1541,7 +1761,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                     <div
                       key={idx}
                       onClick={() => playItemSound({ ar: w.ar, sound: w.sound })}
-                      className="p-4 rounded-2xl bg-white border-2 border-teal-300 hover:border-teal-500 hover:bg-teal-50/60 shadow-xs cursor-pointer text-center space-y-1.5 transition"
+                      className="p-4 rounded-3xl bg-white border-2 border-teal-300 hover:border-teal-500 hover:bg-teal-50/60 shadow-xs cursor-pointer text-center space-y-1.5 transition hover:-translate-y-1"
                     >
                       <div className="font-arabic text-3xl font-bold text-slate-900">
                         {w.ar}
@@ -1565,7 +1785,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                   <h3 className="text-xl sm:text-2xl font-black text-red-950 font-hind-siliguri">
                     মজার খেলা ৪: শেষ ১০টি ছোট সূরা চিনি
                   </h3>
-                  <p className="text-xs text-slate-600">
+                  <p className="text-xs text-slate-600 font-medium">
                     প্রথম আয়াতে ক্লিক করে মিষ্টি তিলাওয়াত শোনো
                   </p>
                 </div>
@@ -1575,7 +1795,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                     <div
                       key={idx}
                       onClick={() => playItemSound({ ar: s.firstAyah, ayahRef: s.ref })}
-                      className="p-3.5 rounded-2xl bg-red-50/50 border-2 border-red-200 hover:border-red-400 hover:bg-red-50 transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3"
+                      className="p-3.5 rounded-3xl bg-red-50/50 border-2 border-red-200 hover:border-red-400 hover:bg-red-50 transition cursor-pointer flex flex-col sm:flex-row sm:items-center justify-between gap-3"
                     >
                       <div className="flex items-center gap-3">
                         <span className="w-8 h-8 rounded-full bg-red-600 text-white font-bold text-xs flex items-center justify-center shrink-0">
@@ -1606,21 +1826,20 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
             VIEW 3: অগ্রগতি চার্ট (PAGE 102 FROM PDF)
         ══════════════════════════════════════════════════════════ */}
         {activeTab === "chart" && (
-          <div className="bg-white rounded-[2rem] border-4 border-emerald-400 shadow-xl p-5 sm:p-7 space-y-6">
+          <div className="bg-white rounded-[2.5rem] border-4 border-emerald-400 shadow-xl p-5 sm:p-7 space-y-6">
             <div className="text-center space-y-1">
-              <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-950 text-xs font-black">
+              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-100 text-emerald-950 text-xs font-black">
                 <span>🏁</span>
                 <span>অগ্রগতি চার্ট: ৭৮টি ক্লাসের যাত্রা</span>
               </div>
               <h3 className="text-2xl font-black text-slate-900 font-hind-siliguri">
                 তোমার ১১টি পর্বের শিখন মাইলফলক
               </h3>
-              <p className="text-xs text-slate-600">
+              <p className="text-xs text-slate-600 font-medium">
                 সম্পন্ন হয়েছে: {completedClasses.length}/৭৮টি ক্লাস ({completionPercent}%)
               </p>
             </div>
 
-            {/* Progress Bar */}
             <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden border border-slate-300">
               <div
                 className="h-full bg-gradient-to-r from-emerald-500 via-teal-500 to-green-600 transition-all duration-500"
@@ -1628,7 +1847,6 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               ></div>
             </div>
 
-            {/* 11 Parvas Milestone Rows */}
             <div className="space-y-5">
               {NOOR_QAIDA_PARVAS.map((parva) => {
                 const parvaClasses = NOOR_QAIDA_CLASSES.filter(
@@ -1636,7 +1854,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                 );
 
                 return (
-                  <div key={parva.id} className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-2.5">
+                  <div key={parva.id} className="p-4 rounded-3xl bg-slate-50 border border-slate-200 space-y-2.5">
                     <div className="flex items-center justify-between text-xs font-bold text-slate-700">
                       <span className="flex items-center gap-1.5">
                         <span className="text-base">{parva.emoji}</span>
@@ -1645,7 +1863,6 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                       <span className="text-slate-500">{parva.classesRangeBn}</span>
                     </div>
 
-                    {/* Circular class buttons */}
                     <div className="flex flex-wrap items-center gap-2">
                       {parvaClasses.map((cls) => {
                         const isDone = completedClasses.includes(cls.classNumber);
@@ -1680,7 +1897,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
             VIEW 4: সনদপত্র (PAGE 103 FROM PDF)
         ══════════════════════════════════════════════════════════ */}
         {activeTab === "certificate" && (
-          <div className="bg-[#FFFDF7] rounded-[2rem] border-8 border-double border-amber-500 shadow-2xl p-6 sm:p-10 space-y-8 text-center relative overflow-hidden">
+          <div className="bg-[#FFFDF7] rounded-[2.5rem] border-8 border-double border-amber-500 shadow-2xl p-6 sm:p-10 space-y-8 text-center relative overflow-hidden">
             <div className="text-amber-600 text-2xl select-none">
               🌙 ⭐ 🕌 ⭐ 🌙
             </div>
@@ -1694,7 +1911,6 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               </p>
             </div>
 
-            {/* Recipient Box */}
             <div className="py-4 space-y-3">
               <p className="text-xs sm:text-sm text-slate-700 font-bold font-hind-siliguri">
                 এই মর্মে সনদ প্রদান করা হলো যে,
@@ -1714,7 +1930,6 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               </p>
             </div>
 
-            {/* Signatures */}
             <div className="pt-8 grid grid-cols-3 gap-4 text-xs font-bold text-slate-600 border-t border-amber-200">
               <div className="space-y-1">
                 <div className="h-8 border-b border-slate-400 mx-4"></div>
@@ -1732,7 +1947,6 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               </div>
             </div>
 
-            {/* Print Button */}
             <div className="pt-4">
               <button
                 onClick={() => window.print()}
@@ -1750,7 +1964,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
       <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t-2 border-emerald-300 px-3 py-2 sm:hidden flex items-center justify-between shadow-2xl">
         <button
           onClick={handlePrevPage}
-          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 text-slate-800 font-bold text-xs active:scale-95 shadow-xs"
+          className="flex items-center gap-1 px-3.5 py-2.5 rounded-2xl bg-slate-100 text-slate-800 font-bold text-xs active:scale-95 shadow-xs"
         >
           <ChevronLeft className="w-4 h-4" />
           <span>পূর্ববর্তী</span>
@@ -1759,17 +1973,17 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
         {/* Center Page Quick Jump Button */}
         <button
           onClick={() => setIsQuickJumpOpen(true)}
-          className="flex flex-col items-center px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 font-bold active:scale-95"
+          className="flex flex-col items-center px-3 py-1 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 font-bold active:scale-95"
         >
           <span className="text-xs font-hind-siliguri">
             {getPageHeaderLabel()}
           </span>
-          <span className="text-[9px] text-slate-500">ট্যাপ করে পৃষ্ঠা বদলান ▾</span>
+          <span className="text-[9px] text-slate-500 font-bold">ট্যাপ করে পৃষ্ঠা বদলান ▾</span>
         </button>
 
         <button
           onClick={handleNextPage}
-          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs active:scale-95 shadow-md"
+          className="flex items-center gap-1 px-3.5 py-2.5 rounded-2xl bg-emerald-600 text-white font-bold text-xs active:scale-95 shadow-md"
         >
           <span>পরবর্তী</span>
           <ChevronRight className="w-4 h-4" />
@@ -1792,14 +2006,13 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               </button>
             </div>
 
-            {/* Quick Short-cut buttons */}
             <div className="grid grid-cols-3 gap-2 text-xs font-bold">
               <button
                 onClick={() => {
                   navigateToPage("cover", "prev");
                   setIsQuickJumpOpen(false);
                 }}
-                className="p-2.5 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-300 text-center"
+                className="p-2.5 rounded-2xl bg-emerald-50 text-emerald-900 border-2 border-emerald-300 text-center"
               >
                 📕 প্রচ্ছদ
               </button>
@@ -1808,7 +2021,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                   navigateToPage("rules", "next");
                   setIsQuickJumpOpen(false);
                 }}
-                className="p-2.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-300 text-center"
+                className="p-2.5 rounded-2xl bg-amber-50 text-amber-900 border-2 border-amber-300 text-center"
               >
                 📋 নিয়মাবলী
               </button>
@@ -1817,7 +2030,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                   navigateToPage("color-code", "next");
                   setIsQuickJumpOpen(false);
                 }}
-                className="p-2.5 rounded-xl bg-blue-50 text-blue-900 border border-blue-300 text-center"
+                className="p-2.5 rounded-2xl bg-blue-50 text-blue-900 border-2 border-blue-300 text-center"
               >
                 🎨 রঙ-সংকেত
               </button>
@@ -1850,7 +2063,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                   setIsQuickJumpOpen(false);
                   setIsTocOpen(true);
                 }}
-                className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 transition"
+                className="w-full py-2.5 rounded-2xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 transition"
               >
                 সম্পূর্ণ সূচিপত্র দেখুন ➔
               </button>
@@ -1863,7 +2076,6 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
       {isTocOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
           <div className="bg-white rounded-3xl max-w-2xl w-full max-h-[85vh] flex flex-col shadow-2xl border-2 border-emerald-400 overflow-hidden">
-            {/* Header */}
             <div className="p-4 sm:p-5 bg-emerald-800 text-white flex items-center justify-between">
               <div>
                 <h3 className="text-base sm:text-lg font-black font-hind-siliguri">
@@ -1881,7 +2093,6 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               </button>
             </div>
 
-            {/* Quick Links Row (Cover, Rules, Color Code) */}
             <div className="p-3 bg-emerald-50/60 border-b border-emerald-200 flex items-center gap-2 overflow-x-auto text-xs font-bold">
               <button
                 onClick={() => {
@@ -1912,7 +2123,6 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               </button>
             </div>
 
-            {/* Search */}
             <div className="p-3 bg-slate-50 border-b border-slate-200">
               <div className="relative">
                 <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1926,7 +2136,6 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               </div>
             </div>
 
-            {/* List */}
             <div className="p-3 overflow-y-auto space-y-1.5 flex-1 divide-y divide-slate-100">
               {NOOR_QAIDA_CLASSES.filter(
                 (c) =>
