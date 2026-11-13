@@ -33,6 +33,7 @@ import {
 
 import QuranGamesHub from "@/features/ai-learning/components/QuranGamesHub";
 import AmarProthomQuranShikkha from "@/features/ai/components/AmarProthomQuranShikkha";
+import NoorQaidaBook from "@/features/quran/components/NoorQaidaBook";
 import NurKidsVideoCorner from "@/features/ai-learning/components/kids/NurKidsVideoCorner";
 import NuruMascot from "@/features/ai-learning/components/kids/NuruMascot";
 import ParentGate from "@/features/ai-learning/components/kids/ParentGate";
@@ -95,6 +96,7 @@ export default function NurKidsUnifiedPlatform({ initialTab = "home" }) {
 
   const NAV_ZONES = [
     { id: "home", label: "হোম", icon: Home, emoji: "🏠", color: "from-emerald-500 to-teal-600", text: "স্বাগতম" },
+    { id: "qaida", label: "নূর কায়দা", icon: BookOpen, emoji: "📗", color: "from-emerald-600 to-teal-800", text: "৭৮ ক্লাস" },
     { id: "games", label: "গেমস জোন", icon: Gamepad2, emoji: "🎮", color: "from-amber-500 to-orange-600", text: "৭টি গেম" },
     { id: "book", label: "রঙিন কায়দা", icon: BookOpen, emoji: "📖", color: "from-teal-600 to-emerald-700", text: "হরফ ও ছবি" },
     { id: "videos", label: "ইউটিউব কর্নার", icon: Video, emoji: "📺", color: "from-sky-500 to-cyan-600", text: "ভিডিও পাঠ" },
@@ -282,8 +284,35 @@ export default function NurKidsUnifiedPlatform({ initialTab = "home" }) {
               </div>
             </div>
 
-            {/* 4 GIANT VINA-KIDS STYLE GATEWAY CARDS */}
+            {/* GIANT GATEWAY CARDS INCLUDING NOOR QAIDA */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+              {/* Card 0: নূর কায়দা (মক্তব শিক্ষা পাঠ্যপাঠিকা) - Premier Card */}
+              <div
+                onClick={() => handleSwitchZone("qaida", "মাশাআল্লাহ! নূর কায়দার ৭৮টি ক্লাসের যেকোনো হরফ বা শব্দে ক্লিক করলেই শুনবে!")}
+                className="sm:col-span-2 p-6 sm:p-7 rounded-3xl bg-gradient-to-r from-emerald-600 via-teal-700 to-emerald-800 text-white border-4 border-emerald-400 shadow-xl hover:shadow-2xl hover:-translate-y-1 transition-all duration-300 cursor-pointer flex flex-col md:flex-row items-start md:items-center justify-between gap-4 group"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-4xl sm:text-5xl group-hover:scale-110 transition duration-300">
+                      📗
+                    </span>
+                    <span className="px-3 py-1 rounded-full bg-amber-400 text-slate-950 font-black text-xs shadow-xs">
+                      মক্তব শিক্ষা পাঠ্যপাঠিকা • ৭৮টি ক্লাস
+                    </span>
+                  </div>
+                  <h3 className="text-2xl sm:text-3xl font-black text-white group-hover:text-amber-200 transition font-hind-siliguri">
+                    নূর কায়দা (Noor Qaida)
+                  </h3>
+                  <p className="text-xs sm:text-sm text-emerald-100 font-medium leading-relaxed max-w-xl">
+                    হরফ পরিচয় থেকে নাজেরা কুরআন। প্রতিটি হরফ, মুরাক্কাবাত, যবর-যের-পেশ ও আয়াতের উপরে ক্লিক করলেই খাঁটি ক্বারীর মিষ্টি তিলাওয়াত শোনা যাবে!
+                  </p>
+                </div>
+                <div className="shrink-0 flex items-center gap-2 px-5 py-3 rounded-2xl bg-white text-emerald-950 font-black text-sm shadow-md group-hover:bg-amber-300 transition">
+                  <span>নূর কায়দা পড়ুন</span>
+                  <ChevronRight className="w-5 h-5 text-emerald-800" />
+                </div>
+              </div>
+
               {/* Card 1: গেমস জোন */}
               <div
                 onClick={() => handleSwitchZone("games", "মাশাআল্লাহ! চলো গেম খেলে কুরআন শিখি!")}
@@ -410,6 +439,13 @@ export default function NurKidsUnifiedPlatform({ initialTab = "home" }) {
             </div>
 
             <QuranGamesHub onBack={() => handleSwitchZone("home")} />
+          </div>
+        )}
+
+        {/* ── 📗 ZONE: NOOR QAIDA INTERACTIVE BOOK ── */}
+        {activeZone === "qaida" && (
+          <div className="space-y-4 animate-fade-in">
+            <NoorQaidaBook onNavigateBack={() => handleSwitchZone("home")} />
           </div>
         )}
 

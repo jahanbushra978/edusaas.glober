@@ -72,6 +72,15 @@ export default function AIQuranTutorPage() {
   // 9 Highlight Features (Direct launch into Studio)
   const studioQuickFeatures = [
     {
+      id: "noor-qaida",
+      title: "নূর কায়দা",
+      subtitle: "মক্তব শিক্ষা পাঠ্যপাঠিকা (হরফ থেকে নাজেরা - ৭৮টি ক্লাস ও অডিও)",
+      icon: BookOpen,
+      iconBg: "bg-emerald-100 text-emerald-900 border border-emerald-300",
+      badge: "ক্লিক-টু-তিলাওয়াত",
+      link: "/quran-tutor/qaida"
+    },
+    {
       id: "quran-reader",
       title: "সম্পূর্ণ কুরআন (নুসখা মুসহাফ)",
       subtitle: "১৫ লাইনের প্রামাণ্য হাফেজী মুসহাফ ও পূর্ণাঙ্গ ৩০ পারা",
@@ -312,24 +321,24 @@ export default function AIQuranTutorPage() {
       
       {/* ── STICKY TOP NAVBAR ── */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-emerald-100 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 sm:h-16 flex items-center justify-between gap-2 sm:gap-3">
           {/* Brand Logo & Back to Main Website */}
-          <div className="flex items-center gap-2.5 sm:gap-3">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
             <Link
               href="/"
-              className="p-2 sm:px-3 sm:py-1.5 rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs"
+              className="p-2 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl bg-emerald-50 hover:bg-emerald-100 text-emerald-900 border border-emerald-200 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs shrink-0"
               title="মূল ওয়েবসাইটে ফিরে যান"
             >
               <ArrowLeft className="w-4 h-4 text-emerald-700" />
-              <span className="text-[11px] sm:text-xs">মূল ওয়েবসাইট</span>
+              <span className="hidden sm:inline text-xs whitespace-nowrap">মূল ওয়েবসাইট</span>
             </Link>
 
-            <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-700 to-teal-800 flex items-center justify-center text-white shadow-md shadow-emerald-700/20 group-hover:scale-105 transition-transform">
-                <BookOpen className="w-5 h-5 text-emerald-200" />
+            <Link href="/" className="flex items-center gap-2 sm:gap-3 group min-w-0">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-br from-emerald-700 to-teal-800 flex items-center justify-center text-white shadow-md shadow-emerald-700/20 group-hover:scale-105 transition-transform shrink-0">
+                <BookOpen className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-200" />
               </div>
-              <div>
-                <span className="font-black text-lg sm:text-xl tracking-tight text-emerald-950 flex items-center gap-1.5 group-hover:text-emerald-700 transition-colors">
+              <div className="min-w-0">
+                <span className="font-black text-sm sm:text-xl tracking-tight text-emerald-950 block truncate group-hover:text-emerald-700 transition-colors">
                   AI Quran Tutor
                 </span>
                 <span className="hidden sm:inline-block text-[10px] text-emerald-700 font-bold px-2 py-0.5 bg-emerald-50 rounded-full border border-emerald-200">
@@ -377,21 +386,15 @@ export default function AIQuranTutorPage() {
           </nav>
 
           {/* Right Action Buttons */}
-          <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+          <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
             <Link 
               href="/quran-tutor/live-class" 
-              className="xl:hidden text-emerald-900 font-extrabold flex items-center gap-1 bg-emerald-100 px-2.5 py-1.5 rounded-lg border border-emerald-300 text-xs whitespace-nowrap"
+              className="hidden sm:flex xl:hidden text-emerald-900 font-extrabold items-center gap-1 bg-emerald-100 px-2.5 py-1.5 rounded-lg border border-emerald-300 text-xs whitespace-nowrap"
             >
               <Mic className="w-3 h-3 text-emerald-700 animate-pulse" />
               <span>লাইভ ক্লাস</span>
             </Link>
             <Link
-              href="/"
-              className="text-xs font-bold text-slate-700 hover:text-emerald-800 bg-slate-100 hover:bg-emerald-50 px-2.5 py-1.5 rounded-lg border border-slate-200 transition-colors whitespace-nowrap"
-            >
-              <span>← মূল সাইট</span>
-            </Link>
-            <Link 
               href="/StudentLogin" 
               className="hidden sm:inline-block text-xs font-semibold text-slate-700 hover:text-emerald-700 px-2 py-1.5 rounded-lg transition-colors whitespace-nowrap"
             >
@@ -399,14 +402,14 @@ export default function AIQuranTutorPage() {
             </Link>
             <Link
               href="/quran-tutor/studio"
-              className="px-3 sm:px-3.5 py-1.5 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-700 rounded-xl hover:from-emerald-700 hover:to-teal-800 shadow-sm active:scale-95 transition-all flex items-center gap-1.5 whitespace-nowrap"
+              className="px-2.5 sm:px-3.5 py-1.5 text-xs sm:text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-teal-700 rounded-xl hover:from-emerald-700 hover:to-teal-800 shadow-sm active:scale-95 transition-all flex items-center gap-1.5 whitespace-nowrap"
             >
               <Bot className="w-3.5 h-3.5 text-emerald-200" />
               <span>স্টুডিও</span>
             </Link>
             <button
               onClick={() => setMobileNavOpen(!mobileNavOpen)}
-              className="xl:hidden p-2 rounded-xl text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors"
+              className="xl:hidden p-1.5 sm:p-2 rounded-xl text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors shrink-0"
               aria-label="Toggle menu"
             >
               {mobileNavOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -432,7 +435,7 @@ export default function AIQuranTutorPage() {
                 className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-900"
               >
                 <Mic className="w-4 h-4 text-emerald-600" />
-                <span>🎙️ লাইভ ক্লাস</span>
+                <span>লাইভ ক্লাস</span>
               </Link>
               <Link 
                 href="/quran-tutor/learning" 
@@ -440,7 +443,7 @@ export default function AIQuranTutorPage() {
                 className="flex items-center gap-2 p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs font-bold text-amber-900"
               >
                 <Award className="w-4 h-4 text-amber-600" />
-                <span>🎮 গেম খেলে কুরআন শিক্ষা</span>
+                <span>গেম খেলে কুরআন শিক্ষা</span>
               </Link>
               <Link 
                 href="/quran-tutor/studio?tab=reader" 
@@ -520,7 +523,7 @@ export default function AIQuranTutorPage() {
                     className="px-6 py-3.5 text-sm sm:text-base font-extrabold text-white bg-gradient-to-r from-[#0d7a5f] to-[#0a634d] hover:opacity-95 rounded-full shadow-md shadow-emerald-900/15 active:scale-95 transition-all flex items-center gap-2.5 group cursor-pointer"
                   >
                     <Mic className="w-5 h-5 text-emerald-200 group-hover:scale-110 transition-transform" />
-                    <span>🎙️ লাইভ ক্লাস</span>
+                    <span>লাইভ ক্লাস</span>
                     <ArrowRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
                   </Link>
 
@@ -529,7 +532,7 @@ export default function AIQuranTutorPage() {
                     className="px-6 py-3.5 text-sm sm:text-base font-extrabold text-slate-900 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 rounded-full shadow-md shadow-amber-900/15 active:scale-95 transition-all flex items-center gap-2 group cursor-pointer"
                   >
                     <Award className="w-5 h-5 text-slate-950 group-hover:scale-110 transition-transform" />
-                    <span>🎮 গেম খেলে শিক্ষা</span>
+                    <span>গেম খেলে শিক্ষা</span>
                     <ArrowRight className="w-4 h-4 ml-0.5 group-hover:translate-x-1 transition-transform" />
                   </Link>
                 </div>

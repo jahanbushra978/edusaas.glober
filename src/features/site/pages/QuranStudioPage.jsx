@@ -52,6 +52,7 @@ import QuranSemanticSearchModal from "@/features/ai/components/QuranSemanticSear
 import QuranReader from "@/features/quran/components/QuranReader";
 import TahfizQuranApp from "@/features/quran/components/TahfizQuranApp";
 import AmarProthomQuranShikkha from "@/features/ai/components/AmarProthomQuranShikkha";
+import NoorQaidaBook from "@/features/quran/components/NoorQaidaBook";
 import HumanTeacherPlatform from "@/features/teachers/components/HumanTeacherPlatform";
 import { playArabicSound } from "@/features/ai-learning/lib/arabicSoundPlayer";
 
@@ -165,6 +166,7 @@ const STUDIO_THEMES = {
 
 function resolveFeatureTarget(p) {
   if (!p) return null;
+  if (p === "qaida" || p === "noor-qaida" || p === "nur-qaida") return "noor-qaida";
   if (p === "kids" || p === "kids-book" || p === "prothom-quran") return "kids-book";
   if (p === "teacher" || p === "nur-teacher" || p === "tajweed") return "nur-teacher";
   if (p === "reader" || p === "quran" || p === "quran-reader" || p === "mushaf") return "quran-reader";
@@ -488,6 +490,18 @@ export default function QuranStudioPage() {
           gradient: "from-amber-500 to-orange-500 text-white",
           badge: "অ্যানাটমিক্যাল",
           badgeStyle: "bg-amber-100 text-amber-900 border-amber-300",
+        },
+        {
+          id: "noor-qaida",
+          title: "নূর কায়দা",
+          subtitle: "মক্তব শিক্ষা পাঠ্যপাঠিকা (হরফ থেকে নাজেরা - ৭৮টি ক্লাস ও অডিও)",
+          icon: BookOpen,
+          emoji: "📖",
+          gradient: "from-emerald-600 to-teal-800 text-white",
+          badge: "মক্তব পাঠ্যপাঠিকা",
+          badgeStyle: "bg-emerald-100 text-emerald-900 border-emerald-300 font-bold",
+          isExternalLink: false,
+          href: "/quran-tutor/qaida",
         },
         {
           id: "kids-book",
@@ -845,6 +859,8 @@ export default function QuranStudioPage() {
                       onZoneChange={setSelectedZone}
                       interactive={true}
                     />
+                  ) : activeFeature === "noor-qaida" ? (
+                    <NoorQaidaBook onNavigateBack={closeActiveFeature} />
                   ) : activeFeature === "kids-book" ? (
                     <AmarProthomQuranShikkha />
                   ) : activeFeature === "live-class" ? (
