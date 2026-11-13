@@ -17,7 +17,6 @@ import {
   Printer,
   X,
   GraduationCap,
-  Sparkles, // Wait, remember rule: strict prohibition on Sparkles icon! We must NOT import Sparkles from lucide-react!
   Star,
   Check,
   Maximize2,
@@ -29,6 +28,8 @@ import {
   Bookmark,
   Gamepad2,
   LayoutGrid,
+  Sliders,
+  Smartphone,
 } from "lucide-react";
 import {
   NOOR_QAIDA_PARVAS,
@@ -43,14 +44,29 @@ import {
 } from "../data/noorQaidaPagesData";
 import { universalAudioEngine } from "@/lib/quran/audio";
 
-export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
+// Full sequence of pages including special intro pages
+const PAGE_SEQUENCE = [
+  "cover",       // পৃষ্ঠা ১: প্রচ্ছদ
+  "rules",       // পৃষ্ঠা ৩: ব্যবহারের নিয়ম
+  "color-code",  // পৃষ্ঠা ৫: চিহ্ন ও রঙ-সংকেত
+  ...Array.from({ length: 78 }, (_, i) => i + 1), // ক্লাস ১ থেকে ৭৮ (পৃষ্ঠা ৮ থেকে ১০১)
+];
+
+export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }) {
   // Navigation State
-  const [currentPage, setCurrentPage] = useState(initialClass); // 1 to 78 or special pages
+  const [currentPage, setCurrentPage] = useState(initialClass); // 'cover' | 'rules' | 'color-code' | 1..78
   const [activeTab, setActiveTab] = useState("class"); // 'class' | 'game' | 'chart' | 'certificate'
   const [activeGameId, setActiveGameId] = useState(1);
   const [isTocOpen, setIsTocOpen] = useState(false);
+  const [isQuickJumpOpen, setIsQuickJumpOpen] = useState(false);
   const [tocSearch, setTocSearch] = useState("");
   const [selectedParvaFilter, setSelectedParvaFilter] = useState("all");
+
+  // View Mode: 3D Flipbook vs Normal View
+  const [flipMode, setFlipMode] = useState("3d"); // '3d' | 'normal'
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [flipDirection, setFlipDirection] = useState("next"); // 'next' | 'prev'
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   // Playback & Sound State
   const [activeItemId, setActiveItemId] = useState(null);
@@ -59,11 +75,18 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
   const [repeatMode, setRepeatMode] = useState(1);
   const playAllAbortRef = useRef(false);
 
+  // Ball bounce animation for Qalqalah (Class 39)
+  const [ballBouncing, setBallBouncing] = useState(false);
+
   // Student Gamification & Star Collection
   const [completedClasses, setCompletedClasses] = useState([]);
   const [earnedStars, setEarnedStars] = useState({});
   const [celebrationToast, setCelebrationToast] = useState(null);
   const [studentName, setStudentName] = useState("মুহাম্মদ আবদুল্লাহ");
+
+  // Touch Swipe Handling for Mobile
+  const touchStartXRef = useRef(null);
+  const touchStartYRef = useRef(null);
 
   // Load progress on mount
   useEffect(() => {
@@ -74,6 +97,8 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
       if (savedStars) setEarnedStars(JSON.parse(savedStars));
       const savedName = localStorage.getItem("noor_qaida_student_name");
       if (savedName) setStudentName(savedName);
+      const savedMode = localStorage.getItem("noor_qaida_flip_mode");
+      if (savedMode) setFlipMode(savedMode);
     } catch { }
   }, []);
 
@@ -85,19 +110,41 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
     } catch { }
   };
 
-  // Current Class & Parva Objects
-  const currentClass = useMemo(
-    () => getClassByNumber(currentPage),
-    [currentPage]
-  );
-  const currentParva = useMemo(
-    () => getParvaById(currentClass.parvaNumber),
-    [currentClass.parvaNumber]
-  );
-  const parvaTheme = useMemo(
-    () => PARVA_THEMES[currentClass.parvaNumber] || PARVA_THEMES[1],
-    [currentClass.parvaNumber]
-  );
+  // Toggle Flip Mode
+  const handleToggleFlipMode = () => {
+    setFlipMode((prev) => {
+      const next = prev === "3d" ? "normal" : "3d";
+      try {
+        localStorage.setItem("noor_qaida_flip_mode", next);
+      } catch { }
+      return next;
+    });
+  };
+
+  // Play realistic paper rustle sound on page flip
+  const playPaperTurnSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const bufferSize = ctx.sampleRate * 0.12; // 120ms duration
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        const decay = Math.exp(-i / (ctx.sampleRate * 0.035));
+        data[i] = (Math.random() * 2 - 1) * decay * 0.22;
+      }
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+      const filter = ctx.createBiquadFilter();
+      filter.type = "bandpass";
+      filter.frequency.value = 1800;
+      filter.Q.value = 1.2;
+      noise.connect(filter);
+      filter.connect(ctx.destination);
+      noise.start();
+    } catch { }
+  };
 
   // Stop sound when page changes
   useEffect(() => {
@@ -142,7 +189,7 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
     let updatedCompleted;
     if (!isAlreadyClaimed) {
       updatedCompleted = Array.from(new Set([...completedClasses, classNum]));
-      setCelebrationToast(`মাশাআল্লাহ! ক্লাস ${classNum}-এর তারা অর্জিত হয়েছে!`);
+      setCelebrationToast(`মাশাআল্লাহ! ক্লাস ${classNum}-এর তারা অর্জিত হয়েছে! ⭐`);
       setTimeout(() => setCelebrationToast(null), 3500);
     } else {
       updatedCompleted = completedClasses.filter((c) => c !== classNum);
@@ -155,6 +202,67 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
     } catch { }
   };
 
+  // Page Navigation Handlers with 3D Flip
+  const navigateToPage = (targetPage, direction = "next") => {
+    if (currentPage === targetPage) return;
+
+    if (flipMode === "3d") {
+      playPaperTurnSound();
+      setFlipDirection(direction);
+      setIsFlipping(true);
+
+      setTimeout(() => {
+        setCurrentPage(targetPage);
+        setActiveTab("class");
+        setTimeout(() => setIsFlipping(false), 220);
+      }, 180);
+    } else {
+      setCurrentPage(targetPage);
+      setActiveTab("class");
+    }
+  };
+
+  const handleNextPage = () => {
+    const currentIndex = PAGE_SEQUENCE.indexOf(currentPage);
+    if (currentIndex < PAGE_SEQUENCE.length - 1) {
+      navigateToPage(PAGE_SEQUENCE[currentIndex + 1], "next");
+    }
+  };
+
+  const handlePrevPage = () => {
+    const currentIndex = PAGE_SEQUENCE.indexOf(currentPage);
+    if (currentIndex > 0) {
+      navigateToPage(PAGE_SEQUENCE[currentIndex - 1], "prev");
+    }
+  };
+
+  // Touch Swipe Handlers for Mobile Phones
+  const handleTouchStart = (e) => {
+    touchStartXRef.current = e.touches[0].clientX;
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (touchStartXRef.current === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const touchEndY = e.changedTouches[0].clientY;
+    const deltaX = touchEndX - touchStartXRef.current;
+    const deltaY = touchEndY - touchStartYRef.current;
+
+    // Minimum swipe threshold: 45px and dominant horizontal movement
+    if (Math.abs(deltaX) > 45 && Math.abs(deltaX) > Math.abs(deltaY) * 1.5) {
+      if (deltaX < 0) {
+        // Swiped Left -> Next Page
+        handleNextPage();
+      } else {
+        // Swiped Right -> Previous Page
+        handlePrevPage();
+      }
+    }
+    touchStartXRef.current = null;
+    touchStartYRef.current = null;
+  };
+
   // Sequential Play All ("একটানা মাশক")
   const handlePlayAll = async () => {
     if (isPlayingAll) {
@@ -165,10 +273,14 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
       return;
     }
 
+    if (typeof currentPage !== "number") return;
+    const cls = getClassByNumber(currentPage);
+    if (!cls || !cls.items || cls.items.length === 0) return;
+
     setIsPlayingAll(true);
     playAllAbortRef.current = false;
 
-    const items = currentClass.items;
+    const items = cls.items;
     const repetitions = repeatMode;
 
     for (let rep = 0; rep < repetitions; rep++) {
@@ -204,31 +316,58 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
     setActiveItemId(null);
   };
 
-  // Navigation handlers
-  const handleNextPage = () => {
-    if (currentPage < NOOR_QAIDA_CLASSES.length) {
-      setCurrentPage((p) => p + 1);
+  // Fullscreen toggle
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+        setIsFullscreen(false);
+      }
     }
   };
 
-  const handlePrevPage = () => {
-    if (currentPage > 1) {
-      setCurrentPage((p) => p - 1);
-    }
-  };
+  // Current Class & Parva Objects (only when on numeric class page)
+  const isClassPage = typeof currentPage === "number";
+  const currentClass = useMemo(
+    () => (isClassPage ? getClassByNumber(currentPage) : null),
+    [currentPage, isClassPage]
+  );
+  const currentParva = useMemo(
+    () => (currentClass ? getParvaById(currentClass.parvaNumber) : null),
+    [currentClass]
+  );
+  const parvaTheme = useMemo(
+    () => (currentClass ? PARVA_THEMES[currentClass.parvaNumber] || PARVA_THEMES[1] : PARVA_THEMES[1]),
+    [currentClass]
+  );
 
-  const isClassStarEarned = !!earnedStars[currentPage];
+  const isClassStarEarned = isClassPage ? !!earnedStars[currentPage] : false;
   const completionPercent = Math.round(
     (completedClasses.length / NOOR_QAIDA_CLASSES.length) * 100
   );
 
+  // Label for current page
+  const getPageHeaderLabel = () => {
+    if (currentPage === "cover") return "প্রচ্ছদ (পৃষ্ঠা ১)";
+    if (currentPage === "rules") return "পড়ার নিয়ম (পৃষ্ঠা ৩)";
+    if (currentPage === "color-code") return "রঙ-সংকেত (পৃষ্ঠা ৫)";
+    return `ক্লাস ${currentClass?.classNumberBn} • পৃষ্ঠা ${currentPage + 7}`;
+  };
+
   return (
-    <div className="min-h-screen bg-[#F0EFEB] text-slate-800 font-sans select-none pb-24">
+    <div
+      className="min-h-screen bg-[#F3EFE6] text-slate-800 font-sans select-none pb-28 sm:pb-20 relative overflow-x-hidden"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* ── TOP PLATFORM NAVIGATION HUD ── */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b-2 border-amber-200/90 shadow-sm px-3 sm:px-6 py-2.5">
         <div className="max-w-5xl mx-auto flex items-center justify-between gap-2">
           {/* Left: Back & Title */}
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             {onNavigateBack && (
               <button
                 onClick={onNavigateBack}
@@ -239,78 +378,116 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
               </button>
             )}
             <div>
-              <div className="flex items-center gap-2">
-                <span className="text-xl">📗</span>
-                <h1 className="text-base sm:text-lg font-black text-emerald-950 font-hind-siliguri">
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <span className="text-xl sm:text-2xl">📗</span>
+                <h1 className="text-base sm:text-lg font-black text-emerald-950 font-hind-siliguri tracking-tight">
                   নূর কায়দা
                 </h1>
-                <span className="hidden sm:inline-block text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
-                  মক্তব শিক্ষা পাঠ্যপাঠিকা (৭৮ ক্লাস)
+                <span className="hidden md:inline-block text-[11px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-300">
+                  মক্তব পাঠ্যপাঠিকা
                 </span>
               </div>
+              <p className="text-[10px] sm:text-xs text-slate-500 hidden sm:block">
+                {getPageHeaderLabel()}
+              </p>
             </div>
           </div>
 
           {/* Center / Right: Mode Switchers & Tools */}
           <div className="flex items-center gap-1.5 sm:gap-2">
-            {/* View Switchers */}
+            {/* View Switchers (Class, Games, Chart, Certificate) */}
             <div className="flex items-center bg-slate-100 p-1 rounded-2xl border border-slate-200 text-xs font-bold">
               <button
                 onClick={() => setActiveTab("class")}
-                className={`px-3 py-1.5 rounded-xl transition-all ${
+                className={`px-2.5 sm:px-3 py-1.5 rounded-xl transition-all ${
                   activeTab === "class"
                     ? "bg-white text-emerald-900 shadow-sm font-black"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
               >
-                📖 বইয়ের পাঠ
+                📖 <span className="hidden sm:inline">বই</span>
               </button>
               <button
                 onClick={() => setActiveTab("game")}
-                className={`px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
+                className={`px-2 sm:px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
                   activeTab === "game"
                     ? "bg-amber-400 text-slate-950 shadow-sm font-black"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
+                title="মজার খেলা"
               >
                 <Gamepad2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">মজার খেলা</span>
+                <span className="hidden sm:inline">খেলা</span>
               </button>
               <button
                 onClick={() => setActiveTab("chart")}
-                className={`px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
+                className={`px-2 sm:px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
                   activeTab === "chart"
                     ? "bg-emerald-600 text-white shadow-sm font-black"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
+                title="অগ্রগতি চার্ট"
               >
                 <LayoutGrid className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">অগ্রগতি</span>
+                <span className="hidden sm:inline">চার্ট</span>
               </button>
               <button
                 onClick={() => setActiveTab("certificate")}
-                className={`px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
+                className={`px-2 sm:px-2.5 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
                   activeTab === "certificate"
                     ? "bg-purple-600 text-white shadow-sm font-black"
                     : "text-slate-600 hover:text-slate-900"
                 }`}
+                title="সনদপত্র"
               >
                 <Award className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">সনদ</span>
               </button>
             </div>
 
-            {/* TOC Modal Trigger */}
+            {/* 3D Flipbook vs Normal View Toggle Button */}
+            <button
+              onClick={handleToggleFlipMode}
+              className={`px-2.5 sm:px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 border shadow-xs ${
+                flipMode === "3d"
+                  ? "bg-gradient-to-r from-emerald-700 to-teal-800 text-amber-200 border-emerald-500 shadow-md ring-2 ring-emerald-400/40"
+                  : "bg-white text-slate-700 border-slate-300 hover:bg-slate-100"
+              }`}
+              title="পাতা উল্টানোর ধরণ বদলান (৩ডি ফ্লিপ বই / সাধারণ ভিউ)"
+            >
+              {flipMode === "3d" ? (
+                <>
+                  <span className="text-sm">📖</span>
+                  <span className="hidden md:inline font-hind-siliguri">৩ডি বই</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-sm">📄</span>
+                  <span className="hidden md:inline font-hind-siliguri">সাধারণ</span>
+                </>
+              )}
+            </button>
+
+            {/* Table of Contents (TOC) */}
             <button
               onClick={() => setIsTocOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-emerald-700 text-white text-xs sm:text-sm font-bold shadow-sm hover:bg-emerald-800 transition"
+              className="flex items-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-800 text-white text-xs sm:text-sm font-bold shadow-sm hover:bg-emerald-900 transition"
               title="সূচিপত্র খুলুন"
             >
               <Layers className="w-4 h-4" />
-              <span className="hidden md:inline">সূচিপত্র</span>
-              <span className="bg-emerald-900/60 text-[11px] px-1.5 py-0.5 rounded-md font-mono">
-                {currentPage}/৭৮
+              <span className="hidden lg:inline">সূচিপত্র</span>
+              <span className="bg-emerald-950/70 text-[11px] px-1.5 py-0.5 rounded-md font-mono">
+                {typeof currentPage === "number" ? `${currentPage}/৭৮` : "সূচি"}
               </span>
+            </button>
+
+            {/* Fullscreen Button */}
+            <button
+              onClick={toggleFullscreen}
+              className="p-1.5 sm:p-2 rounded-xl text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition hidden sm:inline-flex"
+              title={isFullscreen ? "ফুলস্ক্রিন বন্ধ" : "ফুলস্ক্রিন মোড"}
+            >
+              {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </button>
           </div>
         </div>
@@ -327,543 +504,894 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
       )}
 
       {/* ── MAIN BOOK CONTAINER (FAITHFUL TO 104-PAGE PDF) ── */}
-      <main className="max-w-4xl mx-auto px-3 sm:px-6 pt-5">
-        {/* ══════════════════════════════════════════════════════════
-            VIEW 1: CLASS / LESSON PAGE (PDF EXACT REPLICATION)
-        ══════════════════════════════════════════════════════════ */}
+      <main className="max-w-4xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6">
         {activeTab === "class" && (
-          <div className="bg-white rounded-[2rem] border-4 border-slate-300 shadow-xl overflow-hidden transition-all duration-300">
-            {/* ── PDF EXACT TOP HEADER BAR ── */}
-            <div className={`p-4 sm:p-6 bg-gradient-to-r ${parvaTheme.headerBg} text-white relative flex items-center justify-between overflow-hidden shadow-inner`}>
-              {/* Left: Round Class Badge + Titles */}
-              <div className="flex items-center gap-3 sm:gap-4 relative z-10">
-                {/* Circular Class Badge (exact PDF circle inside rounded square) */}
-                <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white text-emerald-950 flex flex-col items-center justify-center shadow-lg border-3 border-amber-300 shrink-0">
-                  <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
-                    ক্লাস
-                  </span>
-                  <span className="text-xl sm:text-2xl font-black text-emerald-900 font-hind-siliguri -mt-1">
-                    {currentClass.classNumberBn}
-                  </span>
-                </div>
+          <div
+            className={`transition-all duration-300 ${
+              flipMode === "3d" ? "perspective-[1600px]" : ""
+            }`}
+          >
+            {/* ── 3D FLIPBOOK WRAPPER ── */}
+            <div
+              className={`relative bg-white rounded-[2rem] border-4 shadow-2xl overflow-hidden transition-all duration-350 ${
+                flipMode === "3d"
+                  ? `border-amber-400/80 shadow-[0_20px_50px_rgba(0,0,0,0.22)] ${
+                      isFlipping && flipDirection === "next"
+                        ? "-rotate-y-12 scale-[0.98] -translate-x-3 shadow-[-30px_20px_40px_rgba(0,0,0,0.3)]"
+                        : isFlipping && flipDirection === "prev"
+                        ? "rotate-y-12 scale-[0.98] translate-x-3 shadow-[30px_20px_40px_rgba(0,0,0,0.3)]"
+                        : "rotate-y-0 scale-100 translate-x-0"
+                    }`
+                  : "border-slate-300"
+              }`}
+              style={{ transformStyle: "preserve-3d" }}
+            >
+              {/* Realistic 3D Book Spine Shadow (Left Edge) */}
+              {flipMode === "3d" && (
+                <div className="absolute top-0 bottom-0 left-0 w-8 pointer-events-none z-30 bg-gradient-to-r from-black/20 via-black/5 to-transparent"></div>
+              )}
 
-                <div>
-                  <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight font-hind-siliguri drop-shadow-sm">
-                    {currentClass.titleBn}
-                  </h2>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs sm:text-sm text-emerald-100 font-bold">
-                      {currentClass.parvaTitleBn}
-                    </span>
-                    {currentClass.titleAr && (
-                      <span className="hidden sm:inline text-xs text-amber-200 font-arabic font-medium" dir="rtl">
-                        • {currentClass.titleAr}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Right: Golden Crescent Moon 🌙 and Twinkling Star ⭐ */}
-              <div className="flex items-center gap-1.5 text-amber-300 drop-shadow-md select-none shrink-0">
-                <span className="text-3xl sm:text-4xl">🌙</span>
-                <span className="text-2xl sm:text-3xl text-amber-200">⭐</span>
-              </div>
-            </div>
-
-            {/* ── TARGET BANNER: 🎯 আমি পারব / আমি জানব (PDF EXACT YELLOW DASHED BOX) ── */}
-            <div className="p-4 sm:p-5 bg-amber-50/90 border-b-2 border-dashed border-amber-400/90 m-4 sm:m-5 rounded-2xl flex items-start gap-3 shadow-2xs">
-              <span className="text-2xl shrink-0 select-none">🎯</span>
-              <div className="text-xs sm:text-sm text-amber-950 leading-relaxed font-hind-siliguri">
-                <strong className="font-black text-amber-900 text-sm mr-1.5">
-                  আমি পারব:
-                </strong>
-                {currentClass.objectiveBn}
-              </div>
-            </div>
-
-            {/* ── PLAY ALL & SPEED CONTROLS ROW ── */}
-            <div className="px-5 py-2 flex flex-wrap items-center justify-between gap-2 text-xs border-b border-slate-100 bg-slate-50/70">
-              <div className="flex items-center gap-1.5 text-slate-600 font-medium">
-                <Volume2 className="w-4 h-4 text-emerald-600 animate-pulse" />
-                <span className="font-bold text-emerald-950">
-                  যেকোনো হরফ, শব্দ বা সিলেবলে ক্লিক করলেই ক্বারীর খাঁটি তিলাওয়াত বাজবে
-                </span>
-              </div>
-
-              <div className="flex items-center gap-2">
-                {/* Speed toggle */}
+              {/* Realistic Golden Page Flip Dog-Ear in 3D Mode */}
+              {flipMode === "3d" && (
                 <button
-                  onClick={() => setAudioSpeed((s) => (s === 1.0 ? 0.75 : 1.0))}
-                  className="px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 text-[11px]"
-                  title="গতি পরিবর্তন"
+                  onClick={handleNextPage}
+                  className="absolute top-3 right-3 z-30 hidden sm:flex items-center gap-1 px-3 py-1 rounded-full bg-amber-400/90 hover:bg-amber-300 text-amber-950 font-bold text-[11px] shadow-md transition-all hover:scale-105 active:scale-95"
+                  title="পরবর্তী পাতা উল্টাও"
                 >
-                  {audioSpeed === 0.75 ? "🐢 ০.৭৫x (ধীরে)" : "🐇 ১.০x (স্বাভাবিক)"}
+                  <span>পাতা উল্টাও</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
+              )}
 
-                {/* Repeat toggle */}
-                <button
-                  onClick={() => setRepeatMode((r) => (r === 1 ? 3 : 1))}
-                  className="px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 text-[11px]"
-                  title="পুনরাবৃত্তি সংখ্যা"
-                >
-                  <RotateCcw className="w-3 h-3 inline mr-1 text-emerald-600" />
-                  {repeatMode}x মাশক
-                </button>
-
-                {/* Play All Button */}
-                <button
-                  onClick={handlePlayAll}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold shadow-xs transition-all ${
-                    isPlayingAll
-                      ? "bg-rose-600 text-white"
-                      : "bg-emerald-600 text-white hover:bg-emerald-700"
-                  }`}
-                >
-                  {isPlayingAll ? (
-                    <>
-                      <Pause className="w-3.5 h-3.5" />
-                      <span>থামুন</span>
-                    </>
-                  ) : (
-                    <>
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>একটানা সব শুনুন</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* ══════════════════════════════════════════════════════════
-                LESSON BODY (DYNAMIC ADAPTIVE BY CLASS TYPE)
-            ══════════════════════════════════════════════════════════ */}
-            <div className="p-4 sm:p-6 space-y-6">
-              {/* ── TYPE A: CLASS 1 (29 LETTERS GRID IN RTL ORDER) ── */}
-              {currentPage === 1 ? (
-                <div className="space-y-4">
-                  {/* Green Pill Subheader */}
-                  <div className="flex items-center justify-between px-4 py-2 rounded-2xl bg-emerald-600 text-white font-bold text-xs sm:text-sm shadow-sm">
-                    <span>আরবি বর্ণমালা — ২৯টি হরফ</span>
-                    <span className="text-amber-200 font-black">
-                      👉 আরবি পড়ি ডান দিক থেকে বাম দিকে 👈
-                    </span>
-                  </div>
-
-                  {/* 29 Letters Grid (7 rows x 4 columns) */}
-                  <div className="grid grid-cols-4 sm:grid-cols-4 gap-3 sm:gap-4" dir="rtl">
-                    {currentClass.items.map((item, idx) => {
-                      const isItemActive = activeItemId === (item.id || item.ar);
-                      return (
-                        <div
-                          key={item.id || idx}
-                          onClick={() => playItemSound(item)}
-                          className={`group relative p-4 sm:p-6 rounded-2xl border-2 transition-all duration-300 cursor-pointer flex flex-col items-center justify-center text-center select-none ${
-                            isItemActive
-                              ? "bg-emerald-100 border-emerald-600 ring-4 ring-emerald-400 shadow-xl scale-105"
-                              : "bg-[#FBFDFB] border-emerald-200 hover:border-emerald-500 hover:bg-white hover:shadow-md"
-                          }`}
-                        >
-                          <div
-                            className={`font-arabic text-4xl sm:text-5xl font-bold transition-all ${
-                              isItemActive
-                                ? "text-emerald-800 scale-110"
-                                : "text-slate-900 group-hover:text-emerald-700"
-                            }`}
-                          >
-                            {item.ar}
-                          </div>
-                          <div className="text-xs sm:text-sm font-bold text-slate-700 mt-2 font-hind-siliguri">
-                            {item.nameBn}
-                          </div>
-                          {isItemActive && (
-                            <span className="absolute top-2 left-2 w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <p className="text-[11px] text-slate-400 text-center font-medium">
-                    * আলিফ ও হামযাহ আলাদা ধরলে ২৯টি হরফ; কেউ কেউ ২৮টি গণনা করেন।
-                  </p>
-                </div>
-              ) : currentPage === 16 ? (
-                /* ── TYPE B: CLASS 16 (জবরের পরিচয় — 3 QUESTIONS + 4 CARDS) ── */
-                <div className="space-y-6">
-                  {/* Big Card: জবর চিনি (The large Alif with Jabar) */}
-                  <div className="border-3 border-blue-300 rounded-3xl p-5 sm:p-6 bg-blue-50/40 flex flex-col md:flex-row items-center justify-between gap-6">
-                    {/* Big Letter Card */}
-                    <div
-                      onClick={() => playItemSound({ ar: "اَ", sound: "اَ" })}
-                      className="w-40 h-44 rounded-2xl bg-white border-2 border-blue-400 shadow-md flex items-center justify-center cursor-pointer hover:border-blue-600 hover:scale-105 transition"
-                    >
-                      <div className="font-arabic text-7xl font-bold text-slate-900">
-                        اَ
-                      </div>
-                    </div>
-
-                    {/* 3 Interactive Question Cards (from PDF page 24) */}
-                    <div className="flex-1 w-full space-y-3 font-hind-siliguri">
-                      <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border-2 border-emerald-300 shadow-2xs">
-                        <span className="font-bold text-slate-700 text-xs sm:text-sm flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
-                            ১
-                          </span>
-                          হরফের নাম কী?
-                        </span>
-                        <span className="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-950 font-black text-xs sm:text-sm border border-emerald-300">
-                          আলিফ
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border-2 border-blue-300 shadow-2xs">
-                        <span className="font-bold text-slate-700 text-xs sm:text-sm flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
-                            ২
-                          </span>
-                          এই হরফের আওয়াজ কী হবে?
-                        </span>
-                        <span className="px-3 py-1 rounded-xl bg-blue-100 text-blue-950 font-black text-xs sm:text-sm border border-blue-300">
-                          আ
-                        </span>
-                      </div>
-
-                      <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border-2 border-slate-300 shadow-2xs">
-                        <span className="font-bold text-slate-700 text-xs sm:text-sm flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-slate-700 text-white flex items-center justify-center text-xs font-bold">
-                            ৩
-                          </span>
-                          হরফের ওপরে যা আছে, তার নাম কী?
-                        </span>
-                        <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-900 font-black text-xs sm:text-sm border border-slate-300">
-                          জবর
-                        </span>
-                      </div>
+              {/* ══════════════════════════════════════════════════════════
+                  PAGE TYPE 1: প্রচ্ছদ / COVER PAGE (PDF PAGE 1)
+              ══════════════════════════════════════════════════════════ */}
+              {currentPage === "cover" && (
+                <div className="p-6 sm:p-10 bg-gradient-to-b from-emerald-50 via-amber-50/40 to-emerald-100/60 text-center space-y-6">
+                  {/* Top Illustrated Mosque & Sky Vector Motif */}
+                  <div className="relative py-4">
+                    <div className="text-5xl sm:text-6xl animate-pulse">🕌</div>
+                    <div className="flex items-center justify-center gap-3 text-amber-400 text-2xl mt-2 select-none">
+                      <span>🌙</span>
+                      <span>⭐</span>
+                      <span>⭐</span>
                     </div>
                   </div>
 
-                  {/* 4 Cards: এই চারটি হরফে জবর (اَ بَ تَ ثَ) */}
+                  {/* Title & Badge */}
                   <div className="space-y-2">
-                    <div className="text-xs font-bold text-blue-900 bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200 inline-block">
-                      এই চারটি হরফে জবর
-                    </div>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4" dir="rtl">
-                      {currentClass.items.map((it, idx) => (
-                        <div
-                          key={it.id || idx}
-                          onClick={() => playItemSound(it)}
-                          className="p-4 rounded-2xl bg-white border-2 border-blue-200 hover:border-blue-500 hover:shadow-md cursor-pointer text-center space-y-2 group"
-                        >
-                          <div className="font-arabic text-4xl sm:text-5xl font-bold text-slate-900 group-hover:text-blue-700">
-                            {it.ar}
-                          </div>
-                          <div className="text-xs font-bold text-slate-700 font-hind-siliguri">
-                            {it.nameBn}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : currentPage === 18 ? (
-                /* ── TYPE C: CLASS 18 (জবর: দুই হরফ মিলাই + মদ-এর ছোট্ট ধারণা) ── */
-                <div className="space-y-6">
-                  {/* Two Letters Equation Card: বা তা -> بَتَ */}
-                  <div className="p-4 sm:p-5 rounded-2xl bg-blue-50 border-2 border-blue-300 text-center font-bold">
-                    <div className="text-xs text-blue-700 mb-2">দুই হরফ জবর দিয়ে মিলাই</div>
-                    <div className="font-arabic text-3xl sm:text-4xl text-blue-950 flex items-center justify-center gap-4">
-                      <span>بَتَ</span>
-                      <span>=</span>
-                      <span>تَ</span>
-                      <span>+</span>
-                      <span>بَ</span>
-                    </div>
-                  </div>
-
-                  {/* মদ-এর ছোট্ট ধারণা 🌟 (PDF page 26 exact box) */}
-                  <div className="border-3 border-amber-300 rounded-3xl p-5 bg-gradient-to-r from-amber-50 to-orange-50 space-y-3">
-                    <div className="text-sm font-black text-amber-950 flex items-center gap-2">
-                      <span>মদ-এর ছোট্ট ধারণা</span>
-                      <span className="text-amber-500">🌟</span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      {/* 1 Harakat */}
-                      <div
-                        onClick={() => playItemSound({ ar: "بَ", sound: "بَ" })}
-                        className="p-4 rounded-2xl bg-white border-2 border-amber-200 cursor-pointer hover:border-amber-400 text-center space-y-1"
-                      >
-                        <div className="font-arabic text-4xl font-bold text-slate-900">بَ</div>
-                        <div className="text-xs font-bold text-amber-900">ছোট আওয়াজ • ১ হরকত</div>
-                        <div className="text-xs text-slate-500">✊ → ✋ (১ বার হাত বন্ধ ও খোলা)</div>
-                      </div>
-
-                      {/* 2 Harakat */}
-                      <div
-                        onClick={() => playItemSound({ ar: "بَا", sound: "بَا" })}
-                        className="p-4 rounded-2xl bg-white border-2 border-amber-300 cursor-pointer hover:border-amber-500 text-center space-y-1"
-                      >
-                        <div className="font-arabic text-4xl font-bold text-slate-900">بَا</div>
-                        <div className="text-xs font-bold text-amber-900">টানা আওয়াজ • ২ হরকত</div>
-                        <div className="text-xs text-slate-500">✊✋ ✊✋ (২ বার হাত বন্ধ ও খোলা)</div>
-                      </div>
-                    </div>
-                    <p className="text-[11px] text-amber-800 text-center">
-                      জবরের পরে আলিফ থাকলে আওয়াজ একটু টেনে পড়তে হয়—একে বলে মদ।
+                    <span className="px-4 py-1 rounded-full bg-emerald-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm">
+                      মক্তব শিক্ষা পাঠ্যপাঠিকা
+                    </span>
+                    <h2 className="text-2xl sm:text-4xl font-extrabold text-emerald-950 font-hind-siliguri tracking-tight">
+                      নূর কায়দা
+                    </h2>
+                    <p className="text-sm sm:text-base font-bold text-amber-900 font-hind-siliguri">
+                      হরফ পরিচয় থেকে নাজেরা কুরআন পর্যন্ত
                     </p>
                   </div>
 
-                  {/* Practice row */}
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    {currentClass.items.map((it, idx) => (
+                  {/* Cute Student Avatars & Illustrated Classroom Feature Box */}
+                  <div className="max-w-lg mx-auto bg-white/90 backdrop-blur-sm rounded-3xl p-5 border-2 border-emerald-300 shadow-md space-y-4">
+                    <div className="flex items-center justify-center gap-6 text-4xl select-none">
+                      <div className="flex flex-col items-center">
+                        <span>🧒</span>
+                        <span className="text-[10px] font-bold text-slate-500 mt-1">শিক্ষার্থী</span>
+                      </div>
+                      <div className="text-2xl text-emerald-600 font-arabic font-bold">
+                        ا ب ت ث
+                      </div>
+                      <div className="flex flex-col items-center">
+                        <span>🧕</span>
+                        <span className="text-[10px] font-bold text-slate-500 mt-1">শিক্ষার্থী</span>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2 text-left text-xs font-bold text-slate-700">
+                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-emerald-50 text-emerald-950 border border-emerald-200">
+                        <span>🔤</span>
+                        <span>২৯টি হরফের মাশক</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-blue-50 text-blue-950 border border-blue-200">
+                        <span>🔵</span>
+                        <span>রঙ-সংকেত হরকত</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-amber-50 text-amber-950 border border-amber-200">
+                        <span>🗣️</span>
+                        <span>সচিত্র ১৭ মাখরাজ</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 p-2 rounded-xl bg-purple-50 text-purple-950 border border-purple-200">
+                        <span>🎮</span>
+                        <span>৪টি আনন্দময় খেলা</span>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-slate-600 font-hind-siliguri">
+                      📖 ছবি • রঙ • চার্ট • অনুশীলনী — শিক্ষক ও ছাত্র দুজনের জন্য
+                    </p>
+                  </div>
+
+                  {/* CTA Button to Start Reading */}
+                  <div className="pt-2">
+                    <button
+                      onClick={() => navigateToPage("rules", "next")}
+                      className="inline-flex items-center gap-2.5 px-8 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-sm sm:text-base shadow-xl hover:shadow-2xl transition-all hover:scale-105 active:scale-95"
+                    >
+                      <BookOpen className="w-5 h-5 text-amber-300" />
+                      <span>বই পড়া শুরু করো ➔</span>
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* ══════════════════════════════════════════════════════════
+                  PAGE TYPE 2: পড়ার নিয়মাবলী (PDF PAGE 3)
+              ══════════════════════════════════════════════════════════ */}
+              {currentPage === "rules" && (
+                <div className="p-5 sm:p-8 space-y-6 bg-slate-50/50">
+                  <div className="text-center space-y-1">
+                    <span className="px-3 py-1 rounded-full bg-emerald-100 text-emerald-900 font-bold text-xs">
+                      পৃষ্ঠা ৩ • নির্দেশিকা
+                    </span>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-hind-siliguri">
+                      কীভাবে ব্যবহার করবেন — শিক্ষক ও অভিভাবকের জন্য
+                    </h2>
+                    <p className="text-xs text-slate-500">
+                      সহজ ও কার্যকর মক্তব পাঠ্যপদ্ধতি
+                    </p>
+                  </div>
+
+                  <div className="space-y-3">
+                    {SPECIAL_PAGES[3].items.map((item, idx) => (
                       <div
-                        key={it.id || idx}
-                        onClick={() => playItemSound(it)}
-                        className="p-3.5 rounded-2xl bg-white border-2 border-slate-200 hover:border-blue-400 text-center cursor-pointer group"
+                        key={idx}
+                        className="p-4 rounded-2xl bg-white border-2 border-slate-200 shadow-2xs flex items-start gap-3 hover:border-emerald-300 transition"
                       >
-                        <div className="font-arabic text-3xl font-bold text-slate-900 group-hover:text-blue-700">
-                          {it.ar}
-                        </div>
-                        <div className="text-xs font-bold text-slate-700 mt-1 font-hind-siliguri">
-                          {it.nameBn}
+                        <span className="text-2xl shrink-0 select-none">{item.icon}</span>
+                        <div className="space-y-1">
+                          <h3 className="text-sm font-black text-slate-900 font-hind-siliguri">
+                            {item.title}
+                          </h3>
+                          <p className="text-xs text-slate-600 leading-relaxed font-hind-siliguri">
+                            {item.desc}
+                          </p>
                         </div>
                       </div>
                     ))}
                   </div>
+
+                  <div className="text-center pt-2">
+                    <button
+                      onClick={() => navigateToPage("color-code", "next")}
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md hover:bg-emerald-800 transition"
+                    >
+                      <span>পরবর্তী: চিহ্ন ও রঙ-সংকেত ➔</span>
+                    </button>
+                  </div>
                 </div>
-              ) : (currentPage >= 56 && currentPage <= 65) || (currentPage >= 19 && currentPage <= 20) ? (
-                /* ── TYPE D: BROKEN-DOWN SYLLABLES (PAGES 68-85 EXACT PDF STYLE) ── */
-                <div className="space-y-4">
-                  <div className="text-xs font-bold text-emerald-900 bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300 inline-block">
-                    শব্দ ভেঙে ভেঙে পড়ি (ডান থেকে বামে)
+              )}
+
+              {/* ══════════════════════════════════════════════════════════
+                  PAGE TYPE 3: চিহ্ন ও রঙ-সংকেতের চার্ট (PDF PAGE 5)
+              ══════════════════════════════════════════════════════════ */}
+              {currentPage === "color-code" && (
+                <div className="p-5 sm:p-8 space-y-6">
+                  <div className="text-center space-y-1">
+                    <span className="px-3 py-1 rounded-full bg-blue-100 text-blue-900 font-bold text-xs">
+                      পৃষ্ঠা ৫ • সর্বজনীন রঙ-সংকেত
+                    </span>
+                    <h2 className="text-xl sm:text-2xl font-black text-slate-900 font-hind-siliguri">
+                      চিহ্ন ও রঙ-সংকেত
+                    </h2>
+                    <p className="text-xs text-slate-600">
+                      সারা বইয়ে একই রঙ, একই চিহ্ন — যেকোনো কার্ডে ক্লিক করলেই খাঁটি উচ্চারণ শুনবে
+                    </p>
                   </div>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    {currentClass.items.map((item, idx) => {
-                      const isItemActive = activeItemId === item.id;
-                      // Check if broken syllables data exists
-                      const brokenEntry = BROKEN_SYLLABLES_DATA.fatiha_p1?.find((b) => b.word === item.ar) ||
-                        BROKEN_SYLLABLES_DATA.surah_105?.find((b) => b.word === item.ar) ||
-                        BROKEN_SYLLABLES_DATA.surah_112?.find((b) => b.word === item.ar);
-
+                  {/* 8 Pastel Cards Grid */}
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4" dir="rtl">
+                    {SPECIAL_PAGES[5].cards.map((card, idx) => {
+                      const isItemActive = activeItemId === card.nameBn;
                       return (
                         <div
-                          key={item.id || idx}
-                          className={`p-4 rounded-3xl border-2 transition-all space-y-3 bg-white ${
+                          key={idx}
+                          onClick={() => playItemSound({ ar: card.ar, id: card.nameBn, sound: card.ar })}
+                          className={`p-4 rounded-3xl border-2 text-center cursor-pointer transition-all ${card.bg} ${card.border} ${
                             isItemActive
-                              ? "border-emerald-500 shadow-lg ring-3 ring-emerald-300"
-                              : "border-slate-200 hover:border-emerald-300 shadow-2xs"
+                              ? "scale-105 ring-4 ring-emerald-400 shadow-xl"
+                              : "hover:scale-102 hover:shadow-md"
                           }`}
                         >
-                          {/* Full Word Top Bar */}
-                          <div
-                            onClick={() => playItemSound(item)}
-                            className="flex items-center justify-between p-2.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100 cursor-pointer border border-emerald-200 transition"
-                          >
-                            <span className="text-xs font-bold text-emerald-800 font-hind-siliguri">
-                              পূর্ণ শব্দ: {item.nameBn}
-                            </span>
-                            <div className="font-arabic text-3xl font-bold text-slate-900" dir="rtl">
-                              {item.ar}
-                            </div>
+                          <div className="font-arabic text-4xl sm:text-5xl font-bold text-slate-900 mb-2">
+                            {card.ar}
                           </div>
-
-                          {/* Broken Syllables Capsules (from PDF page 68-85) */}
-                          {brokenEntry ? (
-                            <div className="flex items-center justify-center gap-2 pt-1" dir="rtl">
-                              {brokenEntry.syllables.map((syl, sIdx) => {
-                                const isSylActive = activeItemId === (syl.ar + sIdx);
-                                return (
-                                  <div
-                                    key={sIdx}
-                                    onClick={() => playItemSound({ ar: syl.ar, sound: syl.sound, id: syl.ar + sIdx })}
-                                    className={`px-3 py-2 rounded-2xl border-2 cursor-pointer text-center transition flex flex-col items-center min-w-[55px] ${
-                                      isSylActive
-                                        ? "bg-rose-100 border-rose-500 shadow-md scale-110"
-                                        : "bg-red-50/80 border-rose-300 hover:bg-rose-100 hover:border-rose-400"
-                                    }`}
-                                  >
-                                    <span className="font-arabic text-xl font-bold text-slate-900">
-                                      {syl.ar}
-                                    </span>
-                                    <span className="text-[11px] font-bold text-rose-950 font-hind-siliguri mt-0.5">
-                                      {syl.bn}
-                                    </span>
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          ) : (
-                            <div className="text-center text-xs text-slate-500">
-                              {item.tip}
-                            </div>
-                          )}
+                          <div className="text-sm font-black text-slate-800 font-hind-siliguri" dir="ltr">
+                            {card.nameBn}
+                          </div>
+                          <div className="text-[11px] text-slate-600 font-hind-siliguri mt-1" dir="ltr">
+                            {card.ruleBn}
+                          </div>
+                          <div className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-white/80 border border-slate-300 text-slate-700 mt-2 inline-block" dir="ltr">
+                            আওয়াজ: {card.soundBn}
+                          </div>
                         </div>
                       );
                     })}
                   </div>
-                </div>
-              ) : (
-                /* ── TYPE E: STANDARD COLOR-CODED LESSON CARDS GRID ── */
-                <div
-                  className={`grid gap-3 sm:gap-4 ${
-                    currentClass.items.length <= 4
-                      ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-4"
-                      : currentClass.items.length <= 6
-                      ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-6"
-                      : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
-                  }`}
-                  dir="rtl"
-                >
-                  {currentClass.items.map((item, idx) => {
-                    const isItemActive = activeItemId === item.id;
-                    return (
-                      <div
-                        key={item.id || idx}
-                        onClick={() => playItemSound(item)}
-                        className={`group relative p-4 sm:p-5 rounded-3xl border-2 transition-all duration-300 cursor-pointer flex flex-col items-center justify-between min-h-[140px] text-center bg-white ${
-                          isItemActive
-                            ? "border-emerald-600 ring-4 ring-emerald-300 shadow-xl scale-105 bg-emerald-50/50"
-                            : "border-slate-200 hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
-                        }`}
-                      >
-                        {/* Audio Icon Header */}
-                        <div className="w-full flex items-center justify-between text-xs text-slate-400">
-                          <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[10px]">
-                            {idx + 1}
-                          </span>
-                          <Volume2 className="w-4 h-4 text-slate-400 group-hover:text-emerald-600" />
-                        </div>
 
-                        {/* Arabic Calligraphy */}
-                        <div
-                          className={`my-auto font-arabic font-bold text-slate-900 transition-all ${
-                            item.ar.length > 20
-                              ? "text-xl sm:text-2xl leading-relaxed"
-                              : item.ar.length > 8
-                              ? "text-2xl sm:text-3xl"
-                              : "text-4xl sm:text-5xl"
-                          } ${
-                            isItemActive ? "text-emerald-800 scale-105" : ""
-                          }`}
-                        >
-                          {item.ar}
-                        </div>
+                  <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-center text-xs text-amber-900 font-medium">
+                    {SPECIAL_PAGES[5].footerTip}
+                  </div>
 
-                        {/* Bengali subtitle */}
-                        <div className="mt-2" dir="ltr">
-                          <div className="text-xs sm:text-sm font-bold text-slate-800 font-hind-siliguri">
-                            {item.nameBn}
-                          </div>
-                          {item.tip && (
-                            <div className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
-                              {item.tip}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <div className="text-center pt-2">
+                    <button
+                      onClick={() => navigateToPage(1, "next")}
+                      className="inline-flex items-center gap-2 px-6 py-2.5 rounded-xl bg-emerald-700 text-white font-bold text-xs sm:text-sm shadow-md hover:bg-emerald-800 transition"
+                    >
+                      <span>পরবর্তী: ক্লাস ১ (হরফ পরিচয়) ➔</span>
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {/* ── EXERCISE ROW: ✏️ অনুশীলনী (PDF EXACT SECTION) ── */}
-              <div className="p-4 rounded-2xl bg-emerald-50/70 border-2 border-emerald-300 space-y-2">
-                <div className="flex items-center gap-2 text-emerald-950 font-black text-xs sm:text-sm font-hind-siliguri">
-                  <span>✏️</span>
-                  <span>অনুশীলনী</span>
-                </div>
-                <div className="space-y-1.5 text-xs text-emerald-900 font-medium">
-                  <div className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                      ১
-                    </span>
-                    <span>আঙুল রেখে ডান থেকে বামে প্রতিটি হরফ ও শব্দ দেখে দেখে পড়ো।</span>
-                  </div>
-                  <div className="flex items-start gap-2">
-                    <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
-                      ২
-                    </span>
-                    <span>প্রতিটি শব্দের উপরে ক্লিক করে ক্বারীর খাঁটি আওয়াজের সাথে মিলিয়ে নাও।</span>
-                  </div>
-                </div>
-              </div>
+              {/* ══════════════════════════════════════════════════════════
+                  PAGE TYPE 4: CLASSES 1 TO 78 (REGULAR CURRICULUM)
+              ══════════════════════════════════════════════════════════ */}
+              {isClassPage && currentClass && (
+                <>
+                  {/* ── PDF EXACT TOP HEADER BAR ── */}
+                  <div
+                    className={`p-4 sm:p-6 bg-gradient-to-r ${parvaTheme.headerBg} text-white relative flex items-center justify-between overflow-hidden shadow-inner`}
+                  >
+                    {/* Left: Round Class Badge + Titles */}
+                    <div className="flex items-center gap-3 sm:gap-4 relative z-10">
+                      {/* Circular Class Badge (exact PDF circle inside rounded square) */}
+                      <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-white text-emerald-950 flex flex-col items-center justify-center shadow-lg border-3 border-amber-300 shrink-0">
+                        <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          ক্লাস
+                        </span>
+                        <span className="text-xl sm:text-2xl font-black text-emerald-900 font-hind-siliguri -mt-1">
+                          {currentClass.classNumberBn}
+                        </span>
+                      </div>
 
-              {/* ── BOTTOM DUAL BOXES: আজ আমি পারলাম ⭐ & শিক্ষকের জন্য 👩‍🏫 (PDF EXACT) ── */}
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
-                {/* Left Box: আজ আমি পারলাম ⭐ */}
-                <div
-                  onClick={() => handleClaimStar(currentPage)}
-                  className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-2 ${
-                    isClassStarEarned
-                      ? "bg-amber-100 border-amber-400 text-amber-950 shadow-md scale-102"
-                      : "bg-amber-50/50 border-amber-300 text-amber-900 hover:bg-amber-100"
-                  }`}
-                  title="তারা পেতে এখানে ক্লিক করো"
-                >
-                  <Star
-                    className={`w-8 h-8 transition-all ${
-                      isClassStarEarned
-                        ? "text-amber-500 fill-amber-400 animate-spin-slow scale-110"
-                        : "text-amber-400 fill-transparent"
-                    }`}
-                  />
-                  <div className="text-xs font-black font-hind-siliguri">
-                    আজ আমি পারলাম
+                      <div>
+                        <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white tracking-tight font-hind-siliguri drop-shadow-sm">
+                          {currentClass.titleBn}
+                        </h2>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs sm:text-sm text-emerald-100 font-bold">
+                            {currentClass.parvaTitleBn}
+                          </span>
+                          {currentClass.titleAr && (
+                            <span
+                              className="hidden sm:inline text-xs text-amber-200 font-arabic font-medium"
+                              dir="rtl"
+                            >
+                              • {currentClass.titleAr}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right: Golden Crescent Moon 🌙 and Twinkling Star ⭐ */}
+                    <div className="flex items-center gap-1.5 text-amber-300 drop-shadow-md select-none shrink-0">
+                      <span className="text-3xl sm:text-4xl">🌙</span>
+                      <span className="text-2xl sm:text-3xl text-amber-200">⭐</span>
+                    </div>
                   </div>
-                  <div className="text-[11px] font-bold px-3 py-1 rounded-full bg-white border border-amber-300 text-amber-900">
-                    {isClassStarEarned ? "অর্জিত! ⭐" : "ক্লিক করে তারা নাও"}
+
+                  {/* ── TARGET BANNER: 🎯 আমি পারব / আমি জানব (PDF EXACT YELLOW DASHED BOX) ── */}
+                  <div className="p-4 sm:p-5 bg-amber-50/90 border-b-2 border-dashed border-amber-400/90 m-4 sm:m-5 rounded-2xl flex items-start gap-3 shadow-2xs">
+                    <span className="text-2xl shrink-0 select-none">🎯</span>
+                    <div className="text-xs sm:text-sm text-amber-950 leading-relaxed font-hind-siliguri">
+                      <strong className="font-black text-amber-900 text-sm mr-1.5">
+                        আমি পারব:
+                      </strong>
+                      {currentClass.objectiveBn}
+                    </div>
                   </div>
-                </div>
 
-                {/* Right Box: শিক্ষকের জন্য নির্দেশিকা (PDF EXACT) */}
-                <div className="md:col-span-3 p-4 rounded-2xl bg-slate-50 border-2 border-slate-200 text-slate-800 space-y-1.5">
-                  <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
-                    <span>👩‍🏫</span>
-                    <span>শিক্ষকের জন্য (ছাত্র এই অংশ না পড়লেও চলবে)</span>
+                  {/* ── PLAY ALL & SPEED CONTROLS ROW ── */}
+                  <div className="px-5 py-2 flex flex-wrap items-center justify-between gap-2 text-xs border-b border-slate-100 bg-slate-50/70">
+                    <div className="flex items-center gap-1.5 text-slate-600 font-medium">
+                      <Volume2 className="w-4 h-4 text-emerald-600 animate-pulse shrink-0" />
+                      <span className="font-bold text-emerald-950 text-[11px] sm:text-xs">
+                        যেকোনো হরফ বা শব্দে ক্লিক করলেই খাঁটি ক্বারীর তিলাওয়াত বাজবে
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      {/* Speed toggle */}
+                      <button
+                        onClick={() => setAudioSpeed((s) => (s === 1.0 ? 0.75 : 1.0))}
+                        className="px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 text-[11px]"
+                        title="গতি পরিবর্তন"
+                      >
+                        {audioSpeed === 0.75 ? "🐢 ০.৭৫x" : "🐇 ১.০x"}
+                      </button>
+
+                      {/* Repeat toggle */}
+                      <button
+                        onClick={() => setRepeatMode((r) => (r === 1 ? 3 : 1))}
+                        className="px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 text-[11px]"
+                        title="পুনরাবৃত্তি সংখ্যা"
+                      >
+                        <RotateCcw className="w-3 h-3 inline mr-1 text-emerald-600" />
+                        {repeatMode}x মাশক
+                      </button>
+
+                      {/* Play All Button */}
+                      <button
+                        onClick={handlePlayAll}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-bold shadow-xs transition-all ${
+                          isPlayingAll
+                            ? "bg-rose-600 text-white"
+                            : "bg-emerald-600 text-white hover:bg-emerald-700"
+                        }`}
+                      >
+                        {isPlayingAll ? (
+                          <>
+                            <Pause className="w-3.5 h-3.5" />
+                            <span>থামুন</span>
+                          </>
+                        ) : (
+                          <>
+                            <Play className="w-3.5 h-3.5 fill-current" />
+                            <span>একটানা শুনুন</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
                   </div>
-                  <p className="text-[11px] text-slate-600 leading-relaxed font-hind-siliguri">
-                    {currentClass.teacherNoteBn ||
-                      "হরফের নাম ও মাখরাজ আলাদা করে শোনান। তাড়াহুড়ো না করে বিশুদ্ধ উচ্চারণে ছাত্রকে অভ্যস্ত করান।"}
-                  </p>
-                </div>
-              </div>
-            </div>
 
-            {/* ── FOOTER PAGE CONTROLS (PREVIOUS & NEXT PAGE) ── */}
-            <div className="p-4 bg-slate-100 border-t border-slate-200 flex items-center justify-between text-xs font-bold text-slate-700">
-              <button
-                onClick={handlePrevPage}
-                disabled={currentPage <= 1}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
-                  currentPage <= 1
-                    ? "opacity-40 cursor-not-allowed bg-slate-200 text-slate-400"
-                    : "bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 shadow-2xs"
-                }`}
-              >
-                <ChevronLeft className="w-4 h-4" />
-                <span>পূর্ববর্তী ক্লাস</span>
-              </button>
+                  {/* ══════════════════════════════════════════════════════════
+                      LESSON BODY (DYNAMIC ADAPTIVE BY CLASS TYPE)
+                  ══════════════════════════════════════════════════════════ */}
+                  <div className="p-4 sm:p-6 space-y-6">
+                    {/* ── TYPE A: CLASS 1 (29 LETTERS GRID IN RTL ORDER) ── */}
+                    {currentPage === 1 ? (
+                      <div className="space-y-4">
+                        <div className="flex items-center justify-between px-4 py-2 rounded-2xl bg-emerald-600 text-white font-bold text-xs sm:text-sm shadow-sm">
+                          <span>আরবি বর্ণমালা — ২৯টি হরফ</span>
+                          <span className="text-amber-200 font-black">
+                            👉 আরবি পড়ি ডান দিক থেকে বাম দিকে 👈
+                          </span>
+                        </div>
 
-              <div className="flex items-center gap-1.5 font-hind-siliguri">
-                <span>মক্তব শিক্ষা পাঠ্যপাঠিকা</span>
-                <span className="text-slate-400">•</span>
-                <span className="font-mono text-emerald-800">
-                  পৃষ্ঠা নং {currentPage + 7} (ক্লাস {currentClass.classNumberBn})
-                </span>
-              </div>
+                        <div className="grid grid-cols-4 sm:grid-cols-4 gap-2.5 sm:gap-4" dir="rtl">
+                          {currentClass.items.map((item, idx) => {
+                            const isItemActive = activeItemId === (item.id || item.ar);
+                            return (
+                              <div
+                                key={item.id || idx}
+                                onClick={() => playItemSound(item)}
+                                className={`group relative p-3 sm:p-5 rounded-2xl border-2 transition-all duration-300 cursor-pointer flex flex-col items-center justify-center text-center select-none ${
+                                  isItemActive
+                                    ? "bg-emerald-100 border-emerald-600 ring-4 ring-emerald-400 shadow-xl scale-105"
+                                    : "bg-[#FBFDFB] border-emerald-200 hover:border-emerald-500 hover:bg-white hover:shadow-md"
+                                }`}
+                              >
+                                <div
+                                  className={`font-arabic text-3xl sm:text-5xl font-bold transition-all ${
+                                    isItemActive
+                                      ? "text-emerald-800 scale-110"
+                                      : "text-slate-900 group-hover:text-emerald-700"
+                                  }`}
+                                >
+                                  {item.ar}
+                                </div>
+                                <div className="text-[11px] sm:text-xs font-bold text-slate-700 mt-1 sm:mt-2 font-hind-siliguri">
+                                  {item.nameBn}
+                                </div>
+                                {isItemActive && (
+                                  <span className="absolute top-2 left-2 w-2 h-2 rounded-full bg-emerald-600 animate-ping"></span>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <p className="text-[11px] text-slate-400 text-center font-medium">
+                          * আলিফ ও হামযাহ আলাদা ধরলে ২৯টি হরফ; কেউ কেউ ২৮টি গণনা করেন।
+                        </p>
+                      </div>
+                    ) : currentPage >= 11 && currentPage <= 15 ? (
+                      /* ── TYPE B: CLASSES 11-15 (MAKHRAJ & 5 ANATOMICAL ORGANS) ── */
+                      <div className="space-y-6">
+                        <div className="p-4 rounded-3xl bg-amber-50/70 border-2 border-amber-300 space-y-3">
+                          <div className="text-sm font-black text-amber-950 flex items-center gap-2">
+                            <span>মাখরাজের ৫টি প্রধান অঙ্গ ও স্থান</span>
+                            <span>🗣️</span>
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 text-center text-xs font-bold">
+                            <div className="p-2.5 rounded-2xl bg-white border border-amber-300 shadow-2xs">
+                              <span className="text-2xl block">🫁</span>
+                              <span className="text-amber-950 block mt-1 font-hind-siliguri">আল-হলক (কণ্ঠনালী)</span>
+                              <span className="text-[10px] text-slate-500">৬টি হরফ</span>
+                            </div>
+                            <div className="p-2.5 rounded-2xl bg-white border border-amber-300 shadow-2xs">
+                              <span className="text-2xl block">👅</span>
+                              <span className="text-amber-950 block mt-1 font-hind-siliguri">আল-লিসান (জিহ্বা)</span>
+                              <span className="text-[10px] text-slate-500">১৮টি হরফ</span>
+                            </div>
+                            <div className="p-2.5 rounded-2xl bg-white border border-amber-300 shadow-2xs">
+                              <span className="text-2xl block">👄</span>
+                              <span className="text-amber-950 block mt-1 font-hind-siliguri">শাফাতান (ঠোঁট)</span>
+                              <span className="text-[10px] text-slate-500">৪টি হরফ</span>
+                            </div>
+                            <div className="p-2.5 rounded-2xl bg-white border border-amber-300 shadow-2xs">
+                              <span className="text-2xl block">👃</span>
+                              <span className="text-amber-950 block mt-1 font-hind-siliguri">খয়শূম (নাকের বাঁশি)</span>
+                              <span className="text-[10px] text-slate-500">গুন্নাহর ধ্বনি</span>
+                            </div>
+                            <div className="col-span-2 sm:col-span-1 p-2.5 rounded-2xl bg-white border border-amber-300 shadow-2xs">
+                              <span className="text-2xl block">🗣️</span>
+                              <span className="text-amber-950 block mt-1 font-hind-siliguri">আল-জওফ (মুখের খালি)</span>
+                              <span className="text-[10px] text-slate-500">মদের ৩ হরফ</span>
+                            </div>
+                          </div>
+                        </div>
 
-              <button
-                onClick={handleNextPage}
-                disabled={currentPage >= NOOR_QAIDA_CLASSES.length}
-                className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
-                  currentPage >= NOOR_QAIDA_CLASSES.length
-                    ? "opacity-40 cursor-not-allowed bg-slate-200 text-slate-400"
-                    : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-2xs"
-                }`}
-              >
-                <span>পরবর্তী ক্লাস</span>
-                <ChevronRight className="w-4 h-4" />
-              </button>
+                        {/* Items Grid */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3" dir="rtl">
+                          {currentClass.items.map((item, idx) => {
+                            const isItemActive = activeItemId === item.id;
+                            return (
+                              <div
+                                key={item.id || idx}
+                                onClick={() => playItemSound(item)}
+                                className={`p-4 rounded-2xl border-2 text-center cursor-pointer transition-all ${
+                                  isItemActive
+                                    ? "bg-amber-100 border-amber-600 ring-4 ring-amber-300 shadow-lg scale-105"
+                                    : "bg-white border-slate-200 hover:border-amber-400 hover:shadow-md"
+                                }`}
+                              >
+                                <div className="font-arabic text-3xl sm:text-4xl font-bold text-slate-900">
+                                  {item.ar}
+                                </div>
+                                <div className="text-xs font-bold text-slate-800 font-hind-siliguri mt-2" dir="ltr">
+                                  {item.nameBn}
+                                </div>
+                                {item.tip && (
+                                  <div className="text-[10px] text-slate-500 mt-1 line-clamp-2" dir="ltr">
+                                    {item.tip}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : currentPage === 16 ? (
+                      /* ── TYPE C: CLASS 16 (জবরের পরিচয় — 3 QUESTIONS + 4 CARDS) ── */
+                      <div className="space-y-6">
+                        <div className="border-3 border-blue-300 rounded-3xl p-4 sm:p-6 bg-blue-50/40 flex flex-col md:flex-row items-center justify-between gap-6">
+                          <div
+                            onClick={() => playItemSound({ ar: "اَ", sound: "اَ" })}
+                            className="w-36 h-40 sm:w-40 sm:h-44 rounded-2xl bg-white border-2 border-blue-400 shadow-md flex items-center justify-center cursor-pointer hover:border-blue-600 hover:scale-105 transition shrink-0"
+                          >
+                            <div className="font-arabic text-7xl font-bold text-slate-900">
+                              اَ
+                            </div>
+                          </div>
+
+                          <div className="flex-1 w-full space-y-3 font-hind-siliguri">
+                            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border-2 border-emerald-300 shadow-2xs">
+                              <span className="font-bold text-slate-700 text-xs sm:text-sm flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-bold">
+                                  ১
+                                </span>
+                                হরফের নাম কী?
+                              </span>
+                              <span className="px-3 py-1 rounded-xl bg-emerald-100 text-emerald-950 font-black text-xs sm:text-sm border border-emerald-300">
+                                আলিফ
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border-2 border-blue-300 shadow-2xs">
+                              <span className="font-bold text-slate-700 text-xs sm:text-sm flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-bold">
+                                  ২
+                                </span>
+                                এই হরফের আওয়াজ কী হবে?
+                              </span>
+                              <span className="px-3 py-1 rounded-xl bg-blue-100 text-blue-950 font-black text-xs sm:text-sm border border-blue-300">
+                                আ
+                              </span>
+                            </div>
+
+                            <div className="flex items-center justify-between p-3.5 rounded-2xl bg-white border-2 border-slate-300 shadow-2xs">
+                              <span className="font-bold text-slate-700 text-xs sm:text-sm flex items-center gap-2">
+                                <span className="w-6 h-6 rounded-full bg-slate-700 text-white flex items-center justify-center text-xs font-bold">
+                                  ৩
+                                </span>
+                                হরফের ওপরে যা আছে, তার নাম কী?
+                              </span>
+                              <span className="px-3 py-1 rounded-xl bg-slate-100 text-slate-900 font-black text-xs sm:text-sm border border-slate-300">
+                                জবর
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="text-xs font-bold text-blue-900 bg-blue-100 px-3 py-1.5 rounded-xl border border-blue-200 inline-block">
+                            এই চারটি হরফে জবর
+                          </div>
+                          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4" dir="rtl">
+                            {currentClass.items.map((it, idx) => (
+                              <div
+                                key={it.id || idx}
+                                onClick={() => playItemSound(it)}
+                                className="p-4 rounded-2xl bg-white border-2 border-blue-200 hover:border-blue-500 hover:shadow-md cursor-pointer text-center space-y-2 group"
+                              >
+                                <div className="font-arabic text-4xl sm:text-5xl font-bold text-slate-900 group-hover:text-blue-700">
+                                  {it.ar}
+                                </div>
+                                <div className="text-xs font-bold text-slate-700 font-hind-siliguri">
+                                  {it.nameBn}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    ) : currentPage === 18 ? (
+                      /* ── TYPE D: CLASS 18 (জবর: দুই হরফ মিলাই + মদ-এর ছোট্ট ধারণা) ── */
+                      <div className="space-y-6">
+                        <div className="p-4 sm:p-5 rounded-2xl bg-blue-50 border-2 border-blue-300 text-center font-bold">
+                          <div className="text-xs text-blue-700 mb-2 font-hind-siliguri">দুই হরফ জবর দিয়ে মিলাই</div>
+                          <div className="font-arabic text-3xl sm:text-4xl text-blue-950 flex items-center justify-center gap-4">
+                            <span>بَتَ</span>
+                            <span>=</span>
+                            <span>تَ</span>
+                            <span>+</span>
+                            <span>بَ</span>
+                          </div>
+                        </div>
+
+                        <div className="border-3 border-amber-300 rounded-3xl p-5 bg-gradient-to-r from-amber-50 to-orange-50 space-y-3">
+                          <div className="text-sm font-black text-amber-950 flex items-center gap-2">
+                            <span>মদ-এর ছোট্ট ধারণা</span>
+                            <span className="text-amber-500">🌟</span>
+                          </div>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div
+                              onClick={() => playItemSound({ ar: "بَ", sound: "بَ" })}
+                              className="p-4 rounded-2xl bg-white border-2 border-amber-200 cursor-pointer hover:border-amber-400 text-center space-y-1"
+                            >
+                              <div className="font-arabic text-4xl font-bold text-slate-900">بَ</div>
+                              <div className="text-xs font-bold text-amber-900 font-hind-siliguri">ছোট আওয়াজ • ১ হরকত</div>
+                              <div className="text-xs text-slate-500">✊ → ✋ (১ বার হাত বন্ধ ও খোলা)</div>
+                            </div>
+
+                            <div
+                              onClick={() => playItemSound({ ar: "بَا", sound: "بَا" })}
+                              className="p-4 rounded-2xl bg-white border-2 border-amber-300 cursor-pointer hover:border-amber-500 text-center space-y-1"
+                            >
+                              <div className="font-arabic text-4xl font-bold text-slate-900">بَا</div>
+                              <div className="text-xs font-bold text-amber-900 font-hind-siliguri">টানা আওয়াজ • ২ হরকত</div>
+                              <div className="text-xs text-slate-500">✊✋ ✊✋ (২ বার হাত বন্ধ ও খোলা)</div>
+                            </div>
+                          </div>
+                          <p className="text-[11px] text-amber-800 text-center font-hind-siliguri">
+                            জবরের পরে খালি আলিফ থাকলে আওয়াজ একটু টেনে পড়তে হয়—একে বলে মদ।
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                          {currentClass.items.map((it, idx) => (
+                            <div
+                              key={it.id || idx}
+                              onClick={() => playItemSound(it)}
+                              className="p-3.5 rounded-2xl bg-white border-2 border-slate-200 hover:border-blue-400 text-center cursor-pointer group"
+                            >
+                              <div className="font-arabic text-3xl font-bold text-slate-900 group-hover:text-blue-700">
+                                {it.ar}
+                              </div>
+                              <div className="text-xs font-bold text-slate-700 mt-1 font-hind-siliguri">
+                                {it.nameBn}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : currentPage === 39 ? (
+                      /* ── TYPE E: CLASS 39 (ক্বলক্বলা হরফ ও বাউন্সিং বল ⚽) ── */
+                      <div className="space-y-6">
+                        <div className="p-5 rounded-3xl bg-teal-50 border-3 border-teal-300 flex flex-col md:flex-row items-center justify-between gap-6">
+                          <div className="flex-1 space-y-2">
+                            <span className="px-3 py-1 rounded-full bg-teal-200 text-teal-950 font-bold text-xs">
+                              ক্বলক্বলার ৫টি হরফ (قطبجد - কুতবু জাদ)
+                            </span>
+                            <h3 className="text-lg font-black text-teal-950 font-hind-siliguri">
+                              প্রতিধ্বনি বা বল বাউন্সিংয়ের মতো আওয়াজ
+                            </h3>
+                            <p className="text-xs text-slate-600 leading-relaxed font-hind-siliguri">
+                              বল দেয়ালে মারলে যেমন ড্রপ খেয়ে লাফিয়ে ওঠে, তেমনি ق ط ب ج د হরফে জযম হলে আওয়াজ লাফিয়ে উঠবে!
+                            </p>
+                          </div>
+
+                          {/* Bouncing Soccer Ball Interactive Feature */}
+                          <div
+                            onClick={() => {
+                              setBallBouncing(true);
+                              playItemSound({ ar: "أَبْ", sound: "أَبْ" });
+                              setTimeout(() => setBallBouncing(false), 1200);
+                            }}
+                            className="w-32 h-32 rounded-3xl bg-white border-2 border-teal-400 shadow-md flex flex-col items-center justify-center cursor-pointer hover:bg-teal-50 transition shrink-0"
+                            title="ক্লিক করে বলের মতো ক্বলক্বলা শোনো"
+                          >
+                            <span
+                              className={`text-5xl select-none transition-transform ${
+                                ballBouncing ? "animate-bounce" : ""
+                              }`}
+                            >
+                              ⚽
+                            </span>
+                            <span className="text-[10px] font-bold text-teal-800 mt-1">
+                              ট্যাপ করে লাফাও
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 5 Qalqalah Letters Cards */}
+                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3" dir="rtl">
+                          {currentClass.items.map((it, idx) => (
+                            <div
+                              key={it.id || idx}
+                              onClick={() => playItemSound(it)}
+                              className="p-4 rounded-2xl bg-white border-2 border-teal-200 hover:border-teal-500 hover:shadow-md cursor-pointer text-center space-y-2 group transition"
+                            >
+                              <div className="font-arabic text-4xl font-bold text-slate-900 group-hover:text-teal-700">
+                                {it.ar}
+                              </div>
+                              <div className="text-xs font-bold text-teal-950 font-hind-siliguri" dir="ltr">
+                                {it.nameBn}
+                              </div>
+                              {it.tip && (
+                                <div className="text-[10px] text-slate-500 font-hind-siliguri" dir="ltr">
+                                  {it.tip}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ) : (currentPage >= 56 && currentPage <= 65) ? (
+                      /* ── TYPE F: BROKEN-DOWN SYLLABLES (PAGES 68-85 EXACT PDF STYLE) ── */
+                      <div className="space-y-4">
+                        <div className="text-xs font-bold text-emerald-900 bg-emerald-100 px-3 py-1.5 rounded-xl border border-emerald-300 inline-block">
+                          শব্দ ভেঙে ভেঙে পড়ি (ডান থেকে বামে)
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          {currentClass.items.map((item, idx) => {
+                            const isItemActive = activeItemId === item.id;
+                            const brokenEntry =
+                              BROKEN_SYLLABLES_DATA.fatiha_p1?.find((b) => b.word === item.ar) ||
+                              BROKEN_SYLLABLES_DATA.surah_105?.find((b) => b.word === item.ar) ||
+                              BROKEN_SYLLABLES_DATA.surah_112?.find((b) => b.word === item.ar);
+
+                            return (
+                              <div
+                                key={item.id || idx}
+                                className={`p-4 rounded-3xl border-2 transition-all space-y-3 bg-white ${
+                                  isItemActive
+                                    ? "border-emerald-500 shadow-lg ring-3 ring-emerald-300"
+                                    : "border-slate-200 hover:border-emerald-300 shadow-2xs"
+                                }`}
+                              >
+                                {/* Full Word Top Bar */}
+                                <div
+                                  onClick={() => playItemSound(item)}
+                                  className="flex items-center justify-between p-2.5 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100 cursor-pointer border border-emerald-200 transition"
+                                >
+                                  <span className="text-xs font-bold text-emerald-800 font-hind-siliguri">
+                                    পূর্ণ শব্দ: {item.nameBn}
+                                  </span>
+                                  <div className="font-arabic text-3xl font-bold text-slate-900" dir="rtl">
+                                    {item.ar}
+                                  </div>
+                                </div>
+
+                                {/* Broken Syllables Capsules (from PDF page 68-85) */}
+                                {brokenEntry ? (
+                                  <div className="flex flex-wrap items-center justify-center gap-2 pt-1" dir="rtl">
+                                    {brokenEntry.syllables.map((syl, sIdx) => {
+                                      const isSylActive = activeItemId === syl.ar + sIdx;
+                                      return (
+                                        <div
+                                          key={sIdx}
+                                          onClick={() =>
+                                            playItemSound({
+                                              ar: syl.ar,
+                                              sound: syl.sound,
+                                              id: syl.ar + sIdx,
+                                            })
+                                          }
+                                          className={`px-3 py-2 rounded-2xl border-2 cursor-pointer text-center transition flex flex-col items-center min-w-[55px] ${
+                                            isSylActive
+                                              ? "bg-rose-100 border-rose-500 shadow-md scale-110"
+                                              : "bg-red-50/80 border-rose-300 hover:bg-rose-100 hover:border-rose-400"
+                                          }`}
+                                        >
+                                          <span className="font-arabic text-xl font-bold text-slate-900">
+                                            {syl.ar}
+                                          </span>
+                                          <span className="text-[11px] font-bold text-rose-950 font-hind-siliguri mt-0.5">
+                                            {syl.bn}
+                                          </span>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                ) : (
+                                  <div className="text-center text-xs text-slate-500 font-hind-siliguri">
+                                    {item.tip}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    ) : (
+                      /* ── TYPE G: STANDARD COLOR-CODED LESSON CARDS GRID ── */
+                      <div
+                        className={`grid gap-3 sm:gap-4 ${
+                          currentClass.items.length <= 4
+                            ? "grid-cols-1 sm:grid-cols-2 md:grid-cols-4"
+                            : currentClass.items.length <= 6
+                            ? "grid-cols-2 sm:grid-cols-3 md:grid-cols-6"
+                            : "grid-cols-2 sm:grid-cols-3 md:grid-cols-4"
+                        }`}
+                        dir="rtl"
+                      >
+                        {currentClass.items.map((item, idx) => {
+                          const isItemActive = activeItemId === item.id;
+                          return (
+                            <div
+                              key={item.id || idx}
+                              onClick={() => playItemSound(item)}
+                              className={`group relative p-4 sm:p-5 rounded-3xl border-2 transition-all duration-300 cursor-pointer flex flex-col items-center justify-between min-h-[140px] text-center bg-white ${
+                                isItemActive
+                                  ? "border-emerald-600 ring-4 ring-emerald-300 shadow-xl scale-105 bg-emerald-50/50"
+                                  : "border-slate-200 hover:border-emerald-400 hover:shadow-md hover:-translate-y-0.5"
+                              }`}
+                            >
+                              <div className="w-full flex items-center justify-between text-xs text-slate-400">
+                                <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[10px]">
+                                  {idx + 1}
+                                </span>
+                                <Volume2 className="w-4 h-4 text-slate-400 group-hover:text-emerald-600" />
+                              </div>
+
+                              <div
+                                className={`my-auto font-arabic font-bold text-slate-900 transition-all ${
+                                  item.ar.length > 20
+                                    ? "text-xl sm:text-2xl leading-relaxed"
+                                    : item.ar.length > 8
+                                    ? "text-2xl sm:text-3xl"
+                                    : "text-4xl sm:text-5xl"
+                                } ${isItemActive ? "text-emerald-800 scale-105" : ""}`}
+                              >
+                                {item.ar}
+                              </div>
+
+                              <div className="mt-2" dir="ltr">
+                                <div className="text-xs sm:text-sm font-bold text-slate-800 font-hind-siliguri">
+                                  {item.nameBn}
+                                </div>
+                                {item.tip && (
+                                  <div className="text-[10px] text-slate-500 line-clamp-1 mt-0.5">
+                                    {item.tip}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+
+                    {/* ── EXERCISE ROW: ✏️ অনুশীলনী (PDF EXACT SECTION) ── */}
+                    <div className="p-4 rounded-2xl bg-emerald-50/70 border-2 border-emerald-300 space-y-2">
+                      <div className="flex items-center gap-2 text-emerald-950 font-black text-xs sm:text-sm font-hind-siliguri">
+                        <span>✏️</span>
+                        <span>অনুশীলনী</span>
+                      </div>
+                      <div className="space-y-1.5 text-xs text-emerald-900 font-medium font-hind-siliguri">
+                        <div className="flex items-start gap-2">
+                          <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                            ১
+                          </span>
+                          <span>আঙুল রেখে ডান থেকে বামে প্রতিটি হরফ ও শব্দ দেখে দেখে পড়ো।</span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="w-5 h-5 rounded-full bg-emerald-600 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                            ২
+                          </span>
+                          <span>প্রতিটি শব্দের উপরে ক্লিক করে ক্বারীর খাঁটি আওয়াজের সাথে মিলিয়ে নাও।</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* ── BOTTOM DUAL BOXES: আজ আমি পারলাম ⭐ & শিক্ষকের জন্য 👩‍🏫 (PDF EXACT) ── */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-2">
+                      {/* Left Box: আজ আমি পারলাম ⭐ */}
+                      <div
+                        onClick={() => handleClaimStar(currentPage)}
+                        className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col items-center justify-center text-center space-y-2 ${
+                          isClassStarEarned
+                            ? "bg-amber-100 border-amber-400 text-amber-950 shadow-md scale-102"
+                            : "bg-amber-50/50 border-amber-300 text-amber-900 hover:bg-amber-100"
+                        }`}
+                        title="তারা পেতে এখানে ক্লিক করো"
+                      >
+                        <Star
+                          className={`w-8 h-8 transition-all ${
+                            isClassStarEarned
+                              ? "text-amber-500 fill-amber-400 scale-110"
+                              : "text-amber-400 fill-transparent"
+                          }`}
+                        />
+                        <div className="text-xs font-black font-hind-siliguri">
+                          আজ আমি পারলাম
+                        </div>
+                        <div className="text-[11px] font-bold px-3 py-1 rounded-full bg-white border border-amber-300 text-amber-900">
+                          {isClassStarEarned ? "অর্জিত! ⭐" : "ক্লিক করে তারা নাও"}
+                        </div>
+                      </div>
+
+                      {/* Right Box: শিক্ষকের জন্য নির্দেশিকা (PDF EXACT) */}
+                      <div className="md:col-span-3 p-4 rounded-2xl bg-slate-50 border-2 border-slate-200 text-slate-800 space-y-1.5">
+                        <div className="flex items-center gap-2 text-slate-900 font-bold text-xs">
+                          <span>👩‍🏫</span>
+                          <span>শিক্ষকের জন্য (ছাত্র এই অংশ না পড়লেও চলবে)</span>
+                        </div>
+                        <p className="text-[11px] text-slate-600 leading-relaxed font-hind-siliguri">
+                          {currentClass.teacherNoteBn ||
+                            "হরফের নাম ও মাখরাজ আলাদা করে শোনান। তাড়াহুড়ো না করে বিশুদ্ধ উচ্চারণে ছাত্রকে অভ্যস্ত করান।"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── FOOTER PAGE CONTROLS (DESKTOP BAR) ── */}
+                  <div className="p-4 bg-slate-100 border-t border-slate-200 hidden sm:flex items-center justify-between text-xs font-bold text-slate-700">
+                    <button
+                      onClick={handlePrevPage}
+                      className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-white text-slate-800 border border-slate-300 hover:bg-slate-50 shadow-2xs transition"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                      <span>পূর্ববর্তী</span>
+                    </button>
+
+                    <div className="flex items-center gap-1.5 font-hind-siliguri">
+                      <span>মক্তব শিক্ষা পাঠ্যপাঠিকা</span>
+                      <span className="text-slate-400">•</span>
+                      <span className="font-mono text-emerald-800">
+                        পৃষ্ঠা নং {currentPage + 7} (ক্লাস {currentClass.classNumberBn})
+                      </span>
+                    </div>
+
+                    <button
+                      onClick={handleNextPage}
+                      disabled={currentPage >= 78}
+                      className={`flex items-center gap-1.5 px-4 py-2 rounded-xl transition ${
+                        currentPage >= 78
+                          ? "opacity-40 cursor-not-allowed bg-slate-200 text-slate-400"
+                          : "bg-emerald-600 text-white hover:bg-emerald-700 shadow-2xs"
+                      }`}
+                    >
+                      <span>পরবর্তী</span>
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                </>
+              )}
             </div>
           </div>
         )}
@@ -902,7 +1430,6 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
                   </p>
                 </div>
 
-                {/* 8 Pairs Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   {SPECIAL_PAGES[18].pairs.map((p, idx) => (
                     <div
@@ -927,7 +1454,10 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
                   </div>
                   <div className="space-y-2">
                     {SPECIAL_PAGES[18].riddles.map((r, idx) => (
-                      <div key={idx} className="p-3 rounded-xl bg-white border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold">
+                      <div
+                        key={idx}
+                        className="p-3 rounded-xl bg-white border border-emerald-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs font-bold"
+                      >
                         <span className="text-slate-800">{r.q}</span>
                         <div className="flex items-center gap-1.5" dir="rtl">
                           {r.options.map((opt, oIdx) => (
@@ -936,7 +1466,7 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
                               onClick={() => {
                                 playItemSound({ ar: opt, sound: opt });
                                 if (opt === r.correct) {
-                                  setCelebrationToast("মাশাআল্লাহ! সঠিক উত্তর!");
+                                  setCelebrationToast("মাশাআল্লাহ! সঠিক উত্তর! ⭐");
                                   setTimeout(() => setCelebrationToast(null), 2500);
                                 }
                               }}
@@ -1016,7 +1546,10 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
                       <div className="font-arabic text-3xl font-bold text-slate-900">
                         {w.ar}
                       </div>
-                      <div className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-900 border border-teal-200 font-hind-siliguri" dir="ltr">
+                      <div
+                        className="text-[11px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-teal-900 border border-teal-200 font-hind-siliguri"
+                        dir="ltr"
+                      >
                         {w.rule}
                       </div>
                     </div>
@@ -1080,7 +1613,7 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
                 <span>অগ্রগতি চার্ট: ৭৮টি ক্লাসের যাত্রা</span>
               </div>
               <h3 className="text-2xl font-black text-slate-900 font-hind-siliguri">
-                তোমার ৭টি পর্বের শিখন মাইলফলক
+                তোমার ১১টি পর্বের শিখন মাইলফলক
               </h3>
               <p className="text-xs text-slate-600">
                 সম্পন্ন হয়েছে: {completedClasses.length}/৭৮টি ক্লাস ({completionPercent}%)
@@ -1122,8 +1655,7 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
                           <button
                             key={cls.id}
                             onClick={() => {
-                              setCurrentPage(cls.classNumber);
-                              setActiveTab("class");
+                              navigateToPage(cls.classNumber, "next");
                             }}
                             className={`w-9 h-9 rounded-full font-black text-xs transition-all flex items-center justify-center border-2 ${
                               isDone || isStar
@@ -1149,7 +1681,6 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
         ══════════════════════════════════════════════════════════ */}
         {activeTab === "certificate" && (
           <div className="bg-[#FFFDF7] rounded-[2rem] border-8 border-double border-amber-500 shadow-2xl p-6 sm:p-10 space-y-8 text-center relative overflow-hidden">
-            {/* Top decorative header */}
             <div className="text-amber-600 text-2xl select-none">
               🌙 ⭐ 🕌 ⭐ 🌙
             </div>
@@ -1158,14 +1689,14 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
               <h2 className="text-3xl sm:text-4xl font-extrabold text-amber-900 font-hind-siliguri tracking-wide">
                 নূর কায়দা সনদপত্র
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 font-medium">
+              <p className="text-xs sm:text-sm text-slate-600 font-medium font-hind-siliguri">
                 মক্তব শিক্ষা পাঠ্যপাঠিকা (হরফ পরিচয় থেকে নাজেরা কুরআন পর্যন্ত)
               </p>
             </div>
 
             {/* Recipient Box */}
             <div className="py-4 space-y-3">
-              <p className="text-xs sm:text-sm text-slate-700 font-bold">
+              <p className="text-xs sm:text-sm text-slate-700 font-bold font-hind-siliguri">
                 এই মর্মে সনদ প্রদান করা হলো যে,
               </p>
               <input
@@ -1178,7 +1709,7 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
               <p className="text-xs sm:text-sm text-slate-700 leading-relaxed max-w-xl mx-auto pt-2 font-hind-siliguri">
                 তিনি সফলভাবে <strong>মক্তব শিক্ষা পাঠ্যপাঠিকার ৭৮টি ক্লাস</strong> ও সকল মাখরাজ-তাজবীদ পাঠ সমাপ্ত করেছেন এবং নাজেরা কুরআন পাঠের যোগ্যতা অর্জন করেছেন।
               </p>
-              <p className="text-xs sm:text-sm text-emerald-800 font-bold italic pt-1">
+              <p className="text-xs sm:text-sm text-emerald-800 font-bold italic pt-1 font-hind-siliguri">
                 আল্লাহ তা‘আলা তাঁর ইলমে বরকত দান করুন। আমীন।
               </p>
             </div>
@@ -1215,6 +1746,119 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
         )}
       </main>
 
+      {/* ── MOBILE PHONE STICKY BOTTOM TOOLBAR ── */}
+      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t-2 border-emerald-300 px-3 py-2 sm:hidden flex items-center justify-between shadow-2xl">
+        <button
+          onClick={handlePrevPage}
+          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-100 text-slate-800 font-bold text-xs active:scale-95 shadow-xs"
+        >
+          <ChevronLeft className="w-4 h-4" />
+          <span>পূর্ববর্তী</span>
+        </button>
+
+        {/* Center Page Quick Jump Button */}
+        <button
+          onClick={() => setIsQuickJumpOpen(true)}
+          className="flex flex-col items-center px-3 py-1 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-950 font-bold active:scale-95"
+        >
+          <span className="text-xs font-hind-siliguri">
+            {getPageHeaderLabel()}
+          </span>
+          <span className="text-[9px] text-slate-500">ট্যাপ করে পৃষ্ঠা বদলান ▾</span>
+        </button>
+
+        <button
+          onClick={handleNextPage}
+          className="flex items-center gap-1 px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs active:scale-95 shadow-md"
+        >
+          <span>পরবর্তী</span>
+          <ChevronRight className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* ── QUICK JUMP SLIDER MODAL FOR MOBILE & DESKTOP ── */}
+      {isQuickJumpOpen && (
+        <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl max-w-md w-full p-5 space-y-4 shadow-2xl border-2 border-emerald-400">
+            <div className="flex items-center justify-between">
+              <h3 className="font-black text-slate-900 font-hind-siliguri">
+                দ্রুত পৃষ্ঠা বদলান
+              </h3>
+              <button
+                onClick={() => setIsQuickJumpOpen(false)}
+                className="p-1.5 rounded-xl bg-slate-100 text-slate-600 hover:bg-slate-200"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Quick Short-cut buttons */}
+            <div className="grid grid-cols-3 gap-2 text-xs font-bold">
+              <button
+                onClick={() => {
+                  navigateToPage("cover", "prev");
+                  setIsQuickJumpOpen(false);
+                }}
+                className="p-2.5 rounded-xl bg-emerald-50 text-emerald-900 border border-emerald-300 text-center"
+              >
+                📕 প্রচ্ছদ
+              </button>
+              <button
+                onClick={() => {
+                  navigateToPage("rules", "next");
+                  setIsQuickJumpOpen(false);
+                }}
+                className="p-2.5 rounded-xl bg-amber-50 text-amber-900 border border-amber-300 text-center"
+              >
+                📋 নিয়মাবলী
+              </button>
+              <button
+                onClick={() => {
+                  navigateToPage("color-code", "next");
+                  setIsQuickJumpOpen(false);
+                }}
+                className="p-2.5 rounded-xl bg-blue-50 text-blue-900 border border-blue-300 text-center"
+              >
+                🎨 রঙ-সংকেত
+              </button>
+            </div>
+
+            {/* Slider for Class 1 to 78 */}
+            <div className="space-y-2 pt-2">
+              <div className="flex justify-between text-xs font-bold text-slate-700 font-hind-siliguri">
+                <span>ক্লাস ১</span>
+                <span className="text-emerald-700 font-black">
+                  {typeof currentPage === "number" ? `ক্লাস ${currentPage}` : "ক্লাস নির্বাচন করুন"}
+                </span>
+                <span>ক্লাস ৭৮</span>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="78"
+                value={typeof currentPage === "number" ? currentPage : 1}
+                onChange={(e) => {
+                  navigateToPage(parseInt(e.target.value), "next");
+                }}
+                className="w-full accent-emerald-600 cursor-pointer h-2 bg-slate-200 rounded-lg"
+              />
+            </div>
+
+            <div className="pt-2">
+              <button
+                onClick={() => {
+                  setIsQuickJumpOpen(false);
+                  setIsTocOpen(true);
+                }}
+                className="w-full py-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs hover:bg-slate-200 transition"
+              >
+                সম্পূর্ণ সূচিপত্র দেখুন ➔
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── TABLE OF CONTENTS (TOC) MODAL ── */}
       {isTocOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-slate-950/70 backdrop-blur-sm animate-fade-in">
@@ -1223,9 +1867,9 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
             <div className="p-4 sm:p-5 bg-emerald-800 text-white flex items-center justify-between">
               <div>
                 <h3 className="text-base sm:text-lg font-black font-hind-siliguri">
-                  নূর কায়দা — সূচিপত্র ও ক্লাস নির্বাচন
+                  নূর কায়দা — সূচিপত্র ও পাঠ নির্বাচন
                 </h3>
-                <p className="text-xs text-emerald-200">
+                <p className="text-xs text-emerald-200 font-hind-siliguri">
                   ১১টি পর্ব • ৭৮টি ক্লাস • সম্পন্ন: {completedClasses.length}/৭৮
                 </p>
               </div>
@@ -1234,6 +1878,37 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
                 className="p-2 rounded-xl bg-white/10 hover:bg-white/20 text-white transition"
               >
                 <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Quick Links Row (Cover, Rules, Color Code) */}
+            <div className="p-3 bg-emerald-50/60 border-b border-emerald-200 flex items-center gap-2 overflow-x-auto text-xs font-bold">
+              <button
+                onClick={() => {
+                  navigateToPage("cover", "prev");
+                  setIsTocOpen(false);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-white border border-emerald-300 text-emerald-950 shadow-2xs whitespace-nowrap"
+              >
+                📕 প্রচ্ছদ (পৃষ্ঠা ১)
+              </button>
+              <button
+                onClick={() => {
+                  navigateToPage("rules", "next");
+                  setIsTocOpen(false);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-white border border-emerald-300 text-emerald-950 shadow-2xs whitespace-nowrap"
+              >
+                📋 পড়ার নিয়ম (পৃষ্ঠা ৩)
+              </button>
+              <button
+                onClick={() => {
+                  navigateToPage("color-code", "next");
+                  setIsTocOpen(false);
+                }}
+                className="px-3 py-1.5 rounded-xl bg-white border border-emerald-300 text-emerald-950 shadow-2xs whitespace-nowrap"
+              >
+                🎨 রঙ-সংকেত (পৃষ্ঠা ৫)
               </button>
             </div>
 
@@ -1253,10 +1928,11 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
 
             {/* List */}
             <div className="p-3 overflow-y-auto space-y-1.5 flex-1 divide-y divide-slate-100">
-              {NOOR_QAIDA_CLASSES.filter((c) =>
-                !tocSearch ||
-                c.titleBn.toLowerCase().includes(tocSearch.toLowerCase()) ||
-                c.classNumber.toString().includes(tocSearch)
+              {NOOR_QAIDA_CLASSES.filter(
+                (c) =>
+                  !tocSearch ||
+                  c.titleBn.toLowerCase().includes(tocSearch.toLowerCase()) ||
+                  c.classNumber.toString().includes(tocSearch)
               ).map((cls) => {
                 const isCur = cls.classNumber === currentPage;
                 const isDone = completedClasses.includes(cls.classNumber);
@@ -1265,8 +1941,7 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
                   <div
                     key={cls.id}
                     onClick={() => {
-                      setCurrentPage(cls.classNumber);
-                      setActiveTab("class");
+                      navigateToPage(cls.classNumber, "next");
                       setIsTocOpen(false);
                     }}
                     className={`pt-1.5 first:pt-0 flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition ${
@@ -1280,11 +1955,11 @@ export default function NoorQaidaBook({ initialClass = 1, onNavigateBack }) {
                         {cls.classNumberBn}
                       </span>
                       <div>
-                        <div className="text-xs sm:text-sm font-bold">
+                        <div className="text-xs sm:text-sm font-bold font-hind-siliguri">
                           {cls.titleBn}
                         </div>
                         <div className="text-[10px] text-slate-400">
-                          {cls.parvaTitleBn}
+                          {cls.parvaTitleBn} • পৃষ্ঠা {cls.classNumber + 7}
                         </div>
                       </div>
                     </div>

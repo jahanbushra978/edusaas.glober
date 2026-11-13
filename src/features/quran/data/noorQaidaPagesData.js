@@ -6,96 +6,118 @@
 // 🎨 কালার থিম ও প্যার্ভা সংকেত
 export const PARVA_THEMES = {
   1: {
+    number: 1,
     name: "পর্ব ১: হরফ পরিচয় ও আকৃতি",
     headerBg: "from-emerald-600 via-teal-700 to-emerald-800",
     badgeBg: "bg-emerald-100 text-emerald-950 border-emerald-300",
     pillBorder: "border-emerald-400",
     accent: "text-emerald-700",
     emoji: "🔤",
+    pageRange: "৮–১৮",
   },
   2: {
+    number: 2,
     name: "পর্ব ২: মাখরাজের প্রাথমিক শিক্ষা",
     headerBg: "from-teal-600 via-cyan-700 to-teal-800",
     badgeBg: "bg-cyan-100 text-cyan-950 border-cyan-300",
     pillBorder: "border-cyan-400",
     accent: "text-cyan-700",
     emoji: "🗣️",
+    pageRange: "১৯–২৩",
   },
   3: {
+    number: 3,
     name: "পর্ব ৩: জবর, যের, পেশ (হরকত)",
     headerBg: "from-blue-600 via-indigo-700 to-blue-800",
     badgeBg: "bg-blue-100 text-blue-950 border-blue-300",
     pillBorder: "border-blue-400",
     accent: "text-blue-700",
     emoji: "🔵",
+    pageRange: "২৪–৩৯",
   },
   4: {
+    number: 4,
     name: "পর্ব ৪: তানবিন, মদ ও লীন",
     headerBg: "from-purple-600 via-pink-700 to-purple-800",
     badgeBg: "bg-pink-100 text-pink-950 border-pink-300",
     pillBorder: "border-pink-400",
     accent: "text-pink-700",
     emoji: "🎵",
+    pageRange: "৪০–৪৬",
   },
   5: {
+    number: 5,
     name: "পর্ব ৫: সুকুন (জযম), ক্বলক্বলা ও তাশদীদ",
     headerBg: "from-amber-600 via-orange-700 to-amber-800",
     badgeBg: "bg-amber-100 text-amber-950 border-amber-300",
     pillBorder: "border-amber-400",
     accent: "text-amber-700",
     emoji: "⚡",
+    pageRange: "৪৭–৫৬",
   },
   6: {
+    number: 6,
     name: "পর্ব ৬: গুন্নাহ, ওয়াকফ ও প্রাথমিক তাজবিদ",
     headerBg: "from-rose-600 via-red-700 to-rose-800",
     badgeBg: "bg-rose-100 text-rose-950 border-rose-300",
     pillBorder: "border-rose-400",
     accent: "text-rose-700",
     emoji: "🛑",
+    pageRange: "৫৭–৬২",
   },
   7: {
+    number: 7,
     name: "পর্ব ৭: ১৭ মাখরাজ ও সিফাত",
     headerBg: "from-teal-700 via-emerald-800 to-teal-900",
     badgeBg: "bg-teal-100 text-teal-950 border-teal-300",
     pillBorder: "border-teal-400",
     accent: "text-teal-700",
     emoji: "🧭",
+    pageRange: "৬৩–৬৫",
   },
   8: {
+    number: 8,
     name: "পর্ব ৮: সূরা ফাতিহা শিক্ষা",
     headerBg: "from-yellow-600 via-amber-700 to-yellow-800",
     badgeBg: "bg-amber-100 text-amber-950 border-amber-300",
     pillBorder: "border-amber-400",
     accent: "text-amber-700",
     emoji: "📖",
+    pageRange: "৬৬–৭২",
   },
   9: {
+    number: 9,
     name: "পর্ব ৯: শেষ ১০ সূরা (নাজেরা প্রস্তুতি)",
     headerBg: "from-red-600 via-rose-700 to-red-800",
     badgeBg: "bg-red-100 text-red-950 border-red-300",
     pillBorder: "border-red-400",
     accent: "text-red-700",
     emoji: "✨",
+    pageRange: "৭৩–৮৮",
   },
   10: {
+    number: 10,
     name: "পর্ব ১০: বিস্তারিত তাজবিদ নিয়মাবলী",
     headerBg: "from-indigo-600 via-purple-700 to-indigo-800",
     badgeBg: "bg-indigo-100 text-indigo-950 border-indigo-300",
     pillBorder: "border-indigo-400",
     accent: "text-indigo-700",
     emoji: "🎓",
+    pageRange: "৮৯–৯৫",
   },
   11: {
+    number: 11,
     name: "পর্ব ১১: ইজরা ও নাজেরা কুরআন",
     headerBg: "from-purple-700 via-indigo-800 to-purple-900",
     badgeBg: "bg-purple-100 text-purple-950 border-purple-300",
     pillBorder: "border-purple-400",
     accent: "text-purple-700",
     emoji: "🏆",
+    pageRange: "৯৬–১০১",
   },
 };
 
-// 🌟 স্পেশাল পেজ ডেটা (মজার খেলা, কভার, চার্ট, সনদ)
+// 🌟 স্পেশাল পেজ ডেটা (কভার, গেমস, চার্ট, সনদ)
 export const SPECIAL_PAGES = {
   // পৃষ্ঠা ১: প্রচ্ছদ (Cover)
   1: {
@@ -107,20 +129,33 @@ export const SPECIAL_PAGES = {
     taglineBn: "📖 ছবি • রঙ • চার্ট • অনুশীলনী — শিক্ষক ও ছাত্র দুজনের জন্য",
   },
 
+  // পৃষ্ঠা ৩: ব্যবহারের নিয়ম
+  3: {
+    type: "rules",
+    titleBn: "কীভাবে ব্যবহার করবেন — শিক্ষক ও অভিভাবকের জন্য",
+    items: [
+      { icon: "🧒", title: "ছাত্রের জন্য", desc: "প্রতিদিন ১টি পাতা। ওপরে 'আজকের লক্ষ্য', মাঝে বড় পাঠ, নিচে অনুশীলনী। পারলে ⭐ বক্সে ✓ দাও।" },
+      { icon: "👩‍🏫", title: "শিক্ষকের জন্য", desc: "প্রতি পাতার নিচে ধূসর বক্সে করণীয়, প্রশ্ন ও 'পরের ক্লাসে যাওয়ার শর্ত' আছে। শর্ত পূরণ না হলে একই ক্লাস আবার নিন।" },
+      { icon: "🔁", title: "ক্লাস নম্বর ≠ দিন", desc: "ক্লাস মানে ধাপ, দিন নয়। ছাত্র না বুঝলে একই ক্লাস একাধিক দিন চলবে।" },
+      { icon: "🎯", title: "বয়স ৫–১২", desc: "ছোটরা শুধু বড় হরফ ও রঙ দেখে শুনে শিখবে; বড়রা অনুশীলনীর লেখা ও ভুল-খাতা নিজে ব্যবহার করবে।" },
+      { icon: "✏️", title: "রঙের নিয়ম", desc: "হরকত সব জায়গায় একই রঙের বক্সে: জবর 🔵, যের 🟠, পেশ 🟣।" },
+    ],
+  },
+
   // পৃষ্ঠা ৫: চিহ্ন ও রঙ-সংকেত (Color code reference)
   5: {
     type: "color-code",
     titleBn: "চিহ্ন ও রঙ-সংকেত",
     subtitleBn: "সারা বইয়ে একই রঙ, একই চিহ্ন",
     cards: [
-      { ar: "جَ", nameBn: "জবর", ruleBn: "ওপরে ছোট দাঁড়ি", soundBn: "আ", colorTag: "jabar", color: "blue" },
-      { ar: "جِ", nameBn: "যের", ruleBn: "নিচে ছোট দাঁড়ি", soundBn: "ই", colorTag: "zer", color: "orange" },
-      { ar: "جُ", nameBn: "পেশ", ruleBn: "ওপরে ছোট গোল মাথা", soundBn: "উ", colorTag: "pesh", color: "purple" },
-      { ar: "جً", nameBn: "দুই জবর", ruleBn: "দুটি দাঁড়ি", soundBn: "আন", colorTag: "tanween", color: "pink" },
-      { ar: "جٍ", nameBn: "দুই যের", ruleBn: "নিচে দুটি দাঁড়ি", soundBn: "ইন", colorTag: "tanween", color: "pink" },
-      { ar: "جٌ", nameBn: "দুই পেশ", ruleBn: "দুটি মাথা", soundBn: "উন", colorTag: "tanween", color: "pink" },
-      { ar: "جْ", nameBn: "সুকুন", ruleBn: "ছোট গোল চিহ্ন", soundBn: "স্থির", colorTag: "sukoon", color: "cyan" },
-      { ar: "جّ", nameBn: "তাশদীদ", ruleBn: "ছোট 'শ'-এর মতো", soundBn: "দুইবার", colorTag: "tashdid", color: "teal" },
+      { ar: "جَ", nameBn: "জবর", ruleBn: "ওপরে ছোট দাঁড়ি", soundBn: "আ", colorTag: "jabar", color: "blue", border: "border-blue-400", bg: "bg-blue-50" },
+      { ar: "جِ", nameBn: "যের", ruleBn: "নিচে ছোট দাঁড়ি", soundBn: "ই", colorTag: "zer", color: "orange", border: "border-orange-400", bg: "bg-orange-50" },
+      { ar: "جُ", nameBn: "পেশ", ruleBn: "ওপরে ছোট গোল মাথা", soundBn: "উ", colorTag: "pesh", color: "purple", border: "border-purple-400", bg: "bg-purple-50" },
+      { ar: "جً", nameBn: "দুই জবর", ruleBn: "দুটি দাঁড়ি", soundBn: "আন", colorTag: "tanween", color: "pink", border: "border-pink-400", bg: "bg-pink-50" },
+      { ar: "جٍ", nameBn: "দুই যের", ruleBn: "নিচে দুটি দাঁড়ি", soundBn: "ইন", colorTag: "tanween", color: "pink", border: "border-pink-400", bg: "bg-pink-50" },
+      { ar: "جٌ", nameBn: "দুই পেশ", ruleBn: "দুটি মাথা", soundBn: "উন", colorTag: "tanween", color: "pink", border: "border-pink-400", bg: "bg-pink-50" },
+      { ar: "جْ", nameBn: "সুকুন", ruleBn: "ছোট গোল চিহ্ন", soundBn: "স্থির", colorTag: "sukoon", color: "cyan", border: "border-cyan-400", bg: "bg-cyan-50" },
+      { ar: "جّ", nameBn: "তাশদীদ", ruleBn: "ছোট 'শ'-এর মতো", soundBn: "দুইবার", colorTag: "tashdid", color: "teal", border: "border-teal-400", bg: "bg-teal-50" },
     ],
     footerTip: "💡 ~ মানে টেনে পড়ো (মদ)। বাংলা লেখা শুধু সাহায্য।",
   },
@@ -130,7 +165,7 @@ export const SPECIAL_PAGES = {
     type: "game",
     gameNumber: 1,
     titleBn: "মজার খেলা ১: হরফ চিনি, রেখা টানি",
-    subtitleBn: "হরফের সঙ্গে নাম মেলাও",
+    subtitleBn: "হরফের সঙ্গে নাম মেলাও — ক্লিক করে শোনো",
     pairs: [
       { ar: "ب", bn: "বা", sound: "ب" },
       { ar: "ت", bn: "তা", sound: "ت" },
@@ -206,7 +241,7 @@ export const SPECIAL_PAGES = {
   88: {
     type: "game",
     gameNumber: 4,
-    titleBn: "মজার খেলা ৪: সূরাগুলো চিনি",
+    titleBn: "মজার খেলা ৪: শেষ ১০টি ছোট সূরা চিনি",
     subtitleBn: "সূরার প্রথম আয়াত ও আয়াত সংখ্যা",
     surahs: [
       { nameBn: "সূরা আল-ফীল", firstAyah: "أَلَمْ تَرَ كَيْفَ فَعَلَ رَبُّكَ بِأَصْحَابِ الْفِيلِ", count: "৫", ref: { surah: 105, ayah: 1 } },
@@ -215,7 +250,7 @@ export const SPECIAL_PAGES = {
       { nameBn: "সূরা আল-কাওসার", firstAyah: "إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ", count: "৩", ref: { surah: 108, ayah: 1 } },
       { nameBn: "সূরা আল-কাফিরুন", firstAyah: "قُلْ يَا أَيُّهَا الْكَافِرُونَ", count: "৬", ref: { surah: 109, ayah: 1 } },
       { nameBn: "সূরা আন-নাসর", firstAyah: "إِذَا جَاءَ نَصْرُ اللَّهِ وَالْفَتْحُ", count: "৩", ref: { surah: 110, ayah: 1 } },
-      { nameBn: "সূরা আল-লাহাব", firstAyah: "تَبَّتْ يَدَا أَبِي لَهَبٍ وَتَبَّ", count: "৫", ref: { surah: 111, ayah: 1 } },
+      { nameBn: "সূরা আল-লাহাব", firstAyah: "تَبَّتْ যَدَا أَبِي لَهَبٍ وَتَبَّ", count: "৫", ref: { surah: 111, ayah: 1 } },
       { nameBn: "সূরা আল-ইখলাস", firstAyah: "قُلْ هُوَ اللَّهُ أَحَدٌ", count: "৪", ref: { surah: 112, ayah: 1 } },
       { nameBn: "সূরা আল-ফালাক", firstAyah: "قُلْ أَعُوذُ بِرَبِّ الْفَلَقِ", count: "৫", ref: { surah: 113, ayah: 1 } },
       { nameBn: "সূরা আন-নাস", firstAyah: "قُلْ أَعُوذُ بِرَبِّ النَّاسِ", count: "৬", ref: { surah: 114, ayah: 1 } },
@@ -237,7 +272,7 @@ export const SPECIAL_PAGES = {
   },
 };
 
-// 📖 শব্দ ভেঙে ভেঙে পড়ার জন্য ডেটা (সূরা ফাতিহা ও শেষ ১০ সূরা: পৃষ্ঠা ৬৮–৮৫)
+// 📖 শব্দ ভেঙে ভেঙে পড়ার জন্য বিস্তারিত ডেটা (সিলেবল ক্যাপসুল)
 export const BROKEN_SYLLABLES_DATA = {
   // সূরা আল-ফাতিহা ১ম ভাগ (পৃষ্ঠা ৬৮)
   fatiha_p1: [
@@ -412,7 +447,7 @@ export const BROKEN_SYLLABLES_DATA = {
       syllables: [
         { ar: "أَ", bn: "আ", sound: "أَ" },
         { ar: "حَ", bn: "হা", sound: "حَ" },
-        { ar: "دٌ", bn: "দুন", sound: "دٌ" },
+        { ar: "দٌ", bn: "দুন", sound: "دٌ" },
       ],
     },
     {
@@ -422,7 +457,7 @@ export const BROKEN_SYLLABLES_DATA = {
         { ar: "ٱل", bn: "আ", sound: "اَ" },
         { ar: "صَّ", bn: "ছ্ছা", sound: "صَّ" },
         { ar: "مَ", bn: "মা", sound: "مَ" },
-        { ar: "دُ", bn: "দু", sound: "دُ" },
+        { ar: "দُ", bn: "দু", sound: "دُ" },
       ],
     },
     {
@@ -493,7 +528,7 @@ export const BROKEN_SYLLABLES_DATA = {
       syllables: [
         { ar: "أَ", bn: "আ", sound: "أَ" },
         { ar: "حَ", bn: "হা", sound: "حَ" },
-        { ar: "دٌ", bn: "দুন", sound: "دٌ" },
+        { ar: "দٌ", bn: "দুন", sound: "দٌ" },
       ],
     },
   ],
