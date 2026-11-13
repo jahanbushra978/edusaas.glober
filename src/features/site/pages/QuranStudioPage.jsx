@@ -491,12 +491,12 @@ export default function QuranStudioPage() {
         },
         {
           id: "kids-book",
-          title: "আমার প্রথম কুরআন",
-          subtitle: "শিশুতোষ রঙিন হরফ ও সাউন্ডবুক",
+          title: "নূর কিডস (Noor Kids)",
+          subtitle: "রঙিন কায়দা, ৭টি গেম ও ইসলামিক ভিডিও কর্নার",
           icon: Baby,
           emoji: "👶",
           gradient: "from-rose-500 to-pink-500 text-white",
-          badge: "ছোটদের প্রিয়",
+          badge: "অল-ইন-ওয়ান কিডস",
           badgeStyle: "bg-rose-100 text-rose-800 border-rose-300 font-black",
           isExternalLink: true,
           href: "/quran-tutor/kids",
@@ -1317,14 +1317,13 @@ export default function QuranStudioPage() {
 
                 {/* 5 Fun Quick-Launch Action Buttons for Children */}
                 <div className="flex flex-col sm:flex-row md:flex-col gap-2.5 w-full md:w-auto shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => launchFeature("kids-book")}
+                  <Link
+                    href="/quran-tutor/kids"
                     className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-rose-500 to-pink-600 hover:from-rose-600 hover:to-pink-700 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-lg shadow-rose-900/40 hover:scale-102 active:scale-95 transition-all cursor-pointer"
                   >
                     <span className="text-lg">👶</span>
-                    <span>আমার প্রথম কুরআন (বই)</span>
-                  </button>
+                    <span>নূর কিডস মহাবিশ্ব (ভিডিও ও গেমস)</span>
+                  </Link>
 
                   <div className="grid grid-cols-2 gap-2">
                     <button
