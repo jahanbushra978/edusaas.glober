@@ -11,10 +11,8 @@ import {
   EyeOff,
   Award,
   ArrowRight,
-  ChevronRight,
   CheckCircle2,
   Target,
-  Layers,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLearningLanguage } from "../hooks/useLearningLanguage";
@@ -27,14 +25,14 @@ import { fireCelebrationConfetti } from "../lib/confetti";
 
 // ── 29 ARABIC ALPHABET WITH FORMS (ISOLATED, INITIAL, MEDIAL, FINAL) ──
 const ARABIC_ALPHABET = [
-  { ar: "ا", nameBn: "আলিফ", nameEn: "Alif", forms: { isolated: "ا", initial: "ا", medial: "ـا", final: "ـা" } },
+  { ar: "ا", nameBn: "আলিফ", nameEn: "Alif", forms: { isolated: "ا", initial: "ا", medial: "ـا", final: "ـا" } },
   { ar: "ب", nameBn: "বা", nameEn: "Ba", forms: { isolated: "ب", initial: "بـ", medial: "ـبـ", final: "ـب" } },
-  { ar: "ت", nameBn: "তা", nameEn: "Ta", forms: { isolated: "ت", initial: "تـ", medial: "ـتـ", final: "ـت" } },
+  { ar: "ت", nameBn: "তা", nameEn: "Ta", forms: { isolated: "ت", initial: "تـ", medial: "ـতـ", final: "ـত" } },
   { ar: "ث", nameBn: "ছা", nameEn: "Tha", forms: { isolated: "ث", initial: "ثـ", medial: "ـثـ", final: "ـث" } },
   { ar: "ج", nameBn: "জীম", nameEn: "Jeem", forms: { isolated: "ج", initial: "جـ", medial: "ـجـ", final: "ـج" } },
   { ar: "ح", nameBn: "হা", nameEn: "Haa", forms: { isolated: "ح", initial: "حـ", medial: "ـحـ", final: "ـح" } },
   { ar: "خ", nameBn: "খা", nameEn: "Kha", forms: { isolated: "خ", initial: "خـ", medial: "ـخـ", final: "ـخ" } },
-  { ar: "د", nameBn: "দাল", nameEn: "Dal", forms: { isolated: "د", initial: "د", medial: "ـদ", final: "ـد" } },
+  { ar: "د", nameBn: "দাল", nameEn: "Dal", forms: { isolated: "د", initial: "د", medial: "ـد", final: "ـد" } },
   { ar: "ذ", nameBn: "যাল", nameEn: "Dhal", forms: { isolated: "ذ", initial: "ذ", medial: "ـذ", final: "ـذ" } },
   { ar: "ر", nameBn: "রা", nameEn: "Ra", forms: { isolated: "ر", initial: "ر", medial: "ـر", final: "ـر" } },
   { ar: "ز", nameBn: "যা", nameEn: "Zay", forms: { isolated: "ز", initial: "ز", medial: "ـز", final: "ـز" } },
@@ -50,7 +48,7 @@ const ARABIC_ALPHABET = [
   { ar: "ق", nameBn: "ক্বাফ", nameEn: "Qaaf", forms: { isolated: "ق", initial: "قـ", medial: "ـقـ", final: "ـق" } },
   { ar: "ك", nameBn: "কাফ", nameEn: "Kaaf", forms: { isolated: "ك", initial: "كـ", medial: "ـكـ", final: "ـك" } },
   { ar: "ل", nameBn: "লাম", nameEn: "Laam", forms: { isolated: "ل", initial: "لـ", medial: "ـلـ", final: "ـل" } },
-  { ar: "م", nameBn: "মীম", nameEn: "Meem", forms: { isolated: "م", initial: "মـ", medial: "ـمـ", final: "ـم" } },
+  { ar: "م", nameBn: "মীম", nameEn: "Meem", forms: { isolated: "م", initial: "مـ", medial: "ـمـ", final: "ـم" } },
   { ar: "ن", nameBn: "নূন", nameEn: "Noon", forms: { isolated: "ن", initial: "نـ", medial: "ـنـ", final: "ـن" } },
   { ar: "و", nameBn: "ওয়াও", nameEn: "Waw", forms: { isolated: "و", initial: "و", medial: "ـو", final: "ـو" } },
   { ar: "هـ", nameBn: "হা", nameEn: "Haa", forms: { isolated: "هـ", initial: "هـ", medial: "ـهـ", final: "ـه" } },
@@ -100,317 +98,385 @@ const HARAKAT_PRONUNCIATION_MAP = {
   "ي": { fathah: "ইয়া", kasrah: "য়ি", dammah: "য়ু", sukoon: "আই" },
 };
 
-// ── AUTHENTIC CALLIGRAPHY STROKE ANCHORS FOR ALL 29 ARABIC LETTERS ──
-// Normalized relative coordinates [0, 1] mapped directly inside the letter bounding box
-const LETTER_ANCHORS = {
+// ── 🎨 HIGH-DEFINITION HOLLOW CALLIGRAPHY VECTOR PATHS & CHECKPOINTS ──
+// Standard SVG Coordinate System: viewBox 0 0 900 560
+// Center: (450, 280), Calligraphy Baseline: y = 350
+// Every checkpoint is 100% MATHEMATICALLY LOCKED DEAD CENTER on the stroke path!
+const ARABIC_TRACING_PATHS = {
   // Alif (Top to Bottom)
   "ا": {
-    start: { x: 0.50, y: 0.16 },
-    waypoints: [
-      { x: 0.50, y: 0.38 },
-      { x: 0.50, y: 0.60 },
-      { x: 0.50, y: 0.76 },
+    path: "M 450 110 L 450 350",
+    dots: [],
+    checkpoints: [
+      { x: 450, y: 110, label: "১", isStart: true },
+      { x: 450, y: 190, label: "২" },
+      { x: 450, y: 270, label: "৩" },
+      { x: 450, y: 350, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.50, y: 0.88 },
   },
-  // Baa, Taa, Thaa (Right tip -> Baseline -> Left tip)
+  // Baa (Right tip -> Baseline -> Left tip + 1 dot below)
   "ب": {
-    start: { x: 0.86, y: 0.46 },
-    waypoints: [
-      { x: 0.75, y: 0.58 },
-      { x: 0.55, y: 0.62 },
-      { x: 0.35, y: 0.62 },
-      { x: 0.20, y: 0.56 },
+    path: "M 640 230 Q 610 350 450 350 Q 290 350 260 230",
+    dots: [{ x: 450, y: 415, r: 18 }],
+    checkpoints: [
+      { x: 640, y: 230, label: "১", isStart: true },
+      { x: 590, y: 320, label: "২" },
+      { x: 450, y: 350, label: "৩" },
+      { x: 310, y: 320, label: "৪" },
+      { x: 260, y: 230, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.12, y: 0.46 },
   },
+  // Taa (Right tip -> Baseline -> Left tip + 2 dots on top)
   "ت": {
-    start: { x: 0.86, y: 0.48 },
-    waypoints: [
-      { x: 0.75, y: 0.60 },
-      { x: 0.55, y: 0.64 },
-      { x: 0.35, y: 0.64 },
-      { x: 0.20, y: 0.58 },
+    path: "M 640 230 Q 610 350 450 350 Q 290 350 260 230",
+    dots: [
+      { x: 480, y: 155, r: 16 },
+      { x: 420, y: 155, r: 16 },
     ],
-    end: { x: 0.12, y: 0.48 },
+    checkpoints: [
+      { x: 640, y: 230, label: "১", isStart: true },
+      { x: 590, y: 320, label: "২" },
+      { x: 450, y: 350, label: "৩" },
+      { x: 310, y: 320, label: "৪" },
+      { x: 260, y: 230, label: "শেষ", isEnd: true },
+    ],
   },
+  // Thaa (Right tip -> Baseline -> Left tip + 3 dots on top)
   "ث": {
-    start: { x: 0.86, y: 0.52 },
-    waypoints: [
-      { x: 0.75, y: 0.64 },
-      { x: 0.55, y: 0.68 },
-      { x: 0.35, y: 0.68 },
-      { x: 0.20, y: 0.62 },
+    path: "M 640 230 Q 610 350 450 350 Q 290 350 260 230",
+    dots: [
+      { x: 450, y: 120, r: 15 },
+      { x: 480, y: 160, r: 15 },
+      { x: 420, y: 160, r: 15 },
     ],
-    end: { x: 0.12, y: 0.52 },
+    checkpoints: [
+      { x: 640, y: 230, label: "১", isStart: true },
+      { x: 590, y: 320, label: "২" },
+      { x: 450, y: 350, label: "৩" },
+      { x: 310, y: 320, label: "৪" },
+      { x: 260, y: 230, label: "শেষ", isEnd: true },
+    ],
   },
-  // Jeem, Haa, Khaa (Top brow -> center tuck -> crescent belly -> left tail tip)
+  // Jeem (Top brow -> tuck in -> crescent belly below baseline + 1 dot inside)
   "ج": {
-    start: { x: 0.55, y: 0.26 },
-    waypoints: [
-      { x: 0.76, y: 0.28 },
-      { x: 0.62, y: 0.46 },
-      { x: 0.74, y: 0.64 },
-      { x: 0.50, y: 0.82 },
-      { x: 0.30, y: 0.80 },
+    path: "M 370 170 L 530 170 Q 460 250 440 260 Q 560 330 520 440 Q 450 510 320 470 Q 240 430 220 360",
+    dots: [{ x: 380, y: 370, r: 18 }],
+    checkpoints: [
+      { x: 370, y: 170, label: "১", isStart: true },
+      { x: 530, y: 170, label: "২" },
+      { x: 440, y: 260, label: "৩" },
+      { x: 520, y: 370, label: "৪" },
+      { x: 450, y: 480, label: "৫" },
+      { x: 220, y: 360, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.16, y: 0.72 },
   },
+  // Haa (Same crescent without dots)
   "ح": {
-    start: { x: 0.55, y: 0.26 },
-    waypoints: [
-      { x: 0.76, y: 0.28 },
-      { x: 0.62, y: 0.46 },
-      { x: 0.74, y: 0.64 },
-      { x: 0.50, y: 0.82 },
-      { x: 0.30, y: 0.80 },
+    path: "M 370 170 L 530 170 Q 460 250 440 260 Q 560 330 520 440 Q 450 510 320 470 Q 240 430 220 360",
+    dots: [],
+    checkpoints: [
+      { x: 370, y: 170, label: "১", isStart: true },
+      { x: 530, y: 170, label: "২" },
+      { x: 440, y: 260, label: "৩" },
+      { x: 520, y: 370, label: "৪" },
+      { x: 450, y: 480, label: "৫" },
+      { x: 220, y: 360, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.16, y: 0.72 },
   },
+  // Kha (Same crescent + 1 dot on top)
   "خ": {
-    start: { x: 0.55, y: 0.32 },
-    waypoints: [
-      { x: 0.76, y: 0.34 },
-      { x: 0.62, y: 0.50 },
-      { x: 0.74, y: 0.68 },
-      { x: 0.50, y: 0.84 },
-      { x: 0.30, y: 0.82 },
+    path: "M 370 170 L 530 170 Q 460 250 440 260 Q 560 330 520 440 Q 450 510 320 470 Q 240 430 220 360",
+    dots: [{ x: 460, y: 105, r: 18 }],
+    checkpoints: [
+      { x: 370, y: 170, label: "১", isStart: true },
+      { x: 530, y: 170, label: "২" },
+      { x: 440, y: 260, label: "৩" },
+      { x: 520, y: 370, label: "৪" },
+      { x: 450, y: 480, label: "৫" },
+      { x: 220, y: 360, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.16, y: 0.74 },
   },
-  // Dal, Dhal (Top -> curve down-left)
+  // Dal (Top slope down -> flat baseline left)
   "د": {
-    start: { x: 0.74, y: 0.36 },
-    waypoints: [
-      { x: 0.60, y: 0.52 },
-      { x: 0.45, y: 0.64 },
+    path: "M 540 210 Q 490 300 460 330 Q 440 350 330 350",
+    dots: [],
+    checkpoints: [
+      { x: 540, y: 210, label: "১", isStart: true },
+      { x: 475, y: 315, label: "২" },
+      { x: 420, y: 350, label: "৩" },
+      { x: 330, y: 350, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.24, y: 0.66 },
   },
+  // Dhal (Same + 1 dot on top)
   "ذ": {
-    start: { x: 0.74, y: 0.44 },
-    waypoints: [
-      { x: 0.60, y: 0.58 },
-      { x: 0.45, y: 0.68 },
+    path: "M 540 210 Q 490 300 460 330 Q 440 350 330 350",
+    dots: [{ x: 540, y: 140, r: 18 }],
+    checkpoints: [
+      { x: 540, y: 210, label: "১", isStart: true },
+      { x: 475, y: 315, label: "২" },
+      { x: 420, y: 350, label: "৩" },
+      { x: 330, y: 350, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.24, y: 0.70 },
   },
-  // Ra, Zay (Top -> curve down-left under baseline)
+  // Ra (Starts above baseline, plunges down and sweeps into tail)
   "ر": {
-    start: { x: 0.72, y: 0.42 },
-    waypoints: [
-      { x: 0.60, y: 0.56 },
-      { x: 0.44, y: 0.70 },
+    path: "M 520 270 Q 480 340 430 400 Q 380 460 280 470",
+    dots: [],
+    checkpoints: [
+      { x: 520, y: 270, label: "১", isStart: true },
+      { x: 470, y: 355, label: "২" },
+      { x: 405, y: 425, label: "৩" },
+      { x: 280, y: 470, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.22, y: 0.80 },
   },
+  // Zay (Same + 1 dot on top)
   "ز": {
-    start: { x: 0.72, y: 0.48 },
-    waypoints: [
-      { x: 0.60, y: 0.60 },
-      { x: 0.44, y: 0.74 },
+    path: "M 520 270 Q 480 340 430 400 Q 380 460 280 470",
+    dots: [{ x: 520, y: 200, r: 18 }],
+    checkpoints: [
+      { x: 520, y: 270, label: "১", isStart: true },
+      { x: 470, y: 355, label: "২" },
+      { x: 405, y: 425, label: "৩" },
+      { x: 280, y: 470, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.22, y: 0.82 },
   },
-  // Seen, Sheen (Right teeth -> middle teeth -> deep bowl)
+  // Seen (Three teeth -> deep bowl)
   "س": {
-    start: { x: 0.88, y: 0.42 },
-    waypoints: [
-      { x: 0.72, y: 0.46 },
-      { x: 0.56, y: 0.48 },
-      { x: 0.44, y: 0.66 },
-      { x: 0.28, y: 0.70 },
+    path: "M 650 250 Q 630 320 590 320 Q 580 250 550 250 Q 530 320 490 320 L 490 340 Q 470 470 360 470 Q 250 470 230 360 L 230 330",
+    dots: [],
+    checkpoints: [
+      { x: 650, y: 250, label: "১", isStart: true },
+      { x: 590, y: 320, label: "২" },
+      { x: 550, y: 250, label: "৩" },
+      { x: 490, y: 330, label: "৪" },
+      { x: 420, y: 460, label: "৫" },
+      { x: 230, y: 330, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.12, y: 0.50 },
   },
+  // Sheen (Three teeth -> deep bowl + 3 dots)
   "ش": {
-    start: { x: 0.88, y: 0.50 },
-    waypoints: [
-      { x: 0.72, y: 0.54 },
-      { x: 0.56, y: 0.56 },
-      { x: 0.44, y: 0.72 },
-      { x: 0.28, y: 0.74 },
+    path: "M 650 250 Q 630 320 590 320 Q 580 250 550 250 Q 530 320 490 320 L 490 340 Q 470 470 360 470 Q 250 470 230 360 L 230 330",
+    dots: [
+      { x: 570, y: 160, r: 15 },
+      { x: 595, y: 200, r: 15 },
+      { x: 545, y: 200, r: 15 },
     ],
-    end: { x: 0.12, y: 0.54 },
+    checkpoints: [
+      { x: 650, y: 250, label: "১", isStart: true },
+      { x: 590, y: 320, label: "২" },
+      { x: 550, y: 250, label: "৩" },
+      { x: 490, y: 330, label: "৪" },
+      { x: 420, y: 460, label: "৫" },
+      { x: 230, y: 330, label: "শেষ", isEnd: true },
+    ],
   },
-  // Saad, Daad (Oval loop -> tooth -> deep bowl)
+  // Saad (Oval head loop -> tooth -> deep bowl)
   "ص": {
-    start: { x: 0.75, y: 0.56 },
-    waypoints: [
-      { x: 0.88, y: 0.50 },
-      { x: 0.70, y: 0.46 },
-      { x: 0.54, y: 0.48 },
-      { x: 0.42, y: 0.68 },
-      { x: 0.26, y: 0.72 },
+    path: "M 480 350 Q 540 260 620 280 Q 660 310 630 350 L 470 350 L 470 320 L 450 350 Q 430 470 340 470 Q 240 470 220 360 L 220 330",
+    dots: [],
+    checkpoints: [
+      { x: 480, y: 350, label: "১", isStart: true },
+      { x: 580, y: 270, label: "২" },
+      { x: 640, y: 330, label: "৩" },
+      { x: 460, y: 335, label: "৪" },
+      { x: 380, y: 460, label: "৫" },
+      { x: 220, y: 330, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.12, y: 0.52 },
   },
+  // Daad (Same + 1 dot on top of oval)
   "ض": {
-    start: { x: 0.75, y: 0.58 },
-    waypoints: [
-      { x: 0.88, y: 0.54 },
-      { x: 0.70, y: 0.50 },
-      { x: 0.54, y: 0.52 },
-      { x: 0.42, y: 0.70 },
-      { x: 0.26, y: 0.74 },
+    path: "M 480 350 Q 540 260 620 280 Q 660 310 630 350 L 470 350 L 470 320 L 450 350 Q 430 470 340 470 Q 240 470 220 360 L 220 330",
+    dots: [{ x: 580, y: 195, r: 18 }],
+    checkpoints: [
+      { x: 480, y: 350, label: "১", isStart: true },
+      { x: 580, y: 270, label: "২" },
+      { x: 640, y: 330, label: "৩" },
+      { x: 460, y: 335, label: "৪" },
+      { x: 380, y: 460, label: "৫" },
+      { x: 220, y: 330, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.12, y: 0.54 },
   },
-  // Taa, Dhaa (Vertical mast -> oval loop)
+  // Taa (Vertical mast -> oval loop)
   "ط": {
-    start: { x: 0.52, y: 0.18 },
-    waypoints: [
-      { x: 0.52, y: 0.44 },
-      { x: 0.78, y: 0.52 },
-      { x: 0.50, y: 0.64 },
+    path: "M 430 110 L 430 350 Q 520 270 610 290 Q 650 320 620 350 L 300 350",
+    dots: [],
+    checkpoints: [
+      { x: 430, y: 110, label: "১", isStart: true },
+      { x: 430, y: 260, label: "২" },
+      { x: 550, y: 280, label: "৩" },
+      { x: 630, y: 330, label: "৪" },
+      { x: 300, y: 350, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.20, y: 0.66 },
   },
+  // Dhaa (Vertical mast -> oval loop + 1 dot)
   "ظ": {
-    start: { x: 0.52, y: 0.22 },
-    waypoints: [
-      { x: 0.52, y: 0.48 },
-      { x: 0.78, y: 0.56 },
-      { x: 0.50, y: 0.66 },
+    path: "M 430 110 L 430 350 Q 520 270 610 290 Q 650 320 620 350 L 300 350",
+    dots: [{ x: 480, y: 180, r: 18 }],
+    checkpoints: [
+      { x: 430, y: 110, label: "১", isStart: true },
+      { x: 430, y: 260, label: "২" },
+      { x: 550, y: 280, label: "৩" },
+      { x: 630, y: 330, label: "৪" },
+      { x: 300, y: 350, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.20, y: 0.68 },
   },
-  // Ayn, Ghayn (Top crescent brow -> large bottom belly)
+  // Ayn (Small top crescent -> large bottom belly)
   "ع": {
-    start: { x: 0.54, y: 0.28 },
-    waypoints: [
-      { x: 0.72, y: 0.32 },
-      { x: 0.56, y: 0.46 },
-      { x: 0.72, y: 0.64 },
-      { x: 0.50, y: 0.82 },
-      { x: 0.30, y: 0.80 },
+    path: "M 400 230 Q 480 180 520 220 Q 520 270 450 280 Q 560 360 520 450 Q 440 520 310 470 Q 230 420 210 350",
+    dots: [],
+    checkpoints: [
+      { x: 400, y: 230, label: "১", isStart: true },
+      { x: 500, y: 200, label: "২" },
+      { x: 450, y: 280, label: "৩" },
+      { x: 520, y: 390, label: "৪" },
+      { x: 410, y: 490, label: "৫" },
+      { x: 210, y: 350, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.16, y: 0.74 },
   },
+  // Ghayn (Same + 1 dot on top)
   "غ": {
-    start: { x: 0.54, y: 0.34 },
-    waypoints: [
-      { x: 0.72, y: 0.38 },
-      { x: 0.56, y: 0.50 },
-      { x: 0.72, y: 0.68 },
-      { x: 0.50, y: 0.84 },
-      { x: 0.30, y: 0.82 },
+    path: "M 400 230 Q 480 180 520 220 Q 520 270 450 280 Q 560 360 520 450 Q 440 520 310 470 Q 230 420 210 350",
+    dots: [{ x: 480, y: 125, r: 18 }],
+    checkpoints: [
+      { x: 400, y: 230, label: "১", isStart: true },
+      { x: 500, y: 200, label: "২" },
+      { x: 450, y: 280, label: "৩" },
+      { x: 520, y: 390, label: "৪" },
+      { x: 410, y: 490, label: "৫" },
+      { x: 210, y: 350, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.16, y: 0.76 },
   },
-  // Fa (Head circle -> baseline -> left tip)
+  // Fa (Head circle on right -> baseline -> left tip + 1 dot)
   "ف": {
-    start: { x: 0.78, y: 0.42 },
-    waypoints: [
-      { x: 0.88, y: 0.38 },
-      { x: 0.70, y: 0.56 },
-      { x: 0.50, y: 0.62 },
-      { x: 0.30, y: 0.62 },
+    path: "M 560 270 Q 530 220 580 200 Q 630 220 600 280 L 590 350 Q 450 350 310 350 Q 270 350 250 270",
+    dots: [{ x: 580, y: 135, r: 18 }],
+    checkpoints: [
+      { x: 560, y: 270, label: "১", isStart: true },
+      { x: 580, y: 200, label: "২" },
+      { x: 590, y: 320, label: "৩" },
+      { x: 450, y: 350, label: "৪" },
+      { x: 250, y: 270, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.14, y: 0.52 },
   },
-  // Qaaf (Head circle -> deep bowl)
+  // Qaaf (Head circle on right -> deep bowl below baseline + 2 dots)
   "ق": {
-    start: { x: 0.76, y: 0.40 },
-    waypoints: [
-      { x: 0.86, y: 0.36 },
-      { x: 0.68, y: 0.54 },
-      { x: 0.46, y: 0.70 },
-      { x: 0.28, y: 0.70 },
+    path: "M 560 250 Q 530 200 580 180 Q 630 200 600 260 L 590 310 Q 550 460 420 460 Q 290 460 270 340 L 270 300",
+    dots: [
+      { x: 605, y: 120, r: 16 },
+      { x: 555, y: 120, r: 16 },
     ],
-    end: { x: 0.16, y: 0.54 },
+    checkpoints: [
+      { x: 560, y: 250, label: "১", isStart: true },
+      { x: 580, y: 185, label: "২" },
+      { x: 590, y: 290, label: "৩" },
+      { x: 490, y: 440, label: "৪" },
+      { x: 350, y: 450, label: "৫" },
+      { x: 270, y: 300, label: "শেষ", isEnd: true },
+    ],
   },
-  // Kaaf (Top mast -> down -> baseline)
+  // Kaaf (Top mast -> flat baseline + center hamzah)
   "ك": {
-    start: { x: 0.76, y: 0.22 },
-    waypoints: [
-      { x: 0.74, y: 0.48 },
-      { x: 0.55, y: 0.64 },
-      { x: 0.35, y: 0.64 },
+    path: "M 580 130 L 580 330 Q 570 350 320 350 Q 280 350 270 300",
+    dots: [{ x: 440, y: 270, r: 18 }],
+    checkpoints: [
+      { x: 580, y: 130, label: "১", isStart: true },
+      { x: 580, y: 260, label: "২" },
+      { x: 540, y: 350, label: "৩" },
+      { x: 400, y: 350, label: "৪" },
+      { x: 270, y: 300, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.14, y: 0.58 },
   },
-  // Laam (Top mast -> deep bowl)
+  // Laam (Tall mast -> deep bowl)
   "ل": {
-    start: { x: 0.72, y: 0.18 },
-    waypoints: [
-      { x: 0.70, y: 0.46 },
-      { x: 0.55, y: 0.68 },
-      { x: 0.35, y: 0.70 },
+    path: "M 540 110 L 540 330 Q 520 470 390 470 Q 260 470 240 350 L 240 320",
+    dots: [],
+    checkpoints: [
+      { x: 540, y: 110, label: "১", isStart: true },
+      { x: 540, y: 250, label: "২" },
+      { x: 490, y: 430, label: "৩" },
+      { x: 360, y: 460, label: "৪" },
+      { x: 240, y: 320, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.18, y: 0.54 },
   },
-  // Meem (Top circle -> tail)
+  // Meem (Circle on baseline -> tail down)
   "م": {
-    start: { x: 0.66, y: 0.40 },
-    waypoints: [
-      { x: 0.76, y: 0.42 },
-      { x: 0.62, y: 0.50 },
-      { x: 0.48, y: 0.52 },
-      { x: 0.32, y: 0.64 },
+    path: "M 490 320 Q 540 270 580 320 Q 540 360 480 350 L 350 350 L 350 490",
+    dots: [],
+    checkpoints: [
+      { x: 490, y: 320, label: "১", isStart: true },
+      { x: 560, y: 280, label: "২" },
+      { x: 540, y: 350, label: "৩" },
+      { x: 350, y: 350, label: "৪" },
+      { x: 350, y: 490, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.26, y: 0.84 },
   },
-  // Noon (Deep bowl)
+  // Noon (Deep bowl + 1 center dot)
   "ن": {
-    start: { x: 0.82, y: 0.44 },
-    waypoints: [
-      { x: 0.70, y: 0.64 },
-      { x: 0.50, y: 0.72 },
-      { x: 0.30, y: 0.66 },
+    path: "M 610 270 Q 590 450 450 450 Q 310 450 290 270",
+    dots: [{ x: 450, y: 290, r: 18 }],
+    checkpoints: [
+      { x: 610, y: 270, label: "১", isStart: true },
+      { x: 560, y: 390, label: "২" },
+      { x: 450, y: 450, label: "৩" },
+      { x: 340, y: 390, label: "৪" },
+      { x: 290, y: 270, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.16, y: 0.46 },
   },
-  // Waw (Top loop -> tail)
+  // Waw (Loop at baseline -> tail below)
   "و": {
-    start: { x: 0.68, y: 0.38 },
-    waypoints: [
-      { x: 0.80, y: 0.40 },
-      { x: 0.64, y: 0.54 },
-      { x: 0.44, y: 0.70 },
+    path: "M 490 280 Q 530 220 580 250 Q 610 290 560 320 Q 500 370 450 440 Q 400 480 320 480",
+    dots: [],
+    checkpoints: [
+      { x: 490, y: 280, label: "১", isStart: true },
+      { x: 560, y: 230, label: "২" },
+      { x: 560, y: 320, label: "৩" },
+      { x: 450, y: 420, label: "৪" },
+      { x: 320, y: 480, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.24, y: 0.80 },
   },
-  // Haa
+  // Haa (Outer curve and inner loop)
   "هـ": {
-    start: { x: 0.76, y: 0.36 },
-    waypoints: [
-      { x: 0.55, y: 0.44 },
-      { x: 0.65, y: 0.56 },
-      { x: 0.45, y: 0.62 },
+    path: "M 560 260 Q 490 200 420 280 Q 400 350 510 350 Q 570 330 540 280 Q 510 250 460 320 L 320 350",
+    dots: [],
+    checkpoints: [
+      { x: 560, y: 260, label: "১", isStart: true },
+      { x: 440, y: 230, label: "২" },
+      { x: 480, y: 350, label: "৩" },
+      { x: 520, y: 280, label: "৪" },
+      { x: 320, y: 350, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.22, y: 0.62 },
   },
   // Hamzah
   "ء": {
-    start: { x: 0.68, y: 0.36 },
-    waypoints: [
-      { x: 0.50, y: 0.48 },
+    path: "M 430 230 Q 490 190 510 240 Q 500 280 440 290 L 490 320",
+    dots: [],
+    checkpoints: [
+      { x: 430, y: 230, label: "১", isStart: true },
+      { x: 500, y: 210, label: "২" },
+      { x: 440, y: 290, label: "৩" },
+      { x: 490, y: 320, label: "শেষ", isEnd: true },
     ],
-    end: { x: 0.32, y: 0.64 },
   },
-  // Yaa (Head -> curve -> wide tail)
+  // Yaa (Swan neck -> wide bowl + 2 dots below)
   "ي": {
-    start: { x: 0.76, y: 0.36 },
-    waypoints: [
-      { x: 0.60, y: 0.42 },
-      { x: 0.74, y: 0.56 },
-      { x: 0.50, y: 0.72 },
-      { x: 0.30, y: 0.70 },
+    path: "M 540 220 Q 580 200 590 240 Q 580 280 500 300 Q 450 320 460 360 Q 460 460 350 460 Q 250 460 230 360 L 230 330",
+    dots: [
+      { x: 380, y: 505, r: 16 },
+      { x: 330, y: 505, r: 16 },
     ],
-    end: { x: 0.14, y: 0.60 },
+    checkpoints: [
+      { x: 540, y: 220, label: "১", isStart: true },
+      { x: 580, y: 240, label: "২" },
+      { x: 480, y: 310, label: "৩" },
+      { x: 410, y: 450, label: "৪" },
+      { x: 230, y: 330, label: "শেষ", isEnd: true },
+    ],
   },
 };
 
 // SVG standard coordinate system constants
-const SVG_VIEWBOX_WIDTH = 800;
-const SVG_VIEWBOX_HEIGHT = 520;
-const SVG_LETTER_BOUNDS = {
-  left: 140,
-  top: 70,
-  width: 520,
-  height: 380,
-};
+const SVG_VIEWBOX_WIDTH = 900;
+const SVG_VIEWBOX_HEIGHT = 560;
 
 export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteExercise }) {
   const { t, isRTL: _isRTL, dir, lang } = useLearningLanguage();
@@ -472,28 +538,22 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
     } catch {}
   }, [getAudioToken, selectedHarakat, selectedLetter]);
 
-  // SVG-based precise checkpoints for the active letter
-  const checkpoints = useMemo(() => {
-    const anchor = LETTER_ANCHORS[selectedLetter.ar] || {
-      start: { x: 0.85, y: 0.45 },
-      waypoints: [
-        { x: 0.65, y: 0.55 },
-        { x: 0.45, y: 0.55 },
-      ],
-      end: { x: 0.15, y: 0.45 },
-    };
+  // Active Calligraphy Tracing Definition
+  const currentTracingDef = useMemo(() => {
+    return (
+      ARABIC_TRACING_PATHS[selectedLetter.ar] || {
+        path: "M 640 230 Q 610 350 450 350 Q 290 350 260 230",
+        dots: [],
+        checkpoints: [
+          { x: 640, y: 230, label: "১", isStart: true },
+          { x: 450, y: 350, label: "২" },
+          { x: 260, y: 230, label: "শেষ", isEnd: true },
+        ],
+      }
+    );
+  }, [selectedLetter.ar]);
 
-    const toSvg = (pt) => ({
-      x: Math.round(SVG_LETTER_BOUNDS.left + SVG_LETTER_BOUNDS.width * pt.x),
-      y: Math.round(SVG_LETTER_BOUNDS.top + SVG_LETTER_BOUNDS.height * pt.y),
-    });
-
-    return [
-      { ...toSvg(anchor.start), isStart: true, label: "১" },
-      ...anchor.waypoints.map((wp, idx) => ({ ...toSvg(wp), label: String(idx + 2) })),
-      { ...toSvg(anchor.end), isEnd: true, label: "শেষ" },
-    ];
-  }, [selectedLetter]);
+  const checkpoints = currentTracingDef.checkpoints;
 
   // Clear Canvas and reset stroke tracking
   const handleClear = useCallback(() => {
@@ -594,7 +654,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
     return { x: Math.round(p.x), y: Math.round(p.y) };
   }, []);
 
-  // ── 🎨 GUIDED HOLLOW TRACING EVENT HANDLERS (CLICK & DRAG INSIDE LETTER) ──
+  // ── 🎨 GUIDED HOLLOW TRACING EVENT HANDLERS (CLICK & DRAG INSIDE HOLLOW LETTER) ──
   const handleTracingPointerDown = (e) => {
     if (boardMode !== "trace" || isCelebrationFiredRef.current) return;
     const p = getSvgPoint(e);
@@ -606,14 +666,14 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
     const distToCurrent = currentCp ? Math.hypot(p.x - currentCp.x, p.y - currentCp.y) : 999;
 
     // Start at bead 0 or continue from current active bead
-    if (activeCheckpointIndex === 0 && distToFirst < 75) {
+    if (activeCheckpointIndex === 0 && distToFirst < 80) {
       isTracingDraggingRef.current = true;
       setHitCheckpoints([true]);
       setActiveCheckpointIndex(0);
       setStrokePoints([{ x: firstCp.x, y: firstCp.y }, { x: p.x, y: p.y }]);
       playStarPopSound(1);
       setTracingProgress(Math.round((1 / checkpoints.length) * 100));
-    } else if (distToCurrent < 75) {
+    } else if (distToCurrent < 80) {
       isTracingDraggingRef.current = true;
       setStrokePoints((prev) => [...prev, { x: p.x, y: p.y }]);
     }
@@ -631,7 +691,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
       const nextCp = checkpoints[nextIdx];
       const dist = Math.hypot(p.x - nextCp.x, p.y - nextCp.y);
 
-      if (dist < 52) {
+      if (dist < 56) {
         setActiveCheckpointIndex(nextIdx);
         setHitCheckpoints((prev) => {
           const next = [...prev];
@@ -784,15 +844,6 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
     return d;
   }, [strokePoints]);
 
-  // Guide Line connecting checkpoints
-  const guideDashedPathD = useMemo(() => {
-    if (!checkpoints || checkpoints.length < 2) return "";
-    return checkpoints.reduce(
-      (acc, pt, idx) => (idx === 0 ? `M ${pt.x} ${pt.y}` : `${acc} L ${pt.x} ${pt.y}`),
-      ""
-    );
-  }, [checkpoints]);
-
   return (
     <div dir={dir} className="w-full flex flex-col space-y-6">
       {/* ── TOP HEADER & CONTROLS ── */}
@@ -809,7 +860,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
               </span>
             </h2>
             <p className="text-xs text-slate-300/80">
-              নিখুঁত ট্রেসিং গেম: <span className="text-emerald-400 font-bold">শুরুর ১ নম্বর পয়েন্ট</span> স্পর্শ করে ভেতরের পথ ধরে টেনে নিয়ে <span className="text-amber-400 font-bold">শেষ পয়েন্টে</span> পৌঁছান! 🎮
+              নিখুঁত ট্রেসিং গেম: হরফের ভেতরে <span className="text-emerald-400 font-bold">১ নম্বর সবুজ পয়েন্টে</span> টাচ করে পথ ধরে টেনে <span className="text-amber-400 font-bold">শেষ পয়েন্টে</span> যান! 🎮
             </p>
           </div>
         </div>
@@ -867,7 +918,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
             {/* BLACKBOARD WRITING SURFACE (উঁচু, গভীর ও প্রশস্ত স্লেট) */}
             <div
               ref={boardContainerRef}
-              className="relative rounded-[24px] bg-[#04140d] border-2 border-emerald-950 shadow-[inset_0_10px_30px_rgba(0,0,0,0.8)] overflow-hidden h-[460px] sm:h-[520px] md:h-[560px] w-full select-none"
+              className="relative rounded-[24px] bg-[#04140d] border-2 border-emerald-950 shadow-[inset_0_10px_30px_rgba(0,0,0,0.8)] overflow-hidden h-[480px] sm:h-[540px] md:h-[580px] w-full select-none"
             >
               {/* Slate Gradient & Chalk Dust Texture */}
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-[#092b1d] via-[#05170f] to-[#020b06] pointer-events-none" />
@@ -898,7 +949,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
                 </div>
               )}
 
-              {/* 🎯 LAYER 1 & 2: SVG PRECISION HOLLOW TRACING LAYER */}
+              {/* 🎯 PRECISION SVG HOLLOW TRACING LAYER */}
               <svg
                 ref={svgRef}
                 viewBox={`0 0 ${SVG_VIEWBOX_WIDTH} ${SVG_VIEWBOX_HEIGHT}`}
@@ -914,55 +965,85 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
                   boardMode === "trace" ? "cursor-crosshair touch-none" : "pointer-events-none"
                 }`}
               >
-                {/* 🌟 HOLLOW ARABIC LETTER CONTOUR (খাঁড়া ফাঁপা রূপরেখা) */}
+                {/* 🌟 1. HOLLOW ARABIC LETTER (থ্রি-ডি ফাঁপা রূপরেখা — ছবি অনুযায়ী বড় ও স্পষ্ট) */}
                 {showGuide && (
-                  <text
-                    x="400"
-                    y="350"
-                    textAnchor="middle"
-                    fill="rgba(4, 20, 13, 0.75)"
-                    stroke="rgba(255, 255, 255, 0.85)"
-                    strokeWidth="14"
-                    strokeLinejoin="round"
-                    className="font-amiri select-none pointer-events-none font-bold"
-                    style={{
-                      fontSize: "290px",
-                      filter: "drop-shadow(0 0 15px rgba(52, 211, 153, 0.35))",
-                    }}
-                  >
-                    {activeChar}
-                  </text>
+                  <g>
+                    {/* Outer Glow & White Outline Tube */}
+                    <path
+                      d={currentTracingDef.path}
+                      fill="none"
+                      stroke="rgba(255, 255, 255, 0.95)"
+                      strokeWidth="62"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      style={{
+                        filter: "drop-shadow(0 0 16px rgba(52, 211, 153, 0.6))",
+                      }}
+                      className="pointer-events-none"
+                    />
+
+                    {/* Inner Hollow Tube Channel (Blackboard Emerald) */}
+                    <path
+                      d={currentTracingDef.path}
+                      fill="none"
+                      stroke="#04140d"
+                      strokeWidth="44"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="pointer-events-none"
+                    />
+
+                    {/* Dots (নুক্তা) with matching hollow white border */}
+                    {currentTracingDef.dots?.map((d, i) => (
+                      <g key={i} className="pointer-events-none">
+                        <circle
+                          cx={d.x}
+                          cy={d.y}
+                          r={d.r + 7}
+                          fill="#ffffff"
+                          style={{ filter: "drop-shadow(0 0 10px rgba(52, 211, 153, 0.6))" }}
+                        />
+                        <circle
+                          cx={d.x}
+                          cy={d.y}
+                          r={d.r}
+                          fill={isCelebrationFiredRef.current ? penColor : "#04140d"}
+                          style={{ transition: "fill 0.4s ease" }}
+                        />
+                      </g>
+                    ))}
+                  </g>
                 )}
 
-                {/* 〰️ DASHED CALLIGRAPHY GUIDE SPLINE (হরফের ভেতরের পথপ্রদর্শক রেখা) */}
-                {showGuide && guideDashedPathD && (
+                {/* 〰️ 2. DASHED CALLIGRAPHY DIRECTIONAL GUIDE LINE */}
+                {showGuide && (
                   <path
-                    d={guideDashedPathD}
+                    d={currentTracingDef.path}
                     fill="none"
-                    stroke="rgba(251, 191, 36, 0.35)"
-                    strokeWidth="4"
-                    strokeDasharray="8 8"
+                    stroke="rgba(251, 191, 36, 0.45)"
+                    strokeWidth="3.5"
+                    strokeDasharray="6 6"
                     className="pointer-events-none"
                   />
                 )}
 
-                {/* 🎨 FILLED CHALK STROKE INSIDE HOLLOW LETTER (টেনে চলার সাথে সাথে ভরাট হওয়া রেখা) */}
+                {/* 🎨 3. FILLED CHALK STROKE (হরফের ভেতরে নিখুঁতভাবে চক দিয়ে ভরাট হওয়া রেখা) */}
                 {strokePathD && (
                   <path
                     d={strokePathD}
                     fill="none"
                     stroke={penColor}
-                    strokeWidth={penWidth * 2.4}
+                    strokeWidth="44"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     className="pointer-events-none"
                     style={{
-                      filter: `drop-shadow(0 0 12px ${penColor})`,
+                      filter: `drop-shadow(0 0 16px ${penColor})`,
                     }}
                   />
                 )}
 
-                {/* 🟢 CHECKPOINTS & DIRECTIONAL GUIDE BEADS (ক্রমান্বয়িক ১, ২, ৩... শেষ পয়েন্টসমূহ) */}
+                {/* 🟢 4. CHECKPOINTS (১, ২, ৩... শেষ পয়েন্টসমূহ — হরফের ভেতরে ১০০% নিখুঁতভাবে স্থাপিত) */}
                 {showGuide &&
                   boardMode === "trace" &&
                   checkpoints.map((cp, idx) => {
@@ -972,7 +1053,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
 
                     return (
                       <g key={idx} transform={`translate(${cp.x}, ${cp.y})`}>
-                        {/* Outer Pulse Ring for active/start target */}
+                        {/* Outer Pulse Ring for active or start target */}
                         {(isInitialStart || isNext) && (
                           <circle
                             r="28"
@@ -983,7 +1064,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
                           />
                         )}
 
-                        {/* Main Bead Circle */}
+                        {/* Main Checkpoint Bead Circle */}
                         <circle
                           r={isHit ? "16" : isInitialStart || isNext ? "22" : "15"}
                           fill={
@@ -1001,7 +1082,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
                           className="pointer-events-none"
                         />
 
-                        {/* Label inside bead */}
+                        {/* Number label inside bead */}
                         <text
                           y="5"
                           textAnchor="middle"
@@ -1015,7 +1096,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
 
                         {/* Start Prompt Banner if not started */}
                         {isInitialStart && (
-                          <g transform="translate(0, -36)">
+                          <g transform="translate(0, -38)">
                             <rect
                               x="-68"
                               y="-14"
@@ -1034,7 +1115,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
                               fill="#ffffff"
                               fontSize="11"
                               fontWeight="bold"
-                              className="select-none pointer-events-none"
+                              className="select-none pointer-events-none font-sans"
                             >
                               👆 স্পর্শ করে টানুন
                             </text>
@@ -1045,7 +1126,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
                   })}
               </svg>
 
-              {/* ✏️ LAYER 3: FREEHAND CHALK CANVAS (মুক্ত আঁকাআঁকি মোডের জন্য) */}
+              {/* ✏️ FREEHAND CHALK CANVAS (মুক্ত ড্রয়িং মোড) */}
               <canvas
                 ref={drawCanvasRef}
                 width={dimensions.width}
@@ -1064,7 +1145,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
                 }`}
               />
 
-              {/* 🌟 GAME CELEBRATION MODAL OVERLAY (মাশাআল্লাহ! ১০০% নিখুঁত সেলিব্রেশন স্ক্রিন) */}
+              {/* 🌟 GAME CELEBRATION MODAL OVERLAY (মাশাআল্লাহ! ১০০% নিখুঁত সেলিব্রেশন) */}
               {showCelebration && (
                 <div className="absolute inset-0 z-40 bg-black/85 backdrop-blur-md rounded-[24px] flex flex-col items-center justify-center p-6 text-center animate-fade-in select-none">
                   {/* Floating celebratory ribbon */}
@@ -1162,7 +1243,7 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
                         ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-xs"
                         : "text-slate-400 hover:text-slate-200"
                     }`}
-                    title="মুক্তভাবে চক দিয়ে লেখার সলেটের মোড"
+                    title="মুক্তভাবে চক দিয়ে লেখার স্লেটের মোড"
                   >
                     <PenTool className="w-3.5 h-3.5" />
                     <span>মুক্ত চকখড়ি</span>
