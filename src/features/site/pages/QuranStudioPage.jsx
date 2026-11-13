@@ -781,6 +781,7 @@ export default function QuranStudioPage() {
                   initialScreen="reader"
                   initialSurah={readerTarget.surah}
                   onLaunchNurEngine={handleLaunchUstadChat}
+                  onNavigateToFeature={(featureId) => setActiveFeature(featureId)}
                 />
               </div>
             ) : activeFeature && (

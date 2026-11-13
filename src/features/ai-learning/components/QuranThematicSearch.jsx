@@ -8,7 +8,9 @@ import {
   ArrowRight,
   CheckCircle2,
   Loader2,
-  Compass
+  Compass,
+  Mic,
+  MicOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ALL_SURAHS } from "@/lib/quran/quran-meta";
@@ -309,6 +311,82 @@ export default function QuranThematicSearch({ onSelectAyah }) {
     }
   }, []);
 
+  // ── VOICE SPEECH RECOGNITION (মাইক দিয়ে মুখে বলে সার্চ) ──
+  const [isListening, setIsListening] = useState(false);
+  const recognitionRef = useRef(null);
+
+  const startVoiceSearch = useCallback(() => {
+    const SpeechRecognition =
+      typeof window !== "undefined" &&
+      (window.SpeechRecognition || window.webkitSpeechRecognition);
+
+    if (!SpeechRecognition) {
+      toast.error("আপনার ব্রাউজারে ভয়েস রিকগনিশন সমর্থন করে না। ক্রোম বা এজ ব্রাউজার ব্যবহার করুন।");
+      return;
+    }
+
+    if (isListening) {
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+        } catch {}
+      }
+      setIsListening(false);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecognition();
+      recognitionRef.current = recognition;
+      recognition.lang = "bn-BD"; // Primary Bengali recognition
+      recognition.continuous = false;
+      recognition.interimResults = true;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsListening(true);
+        toast.info("🎙️ বলুন... শুনছি! (যেমন: সালাত, সবর, জান্নাত, যাকাত)", { duration: 3500 });
+      };
+
+      recognition.onresult = (event) => {
+        let transcript = "";
+        for (let i = event.resultIndex; i < event.results.length; i++) {
+          transcript += event.results[i][0].transcript;
+        }
+        if (transcript) {
+          setQuery(transcript);
+          if (event.results[0].isFinal) {
+            setIsListening(false);
+            toast.success(`"${transcript}" অনুসন্ধান করা হচ্ছে...`);
+            executeSearch(transcript);
+          }
+        }
+      };
+
+      recognition.onerror = (err) => {
+        console.warn("Speech recognition error:", err);
+        setIsListening(false);
+        if (err.error === "not-allowed") {
+          toast.error("মাইক্রোফোনের অনুমতি দেওয়া হয়নি। ব্রাউজার সেটিংসে অনুমতি দিন।");
+        } else if (err.error === "no-speech") {
+          toast.info("কোনো শব্দ শোনা যায়নি। আবার চেষ্টা করুন।");
+        } else {
+          toast.error("ভয়েস ইনপুটে সমস্যা হয়েছে, আবার চেষ্টা করুন।");
+        }
+      };
+
+      recognition.onend = () => {
+        setIsListening(false);
+      };
+
+      recognition.start();
+    } catch (e) {
+      console.error(e);
+      setIsListening(false);
+      toast.error("ভয়েস সার্চ চালু করতে সমস্যা হয়েছে।");
+    }
+  }, [isListening, executeSearch]);
+
   // Initial load: check URL query parameter or default to "সালাত"
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -496,7 +574,7 @@ export default function QuranThematicSearch({ onSelectAyah }) {
               </span>
             </div>
 
-            {/* Search Input Bar */}
+            {/* Search Input Bar with Voice Mic */}
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -505,14 +583,32 @@ export default function QuranThematicSearch({ onSelectAyah }) {
               className="flex gap-2"
             >
               <div className="relative flex-1">
-                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-400/80" />
+                <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-400/80 pointer-events-none" />
                 <input
                   type="text"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
-                  placeholder="আরবি, বাংলা বা ইংরেজিতে লিখুন: যেমন- يُنفِقُونَ, সালাত, spend, জান্নাত, সবর..."
-                  className="w-full pl-10 pr-4 py-2.5 bg-black/60 border border-emerald-900/80 focus:border-emerald-500 rounded-2xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition shadow-inner"
+                  placeholder="আরবি, বাংলা বা ইংরেজিতে লিখুন বা মাইকে বলুন: যেমন- সালাত, সবর, জান্নাত..."
+                  className={`w-full pl-10 pr-12 py-2.5 bg-black/60 border ${
+                    isListening
+                      ? "border-rose-500 ring-2 ring-rose-500/40 text-rose-200"
+                      : "border-emerald-900/80 focus:border-emerald-500 text-white"
+                  } rounded-2xl text-xs sm:text-sm placeholder-slate-400 focus:outline-none transition shadow-inner`}
                 />
+
+                {/* 🎙️ Voice Search Microphone Button (Image 2 Circled Spot) */}
+                <button
+                  type="button"
+                  onClick={startVoiceSearch}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-xl transition-all cursor-pointer flex items-center justify-center ${
+                    isListening
+                      ? "bg-rose-600 text-white animate-pulse shadow-md shadow-rose-900/60 scale-105"
+                      : "text-emerald-400 hover:text-emerald-200 hover:bg-emerald-950/70"
+                  }`}
+                  title={isListening ? "ভয়েস সার্চ বন্ধ করুন (শুনছি...)" : "মুখে বলে সার্চ করুন (মাইক)"}
+                >
+                  <Mic className={`w-4 h-4 ${isListening ? "animate-bounce" : ""}`} />
+                </button>
               </div>
 
               <button
@@ -797,16 +893,24 @@ export default function QuranThematicSearch({ onSelectAyah }) {
             </span>
           </div>
 
-          {/* Search Box: Surah Name or Para-Page */}
+          {/* Search Box: Surah Name or Para-Page with Mic */}
           <div className="relative">
-            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-400/80" />
+            <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-emerald-400/80 pointer-events-none" />
             <input
               type="text"
               value={catalogSearch}
               onChange={(e) => setCatalogSearch(e.target.value)}
-              placeholder="সূরার নাম বা পারা-পৃষ্ঠা (যেমন: পারা ৫ পৃষ্ঠা ১২, 36, ফাতিহা)..."
-              className="w-full pl-10 pr-4 py-3 bg-black/60 border border-emerald-900/80 focus:border-emerald-500 rounded-2xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition shadow-inner"
+              placeholder="সূরার নাম বা পারা-পৃষ্ঠা মুখে বলুন বা লিখুন (যেমন: ফাতিহা, পারা ৫ পৃষ্ঠা ১২, ৩৬)..."
+              className="w-full pl-10 pr-12 py-3 bg-black/60 border border-emerald-900/80 focus:border-emerald-500 rounded-2xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition shadow-inner"
             />
+            <button
+              type="button"
+              onClick={startVoiceSearch}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-2 rounded-xl text-emerald-400 hover:text-emerald-200 hover:bg-emerald-950/70 transition-all cursor-pointer"
+              title="মুখে বলুন (মাইক)"
+            >
+              <Mic className="w-4 h-4" />
+            </button>
           </div>
 
           {/* Filter Pills */}

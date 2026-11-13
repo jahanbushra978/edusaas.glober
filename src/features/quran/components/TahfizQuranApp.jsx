@@ -53,6 +53,7 @@ export default function TahfizQuranApp({
   initialPage = 1,
   initialSurah = 2,
   onLaunchNurEngine,
+  onNavigateToFeature,
 }) {
   // Navigation Screens: 'home' | 'surahs' | 'paras' | 'reader' | 'tasbih' | 'bookmarks' | 'last-read'
   const [currentScreen, setCurrentScreen] = useState(initialScreen);
@@ -1428,18 +1429,21 @@ export default function TahfizQuranApp({
             <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap">হোম</span>
           </button>
 
-          {/* 2. তাহফিজ কায়দা */}
+          {/* 2. নূর কায়দা (সরাসরি নূরানী কায়দা ও গেমসে যাওয়ার বাটন) */}
           <button
             type="button"
             onClick={() => {
-              setReaderSurahId(1);
-              setReaderPageNum(1);
-              setCurrentScreen("reader");
+              if (onNavigateToFeature) {
+                onNavigateToFeature("noor-qaida");
+              } else if (typeof window !== "undefined") {
+                window.location.href = "/quran-tutor/studio?feature=noor-qaida";
+              }
             }}
-            className="flex-1 min-w-0 flex flex-col items-center gap-0.5 sm:gap-1 text-slate-400 hover:text-slate-200 transition cursor-pointer bg-transparent border-0 outline-none py-1 px-1 rounded-xl hover:bg-teal-950/40"
+            className="flex-1 min-w-0 flex flex-col items-center gap-0.5 sm:gap-1 text-slate-400 hover:text-[#00d2b8] transition cursor-pointer bg-transparent border-0 outline-none py-1 px-1 rounded-xl hover:bg-teal-950/40"
+            title="নূর কায়দা ও মাশক"
           >
             <BookOpen className="w-5 h-5 shrink-0" />
-            <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap truncate max-w-full">তাহফিজ কায়দা</span>
+            <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap truncate max-w-full text-teal-300">নূর কায়দা</span>
           </button>
 
           {/* 3. সার্চ (ELEVATED GLOWING CYAN FLOATING BUTTON IN CENTER) */}
@@ -1454,17 +1458,18 @@ export default function TahfizQuranApp({
             </button>
           </div>
 
-          {/* 4. তাহফিজ আমপারা */}
+          {/* 4. আমপারা (৩০তম পারা) */}
           <button
             type="button"
             onClick={() => {
               // Jump directly to Amma Para (Para 30, Page 1 of Para 30)
               handleJumpToParaAndPage(30, 1);
             }}
-            className="flex-1 min-w-0 flex flex-col items-center gap-0.5 sm:gap-1 text-slate-400 hover:text-slate-200 transition cursor-pointer bg-transparent border-0 outline-none py-1 px-1 rounded-xl hover:bg-teal-950/40"
+            className="flex-1 min-w-0 flex flex-col items-center gap-0.5 sm:gap-1 text-slate-400 hover:text-[#00d2b8] transition cursor-pointer bg-transparent border-0 outline-none py-1 px-1 rounded-xl hover:bg-teal-950/40"
+            title="আমপারা (৩০তম পারা)"
           >
             <BookOpen className="w-5 h-5 shrink-0" />
-            <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap truncate max-w-full">তাহফিজ আমপারা</span>
+            <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap truncate max-w-full">আমপারা</span>
           </button>
 
           {/* 5. তাসবীহ */}
