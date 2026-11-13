@@ -1547,7 +1547,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                 }
                 setIsPlayingAudio(false);
               }}
-              onPlayAyah={(ayahNum, sId, overrideQariId, words = null, startWordIdx = 0) => {
+              onPlayAyah={(ayahNum, sId, overrideQariId, words = null) => {
                 if (overrideQariId) {
                   setSelectedQari(overrideQariId);
                   selectedQariRef.current = overrideQariId;
@@ -1560,11 +1560,11 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                     if (data) {
                       setSurahData(data);
                       surahDataRef.current = data;
-                      startNewAyahAudio(ayahNum, startWordIdx, words);
+                      startNewAyahAudio(ayahNum, 0, words);
                     }
                   });
                 } else {
-                  playAyahAudio(ayahNum, startWordIdx, words);
+                  playAyahAudio(ayahNum, 0, words);
                 }
               }}
               playingAyahNumber={playingAyahNumber}

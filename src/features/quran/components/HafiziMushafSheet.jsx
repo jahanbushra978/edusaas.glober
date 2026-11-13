@@ -6,7 +6,8 @@ import {
   ChevronRight,
   Check,
   ChevronDown,
-  Volume2
+  Volume2,
+  Search
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -45,6 +46,7 @@ export default function HafiziMushafSheet({
   targetHighlightAyah = null,
   selectedQari = "husary_muallim",
   onSelectQari,
+  onOpenSearch,
 }) {
   const isDay = readerTheme === "day";
   const [pageLoading, setPageLoading] = useState(true);
@@ -123,6 +125,20 @@ export default function HafiziMushafSheet({
       }
     }
   }, [playingAyahNumber, playingSurahId]);
+
+  // Auto-scroll screen to target searched Ayah when page loads or target changes
+  useEffect(() => {
+    if (!targetHighlightAyah || pageLoading) return;
+    const timer = setTimeout(() => {
+      const el = document.getElementById(
+        `mushaf-ayah-${targetHighlightAyah.surah}-${targetHighlightAyah.ayah}`
+      );
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [targetHighlightAyah, pageLoading, pageNum]);
 
   // Load ayahs for all surahs spanning this page
   useEffect(() => {
@@ -236,13 +252,54 @@ export default function HafiziMushafSheet({
     }));
   }, [pageAyahs]);
 
-  // Look up Waqf & Ibtida markers for ayahs on this page strictly from the authentic verified registry
+  // Look up Waqf & Ibtida markers for ayahs on this page strictly from the authentic verified registry + natural long-ayah breath pause engine
   const waqfIbtidaMap = useMemo(() => {
     const map = {};
+    const AUTHENTIC_WAQF_REGEX = /[\u06D6\u06D7\u06D8\u06DA\u06DB\u06DC]|(?:\b|\s)(?:ۖ|ۗ|ۘ|ۚ|ۛ|ۜ|قلى|صلى|ج|ط|م|قف)(?:\b|\s|$)/;
+
     pageAyahs.forEach((a) => {
       const key = `${a.surahId}-${a.numberInSurah}`;
       if (WAQF_IBTIDA_REGISTRY[key]) {
         map[key] = WAQF_IBTIDA_REGISTRY[key];
+        return;
+      }
+
+      // If Ayah is long (> 12 words), provide natural breath pause & resume markers
+      const words = a.words || [];
+      if (words.length >= 13) {
+        let midStopIdx = -1;
+        let resumeIdx = -1;
+
+        // Check if there is already a printed waqf mark midway in the words
+        const hasPrintedWaqf = words.some((w, idx) => idx >= 4 && idx <= words.length - 4 && AUTHENTIC_WAQF_REGEX.test(w));
+        if (!hasPrintedWaqf) {
+          // Find standard Arabic transition particles: وَإِذْ, ثُمَّ, فَإِنَّ, كَمَا, إِنَّ, لَعَلَّ, بَلْ, وَلَٰكِنْ
+          for (let i = 5; i <= Math.min(words.length - 4, 15); i++) {
+            const wClean = normalizeQuranWord(words[i]);
+            if (/^(واذ|ثم|فان|كما|ان|لعل|بل|حتى|ولكن|فاذا|وهو|وان|فمن|الذين)$/.test(wClean)) {
+              midStopIdx = i - 1;
+              resumeIdx = i;
+              break;
+            }
+          }
+          // If no particle found, pick natural breath stop near midpoint
+          if (midStopIdx === -1) {
+            midStopIdx = Math.floor(words.length / 2) - 1;
+            resumeIdx = midStopIdx + 1;
+          }
+
+          if (midStopIdx > 0 && resumeIdx > 0 && midStopIdx < words.length - 1) {
+            map[key] = [
+              {
+                stopWordIdx: midStopIdx,
+                stopAfterWord: words[midStopIdx],
+                resumeWordIdx: resumeIdx,
+                resumeAtWord: words[resumeIdx],
+                note: `শায়েখের দম ফেলার বিরতি: ${words[midStopIdx]} (★) • ২য় বার শুরু: ${words[resumeIdx]} (✓)`
+              }
+            ];
+          }
+        }
       }
     });
     return map;
@@ -415,6 +472,23 @@ export default function HafiziMushafSheet({
             >
               পারা-{toBn(pageMeta.para)} পৃষ্ঠা-{toBn(pageMeta.paraPage)}
             </span>
+
+            {/* পৃষ্ঠা ও আয়াত সন্ধান (সার্চ) বাটন */}
+            {onOpenSearch && (
+              <button
+                type="button"
+                onClick={onOpenSearch}
+                className={`p-1 sm:p-1.5 rounded-lg border flex items-center gap-1 text-[10px] sm:text-xs font-black transition cursor-pointer active:scale-95 shadow-xs ${
+                  isDay
+                    ? "bg-amber-200/80 hover:bg-amber-300 border-amber-400 text-stone-950"
+                    : "bg-teal-950/80 hover:bg-teal-900 border-teal-400/60 text-[#00d2b8] hover:text-white"
+                }`}
+                title="পৃষ্ঠা ও আয়াত সন্ধান (সার্চ)"
+              >
+                <Search className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">সন্ধান</span>
+              </button>
+            )}
           </div>
 
           {/* সেন্টারে শায়েখের নাম: প্রিমিয়াম নীল বাটন (ক্লিক করলে ড্রপডাউন মেনু থেকে শায়েখ নির্বাচন করা যাবে) */}
@@ -735,7 +809,13 @@ export default function HafiziMushafSheet({
                             key={`${ayah.surahId}-${ayah.numberInSurah}`}
                             id={`mushaf-ayah-${ayah.surahId}-${ayah.numberInSurah}`}
                             onClick={() => onPlayAyah && onPlayAyah(ayah.numberInSurah, ayah.surahId, null, ayah.words, 0)}
-                            className="inline cursor-pointer select-text transition-colors"
+                            className={`inline cursor-pointer select-text transition-all duration-300 rounded-md ${
+                              isTargetJump
+                                ? "bg-amber-400/30 text-amber-200 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)] px-1.5 py-0.5 animate-pulse"
+                                : isThisAyahActive
+                                ? "bg-emerald-500/15 rounded-md px-1 py-0.5"
+                                : ""
+                            }`}
                             title={`সূরা ${ayah.surahNameBn}, আয়াত ${toBn(ayah.numberInSurah)} শুনতে ক্লিক করুন`}
                           >
                             {ayah.words.map((word, wIdx) => {
@@ -776,11 +856,11 @@ export default function HafiziMushafSheet({
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     if (onPlayAyah) {
-                                      onPlayAyah(ayah.numberInSurah, ayah.surahId, null, ayah.words, wIdx);
+                                      onPlayAyah(ayah.numberInSurah, ayah.surahId, null, ayah.words, 0);
                                     }
                                   }}
                                   className="inline-block relative cursor-pointer group"
-                                  title={`শব্দ: ${word} (এখান থেকে তিলাওয়াত শুনতে ক্লিক করুন)`}
+                                  title={`শব্দ: ${word} (ক্লিক করে আয়াত শুনুন)`}
                                 >
                                   {/* ১. মুতাশাবিহাত শুরুর চিহ্ন: [১] সিরিয়াল নম্বর ও প্রারম্ভিক কোণ ব্র্যাকেট ┌ */}
                                   {isMutashabihatStart && (
