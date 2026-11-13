@@ -302,7 +302,13 @@ export default function NurTeachingEngine({
     try {
       stopAllPlayback();
       const textToSpeak = `${activeModule.ruleTitleBn}। ${activeModule.explanationBn}`;
-      const url = `/api/ai/tts?text=${encodeURIComponent(textToSpeak)}&lang=bn&gender=male`;
+      const activeEngine = typeof window !== "undefined"
+        ? (localStorage.getItem("rahmania_bangla_voice_engine") || "engine-2")
+        : "engine-2";
+      const activeElVoice = typeof window !== "undefined"
+        ? (localStorage.getItem("rahmania_bangla_el_voice") || "brian")
+        : "brian";
+      const url = `/api/ai/tts?text=${encodeURIComponent(textToSpeak)}&lang=bn&gender=male&engine=${encodeURIComponent(activeEngine)}&elVoice=${encodeURIComponent(activeElVoice)}&v=studio-v14`;
       const audio = new Audio(url);
       teacherAudioRef.current = audio;
       setIsExplainingVoice(true);

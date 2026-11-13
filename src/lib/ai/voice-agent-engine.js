@@ -217,6 +217,8 @@ export class VoiceAgentEngine {
     this.language = config.language || "bn-BD";
     this.baseSpeed = config.baseSpeed || 1.0;
     this.basePitch = config.basePitch || 1.0;
+    this.banglaEngine = config.banglaEngine || null;
+    this.elVoice = config.elVoice || null;
     this.bargeInEnabled = config.bargeInEnabled !== false;
     this.bargeInSensitivity = config.bargeInSensitivity || "medium"; // 'low' | 'medium' | 'high'
     this.backchannelsEnabled = config.backchannelsEnabled !== false;
@@ -393,7 +395,13 @@ export class VoiceAgentEngine {
 
     // 1. PRIMARY HIGH-QUALITY PATH: Neural TTS API (/api/ai/tts)
     try {
-      const ttsUrl = `/api/ai/tts?text=${encodeURIComponent(spokenText)}&lang=${langCode}&gender=${this.gender}`;
+      const activeEngine = this.banglaEngine || (typeof window !== "undefined"
+        ? (localStorage.getItem("rahmania_bangla_voice_engine") || "engine-2")
+        : "engine-2");
+      const activeElVoice = this.elVoice || (typeof window !== "undefined"
+        ? (localStorage.getItem("rahmania_bangla_el_voice") || "brian")
+        : "brian");
+      const ttsUrl = `/api/ai/tts?text=${encodeURIComponent(spokenText)}&lang=${langCode}&gender=${this.gender}&engine=${encodeURIComponent(activeEngine)}&elVoice=${encodeURIComponent(activeElVoice)}&v=studio-v14`;
       const audio = new Audio();
       audio.crossOrigin = "anonymous";
       audio.src = ttsUrl;

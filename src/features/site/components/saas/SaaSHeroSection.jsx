@@ -145,14 +145,14 @@ export default function SaaSHeroSection({ onOpenWebsiteForm, onOpenMsgModal }) {
                 className="w-full sm:w-auto px-6 py-3.5 sm:py-4 rounded-2xl bg-amber-500/15 backdrop-blur-md border border-amber-400/40 text-amber-200 font-bold text-sm hover:bg-amber-500/25 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
               >
                 <FileSpreadsheet className="h-4 w-4 text-[#D4AF37]" />
-                <span>📄 তথ্য ফরম পূরণ করুন</span>
+                <span>তথ্য ফরম পূরণ করুন</span>
               </button>
               <button
                 onClick={onOpenMsgModal}
                 className="w-full sm:w-auto px-6 py-3.5 sm:py-4 rounded-2xl bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-200 font-bold text-sm hover:bg-emerald-500/30 transition-all duration-300 flex items-center justify-center gap-2 shadow-lg"
               >
                 <MessageSquare className="h-4 w-4 text-emerald-400" />
-                <span>💬 মেসেজ পাঠান</span>
+                <span>মেসেজ পাঠান</span>
               </button>
             </motion.div>
 

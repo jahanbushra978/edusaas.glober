@@ -23,8 +23,69 @@ try {
   console.warn("[TTS Cache] Could not create disk cache dir:", e?.message);
 }
 
-function getDiskCachePath(chunk, lang, gender, voice) {
-  const hash = crypto.createHash("sha256").update(`v11:${lang}:${gender}:${voice || "def"}:${chunk}`).digest("hex");
+if (typeof process !== "undefined") {
+  process.env.WS_NO_BUFFER_UTIL = "1";
+  process.env.WS_NO_UTF_8_VALIDATE = "1";
+}
+
+const ELEVENLABS_VOICES = {
+  brian: "nPczCjzI2devNBz1zQrb",
+  bill: "pqHfZKP75CvOlQylNhV4",
+  george: "JBFqnCBsd6RMkjVDRZzb",
+  daniel: "onwK4e9ZLuTAKqWW03F9",
+};
+
+function resolveElevenLabsVoiceId(elVoice) {
+  if (elVoice && ELEVENLABS_VOICES[elVoice]) {
+    return ELEVENLABS_VOICES[elVoice];
+  }
+  if (elVoice && /^[a-zA-Z0-9]{15,30}$/.test(elVoice)) {
+    return elVoice;
+  }
+  return process.env.ELEVENLABS_VOICE_ID || ELEVENLABS_VOICES.brian;
+}
+
+async function fetchElevenLabsTts(text, elVoice = null) {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey || apiKey === "undefined") {
+    throw new Error("ElevenLabs API key not configured");
+  }
+  const voiceId = resolveElevenLabsVoiceId(elVoice);
+  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`, {
+    method: "POST",
+    headers: {
+      "xi-api-key": apiKey,
+      "Content-Type": "application/json",
+      "Accept": "audio/mpeg",
+    },
+    body: JSON.stringify({
+      text,
+      model_id: "eleven_v3",
+      voice_settings: {
+        stability: 0.50,
+        similarity_boost: 0.78,
+        style: 0.35,
+        speed: 0.88,
+      },
+    }),
+    signal: AbortSignal.timeout(15000),
+  });
+  if (!res.ok) {
+    const errText = await res.text().catch(() => "");
+    throw new Error(`ElevenLabs HTTP ${res.status}: ${errText.slice(0, 120)}`);
+  }
+  const buf = Buffer.from(await res.arrayBuffer());
+  if (buf.length < 400) {
+    throw new Error("ElevenLabs returned empty audio buffer");
+  }
+  return { data: buf, isPcm: false, provider: "elevenlabs-v3" };
+}
+
+function getDiskCachePath(chunk, lang, gender, voice, rate = "def", pitch = "def", engine = "engine-2", elVoice = "def") {
+  const hash = crypto
+    .createHash("sha256")
+    .update(`v14:${engine}:${elVoice || "def"}:${lang}:${gender}:${voice || "def"}:${rate}:${pitch}:${chunk}`)
+    .digest("hex");
   return path.join(DISK_CACHE_DIR, `${hash}.bin`);
 }
 
@@ -33,7 +94,12 @@ function readFromDiskCache(filePath) {
     if (fs.existsSync(filePath)) {
       const data = fs.readFileSync(filePath);
       if (data && data.length > 0) {
-        return { isPcm: true, data };
+        const isId3 = data.slice(0, 3).toString() === "ID3";
+        const isMp3Sync = data.length >= 2 && data[0] === 0xff && (data[1] & 0xe0) === 0xe0;
+        const isRiff = data.slice(0, 4).toString() === "RIFF";
+        const isOgg = data.slice(0, 4).toString() === "OggS";
+        const isEncodedAudio = isId3 || isMp3Sync || isRiff || isOgg;
+        return { isPcm: !isEncodedAudio, data };
       }
     }
   } catch (err) {
@@ -54,7 +120,7 @@ function writeToDiskCache(filePath, buffer) {
  * Phonetically map common English & Islamic terminology into Bengali phonetics
  * so Bengali TTS pronounces them naturally without stuttering or skipping.
  */
-function normalizeForBengaliSpeech(rawText) {
+function normalizeForBengaliSpeech(rawText, engine = "engine-2") {
   if (!rawText) return "";
   let text = String(rawText);
 
@@ -78,6 +144,10 @@ function normalizeForBengaliSpeech(rawText) {
   text = text.replace(/মুবারকবাদ[!।]?/g, "মুবারকবাদ, ");
   text = text.replace(/আসসালামু\s*আলাইকুম[!।]?/g, "আসসালামু আলাইকুম, ");
   text = text.replace(/সুবহানাল্লাহ[!।]?/g, "সুবহানাল্লাহ, ");
+
+  // Dignified Quranic narrator pauses across both Studio Engine 2 and Engine 1
+  text = text.replace(/([।!?])\s*(অতএব|সুতরাং|নিশ্চয়ই|নিশ্চই|বস্তুত|বরং|বলুন)/g, "$1 $2,");
+  text = text.replace(/(^|\s)(হে মানবজাতি|হে মানুষ|হে ইমানদারগণ|হে মুমিনগণ|হে নবী)([।,!\s])/g, " $2, ");
 
   // Common terminology phonetics
   const phoneticMap = [
@@ -207,25 +277,139 @@ function pcmToWav(pcmBuffer, sampleRate = 24000, numChannels = 1, bitDepth = 16)
   return Buffer.concat([header, pcmBuffer]);
 }
 
-/**
- * Primary Tier 1: Authentic Neural Human Male Voice (bn-BD-PradeepNeural / ar-SA-HamedNeural)
- * Powered by high-definition 24kHz neural audio.
- * Zero robotic sound, 100% human male vocal timbre, zero daily quota limits!
- */
-async function fetchEdgeTtsAudio(text, lang = "bn", voiceOverride = null, rateOverride = null) {
+async function masterStudioVoiceWithFfmpeg(inputFilePath, gender = "male") {
   const { execFile } = await import("child_process");
-  const path = await import("path");
+  const outPath = path.join(os.tmpdir(), `edge_master_${Date.now()}_${Math.random().toString(36).slice(2)}.mp3`);
+  // Analog tape depth + surgical studio condenser vocal EQ (zero WSOLA / vocoder metallic buzz)
+  const af = gender === "female"
+    ? [
+        "aresample=48000",
+        "asetrate=46800,aresample=48000",
+        "highpass=f=85",
+        "equalizer=f=185:t=q:w=1.1:g=3.2",
+        "equalizer=f=320:t=q:w=1.2:g=1.5",
+        "equalizer=f=2700:t=q:w=1.2:g=-3.0",
+        "equalizer=f=4500:t=q:w=1.0:g=-5.5",
+        "equalizer=f=6800:t=q:w=1.1:g=-4.0",
+        "lowpass=f=12200",
+        "acompressor=threshold=-20dB:ratio=2.2:attack=18:release=160:makeup=2.2",
+        "alimiter=limit=0.92",
+      ].join(",")
+    : [
+        "aresample=48000",
+        "asetrate=44400,aresample=48000",
+        "highpass=f=70",
+        "equalizer=f=150:t=q:w=1.1:g=4.8",
+        "equalizer=f=260:t=q:w=1.2:g=2.5",
+        "equalizer=f=950:t=q:w=1.0:g=-1.8",
+        "equalizer=f=2700:t=q:w=1.2:g=-3.5",
+        "equalizer=f=4400:t=q:w=1.0:g=-6.0",
+        "equalizer=f=6600:t=q:w=1.1:g=-4.5",
+        "lowpass=f=11500",
+        "acompressor=threshold=-20dB:ratio=2.3:attack=18:release=160:makeup=2.8",
+        "alimiter=limit=0.92",
+      ].join(",");
 
+  return new Promise((resolve, reject) => {
+    execFile(
+      "ffmpeg",
+      ["-y", "-i", inputFilePath, "-af", af, "-f", "mp3", "-write_xing", "0", "-id3v2_version", "0", "-ar", "48000", "-ac", "1", "-b:a", "128k", outPath],
+      { timeout: 10000 },
+      (err) => {
+        if (err) {
+          try { if (fs.existsSync(outPath)) fs.unlinkSync(outPath); } catch {}
+          return reject(err);
+        }
+        try {
+          const masteredBuf = fs.readFileSync(outPath);
+          try { fs.unlinkSync(outPath); } catch {}
+          if (masteredBuf && masteredBuf.length > 0) {
+            resolve(masteredBuf);
+          } else {
+            reject(new Error("Empty FFmpeg mastered buffer"));
+          }
+        } catch (readErr) {
+          try { if (fs.existsSync(outPath)) fs.unlinkSync(outPath); } catch {}
+          reject(readErr);
+        }
+      }
+    );
+  });
+}
+
+/**
+ * Primary Tier 1: Authentic Neural Human Voice (bn-BD-PradeepNeural / bn-BD-NabanitaNeural / ar-SA-HamedNeural)
+ * Uses crisp 24kHz Opus/96k + FFmpeg Pure-Analog Studio Vocal Mastering for Bengali so it sounds warm, calm, and non-robotic!
+ */
+async function fetchEdgeTtsAudio(text, lang = "bn", voiceOverride = null, rateOverride = null, pitchOverride = null, gender = "male") {
   let voice = voiceOverride;
   if (!voice) {
     if (lang.startsWith("ar")) {
       voice = "ar-SA-HamedNeural"; // Classical Saudi Fusha Quran teacher (pure open Fatha "A")
+    } else if (lang.startsWith("en")) {
+      voice = gender === "female" ? "en-US-AriaNeural" : "en-US-GuyNeural";
     } else {
-      voice = "bn-BD-PradeepNeural"; // Pure authentic human male Bengali voice
+      voice = gender === "female" ? "bn-BD-NabanitaNeural" : "bn-BD-PradeepNeural";
     }
   }
 
-  const runnerPath = path.join(process.cwd(), "src/lib/ai/edge-tts-runner.mjs");
+  const isBengali = lang.startsWith("bn");
+  const isDefaultCadence = !rateOverride || rateOverride === "default" || rateOverride === "-3%" || rateOverride === "-7%";
+
+  // 1. Direct in-process EdgeTTS execution + Studio Warm Mastering for Bengali
+  try {
+    const { EdgeTTS } = await import("node-edge-tts");
+    if (isBengali) {
+      const opusFile = path.join(os.tmpdir(), `edge_${Date.now()}_${Math.random().toString(36).slice(2)}.webm`);
+      const ttsOpus = new EdgeTTS({
+        voice,
+        lang: "bn-BD",
+        rate: isDefaultCadence ? "default" : rateOverride,
+        pitch: "default",
+        outputFormat: "webm-24khz-16bit-mono-opus",
+      });
+      await ttsOpus.ttsPromise(text, opusFile);
+
+      if (fs.existsSync(opusFile)) {
+        try {
+          const mastered = await masterStudioVoiceWithFfmpeg(opusFile, gender);
+          try { fs.unlinkSync(opusFile); } catch {}
+          if (mastered && mastered.length > 0) {
+            return { data: mastered, provider: "edge-studio" };
+          }
+        } catch (ffErr) {
+          console.warn("[TTS] FFmpeg mastering skipped, falling back to 96k MP3:", ffErr?.message);
+          try { fs.unlinkSync(opusFile); } catch {}
+        }
+      }
+    }
+
+    const tempFile = path.join(os.tmpdir(), `edge_${Date.now()}_${Math.random().toString(36).slice(2)}.mp3`);
+    const tts = new EdgeTTS({
+      voice: voice,
+      lang: (voice && voice.startsWith("ar")) ? "ar-SA" : lang.startsWith("en") ? "en-US" : "bn-BD",
+      rate: (rateOverride && rateOverride !== "default") ? rateOverride : (isBengali ? "-3%" : "-5%"),
+      pitch: (pitchOverride && pitchOverride !== "default" && pitchOverride !== "0Hz") ? pitchOverride : "default",
+      outputFormat: "audio-24khz-96kbitrate-mono-mp3",
+    });
+
+    await tts.ttsPromise(text, tempFile);
+
+    if (fs.existsSync(tempFile)) {
+      const data = fs.readFileSync(tempFile);
+      try { fs.unlinkSync(tempFile); } catch {}
+      if (data && data.length > 0) {
+        return { data, provider: "edge-tts" };
+      }
+    }
+  } catch (directErr) {
+    console.warn("[TTS] In-process EdgeTTS notice, falling back to runner:", directErr?.message);
+  }
+
+  // 2. Subprocess runner fallback
+  const { execFile } = await import("child_process");
+  const pathMod = await import("path");
+  const runnerPath = pathMod.join(process.cwd(), "src/lib/ai/edge-tts-runner.mjs");
   if (!fs.existsSync(runnerPath)) {
     throw new Error(`Edge runner not available at ${runnerPath}`);
   }
@@ -233,7 +417,7 @@ async function fetchEdgeTtsAudio(text, lang = "bn", voiceOverride = null, rateOv
   return new Promise((resolve, reject) => {
     execFile(
       process.execPath,
-      [runnerPath, text, voice, rateOverride || "-4%"],
+      [runnerPath, text, voice, (rateOverride && rateOverride !== "default") ? rateOverride : "-3%", "default"],
       { encoding: "buffer", maxBuffer: 20 * 1024 * 1024, timeout: 20000 },
       (error, stdout, stderr) => {
         if (error) {
@@ -241,7 +425,7 @@ async function fetchEdgeTtsAudio(text, lang = "bn", voiceOverride = null, rateOv
         } else if (!stdout || stdout.length === 0) {
           reject(new Error("Empty audio buffer from Edge TTS"));
         } else {
-          resolve(stdout);
+          resolve({ data: stdout, provider: "edge-tts" });
         }
       }
     );
@@ -346,39 +530,59 @@ async function fetchGoogleTtsFallback(text, lang = "bn") {
 /**
  * Fetch unified audio chunk with 100% Authentic Neural Human Male Voice Priority
  */
-async function synthesizeChunk(chunk, lang = "bn", voice = null, rate = null, gender = "male") {
-  const memKey = `v11:${lang}:${gender}:${voice || "def"}:${rate || "def"}:${chunk}`;
+async function synthesizeChunk(chunk, lang = "bn", voice = null, rate = null, gender = "male", pitch = null, engine = "engine-2", elVoice = null) {
+  const useElevenLabsFirst = Boolean(
+    lang.startsWith("bn") && engine !== "engine-1" && process.env.ELEVENLABS_API_KEY && (gender !== "female" || elVoice)
+  );
+  const resolvedElVoice = useElevenLabsFirst ? resolveElevenLabsVoiceId(elVoice) : "def";
+  const memKey = `v14:${engine}:${resolvedElVoice}:${lang}:${gender}:${voice || "def"}:${rate || "def"}:${pitch || "def"}:${chunk}`;
   if (ttsCache.has(memKey)) {
     return ttsCache.get(memKey);
   }
 
   // Check persistent disk cache first (instant sub-20ms response)
-  const diskPath = getDiskCachePath(chunk, lang, gender, voice);
+  const diskPath = getDiskCachePath(chunk, lang, gender, voice, rate || "def", pitch || "def", engine, resolvedElVoice);
   const diskCached = readFromDiskCache(diskPath);
   if (diskCached) {
-    ttsCache.set(memKey, diskCached);
-    return diskCached;
+    const cachedResult = { ...diskCached, provider: diskCached.provider || "disk-cache" };
+    ttsCache.set(memKey, cachedResult);
+    return cachedResult;
   }
 
   let chunkResult = null;
 
-  // 1. TIER 1: Authentic Human Male Voice (bn-BD-PradeepNeural) — Zero Robotic Sound!
-  try {
-    const buf = await fetchEdgeTtsAudio(chunk, lang, voice, rate);
-    if (buf && buf.length > 0) {
-      chunkResult = { isPcm: false, data: buf };
-      console.log(`[TTS] Authentic Human Male Voice success for "${chunk.slice(0, 30)}...": ${buf.length} bytes`);
+  // 0. TIER 0 (Engine 2 Default for Bengali): ElevenLabs eleven_v3 Natural Studio Voice
+  if (useElevenLabsFirst) {
+    try {
+      chunkResult = await fetchElevenLabsTts(chunk, resolvedElVoice);
+      if (chunkResult && chunkResult.data && chunkResult.data.length > 0) {
+        console.log(`[TTS] ElevenLabs eleven_v3 success for "${chunk.slice(0, 30)}...": ${chunkResult.data.length} bytes`);
+      }
+    } catch (elErr) {
+      console.warn(`[TTS] ElevenLabs notice (falling back to Edge Studio):`, elErr?.message);
     }
-  } catch (edgeErr) {
-    console.warn(`[TTS] EdgeTTS notice for "${chunk.slice(0, 30)}...":`, edgeErr?.message);
   }
 
-  // 2. TIER 2: Secondary Gemini Enceladus Male Voice (24kHz Studio PCM)
+  // 1. TIER 1: EdgeTTS + FFmpeg Pure-Analog Studio Warm Mastering (Free Unlimited Primary/Fallback)
   if (!chunkResult || !chunkResult.data || chunkResult.data.length === 0) {
+    try {
+      const edgeRes = await fetchEdgeTtsAudio(chunk, lang, voice, rate, pitch, gender);
+      if (edgeRes && edgeRes.data && edgeRes.data.length > 0) {
+        chunkResult = { isPcm: false, data: edgeRes.data, provider: edgeRes.provider || "edge-tts" };
+        console.log(`[TTS] ${chunkResult.provider} (${lang}) success for "${chunk.slice(0, 30)}...": ${edgeRes.data.length} bytes`);
+      }
+    } catch (edgeErr) {
+      console.warn(`[TTS] EdgeTTS notice for "${chunk.slice(0, 30)}...":`, edgeErr?.message);
+    }
+  }
+
+  // 2. TIER 2: Secondary Gemini Voice (Skipped for Bengali because Gemini TTS mispronounces bn)
+  if (!lang.startsWith("bn") && (!chunkResult || !chunkResult.data || chunkResult.data.length === 0)) {
     try {
       chunkResult = await fetchGeminiNeuralTts(chunk, gender);
       if (chunkResult && chunkResult.data && chunkResult.data.length > 0) {
-        console.log(`[TTS] Gemini Enceladus Male Voice fallback success for "${chunk.slice(0, 30)}...": ${chunkResult.data.length} bytes`);
+        chunkResult.provider = "gemini-tts";
+        console.log(`[TTS] Gemini fallback success for "${chunk.slice(0, 30)}...": ${chunkResult.data.length} bytes`);
       }
     } catch (geminiErr) {
       console.warn(`[TTS] Gemini notice:`, geminiErr?.message);
@@ -390,7 +594,7 @@ async function synthesizeChunk(chunk, lang = "bn", voice = null, rate = null, ge
     try {
       const gBuf = await fetchGoogleTtsFallback(chunk, lang);
       if (gBuf && gBuf.length > 0) {
-        chunkResult = { isPcm: false, data: gBuf };
+        chunkResult = { isPcm: false, data: gBuf, provider: "google-tts" };
         console.log(`[TTS] Universal Google fallback success for "${chunk.slice(0, 30)}...": ${gBuf.length} bytes`);
       }
     } catch (gErr) {
@@ -400,7 +604,7 @@ async function synthesizeChunk(chunk, lang = "bn", voice = null, rate = null, ge
 
   if (chunkResult && chunkResult.data && chunkResult.data.length > 0) {
     // Persist to disk cache
-    writeToDiskCache(diskPath, chunkResult.isPcm ? chunkResult.data : chunkResult.data);
+    writeToDiskCache(diskPath, chunkResult.data);
     // Update LRU in-memory cache
     if (ttsCache.size > 1000) {
       const firstKey = ttsCache.keys().next().value;
@@ -422,24 +626,32 @@ export async function GET(request) {
     const text = (searchParams.get("text") || "").trim();
     const lang = (searchParams.get("lang") || "bn").toLowerCase();
     const voice = searchParams.get("voice") || null;
-    const rate = searchParams.get("rate") || null;
+    const engine = searchParams.get("engine") || "engine-2"; // Engine 2 (ElevenLabs eleven_v3 Natural Studio Voice) is default!
+    const elVoice = searchParams.get("elVoice") || searchParams.get("el_voice") || null;
+    let rate = searchParams.get("rate") || null;
+    let pitch = searchParams.get("pitch") || null;
     const gender = (searchParams.get("gender") || "male").toLowerCase();
 
     if (!text) {
       return NextResponse.json({ ok: false, message: "Text parameter is required." }, { status: 400 });
     }
 
+    if (lang.startsWith("bn")) {
+      rate = rate || "default";
+      pitch = pitch || "default";
+    }
+
     const normalized = lang.startsWith("bn")
-      ? normalizeForBengaliSpeech(text)
+      ? normalizeForBengaliSpeech(text, engine)
       : lang.startsWith("ar")
       ? normalizeForArabicSpeech(text)
       : text;
-    const chunks = splitTextIntoChunks(normalized, 170);
+    const chunks = splitTextIntoChunks(normalized, lang.startsWith("bn") ? 450 : 170);
     const chunkResults = [];
 
     for (const chunk of chunks) {
       try {
-        const res = await synthesizeChunk(chunk, lang, voice, rate, gender);
+        const res = await synthesizeChunk(chunk, lang, voice, rate, gender, pitch, engine, elVoice);
         if (res && res.data && res.data.length > 0) {
           chunkResults.push(res);
         }
@@ -452,6 +664,7 @@ export async function GET(request) {
       return NextResponse.json({ ok: false, message: "Failed to synthesize speech." }, { status: 502 });
     }
 
+    const providerUsed = chunkResults.map((b) => b.provider).filter(Boolean).join(",") || "unknown";
     const hasPcm = chunkResults.some((b) => b && b.isPcm);
     if (hasPcm) {
       const pcmStreams = chunkResults.map((b) => (b.isPcm ? b.data : b.data || b));
@@ -462,6 +675,7 @@ export async function GET(request) {
         headers: {
           "Content-Type": "audio/wav",
           "Content-Length": String(fullWav.length),
+          "X-TTS-Provider": providerUsed,
           "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
           "Accept-Ranges": "bytes",
           "Access-Control-Allow-Origin": "*",
@@ -480,6 +694,7 @@ export async function GET(request) {
       headers: {
         "Content-Type": contentType,
         "Content-Length": String(combinedBuffer.length),
+        "X-TTS-Provider": providerUsed,
         "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
         "Accept-Ranges": "bytes",
         "Access-Control-Allow-Origin": "*",
@@ -501,25 +716,33 @@ export async function POST(request) {
     const body = await request.json().catch(() => ({}));
     const text = (body.text || "").trim();
     const lang = (body.lang || "bn").toLowerCase();
+    const engine = body.engine || "engine-2";
+    const elVoice = body.elVoice || body.el_voice || null;
     const voice = body.voice || null;
-    const rate = body.rate || null;
+    let rate = body.rate || null;
+    let pitch = body.pitch || null;
     const gender = (body.gender || "male").toLowerCase();
+
+    if (lang.startsWith("bn")) {
+      rate = rate || "default";
+      pitch = pitch || "default";
+    }
 
     if (!text) {
       return NextResponse.json({ ok: false, message: "Text is required in body." }, { status: 400 });
     }
 
     const normalized = lang.startsWith("bn")
-      ? normalizeForBengaliSpeech(text)
+      ? normalizeForBengaliSpeech(text, engine)
       : lang.startsWith("ar")
       ? normalizeForArabicSpeech(text)
       : text;
-    const chunks = splitTextIntoChunks(normalized, 170);
+    const chunks = splitTextIntoChunks(normalized, lang.startsWith("bn") ? 450 : 170);
     const chunkResults = [];
 
     for (const chunk of chunks) {
       try {
-        const res = await synthesizeChunk(chunk, lang, voice, rate, gender);
+        const res = await synthesizeChunk(chunk, lang, voice, rate, gender, pitch, engine, elVoice);
         if (res && res.data && res.data.length > 0) {
           chunkResults.push(res);
         }
@@ -532,6 +755,7 @@ export async function POST(request) {
       return NextResponse.json({ ok: false, message: "Failed to synthesize speech." }, { status: 502 });
     }
 
+    const providerUsed = chunkResults.map((b) => b.provider).filter(Boolean).join(",") || "unknown";
     const hasPcm = chunkResults.some((b) => b && b.isPcm);
     if (hasPcm) {
       const pcmStreams = chunkResults.map((b) => (b.isPcm ? b.data : b.data || b));
@@ -542,6 +766,7 @@ export async function POST(request) {
         headers: {
           "Content-Type": "audio/wav",
           "Content-Length": String(fullWav.length),
+          "X-TTS-Provider": providerUsed,
           "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
           "Accept-Ranges": "bytes",
           "Access-Control-Allow-Origin": "*",
@@ -560,6 +785,7 @@ export async function POST(request) {
       headers: {
         "Content-Type": contentType,
         "Content-Length": String(combinedBuffer.length),
+        "X-TTS-Provider": providerUsed,
         "Cache-Control": "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
         "Accept-Ranges": "bytes",
         "Access-Control-Allow-Origin": "*",

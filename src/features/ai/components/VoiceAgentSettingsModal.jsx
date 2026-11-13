@@ -18,6 +18,11 @@ import {
   EMOTIONS,
   VoiceAgentEngine
 } from "@/lib/ai/voice-agent-engine";
+import {
+  banglaAudioEngine,
+  BANGLA_VOICE_ENGINES,
+  ELEVENLABS_STUDIO_VOICES
+} from "@/lib/quran/bangla-audio-engine";
 
 export default function VoiceAgentSettingsModal({
   isOpen,
@@ -31,6 +36,12 @@ export default function VoiceAgentSettingsModal({
   const [language, setLanguage] = useState(config?.language || "bn-BD");
   const [baseSpeed, setBaseSpeed] = useState(config?.baseSpeed || 1.0);
   const [basePitch, setBasePitch] = useState(config?.basePitch || 1.0);
+  const [banglaEngine, setBanglaEngine] = useState(() =>
+    typeof window !== "undefined" ? banglaAudioEngine.getActiveEngine() : "engine-2"
+  );
+  const [elVoice, setElVoice] = useState(() =>
+    typeof window !== "undefined" ? banglaAudioEngine.getActiveElVoice() : "brian"
+  );
   const [bargeInEnabled, setBargeInEnabled] = useState(config?.bargeInEnabled !== false);
   const [bargeInSensitivity, setBargeInSensitivity] = useState(config?.bargeInSensitivity || "medium");
   const [backchannelsEnabled, setBackchannelsEnabled] = useState(config?.backchannelsEnabled !== false);
@@ -61,7 +72,9 @@ export default function VoiceAgentSettingsModal({
       emotion,
       language,
       baseSpeed,
-      basePitch
+      basePitch,
+      banglaEngine,
+      elVoice,
     });
 
     const sampleText =
@@ -77,6 +90,8 @@ export default function VoiceAgentSettingsModal({
   };
 
   const handleSave = () => {
+    banglaAudioEngine.setActiveEngine(banglaEngine);
+    banglaAudioEngine.setActiveElVoice(elVoice);
     const updated = {
       gender,
       personaId,
@@ -84,12 +99,14 @@ export default function VoiceAgentSettingsModal({
       language,
       baseSpeed,
       basePitch,
+      banglaEngine,
+      elVoice,
       bargeInEnabled,
       bargeInSensitivity,
       backchannelsEnabled
     };
     if (onSaveConfig) onSaveConfig(updated);
-    toast.success("মাশাআল্লাহ! ভয়েস সেটিংস সফলভাবে সংরক্ষিত হয়েছে।");
+    toast.success("মাশাআল্লাহ! ভয়েস ও বাংলা ইঞ্জিন সেটিংস সংরক্ষিত হয়েছে।");
     onClose();
   };
 
@@ -100,6 +117,10 @@ export default function VoiceAgentSettingsModal({
     setLanguage("bn-BD");
     setBaseSpeed(1.0);
     setBasePitch(1.0);
+    setBanglaEngine("engine-2");
+    setElVoice("brian");
+    banglaAudioEngine.setActiveEngine("engine-2");
+    banglaAudioEngine.setActiveElVoice("brian");
     setBargeInEnabled(true);
     setBargeInSensitivity("medium");
     setBackchannelsEnabled(true);
@@ -196,6 +217,66 @@ export default function VoiceAgentSettingsModal({
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Section 1.5: Bangla TTS Voice Engine Selection */}
+          <div className="space-y-3 pt-2 border-t border-slate-800">
+            <div className="flex items-center justify-between gap-2">
+              <label className="text-xs font-bold text-amber-300 uppercase tracking-wider block">
+                বাংলা ভয়েস ইঞ্জিন (Bangla Voice Engine)
+              </label>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/30 font-bold">
+                ডিফল্ট: ইঞ্জিন ২
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {Object.values(BANGLA_VOICE_ENGINES).map((eng) => {
+                const isSelected = banglaEngine === eng.id;
+                return (
+                  <button
+                    key={eng.id}
+                    type="button"
+                    onClick={() => setBanglaEngine(eng.id)}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
+                      isSelected
+                        ? "bg-amber-950/60 border-amber-500 text-white shadow-md ring-1 ring-amber-500/40"
+                        : "bg-slate-950/60 border-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    <div className="text-xs font-bold flex items-center justify-between gap-1.5">
+                      <span className="truncate">{eng.shortName}</span>
+                      {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                    </div>
+                    <div className="text-[11px] text-slate-400 mt-1 line-clamp-2">{eng.description}</div>
+                  </button>
+                );
+              })}
+            </div>
+
+            {banglaEngine !== "engine-1" && (
+              <div className="pt-1 space-y-1.5">
+                <span className="text-[11px] font-semibold text-slate-300 block">
+                  স্টুডিও কণ্ঠস্বর নির্বাচন (ElevenLabs v3):
+                </span>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {Object.values(ELEVENLABS_STUDIO_VOICES).map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => setElVoice(v.id)}
+                      className={`p-2 rounded-xl border text-xs font-semibold text-center transition-all cursor-pointer ${
+                        elVoice === v.id
+                          ? "bg-emerald-950 border-emerald-500 text-emerald-200 shadow-sm"
+                          : "bg-slate-950/50 border-slate-800 text-slate-400 hover:text-white"
+                      }`}
+                    >
+                      {v.shortName}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Section 2: Emotion & Expression */}

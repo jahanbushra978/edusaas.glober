@@ -3,7 +3,7 @@ import path from "path";
 import os from "os";
 import fs from "fs";
 
-const [,, text, voice, rate] = process.argv;
+const [,, text, voice, rate, pitch] = process.argv;
 
 if (!text) {
   process.stderr.write("No text provided\n");
@@ -16,8 +16,9 @@ try {
   const tts = new EdgeTTS({
     voice: voice || "bn-BD-PradeepNeural",
     lang: (voice && voice.startsWith("ar")) ? "ar-SA" : "bn-BD",
-    rate: rate || "-4%",
-    outputFormat: "audio-24khz-48kbitrate-mono-mp3"
+    rate: rate || "-7%",
+    pitch: (pitch && pitch !== "default") ? pitch : undefined,
+    outputFormat: "audio-24khz-96kbitrate-mono-mp3"
   });
 
   await tts.ttsPromise(text, tempFile);

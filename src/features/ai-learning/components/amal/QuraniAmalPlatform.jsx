@@ -193,7 +193,9 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
     } else if (task.type === "bangla_meaning") {
       // Natural Bengali Neural TTS via /api/ai/tts
       const textToSpeak = task.text;
-      const ttsUrl = `/api/ai/tts?text=${encodeURIComponent(textToSpeak)}`;
+      const storedEngine = typeof window !== "undefined" ? (localStorage.getItem("rahmania_bangla_voice_engine") || "engine-2") : "engine-2";
+      const storedElVoice = typeof window !== "undefined" ? (localStorage.getItem("rahmania_bangla_el_voice") || "brian") : "brian";
+      const ttsUrl = `/api/ai/tts?text=${encodeURIComponent(textToSpeak)}&engine=${encodeURIComponent(storedEngine)}&elVoice=${encodeURIComponent(storedElVoice)}&v=studio-v14`;
       if (!audioPlayerRef.current) {
         audioPlayerRef.current = new Audio();
       }
@@ -310,7 +312,9 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
   const handlePlayFazilatAudio = (amalItem) => {
     stopAllAudio();
     const textToSpeak = amalItem.virtueAudioText || amalItem.virtueSummary;
-    const ttsUrl = `/api/ai/tts?text=${encodeURIComponent(textToSpeak)}`;
+    const storedEngine = typeof window !== "undefined" ? (localStorage.getItem("rahmania_bangla_voice_engine") || "engine-2") : "engine-2";
+    const storedElVoice = typeof window !== "undefined" ? (localStorage.getItem("rahmania_bangla_el_voice") || "brian") : "brian";
+    const ttsUrl = `/api/ai/tts?text=${encodeURIComponent(textToSpeak)}&engine=${encodeURIComponent(storedEngine)}&elVoice=${encodeURIComponent(storedElVoice)}&v=studio-v14`;
     setLoadingAudioKey(`fazilat-${amalItem.id}`);
     if (!audioPlayerRef.current) {
       audioPlayerRef.current = new Audio();

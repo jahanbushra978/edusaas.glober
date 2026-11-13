@@ -22,6 +22,7 @@ import {
   normalizeQuranWord
 } from "@/lib/quran/hafizi-annotations";
 import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
+import { useBanglaAudioEngine, BANGLA_VOICE_ENGINES } from "@/lib/quran/bangla-audio-engine";
 
 // Canonical Arabic normalizer for 100% accurate Mutashabihat and Waqf matching
 function cleanArabic(str) {
@@ -52,6 +53,13 @@ export default function HafiziMushafSheet({
   const [isParaDropdownOpen, setIsParaDropdownOpen] = useState(false);
   const [isQariMenuOpen, setIsQariMenuOpen] = useState(false);
   const [returnHistoryPage, setReturnHistoryPage] = useState(null);
+  const {
+    activeEngine: activeBanglaEngine,
+    setActiveEngine: setActiveBanglaEngine,
+    activeElVoice,
+    setActiveElVoice,
+    elVoices,
+  } = useBanglaAudioEngine();
 
   // Jump to Mutashabiha page with reading history tracking for Back button
   const handleJumpToMutashabiha = (targetPage, e) => {
@@ -366,7 +374,7 @@ export default function HafiziMushafSheet({
 
         {/* ── স্ক্রিনশটের হুবহু অথেনটিক হাফেজী কুরআন হেডার বার (জোড়/বিজোড় পৃষ্ঠা অনুযায়ী দিক পরিবর্তন) ── */}
         <div
-          className={`w-full px-2 sm:px-4 py-1.5 sm:py-2 border-b-2 flex items-center justify-between gap-1 sm:gap-2 text-xs font-bold select-none ${
+          className={`relative w-full px-2 sm:px-4 py-1.5 sm:py-2 border-b-2 flex items-center justify-between gap-1 sm:gap-2 text-xs font-bold select-none ${
             isDay
               ? "bg-[#F3EEE2] border-amber-600/40 text-stone-900"
               : "bg-[#06140e] border-amber-500/50 text-emerald-100"
@@ -410,7 +418,7 @@ export default function HafiziMushafSheet({
           </div>
 
           {/* সেন্টারে শায়েখের নাম: প্রিমিয়াম নীল বাটন (ক্লিক করলে ড্রপডাউন মেনু থেকে শায়েখ নির্বাচন করা যাবে) */}
-          <div className="flex items-center justify-center relative shrink min-w-0 mx-0.5">
+          <div className="flex items-center justify-center shrink min-w-0 mx-0.5">
             <button
               type="button"
               onClick={() => setIsQariMenuOpen((prev) => !prev)}
@@ -431,7 +439,7 @@ export default function HafiziMushafSheet({
             {/* Interactive Qari Selection Dropdown Menu with High Contrast Colors */}
             {isQariMenuOpen && (
               <div
-                className={`absolute top-full mt-2 w-72 rounded-2xl shadow-2xl border-2 z-50 p-2.5 space-y-1 animate-in fade-in zoom-in-95 duration-150 ${
+                className={`absolute left-1/2 -translate-x-1/2 top-full mt-2 w-[calc(100%-1rem)] max-w-xs sm:w-72 rounded-2xl shadow-2xl border-2 z-50 p-2.5 space-y-1 animate-in fade-in zoom-in-95 duration-150 ${
                   isDay
                     ? "bg-white border-sky-500 text-stone-900 shadow-slate-900/20"
                     : "bg-[#0b1f1a] border-sky-400/80 text-emerald-100 shadow-black/60"
@@ -478,6 +486,81 @@ export default function HafiziMushafSheet({
                       </button>
                     );
                   })}
+                </div>
+
+                {/* বাংলা ভয়েস ইঞ্জিন সিলেকশন */}
+                <div className={`mt-2 pt-2 border-t flex flex-col gap-1.5 ${
+                  isDay ? "border-sky-100" : "border-sky-500/30"
+                }`}>
+                  <div className="flex items-center justify-between px-1">
+                    <span className={`text-[10px] font-black uppercase tracking-wider ${
+                      isDay ? "text-stone-600" : "text-amber-400"
+                    }`}>
+                      বাংলা ভয়েস ইঞ্জিন
+                    </span>
+                    <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/10 text-amber-600 dark:text-amber-300 font-bold border border-amber-500/20">
+                      ডিফল্ট: ইঞ্জিন ২
+                    </span>
+                  </div>
+                  <div className="space-y-1">
+                    {Object.values(BANGLA_VOICE_ENGINES).map((eng) => {
+                      const isEngActive = (activeBanglaEngine || "engine-2") === eng.id;
+                      return (
+                        <button
+                          key={eng.id}
+                          type="button"
+                          onClick={() => {
+                            setActiveBanglaEngine(eng.id);
+                            toast.success(`${eng.name} নির্বাচন করা হয়েছে`);
+                          }}
+                          className={`w-full text-left px-2.5 py-1.5 rounded-xl text-xs transition flex items-center justify-between cursor-pointer ${
+                            isEngActive
+                              ? "bg-amber-600 text-white font-extrabold shadow-sm"
+                              : isDay
+                              ? "text-stone-800 hover:bg-amber-50 hover:text-amber-900 font-bold"
+                              : "text-slate-200 hover:bg-emerald-950/70 hover:text-amber-300 font-bold"
+                          }`}
+                        >
+                          <div className="truncate">
+                            <span className="block truncate font-bold">{eng.name}</span>
+                            <span className="text-[10px] opacity-80 block truncate">{eng.description}</span>
+                          </div>
+                          {isEngActive && <Check className="w-4 h-4 ml-1.5 text-white shrink-0" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {(activeBanglaEngine || "engine-2") !== "engine-1" && elVoices && (
+                    <div className="mt-2 pt-2 border-t border-amber-500/20">
+                      <div className="text-[10px] font-bold text-amber-500 dark:text-amber-300 mb-1.5">
+                        স্টুডিও কণ্ঠস্বর বাছাই (ElevenLabs v3):
+                      </div>
+                      <div className="grid grid-cols-2 gap-1">
+                        {Object.values(elVoices).map((v) => {
+                          const isVActive = (activeElVoice || "brian") === v.id;
+                          return (
+                            <button
+                              key={v.id}
+                              type="button"
+                              onClick={() => {
+                                setActiveElVoice(v.id);
+                                toast.success(`${v.shortName} কণ্ঠ নির্বাচন করা হয়েছে`);
+                              }}
+                              className={`px-2 py-1 rounded-lg text-[10px] font-bold transition text-left truncate cursor-pointer ${
+                                isVActive
+                                  ? "bg-emerald-600 text-white shadow-xs"
+                                  : isDay
+                                  ? "bg-stone-100 text-stone-700 hover:bg-amber-50"
+                                  : "bg-emerald-950/60 text-slate-300 hover:bg-emerald-900"
+                              }`}
+                            >
+                              {v.shortName}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}

@@ -67,29 +67,29 @@ export default function LiveVoiceClassroomPage() {
       <div className="fixed bottom-0 right-1/4 w-[500px] h-[350px] bg-amber-400/10 rounded-full blur-[130px] pointer-events-none -z-10" />
 
       {/* ── TOP IMMERSIVE CLASSROOM APP BAR (Frosted Ivory & Emerald) ── */}
-      <header className="h-16 border-b border-emerald-100/80 bg-white/95 backdrop-blur-md px-4 sm:px-6 flex items-center justify-between z-30 sticky top-0 shadow-sm">
+      <header className="h-14 sm:h-16 border-b border-emerald-100/80 bg-white/95 backdrop-blur-md px-3 sm:px-6 flex items-center justify-between gap-2 z-30 sticky top-0 shadow-sm">
         {/* Left: Navigation & Branding */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
           <Link
             href="/quran-tutor/studio?feature=voice-tutor"
-            className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 hover:bg-emerald-100 text-emerald-800 transition-colors flex items-center gap-1.5 text-xs font-bold shadow-xs cursor-pointer"
+            className="p-2 sm:px-3 sm:py-1.5 rounded-full bg-emerald-50 border border-emerald-200/80 hover:bg-emerald-100 text-emerald-800 transition-colors flex items-center gap-1.5 text-xs font-bold shadow-xs cursor-pointer shrink-0"
             title="উস্তাদ চ্যাটে ফিরে যান"
           >
             <ArrowLeft className="w-4 h-4 text-emerald-700" />
-            <span className="text-[11px] sm:text-xs font-bold">উস্তাদ চ্যাট</span>
+            <span className="hidden sm:inline text-xs font-bold whitespace-nowrap">উস্তাদ চ্যাট</span>
           </Link>
 
-          <div className="h-5 w-px bg-emerald-200" />
+          <div className="hidden sm:block h-5 w-px bg-emerald-200 shrink-0" />
 
-          <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-[#0d7a5f] to-[#064e3b] flex items-center justify-center text-white shadow-md shadow-emerald-900/10">
-              <Radio className="w-5 h-5 text-emerald-100 animate-pulse" />
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl bg-gradient-to-br from-[#0d7a5f] to-[#064e3b] flex items-center justify-center text-white shadow-md shadow-emerald-900/10 shrink-0">
+              <Radio className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-100 animate-pulse" />
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h1 className="text-sm sm:text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5">
-                  <span>নূর লাইভ ভয়েস ক্লাসরুম</span>
-                  <span className="text-[10px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200 font-bold shadow-xs">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <h1 className="text-xs sm:text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-1.5 min-w-0">
+                  <span className="truncate">নূর লাইভ ভয়েস ক্লাসরুম</span>
+                  <span className="hidden md:inline-block shrink-0 whitespace-nowrap text-[10px] bg-emerald-100 text-emerald-800 px-2.5 py-0.5 rounded-full border border-emerald-200 font-bold shadow-xs">
                     সরাসরি মুখে মুখে তিলাওয়াত
                   </span>
                 </h1>
@@ -102,21 +102,24 @@ export default function LiveVoiceClassroomPage() {
         </div>
 
         {/* Right: Quick Tools */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* 🔑 API Key Modal Trigger */}
           <button
             type="button"
             onClick={() => setIsAISettingsOpen(true)}
-            className={`px-3 py-1.5 rounded-full border text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer ${
+            className={`px-2 sm:px-3 py-1.5 rounded-full border text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all shadow-xs cursor-pointer whitespace-nowrap ${
               aiConfig?.apiKey
                 ? "bg-emerald-50 border-emerald-300 text-emerald-800"
                 : "bg-amber-100 border-amber-300 text-amber-950 animate-pulse"
             }`}
             title="এআই প্রোভাইডার ও নিজস্ব API Key যোগ করুন (ফ্রি Google Gemini Key)"
           >
-            <Key className="w-3.5 h-3.5 text-amber-600" />
-            <span className="text-[11px] sm:text-xs">
+            <Key className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span className="hidden sm:inline text-xs">
               {aiConfig?.apiKey ? "কী সক্রিয়" : "API Key"}
+            </span>
+            <span className="sm:hidden text-[11px]">
+              {aiConfig?.apiKey ? "কী" : "API"}
             </span>
           </button>
 
@@ -124,21 +127,21 @@ export default function LiveVoiceClassroomPage() {
           <button
             type="button"
             onClick={() => setShowMakhrajModal(true)}
-            className="px-3 py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
+            className="p-2 sm:px-3 sm:py-1.5 rounded-full bg-emerald-50 hover:bg-emerald-100 border border-emerald-200/80 text-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer"
             title="১৭ মাখরাজ এনাটমিক্যাল মানচিত্র দেখুন"
           >
             <Compass className="w-3.5 h-3.5 text-emerald-600" />
-            <span className="hidden md:inline">১৭ মাখরাজ</span>
+            <span className="hidden md:inline whitespace-nowrap">১৭ মাখরাজ</span>
           </button>
 
           {/* AI Teacher Full Page Link */}
           <Link
             href="/quran-tutor/teacher"
-            className="px-3 py-1.5 rounded-full bg-amber-50 border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+            className="p-2 sm:px-3 sm:py-1.5 rounded-full bg-amber-50 border border-amber-300 hover:bg-amber-100 text-amber-900 text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
             title="নূর এআই কুরআন শিক্ষক পূর্ণাঙ্গ পেজে যান"
           >
             <Bot className="w-3.5 h-3.5 text-amber-700" />
-            <span className="hidden sm:inline">নূর AI শিক্ষক</span>
+            <span className="hidden sm:inline whitespace-nowrap">নূর AI শিক্ষক</span>
           </Link>
 
           {/* Fullscreen Toggle */}
