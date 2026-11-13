@@ -1590,12 +1590,12 @@ export default function QuranStudioPage() {
           customVideos={tutorialConfig.customVideos}
         />
 
-        {/* 🌟 Floating Persistent Feedback Button (Accessible Anytime) */}
+        {/* 🌟 Floating Persistent Feedback Button (Accessible Anytime, hidden during reading & qaida views to prevent obstruction) */}
         <button
           type="button"
           onClick={() => setIsFeedbackOpen(true)}
           className={`fixed bottom-4 left-4 z-40 px-3.5 py-2.5 rounded-2xl bg-emerald-950/90 hover:bg-emerald-900 text-amber-300 hover:text-amber-200 border border-emerald-500/50 shadow-2xl backdrop-blur-md text-xs font-black items-center gap-2 transition-all cursor-pointer hover:scale-105 active:scale-95 ${
-            activeFeature === "tafseer-quran" || activeFeature === "quran-reader" ? "hidden lg:flex" : "flex"
+            activeFeature === "tafseer-quran" || activeFeature === "quran-reader" || activeFeature === "noor-qaida" ? "hidden" : "flex"
           }`}
           title="সাইটের উন্নতি বা আপনার কোনো পরামর্শ বা অভিযোগ থাকলে দয়া করে এখানে লিখুন"
         >

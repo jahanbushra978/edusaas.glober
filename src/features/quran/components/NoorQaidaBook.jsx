@@ -49,6 +49,7 @@ import {
   BROKEN_SYLLABLES_DATA,
 } from "../data/noorQaidaPagesData";
 import { universalAudioEngine } from "@/lib/quran/audio";
+import NoorQaidaBubblePopGame from "./NoorQaidaBubblePopGame";
 
 // Full sequence of pages including special intro pages
 const PAGE_SEQUENCE = [
@@ -77,6 +78,11 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
   // Mobile Game Auto-Rotate & Orientation State
   const [isGameLandscape, setIsGameLandscape] = useState(false);
   const [isMobileDevice, setIsMobileDevice] = useState(false);
+
+  // 🎈 Scenic Landscape Bubble / Balloon Pop Game State
+  const [isBubbleGameOpen, setIsBubbleGameOpen] = useState(false);
+  const [bubbleGameTarget, setBubbleGameTarget] = useState({ ar: "س", nameBn: "সীন", sound: "س" });
+  const [poppingCardId, setPoppingCardId] = useState(null);
 
   // Playback & Sound State
   const [activeItemId, setActiveItemId] = useState(null);
@@ -240,12 +246,16 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
     universalAudioEngine.stop();
   }, [currentPage, activeTab]);
 
-  // Audio Play Function for Any Item
+  // Audio Play Function for Any Item (With Pop Burst Visual & Sound)
   const playItemSound = async (item, speed = audioSpeed) => {
     playCuteBubbleSound();
     const soundKey = typeof item === "string" ? item : (item.sound || item.ar);
     const itemId = typeof item === "string" ? item : (item.id || item.ar);
     setActiveItemId(itemId);
+    setPoppingCardId(itemId);
+    setTimeout(() => {
+      setPoppingCardId((curr) => (curr === itemId ? null : curr));
+    }, 650);
 
     try {
       if (item && item.ayahRef) {
@@ -265,6 +275,49 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
     } finally {
       setActiveItemId((curr) => (curr === itemId ? null : curr));
     }
+  };
+
+  // Launch Scenic Landscape Bubble Pop Game for Any Specific Letter
+  const handleLaunchBubbleGame = (item) => {
+    const soundKey = typeof item === "string" ? item : (item.sound || item.ar);
+    const ar = typeof item === "string" ? item : (item.ar || item.sound || "س");
+    const nameBn = typeof item === "string" ? item : (item.nameBn || "হরফ");
+    setBubbleGameTarget({
+      ar,
+      nameBn,
+      sound: soundKey,
+    });
+    setIsBubbleGameOpen(true);
+  };
+
+  // Switch to Next Letter inside Bubble Game
+  const handleNextLetterForGame = () => {
+    if (typeof currentPage === "number") {
+      const cls = getClassByNumber(currentPage);
+      if (cls && cls.items && cls.items.length > 0) {
+        const currentIndex = cls.items.findIndex(
+          (it) => it.ar === bubbleGameTarget.ar || it.id === bubbleGameTarget.id
+        );
+        const nextIndex = (currentIndex + 1) % cls.items.length;
+        const nextItem = cls.items[nextIndex];
+        if (nextItem) {
+          handleLaunchBubbleGame(nextItem);
+          return;
+        }
+      }
+    }
+    const standardLetters = [
+      "ب", "ت", "ث", "ج", "ح", "خ", "د", "ذ", "ر", "ز",
+      "س", "ش", "ص", "ض", "ط", "ظ", "ع", "غ", "ف", "ق",
+      "ك", "ل", "م", "ن", "و", "هـ", "ي"
+    ];
+    const idx = standardLetters.indexOf(bubbleGameTarget.ar);
+    const nextAr = standardLetters[(idx + 1) % standardLetters.length];
+    setBubbleGameTarget({
+      ar: nextAr,
+      nameBn: "হরফ",
+      sound: nextAr,
+    });
   };
 
   // "আজ আমি পারলাম ⭐" Star Claim Action
@@ -718,6 +771,44 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
           </div>
         </div>
 
+        {/* ── CARD USAGE INSTRUCTION BANNER (কার্ড ব্যবহারের সহজ নির্দেশিকা) ── */}
+        <div className="mx-3 sm:mx-6 mb-2 p-3 sm:p-4 rounded-2xl sm:rounded-3xl bg-gradient-to-r from-emerald-50 via-teal-50 to-amber-50 border-2 border-emerald-300/80 shadow-xs space-y-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="w-6 h-6 rounded-full bg-emerald-600 text-white flex items-center justify-center text-xs font-black">
+                💡
+              </span>
+              <h4 className="text-xs sm:text-sm font-black text-emerald-950 font-hind-siliguri">
+                কার্ড ব্যবহারের সহজ নিয়ম:
+              </h4>
+            </div>
+            <span className="text-[10px] sm:text-xs font-bold text-emerald-800 bg-white/90 border border-emerald-300 px-2 py-0.5 rounded-full font-hind-siliguri shadow-2xs">
+              শিশু-বান্ধব ডিজিটাল পাঠ
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] sm:text-xs font-hind-siliguri">
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-white/85 border border-emerald-200 text-slate-800">
+              <span className="w-5 h-5 rounded-full bg-emerald-100 text-emerald-800 flex items-center justify-center font-black shrink-0 text-[10px]">
+                ১
+              </span>
+              <span><strong>যেকোনো কার্ডে ট্যাপ করো:</strong> আঙুল ছোঁয়ালেই ক্বারীর খাঁটি মাখরাজে তেলাওয়াত বাজবে।</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-white/85 border border-teal-200 text-slate-800">
+              <span className="w-5 h-5 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-black shrink-0 text-[10px]">
+                ২
+              </span>
+              <span><strong>মন দিয়ে শোনো ও মুখে বলো:</strong> ক্বারীর আওয়াজ শুনে মুখে ৩ বার বলো।</span>
+            </div>
+            <div className="flex items-center gap-2 p-2 rounded-xl bg-white/85 border border-amber-200 text-slate-800">
+              <span className="w-5 h-5 rounded-full bg-amber-100 text-amber-900 flex items-center justify-center font-black shrink-0 text-[10px]">
+                ৩
+              </span>
+              <span><strong>নিচের টিপস মিলিয়ে নাও:</strong> কার্ডের নিচে উচ্চারণ নিয়ম ও অঙ্গের বিবরণ দেখে নাও।</span>
+            </div>
+          </div>
+        </div>
+
         {/* Items Grid */}
         <div className="p-3 sm:p-6 space-y-4">
           {cls.classNumber === 1 ? (
@@ -729,23 +820,60 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               <div className="grid grid-cols-4 gap-2 sm:gap-3.5" dir="rtl">
                 {cls.items.map((item, idx) => {
                   const isItemActive = activeItemId === (item.id || item.ar);
+                  const isPopping = poppingCardId === (item.id || item.ar);
                   return (
                     <div
                       key={item.id || idx}
                       onClick={() => playItemSound(item)}
-                      className={`group relative p-2.5 sm:p-4 rounded-2xl sm:rounded-3xl border-2 sm:border-3 transition-all duration-150 cursor-pointer flex flex-col items-center justify-center text-center select-none ${
-                        isItemActive
+                      className={`group relative p-2.5 sm:p-4 rounded-2xl sm:rounded-3xl border-2 sm:border-3 transition-all duration-150 cursor-pointer flex flex-col items-center justify-between text-center select-none min-h-[140px] sm:min-h-[165px] ${
+                        isPopping
+                          ? "animate-card-pop border-amber-500 ring-4 ring-amber-300 shadow-2xl scale-105 bg-amber-50/60"
+                          : isItemActive
                           ? "bg-emerald-100 border-emerald-600 ring-4 ring-emerald-400 shadow-xl scale-105"
                           : "bg-[#FBFDFB] border-emerald-200 hover:border-emerald-500 hover:bg-white hover:shadow-md hover:-translate-y-1 active:translate-y-0.5"
                       }`}
                     >
-                      <div className={`font-arabic text-3xl sm:text-5xl font-bold transition-all ${
+                      {/* Visual Pop Sparkles Burst */}
+                      {isPopping && (
+                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-20">
+                          <span className="text-2xl animate-ping opacity-90">✨</span>
+                          <span className="absolute top-1 right-1 text-base animate-bounce">🎈</span>
+                          <span className="absolute bottom-1 left-1 text-base animate-bounce">🫧</span>
+                        </div>
+                      )}
+
+                      <div className="w-full flex items-center justify-between text-[10px] text-slate-400">
+                        <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-[10px]">
+                          {idx + 1}
+                        </span>
+                        <span className="text-[9px] font-black text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded-full border border-emerald-200 flex items-center gap-0.5">
+                          <span>👆</span>
+                          <span className="hidden xs:inline">শোনো</span>
+                          <Volume2 className="w-3 h-3 text-emerald-600 inline" />
+                        </span>
+                      </div>
+                      <div className={`font-arabic text-3xl sm:text-5xl font-bold transition-all my-1 ${
                         isItemActive ? "text-emerald-800 scale-110" : "text-slate-900 group-hover:text-emerald-700"
                       }`}>
                         {item.ar}
                       </div>
-                      <div className="text-[10px] sm:text-xs font-black text-slate-700 mt-1 font-hind-siliguri">
-                        {item.nameBn}
+                      <div className="w-full flex flex-col items-center gap-0.5 mt-0.5" dir="ltr">
+                        <div className="text-xs sm:text-sm font-black text-slate-800 font-hind-siliguri">
+                          {item.nameBn}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLaunchBubbleGame(item);
+                          }}
+                          className="mt-1 w-full py-1 px-1 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 text-amber-950 font-black text-[9px] sm:text-[10px] flex items-center justify-center gap-0.5 shadow-2xs active:scale-95 transition"
+                          title="এই হরফ দিয়ে বুদ্বুদ খেলা খেলুন"
+                        >
+                          <span>🎮</span>
+                          <span>গেমে যাও</span>
+                          <span>🎈</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -782,13 +910,26 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                   <div
                     key={it.id || idx}
                     onClick={() => playItemSound(it)}
-                    className="p-3.5 sm:p-4 rounded-3xl bg-white border-2 border-teal-200 hover:border-teal-500 hover:shadow-md cursor-pointer text-center space-y-1 group transition hover:-translate-y-1"
+                    className="p-3 sm:p-4 rounded-3xl bg-white border-2 border-teal-200 hover:border-teal-500 hover:shadow-md cursor-pointer text-center flex flex-col items-center justify-between min-h-[120px] group transition hover:-translate-y-1"
                   >
-                    <div className="font-arabic text-3xl sm:text-4xl font-bold text-slate-900 group-hover:text-teal-700">
+                    <div className="w-full flex items-center justify-between text-[10px] text-teal-600">
+                      <span className="w-5 h-5 rounded-full bg-teal-50 text-teal-800 font-bold flex items-center justify-center text-[10px]">
+                        {idx + 1}
+                      </span>
+                      <span className="text-[9px] font-bold bg-teal-50 px-1.5 py-0.5 rounded-full border border-teal-200">
+                        👆 ক্বলক্বলা ⚽
+                      </span>
+                    </div>
+                    <div className="font-arabic text-3xl sm:text-4xl font-bold text-slate-900 group-hover:text-teal-700 my-1">
                       {it.ar}
                     </div>
-                    <div className="text-xs font-black text-teal-950 font-hind-siliguri" dir="ltr">
-                      {it.nameBn}
+                    <div className="w-full text-center" dir="ltr">
+                      <div className="text-xs font-black text-teal-950 font-hind-siliguri">
+                        {it.nameBn}
+                      </div>
+                      <div className="text-[10px] text-teal-800 font-bold font-hind-siliguri mt-0.5">
+                        প্রতিধ্বনি দিয়ে পড়ো
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -801,24 +942,43 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
             }`} dir="rtl">
               {cls.items.map((item, idx) => {
                 const isItemActive = activeItemId === item.id;
+                const isPopping = poppingCardId === (item.id || item.ar);
                 return (
                   <div
                     key={item.id || idx}
                     onClick={() => playItemSound(item)}
-                    className={`group relative p-3 sm:p-5 rounded-3xl border-2 sm:border-3 transition-all duration-200 cursor-pointer flex flex-col items-center justify-between min-h-[120px] sm:min-h-[140px] text-center bg-white ${
-                      isItemActive
+                    className={`group relative p-3 sm:p-4 rounded-3xl border-2 sm:border-3 transition-all duration-200 cursor-pointer flex flex-col items-center justify-between min-h-[160px] sm:min-h-[185px] text-center bg-white ${
+                      isPopping
+                        ? "animate-card-pop border-amber-500 ring-4 ring-amber-300 shadow-2xl scale-105 bg-amber-50/60"
+                        : isItemActive
                         ? "border-emerald-600 ring-4 ring-emerald-300 shadow-xl scale-105 bg-emerald-50/50"
                         : "border-slate-200 hover:border-emerald-400 hover:shadow-md hover:-translate-y-1 active:translate-y-0.5"
                     }`}
                   >
+                    {/* Visual Pop Burst Animation when clicked */}
+                    {isPopping && (
+                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-20">
+                        <span className="text-3xl animate-ping opacity-95">✨</span>
+                        <span className="absolute top-2 right-2 text-lg animate-bounce">🎈</span>
+                        <span className="absolute bottom-2 left-2 text-lg animate-bounce">🫧</span>
+                        <span className="absolute top-2 left-2 text-lg animate-ping">🌟</span>
+                      </div>
+                    )}
+
+                    {/* Top row: badge + action button */}
                     <div className="w-full flex items-center justify-between text-xs text-slate-400">
-                      <span className="w-5 h-5 rounded-full bg-slate-100 flex items-center justify-center font-bold text-[10px]">
+                      <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-[10px]">
                         {idx + 1}
                       </span>
-                      <Volume2 className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600" />
+                      <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[9px] sm:text-[10px] font-black font-hind-siliguri flex items-center gap-1 shadow-2xs">
+                        <span>👆</span>
+                        <span>ট্যাপ করে শোনো</span>
+                        <Volume2 className="w-3 h-3 text-emerald-600 inline" />
+                      </span>
                     </div>
 
-                    <div className={`my-auto font-arabic font-bold text-slate-900 transition-all ${
+                    {/* Big Arabic Calligraphy */}
+                    <div className={`my-auto py-2 font-arabic font-bold text-slate-900 transition-all ${
                       item.ar.length > 20
                         ? "text-lg sm:text-2xl leading-relaxed"
                         : item.ar.length > 8
@@ -828,10 +988,35 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                       {item.ar}
                     </div>
 
-                    <div className="mt-1" dir="ltr">
+                    {/* Bottom row: Name, Tip & Game Button */}
+                    <div className="w-full mt-1 space-y-1" dir="ltr">
                       <div className="text-xs sm:text-sm font-black text-slate-800 font-hind-siliguri">
                         {item.nameBn}
                       </div>
+                      {item.tip ? (
+                        <div className="text-[10px] sm:text-[11px] font-bold text-emerald-950 bg-emerald-50/90 px-2 py-1 rounded-xl border border-emerald-200 font-hind-siliguri line-clamp-2 leading-tight">
+                          💡 <span className="text-emerald-900 font-black">কীভাবে পড়বে:</span> {item.tip}
+                        </div>
+                      ) : (
+                        <div className="text-[10px] text-slate-500 font-bold font-hind-siliguri">
+                          👆 ট্যাপ করে ক্বারীর আওয়াজে পড়ো
+                        </div>
+                      )}
+
+                      {/* 🎮 "গেমে যাও" বাটন - সরাসরি এই হরফের বুদ্বুদ খেলায় নিয়ে যাবে */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLaunchBubbleGame(item);
+                        }}
+                        className="w-full mt-1 py-1.5 px-2 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 hover:from-amber-500 hover:to-orange-500 text-amber-950 font-black text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer border border-amber-300"
+                        title="এই হরফ দিয়ে মজার বুদ্বুদ ও বেলুনের খেলা খেলুন"
+                      >
+                        <span>🎮</span>
+                        <span>গেমে যাও</span>
+                        <span>🎈</span>
+                      </button>
                     </div>
                   </div>
                 );
@@ -1227,17 +1412,22 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
             {/* Top Game Console Header (With Orientation & Close Controls) */}
             <div className="flex items-center justify-between gap-2 pb-3 border-b border-slate-200">
               <div className="flex items-center gap-2 overflow-x-auto">
-                {[1, 2, 3, 4].map((gNum) => (
+                {[1, 2, 3, 4, 5].map((gNum) => (
                   <button
                     key={gNum}
-                    onClick={() => setActiveGameId(gNum)}
+                    onClick={() => {
+                      setActiveGameId(gNum);
+                      if (gNum === 5) {
+                        setIsBubbleGameOpen(true);
+                      }
+                    }}
                     className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-2xl text-xs sm:text-sm font-black whitespace-nowrap transition ${
                       activeGameId === gNum
                         ? "bg-amber-400 text-slate-950 shadow-md scale-105"
                         : "bg-slate-100 text-slate-700 hover:bg-slate-200"
                     }`}
                   >
-                    🎮 খেলা {gNum}
+                    {gNum === 5 ? "🎈 খেলা ৫ (বুদ্বুদ)" : `🎮 খেলা ${gNum}`}
                   </button>
                 ))}
               </div>
@@ -1444,6 +1634,31 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                 </div>
               </div>
             )}
+
+            {/* Game 5: বুদ্বুদ ও বেলুন ওড়ানো খেলা (হরফ শিকার) */}
+            {activeGameId === 5 && (
+              <div className="p-6 sm:p-8 rounded-3xl bg-gradient-to-br from-sky-100 via-blue-50 to-teal-100 border-3 border-sky-400 text-center space-y-4 shadow-xl">
+                <div className="text-5xl animate-bounce">🎈 🫧 🍎 💣</div>
+                <div className="space-y-1">
+                  <h3 className="text-xl sm:text-3xl font-black text-sky-950 font-hind-siliguri">
+                    মজার খেলা ৫: বুদ্বুদ ও বেলুন ওড়ানো খেলা!
+                  </h3>
+                  <p className="text-xs sm:text-sm text-slate-700 max-w-lg mx-auto font-medium">
+                    নদীর ওপর ঝুলন্ত সেতুর দৃশ্যপটে পানির নিচ থেকে রঙিন বুদ্বুদ ভেসে উঠবে। লক্ষ্য হরফ ও ফলমূল ফাটিয়ে পয়েন্ট অর্জন করো, আর লাল বোমা এড়াও!
+                  </p>
+                </div>
+                <div className="pt-3">
+                  <button
+                    onClick={() => setIsBubbleGameOpen(true)}
+                    className="px-6 py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-600 to-emerald-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-sm sm:text-base shadow-xl flex items-center justify-center gap-2.5 mx-auto active:scale-95 transition-all cursor-pointer hover:scale-105"
+                  >
+                    <span>🎮</span>
+                    <span>পূর্ণ পর্দায় বুদ্বুদ খেলা খেলুন</span>
+                    <span>➔</span>
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -1581,31 +1796,33 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
       </main>
 
       {/* ── MOBILE PHONE STICKY BOTTOM TOOLBAR ── */}
-      <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t-2 border-emerald-300 px-2.5 py-2 sm:hidden flex items-center justify-between shadow-2xl">
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-t-2 border-emerald-300 px-3 py-2.5 sm:hidden flex items-center justify-between shadow-2xl">
         <button
           onClick={handlePrevPage}
-          className="flex items-center gap-1 px-3 py-2.5 rounded-2xl bg-slate-100 text-slate-800 font-bold text-xs active:scale-95 shadow-xs"
+          className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 border-2 border-slate-300 text-slate-900 font-black text-xs active:scale-95 shadow-sm"
+          title="পূর্ববর্তী পৃষ্ঠায় যান"
         >
-          <ChevronLeft className="w-4 h-4" />
+          <ChevronLeft className="w-4 h-4 stroke-[3]" />
           <span>পূর্ববর্তী</span>
         </button>
 
         <button
           onClick={() => setIsQuickJumpOpen(true)}
-          className="flex flex-col items-center px-3 py-1 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 font-bold active:scale-95"
+          className="flex flex-col items-center px-3 py-1 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 font-bold active:scale-95 shadow-xs"
         >
-          <span className="text-xs font-hind-siliguri">
+          <span className="text-xs font-black font-hind-siliguri text-emerald-900">
             {getPageHeaderLabel()}
           </span>
-          <span className="text-[9px] text-slate-500 font-bold">ট্যাপ করে পৃষ্ঠা বদলান ▾</span>
+          <span className="text-[9px] text-emerald-700 font-bold">ট্যাপ করে পৃষ্ঠা বদলান ▾</span>
         </button>
 
         <button
           onClick={handleNextPage}
-          className="flex items-center gap-1 px-3 py-2.5 rounded-2xl bg-emerald-600 text-white font-bold text-xs active:scale-95 shadow-md"
+          className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs active:scale-95 shadow-md"
+          title="পরবর্তী পৃষ্ঠায় যান"
         >
           <span>পরবর্তী</span>
-          <ChevronRight className="w-4 h-4" />
+          <ChevronRight className="w-4 h-4 stroke-[3]" />
         </button>
       </div>
 
@@ -1831,6 +2048,15 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
           }
         }
       `}</style>
+
+      {/* ── SCENIC LANDSCAPE BUBBLE & BALLOON POP GAME MODAL ── */}
+      {isBubbleGameOpen && (
+        <NoorQaidaBubblePopGame
+          targetItem={bubbleGameTarget}
+          onClose={() => setIsBubbleGameOpen(false)}
+          onNextLetter={handleNextLetterForGame}
+        />
+      )}
     </div>
   );
 }
