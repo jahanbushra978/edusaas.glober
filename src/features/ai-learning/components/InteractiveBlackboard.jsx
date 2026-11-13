@@ -761,15 +761,16 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
     return { x: Math.round(p.x), y: Math.round(p.y) };
   }, []);
 
-  // ── ADVANCE TO CHECKPOINT (HANDLES BOTH CLICKS AND DRAGS 100% NIKHUD!) ──
+  // ── ADVANCE TO CHECKPOINT ──
   const advanceToCheckpoint = useCallback(
     (targetIdx) => {
       if (isCelebrationFiredRef.current) return;
       if (targetIdx < 0 || targetIdx >= checkpoints.length) return;
+      // Only allow advancing one step at a time, in order
       if (targetIdx !== reachedIndex + 1) return;
 
       setReachedIndex(targetIdx);
-      playStarPopSound(targetIdx + 1); // "টুস" popping sound!
+      playStarPopSound(targetIdx + 1);
 
       const targetCp = checkpoints[targetIdx];
       const progress =
@@ -779,7 +780,6 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
 
       setFillProgress(Math.min(1, progress));
 
-      // When reaching the final checkpoint:
       if (targetIdx === checkpoints.length - 1) {
         isDraggingRef.current = false;
         triggerCelebration();
@@ -788,72 +788,57 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
     [checkpoints, reachedIndex, triggerCelebration]
   );
 
-  // ── 🎯 STRICTLY BOUNDED TRACING: ZERO INK CAN EVER LEAK OUTSIDE! ──
-  // The ink ONLY flows through the hollow channel between the two walls!
+  // ── POINTER DOWN: শুধুমাত্র মাউস/আঙুল চাপলে শুরু হবে, hover করলে নয় ──
   const handleTracingPointerDown = (e) => {
     if (boardMode !== "trace" || isCelebrationFiredRef.current) return;
+    // Only respond to actual pointer press (button=0 for mouse, touches for touch)
+    if (e.type === "pointerdown" && e.button !== 0) return;
     const p = getSvgPoint(e);
 
-    const nextIdx = reachedIndex + 1;
-    const nextCp = checkpoints[nextIdx];
+    // If not started yet — must click on Ball 1 (start checkpoint)
+    if (reachedIndex < 0) {
+      if (checkpoints[0]) {
+        const dist = Math.hypot(p.x - checkpoints[0].x, p.y - checkpoints[0].y);
+        if (dist < 90) {
+          isDraggingRef.current = true;
+          advanceToCheckpoint(0);
+        }
+      }
+      return;
+    }
 
-    // 1. Direct Click / Tap on the next target ball (or close to it, radius 85px):
-    if (nextCp) {
+    // If already started — allow pressing near the current or next checkpoint to continue dragging
+    const nextIdx = reachedIndex + 1;
+    if (nextIdx < checkpoints.length) {
+      const nextCp = checkpoints[nextIdx];
       const distToNext = Math.hypot(p.x - nextCp.x, p.y - nextCp.y);
-      if (distToNext < 85) {
+      if (distToNext < 90) {
         isDraggingRef.current = true;
         advanceToCheckpoint(nextIdx);
         return;
       }
     }
 
-    // 2. If at start (reachedIndex < 0), click on Ball 1:
-    if (reachedIndex < 0 && checkpoints[0]) {
-      const distToFirst = Math.hypot(p.x - checkpoints[0].x, p.y - checkpoints[0].y);
-      if (distToFirst < 95) {
-        isDraggingRef.current = true;
-        advanceToCheckpoint(0);
-        return;
-      }
-    }
-
-    // 3. User pressed on the current/previous ball to continue dragging:
-    if (reachedIndex >= 0 && checkpoints[reachedIndex]) {
-      const currentCp = checkpoints[reachedIndex];
-      const distToCurrent = Math.hypot(p.x - currentCp.x, p.y - currentCp.y);
-      if (distToCurrent < 95) {
-        isDraggingRef.current = true;
-      }
+    // Allow pressing near current checkpoint to resume dragging
+    const currentCp = checkpoints[reachedIndex];
+    const distToCurrent = Math.hypot(p.x - currentCp.x, p.y - currentCp.y);
+    if (distToCurrent < 90) {
+      isDraggingRef.current = true;
     }
   };
 
+  // ── POINTER MOVE: শুধুমাত্র isDraggingRef=true হলেই কাজ করবে (hover করলে নয়!) ──
   const handleTracingPointerMove = (e) => {
-    if (boardMode !== "trace" || isCelebrationFiredRef.current) return;
+    if (!isDraggingRef.current || boardMode !== "trace" || isCelebrationFiredRef.current) return;
     const p = getSvgPoint(e);
 
-    // If child touched and dragged into Ball 1 from outside:
-    if (!isDraggingRef.current && reachedIndex < 0 && checkpoints[0]) {
-      const distToFirst = Math.hypot(p.x - checkpoints[0].x, p.y - checkpoints[0].y);
-      if (distToFirst < 85) {
-        isDraggingRef.current = true;
-        advanceToCheckpoint(0);
-        return;
-      }
-    }
-
-    // While dragging: check if next checkpoint is reached
-    if (isDraggingRef.current) {
-      let curr = reachedIndex;
-      while (curr + 1 < checkpoints.length) {
-        const nextIdx = curr + 1;
-        const nextCp = checkpoints[nextIdx];
-        const dist = Math.hypot(p.x - nextCp.x, p.y - nextCp.y);
-        if (dist < 80) {
-          advanceToCheckpoint(nextIdx);
-          curr = nextIdx;
-        } else {
-          break;
-        }
+    // Advance to next checkpoints as finger/mouse sweeps through them
+    const nextIdx = reachedIndex + 1;
+    if (nextIdx < checkpoints.length) {
+      const nextCp = checkpoints[nextIdx];
+      const dist = Math.hypot(p.x - nextCp.x, p.y - nextCp.y);
+      if (dist < 80) {
+        advanceToCheckpoint(nextIdx);
       }
     }
   };
