@@ -10,6 +10,7 @@ import KidsLesson from "./KidsLesson";
 import BeginnerLearningJourney from "../beginner/BeginnerLearningJourney";
 import StarJar from "./StarJar";
 import MemoryMatchGame from "../games/MemoryMatchGame";
+import BalloonPopGame from "../games/BalloonPopGame";
 import SoundDetectiveGame from "../games/SoundDetectiveGame";
 import DotCountGame from "../games/DotCountGame";
 import TraceLetterGame from "../games/TraceLetterGame";
@@ -488,8 +489,33 @@ export default function KidsHome({
               </h3>
             </div>
 
-            {/* 5 Big Child-Friendly Game Tiles */}
+            {/* 6 Big Child-Friendly Game Tiles */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 text-left">
+              {/* Game 0: 🎈 হরকত বেলুন উৎসব (Vina Kids Style) */}
+              <button
+                type="button"
+                onClick={() => {
+                  playTapSound();
+                  setActiveGame("balloon");
+                }}
+                className="kids-tap p-4 rounded-[2rem] bg-[#FEF3C7] hover:bg-[#FDE68A] border-4 border-amber-400 shadow-[0_8px_0_0_#F59E0B] flex items-center gap-4 cursor-pointer active:translate-y-1.5 transition-all sm:col-span-2"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-white border-2 border-amber-300 flex items-center justify-center text-3xl shadow-xs">
+                  🎈
+                </div>
+                <div>
+                  <h4 className="kids-font text-lg font-black text-amber-950 flex items-center gap-2">
+                    <span>হরকত বেলুন উৎসব</span>
+                    <span className="text-[10px] bg-rose-500 text-white px-2 py-0.5 rounded-full font-bold">
+                      সেরা খেলা 🌟
+                    </span>
+                  </h4>
+                  <p className="kids-font text-xs font-bold text-amber-800">
+                    আকাশে রঙিন বেলুন ফাটাও ও খাঁটি ক্বারীর সুর শোনো
+                  </p>
+                </div>
+              </button>
+
               {/* Game 1: হরফ মেলানো */}
               <button
                 type="button"
@@ -630,6 +656,12 @@ export default function KidsHome({
       {activeGame && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-kids-pop select-none overflow-y-auto">
           <div className="relative w-full max-w-2xl">
+            {activeGame === "balloon" && (
+              <BalloonPopGame
+                onBack={() => setActiveGame(null)}
+                onEarnReward={() => handleEarnStars(3)}
+              />
+            )}
             {activeGame === "memory" && (
               <MemoryMatchGame
                 onBack={() => setActiveGame(null)}

@@ -26,6 +26,12 @@ import {
   playMaShaAllahCelebration,
 } from "@/features/ai-learning/lib/arabicSoundPlayer";
 import { universalAudioEngine } from "@/lib/quran/audio";
+import BalloonPopGame from "@/features/ai-learning/components/games/BalloonPopGame";
+import DragDropLetterGame from "@/features/ai-learning/components/games/DragDropLetterGame";
+import TraceLetterGame from "@/features/ai-learning/components/games/TraceLetterGame";
+import DotCountGame from "@/features/ai-learning/components/games/DotCountGame";
+import SoundDetectiveGame from "@/features/ai-learning/components/games/SoundDetectiveGame";
+import MemoryMatchGame from "@/features/ai-learning/components/games/MemoryMatchGame";
 
 export default function AmarProthomQuranShikkha({ className = "" }) {
   // ── ACTIVE STAGE (1 to 6) ──
@@ -36,9 +42,9 @@ export default function AmarProthomQuranShikkha({ className = "" }) {
   const [selectedLetterId, setSelectedLetterId] = useState(1);
   const activeLetter = PROTHOM_QURAN_LETTERS.find((l) => l.id === selectedLetterId) || PROTHOM_QURAN_LETTERS[0];
 
-  // ── STAGE 2: 4 MINI GAMES STATE ──
-  // 'bubble_hunt' | 'pic_match' | 'tracing' | 'nuqta_spot'
-  const [activeGameId, setActiveGameId] = useState("bubble_hunt");
+  // ── STAGE 2: 6 VINA-KIDS STYLE INTERACTIVE GAMES ──
+  // 'balloon_hunt' | 'drag_drop' | 'tracing' | 'nuqta_spot' | 'detective' | 'memory'
+  const [activeGameId, setActiveGameId] = useState("balloon_hunt");
 
   // Game 1: Bubble Pop Letter Hunter
   const [bubbleLevelIdx, setBubbleLevelIdx] = useState(0);
@@ -425,17 +431,19 @@ export default function AmarProthomQuranShikkha({ className = "" }) {
       )}
 
       {/* ══════════════════════════════════════════════════════════════
-          STAGE 2: মজার ৪টি মিনি-গেম (Interactive Games for Kids)
+          STAGE 2: নূর কিডস মজার ৬টি খেলা (Vina-Kids Style Animated Games)
           ══════════════════════════════════════════════════════════════ */}
       {activeStage === 2 && (
         <div className="space-y-6 animate-fade-in">
-          {/* Game Switcher Tabs */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-emerald-50/60 p-2 rounded-2xl border border-emerald-100">
+          {/* 6 Child-Friendly Game Tabs */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 bg-gradient-to-r from-emerald-50 via-teal-50 to-sky-50 p-2.5 rounded-3xl border-2 border-emerald-200 shadow-sm">
             {[
-              { id: "bubble_hunt", label: "🎯 ১. হরফ খোঁজা", icon: "🫧" },
-              { id: "pic_match", label: "🧩 ২. ছবি মেলানো", icon: "🐰" },
-              { id: "tracing", label: "✏️ ৩. লিখে শিখি", icon: "🎨" },
-              { id: "nuqta_spot", label: "👀 ৪. নুকতা খেলা", icon: "⭐" },
+              { id: "balloon_hunt", label: "১. বেলুন উৎসব", icon: "🎈" },
+              { id: "drag_drop", label: "২. হরফ মেলানো", icon: "🚗" },
+              { id: "tracing", label: "৩. লিখে শিখি", icon: "🎨" },
+              { id: "nuqta_spot", label: "৪. নুকতা গোনা", icon: "🌴" },
+              { id: "detective", label: "৫. আওয়াজ চিনো", icon: "🚀" },
+              { id: "memory", label: "৬. মেমোরি কার্ড", icon: "🏡" },
             ].map((g) => (
               <button
                 key={g.id}
@@ -456,284 +464,63 @@ export default function AmarProthomQuranShikkha({ className = "" }) {
             ))}
           </div>
 
-          {/* 🎯 GAME 1: BUBBLE POP LETTER HUNTER (Pages 12, 16, 19) */}
-          {activeGameId === "bubble_hunt" && (
-            <div className="bg-white border-2 border-emerald-200 rounded-3xl p-5 sm:p-7 shadow-sm space-y-5 text-center">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-emerald-100 pb-4">
-                <div>
-                  <h3 className="text-lg font-black text-slate-900 flex items-center gap-2 justify-center sm:justify-start">
-                    <span>🎯 গোল দাগ দাও / হরফ খোঁজো</span>
-                    <span className="text-xs font-bold bg-amber-100 text-amber-900 px-2.5 py-0.5 rounded-full border border-amber-300">
-                      লেভেল {bubbleLevelIdx + 1}
-                    </span>
-                  </h3>
-                  <p className="text-xs sm:text-sm text-emerald-800 font-bold mt-1">
-                    "{currentBubbleLevel.promptBn}"
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => handlePlayLetter(currentBubbleLevel.audioKey)}
-                  className="px-4 py-2 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold flex items-center gap-1.5 shadow-sm active:scale-95 cursor-pointer"
-                >
-                  <Volume2 className="w-4 h-4" />
-                  <span>আওয়াজ শুনো</span>
-                </button>
-              </div>
-
-              {/* Floating Letter Bubbles */}
-              <div className="py-6 flex flex-wrap items-center justify-center gap-3 sm:gap-4 max-w-xl mx-auto min-h-[220px]">
-                {currentBubbleLevel.bubblePool.map((char, idx) => {
-                  const isPopped = poppedIndices.has(idx);
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => handleTapBubble(char, idx)}
-                      disabled={isPopped}
-                      className={`w-14 h-14 sm:w-16 sm:h-16 rounded-full font-amiri text-3xl font-bold flex items-center justify-center transition-all duration-300 shadow-md cursor-pointer ${
-                        isPopped
-                          ? "bg-emerald-500 text-white scale-110 ring-4 ring-emerald-200 shadow-emerald-500/30"
-                          : "bg-gradient-to-br from-amber-100 via-white to-emerald-100 text-slate-800 border-2 border-emerald-200 hover:scale-105 hover:border-emerald-500"
-                      }`}
-                    >
-                      {char}
-                    </button>
-                  );
-                })}
-              </div>
-
-              {/* Victory Banner */}
-              {bubbleGameWon && (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-300 flex items-center justify-between gap-3 animate-bounce">
-                  <div className="text-left">
-                    <p className="text-sm font-black text-emerald-900">🎉 মাশাআল্লাহ! তুমি জিতেছ!</p>
-                    <p className="text-xs text-emerald-700">পরের লেভেলে গিয়ে নতুন হরফ খোঁজো!</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playTapSound();
-                      setPoppedIndices(new Set());
-                      setBubbleGameWon(false);
-                      setBubbleLevelIdx((prev) => (prev + 1) % BUBBLE_HUNTER_LEVELS.length);
-                    }}
-                    className="px-5 py-2 rounded-full bg-[#0d7a5f] hover:bg-[#0b6851] text-white font-bold text-xs shadow-md cursor-pointer"
-                  >
-                    পরবর্তী লেভেল ➔
-                  </button>
-                </div>
-              )}
+          {/* GAME 1: 🎈 BALLOON POP FESTIVAL (Vina Kids Style) */}
+          {activeGameId === "balloon_hunt" && (
+            <div className="animate-fade-in">
+              <BalloonPopGame
+                onBack={() => setActiveGameId("balloon_hunt")}
+                onEarnReward={() => handleToggleStarDay(1)}
+              />
             </div>
           )}
 
-          {/* 🧩 GAME 2: PICTURE MATCHING (Pages 12, 16, 19) */}
-          {activeGameId === "pic_match" && (
-            <div className="bg-white border-2 border-emerald-200 rounded-3xl p-5 sm:p-7 shadow-sm space-y-5 text-center">
-              <div className="flex items-center justify-between border-b border-emerald-100 pb-3">
-                <h3 className="text-base sm:text-lg font-black text-slate-900">
-                  🧩 ছবির সাথে হরফ মেলাই
-                </h3>
-                <span className="text-xs text-emerald-800 bg-emerald-50 px-3 py-1 rounded-full font-bold border border-emerald-200">
-                  ছবিতে ট্যাপ করো, তারপর ডানদিকের হরফে ট্যাপ করো
-                </span>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 max-w-2xl mx-auto py-4">
-                {/* Left: Pictures Column */}
-                <div className="space-y-3">
-                  <span className="text-xs font-bold text-slate-500 block mb-1">১. ছবি নির্বাচন করো:</span>
-                  {currentMatchLevel.items.map((item) => {
-                    const isMatched = matchedPairs.has(item.letter);
-                    const isSelected = selectedPictureItem?.letter === item.letter;
-                    return (
-                      <button
-                        key={item.letter}
-                        type="button"
-                        onClick={() => handleSelectPicture(item)}
-                        disabled={isMatched}
-                        className={`w-full p-3.5 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
-                          isMatched
-                            ? "bg-emerald-100 border-emerald-300 opacity-60 line-through"
-                            : isSelected
-                            ? "bg-amber-100 border-2 border-amber-400 shadow-md ring-2 ring-amber-300/40 scale-102"
-                            : "bg-white hover:bg-emerald-50 border-slate-200 text-slate-800 shadow-xs"
-                        }`}
-                      >
-                        <span className="text-3xl">{item.emoji}</span>
-                        <span className="text-sm font-bold">{item.nameBn}</span>
-                        <span className="text-xs text-slate-400">➔</span>
-                      </button>
-                    );
-                  })}
-                </div>
-
-                {/* Right: Letters Column (Shuffled) */}
-                <div className="space-y-3">
-                  <span className="text-xs font-bold text-slate-500 block mb-1">২. সঠিক হরফ মেলাও:</span>
-                  {currentMatchLevel.items.map((item) => {
-                    const isMatched = matchedPairs.has(item.letter);
-                    return (
-                      <button
-                        key={item.letter}
-                        type="button"
-                        onClick={() => handleSelectLetterMatch(item)}
-                        disabled={isMatched}
-                        className={`w-full p-3.5 rounded-2xl border transition-all flex items-center justify-between cursor-pointer ${
-                          isMatched
-                            ? "bg-emerald-500 text-white border-emerald-600 shadow-sm"
-                            : "bg-white hover:bg-emerald-50 border-slate-200 text-slate-800 shadow-xs hover:border-emerald-400"
-                        }`}
-                      >
-                        <span className="font-amiri text-3xl font-bold text-emerald-800">
-                          {item.letter}
-                        </span>
-                        <span className="text-xs font-bold text-slate-600">
-                          {isMatched ? "সঠিক ✓" : item.letterName}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {matchGameWon && (
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 border border-emerald-300 flex items-center justify-between gap-3 animate-bounce">
-                  <div className="text-left">
-                    <p className="text-sm font-black text-emerald-900">🎉 মাশাআল্লাহ! চমৎকার ম্যাচ করেছ!</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      playTapSound();
-                      setMatchedPairs(new Set());
-                      setSelectedPictureItem(null);
-                      setMatchGameWon(false);
-                      setMatchLevelIdx((prev) => (prev + 1) % PICTURE_MATCH_LEVELS.length);
-                    }}
-                    className="px-5 py-2 rounded-full bg-[#0d7a5f] hover:bg-[#0b6851] text-white font-bold text-xs shadow-md cursor-pointer"
-                  >
-                    পরবর্তী লেভেল ➔
-                  </button>
-                </div>
-              )}
+          {/* GAME 2: 🚗 DRAG & DROP LETTER MATCH */}
+          {activeGameId === "drag_drop" && (
+            <div className="animate-fade-in">
+              <DragDropLetterGame
+                onBack={() => setActiveGameId("balloon_hunt")}
+                onEarnReward={() => handleToggleStarDay(2)}
+              />
             </div>
           )}
 
-          {/* ✏️ GAME 3: INTERACTIVE FINGER TRACING (Pages 20-21) */}
+          {/* GAME 3: 🎨 FINGER TRACING BLACKBOARD */}
           {activeGameId === "tracing" && (
-            <div className="bg-white border-2 border-emerald-200 rounded-3xl p-5 sm:p-7 shadow-sm space-y-5 text-center">
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-3 border-b border-emerald-100 pb-3">
-                <div>
-                  <h3 className="text-base sm:text-lg font-black text-slate-900 flex items-center gap-2">
-                    <span>✏️ লিখে লিখে শিখি (Tracing Blackboard)</span>
-                  </h3>
-                  <p className="text-xs text-slate-500">
-                    ধূসর হরফের উপর আঙুল বা মাউস ঘুরিয়ে সুন্দর করে হরফ আঁকো!
-                  </p>
-                </div>
-
-                {/* Color Palette */}
-                <div className="flex items-center gap-2">
-                  {["#0d7a5f", "#d97706", "#2563eb", "#e11d48"].map((c) => (
-                    <button
-                      key={c}
-                      type="button"
-                      onClick={() => setChalkColor(c)}
-                      style={{ backgroundColor: c }}
-                      className={`w-7 h-7 rounded-full transition-transform cursor-pointer ${
-                        chalkColor === c ? "scale-125 ring-2 ring-slate-800" : ""
-                      }`}
-                    />
-                  ))}
-                  <button
-                    type="button"
-                    onClick={clearCanvas}
-                    className="px-3 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1 cursor-pointer"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>মুছে ফেলো</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Tracing Canvas */}
-              <div className="flex flex-col items-center justify-center">
-                <canvas
-                  ref={canvasRef}
-                  width={340}
-                  height={240}
-                  onMouseDown={startDrawing}
-                  onMouseMove={draw}
-                  onMouseUp={stopDrawing}
-                  onMouseLeave={stopDrawing}
-                  onTouchStart={startDrawing}
-                  onTouchMove={draw}
-                  onTouchEnd={stopDrawing}
-                  className="bg-[#faf8f2] rounded-3xl border-2 border-dashed border-emerald-300 shadow-inner cursor-crosshair touch-none"
-                />
-
-                {/* Letter Selector for Tracing */}
-                <div className="flex items-center gap-2 overflow-x-auto max-w-xl py-3 scrollbar-none">
-                  {["ا", "ب", "ت", "ث", "ج", "ح", "خ", "د", "ر", "س", "ص", "ط", "ع", "ف", "ق", "ك", "ل", "م", "ن", "و", "ي"].map(
-                    (ltr) => (
-                      <button
-                        key={ltr}
-                        type="button"
-                        onClick={() => {
-                          playTapSound();
-                          setTracingLetter(ltr);
-                        }}
-                        className={`w-10 h-10 rounded-xl font-amiri text-2xl font-bold flex items-center justify-center shrink-0 transition-all cursor-pointer ${
-                          tracingLetter === ltr
-                            ? "bg-emerald-600 text-white shadow-md scale-110"
-                            : "bg-slate-100 hover:bg-emerald-50 text-slate-800"
-                        }`}
-                      >
-                        {ltr}
-                      </button>
-                    )
-                  )}
-                </div>
-              </div>
+            <div className="animate-fade-in">
+              <TraceLetterGame
+                onBack={() => setActiveGameId("balloon_hunt")}
+                onEarnReward={() => handleToggleStarDay(3)}
+              />
             </div>
           )}
 
-          {/* 👀 GAME 4: NUQTA & SHAPE SPOTTER (Page 24) */}
+          {/* GAME 4: 🌴 NUQTA COUNTING ORCHARD */}
           {activeGameId === "nuqta_spot" && (
-            <div className="bg-white border-2 border-emerald-200 rounded-3xl p-5 sm:p-7 shadow-sm space-y-5 text-center">
-              <div className="border-b border-emerald-100 pb-3">
-                <h3 className="text-base sm:text-lg font-black text-slate-900">
-                  👀 একই রকম হরফ চিনি ও নুকতার খেলা
-                </h3>
-                <p className="text-xs text-slate-500 mt-1">
-                  হরফের আকৃতি প্রায় এক, শুধু ফোঁটা গুনে হরফ চিনে ফেলো!
-                </p>
-              </div>
+            <div className="animate-fade-in">
+              <DotCountGame
+                onBack={() => setActiveGameId("balloon_hunt")}
+                onEarnReward={() => handleToggleStarDay(4)}
+              />
+            </div>
+          )}
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5 max-w-3xl mx-auto py-2">
-                {[
-                  { letters: "ب  ت  ث  ن", tip: "একই আকৃতি, ফোঁটা আলাদা: ব নিচে ১, ত উপরে ২, ছ উপরে ৩, ন উপরে ১" },
-                  { letters: "ج  ح  خ", tip: "একই আকৃতি: জ নিচে ১, হ নেই, খ উপরে ১" },
-                  { letters: "د  ذ", tip: "দাল ফোঁটাহীন, যাল উপরে ১টি ফোঁটা" },
-                  { letters: "ر  ز", tip: "রা ফোঁটাহীন, যা উপরে ১টি ফোঁটা" },
-                  { letters: "س  ش", tip: "সীন ফোঁটাহীন, শীন উপরে ৩টি ফোঁটা" },
-                  { letters: "ص  ض", tip: "ছোয়াদ ফোঁটাহীন, দোয়াদ উপরে ১টি ফোঁটা" },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="p-4 rounded-2xl bg-emerald-50/50 border border-emerald-200 flex flex-col justify-between"
-                  >
-                    <span className="font-amiri text-4xl font-bold text-emerald-900 tracking-widest my-2">
-                      {item.letters}
-                    </span>
-                    <p className="text-xs text-emerald-800 font-semibold bg-white p-2 rounded-xl border border-emerald-100">
-                      💡 {item.tip}
-                    </p>
-                  </div>
-                ))}
-              </div>
+          {/* GAME 5: 🚀 SOUND DETECTIVE */}
+          {activeGameId === "detective" && (
+            <div className="animate-fade-in">
+              <SoundDetectiveGame
+                onBack={() => setActiveGameId("balloon_hunt")}
+                onEarnReward={() => handleToggleStarDay(5)}
+              />
+            </div>
+          )}
+
+          {/* GAME 6: 🏡 MEMORY MATCH CARDS */}
+          {activeGameId === "memory" && (
+            <div className="animate-fade-in">
+              <MemoryMatchGame
+                onBack={() => setActiveGameId("balloon_hunt")}
+                onEarnReward={() => handleToggleStarDay(6)}
+              />
             </div>
           )}
         </div>

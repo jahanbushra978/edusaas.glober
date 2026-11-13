@@ -243,6 +243,45 @@ export default function NurKidsUnifiedPlatform({ initialTab = "home" }) {
               </button>
             </div>
 
+            {/* 🎈 FEATURED GAME BANNER: BALLOON POP FESTIVAL */}
+            <div
+              onClick={() => {
+                playTapSound();
+                setActiveZone("games");
+                if (typeof window !== "undefined") {
+                  try {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set("game", "balloon-pop");
+                    window.history.pushState({ quranGame: "balloon-pop" }, "", url.toString());
+                  } catch {}
+                }
+              }}
+              className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-sky-500 via-blue-600 to-indigo-600 text-white border-3 border-sky-300 shadow-xl hover:shadow-2xl hover:scale-[1.01] active:scale-98 transition-all cursor-pointer flex flex-col sm:flex-row items-center justify-between gap-3 group"
+            >
+              <div className="flex items-center gap-3.5 text-center sm:text-left">
+                <span className="text-3xl sm:text-4xl group-hover:scale-125 transition-transform duration-300">
+                  🎈
+                </span>
+                <div>
+                  <div className="flex items-center gap-2 justify-center sm:justify-start">
+                    <h3 className="text-base sm:text-lg font-black text-white">
+                      হরকত বেলুন উৎসব (Balloon Pop)
+                    </h3>
+                    <span className="text-[10px] bg-amber-400 text-slate-950 px-2 py-0.5 rounded-full font-black">
+                      Vina-Kids স্টাইল 🌟
+                    </span>
+                  </div>
+                  <p className="text-xs text-sky-100 font-medium mt-0.5">
+                    আকাশে রঙিন বেলুন ফাটানোর খেলা — যবর, যের, পেশ ও তানভীন প্র্যাকটিস করো!
+                  </p>
+                </div>
+              </div>
+              <div className="px-4 py-2 rounded-2xl bg-amber-400 text-slate-950 font-black text-xs shadow-md shrink-0 flex items-center gap-1.5 group-hover:bg-amber-300 transition">
+                <span>এখনই খেলো</span>
+                <span>➔</span>
+              </div>
+            </div>
+
             {/* 4 GIANT VINA-KIDS STYLE GATEWAY CARDS */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
               {/* Card 1: গেমস জোন */}

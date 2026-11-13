@@ -33,6 +33,18 @@ import {
 // 🎮 Curated Quran Educational Games
 const QURAN_GAMES = [
   {
+    id: "balloon-pop",
+    title: "হরকত বেলুন উৎসব (পপ)",
+    titleEn: "Harakat Balloon Pop Festival",
+    desc: "আকাশে ভাসমান রঙিন বেলুন ফাটিয়ে হরকত (যবর, যের, পেশ, তানভীন) শেখো ও আনন্দ পার্ক সাজাও!",
+    badge: "আনন্দ পার্ক 🎡",
+    difficulty: "সহজ",
+    xpReward: 25,
+    playable: true,
+    colorGradient: "from-rose-500 via-amber-500 to-sky-500",
+    bgTint: "bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-800",
+  },
+  {
     id: "drag-drop-letter",
     title: "হরফ মেলানো ড্র্যাগ ও ড্রপ",
     titleEn: "Drag & Drop Letter Matching",
@@ -42,18 +54,6 @@ const QURAN_GAMES = [
     xpReward: 30,
     playable: true,
     colorGradient: "from-emerald-600 via-teal-600 to-cyan-600",
-    bgTint: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800",
-  },
-  {
-    id: "balloon-pop",
-    title: "হরকত বেলুন পপ",
-    titleEn: "Harakat Balloon Pop",
-    desc: "সঠিক হরকত (যবর, যের, পেশ) চিনে বেলুন ফাটাও এবং আনন্দ পার্কের উপাদান আনলক করো!",
-    badge: "আনন্দ পার্ক 🎡",
-    difficulty: "সহজ",
-    xpReward: 20,
-    playable: true,
-    colorGradient: "from-emerald-500 to-teal-600",
     bgTint: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800",
   },
   {
@@ -479,11 +479,11 @@ export default function QuranGamesHub({ onEarnXP }) {
             <div className="shrink-0 flex items-center gap-2 z-10 w-full sm:w-auto justify-center">
               <button
                 type="button"
-                onClick={() => handleSelectGame("drag-drop-letter")}
-                className="w-full sm:w-auto px-4 py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-amber-400 hover:bg-amber-300 text-amber-950 font-black text-xs shadow-lg transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 cursor-pointer"
+                onClick={() => handleSelectGame("balloon-pop")}
+                className="w-full sm:w-auto px-5 py-2.5 sm:py-3 rounded-2xl bg-gradient-to-r from-amber-400 to-yellow-400 hover:from-amber-300 hover:to-yellow-300 text-amber-950 font-black text-xs sm:text-sm shadow-xl transition-transform hover:scale-105 active:scale-95 flex items-center justify-center gap-2 cursor-pointer border-2 border-white/60"
               >
-                <Play className="w-4 h-4 fill-amber-950" />
-                <span>প্রথম গেম খেলো</span>
+                <span className="text-lg">🎈</span>
+                <span>বেলুন উৎসব খেলো</span>
               </button>
             </div>
 
