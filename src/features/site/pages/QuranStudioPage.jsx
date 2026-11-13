@@ -1590,18 +1590,18 @@ export default function QuranStudioPage() {
           customVideos={tutorialConfig.customVideos}
         />
 
-        {/* 🌟 Floating Persistent Feedback Button (Accessible Anytime, hidden during reading & qaida views to prevent obstruction) */}
-        <button
-          type="button"
-          onClick={() => setIsFeedbackOpen(true)}
-          className={`fixed bottom-4 left-4 z-40 px-3.5 py-2.5 rounded-2xl bg-emerald-950/90 hover:bg-emerald-900 text-amber-300 hover:text-amber-200 border border-emerald-500/50 shadow-2xl backdrop-blur-md text-xs font-black items-center gap-2 transition-all cursor-pointer hover:scale-105 active:scale-95 ${
-            activeFeature === "tafseer-quran" || activeFeature === "quran-reader" || activeFeature === "noor-qaida" ? "hidden" : "flex"
-          }`}
-          title="সাইটের উন্নতি বা আপনার কোনো পরামর্শ বা অভিযোগ থাকলে দয়া করে এখানে লিখুন"
-        >
-          <MessageSquarePlus className="w-4 h-4 text-amber-400" />
-          <span className="hidden sm:inline">পরামর্শ / অভিযোগ</span>
-        </button>
+        {/* 🌟 Floating Feedback Button (Only shown on desktop studio hub, never inside active learning modules or mobile views to prevent obstruction) */}
+        {!activeFeature && (
+          <button
+            type="button"
+            onClick={() => setIsFeedbackOpen(true)}
+            className="hidden md:flex fixed bottom-6 left-6 z-40 px-3.5 py-2.5 rounded-2xl bg-emerald-950/90 hover:bg-emerald-900 text-amber-300 hover:text-amber-200 border border-emerald-500/50 shadow-2xl backdrop-blur-md text-xs font-black items-center gap-2 transition-all cursor-pointer hover:scale-105 active:scale-95"
+            title="সাইটের উন্নতি বা আপনার কোনো পরামর্শ বা অভিযোগ থাকলে দয়া করে এখানে লিখুন"
+          >
+            <MessageSquarePlus className="w-4 h-4 text-amber-400" />
+            <span>পরামর্শ / অভিযোগ</span>
+          </button>
+        )}
     </div>
   );
 }

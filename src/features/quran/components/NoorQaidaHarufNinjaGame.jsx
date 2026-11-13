@@ -12,8 +12,21 @@ import {
   Heart,
   X,
   Sparkles,
+  ShoppingBag,
+  Check,
+  Lock,
 } from "lucide-react";
 import { universalAudioEngine } from "@/lib/quran/audio";
+import {
+  SHOP_BLADES,
+  SHOP_NEEDLES,
+  getStoredCoins,
+  saveCoins,
+  getUnlockedBlades,
+  getEquippedBlade,
+  getUnlockedNeedles,
+  getEquippedNeedle,
+} from "@/lib/quran/qaidaGameShop";
 
 // ── FRUITS WITH EXACT COLOR CODES FOR JUICE SPLATTERS ──
 const NINJA_FRUITS = [
@@ -45,6 +58,15 @@ export default function NoorQaidaHarufNinjaGame({
   const [isMuted, setIsMuted] = useState(false);
   const [bestScore, setBestScore] = useState(0);
 
+  // 🛒 Coin & Shop System
+  const [coins, setCoins] = useState(150);
+  const [equippedBladeId, setEquippedBladeId] = useState("wood_blade");
+  const [unlockedBlades, setUnlockedBlades] = useState(["wood_blade"]);
+  const [equippedNeedleId, setEquippedNeedleId] = useState("finger");
+  const [unlockedNeedles, setUnlockedNeedles] = useState(["finger"]);
+  const [isShopOpen, setIsShopOpen] = useState(false);
+  const [shopTab, setShopTab] = useState("blades");
+
   // References for Game Loop and Interactive Physics
   const itemsRef = useRef([]);
   const splattersRef = useRef([]);
@@ -55,13 +77,69 @@ export default function NoorQaidaHarufNinjaGame({
   const isShakingRef = useRef(false);
   const [shakeScreen, setShakeScreen] = useState(false);
 
-  // Load best score on mount
+  // Load coins, unlocked swords and best score on mount
   useEffect(() => {
     try {
       const saved = localStorage.getItem("noor_qaida_ninja_best");
       if (saved) setBestScore(parseInt(saved, 10));
     } catch {}
+    setCoins(getStoredCoins());
+    setEquippedBladeId(getEquippedBlade());
+    setUnlockedBlades(getUnlockedBlades());
+    setEquippedNeedleId(getEquippedNeedle());
+    setUnlockedNeedles(getUnlockedNeedles());
   }, []);
+
+  // Shop actions
+  const handleBuyBlade = (blade) => {
+    if (coins < blade.price) return;
+    const nextCoins = coins - blade.price;
+    setCoins(nextCoins);
+    saveCoins(nextCoins);
+
+    const nextUnlocked = [...unlockedBlades, blade.id];
+    setUnlockedBlades(nextUnlocked);
+    try {
+      localStorage.setItem("noor_qaida_unlocked_blades", JSON.stringify(nextUnlocked));
+    } catch {}
+
+    setEquippedBladeId(blade.id);
+    try {
+      localStorage.setItem("noor_qaida_equipped_blade", blade.id);
+    } catch {}
+  };
+
+  const handleEquipBlade = (bladeId) => {
+    setEquippedBladeId(bladeId);
+    try {
+      localStorage.setItem("noor_qaida_equipped_blade", bladeId);
+    } catch {}
+  };
+
+  const handleBuyNeedle = (needle) => {
+    if (coins < needle.price) return;
+    const nextCoins = coins - needle.price;
+    setCoins(nextCoins);
+    saveCoins(nextCoins);
+
+    const nextUnlocked = [...unlockedNeedles, needle.id];
+    setUnlockedNeedles(nextUnlocked);
+    try {
+      localStorage.setItem("noor_qaida_unlocked_needles", JSON.stringify(nextUnlocked));
+    } catch {}
+
+    setEquippedNeedleId(needle.id);
+    try {
+      localStorage.setItem("noor_qaida_equipped_needle", needle.id);
+    } catch {}
+  };
+
+  const handleEquipNeedle = (needleId) => {
+    setEquippedNeedleId(needleId);
+    try {
+      localStorage.setItem("noor_qaida_equipped_needle", needleId);
+    } catch {}
+  };
 
   // ── WEB AUDIO SYNTHESIZERS FOR FRUIT NINJA ACTIONS ──
   const playBladeWhoosh = useCallback(() => {
@@ -385,6 +463,13 @@ export default function NoorQaidaHarufNinjaGame({
             universalAudioEngine.playArabicSound(targetItem.sound || targetItem.ar, { rate: 1.0 });
           }
 
+          // +5 Coins for slicing target letter
+          setCoins((c) => {
+            const next = c + 5;
+            saveCoins(next);
+            return next;
+          });
+
           setScore((s) => {
             const nextScore = s + 25;
             if (nextScore > bestScore) {
@@ -401,12 +486,24 @@ export default function NoorQaidaHarufNinjaGame({
             if (nextCount >= TARGET_GOAL) {
               setGameState("won");
               playVictorySound();
+              // +50 Bonus coins for winning Ninja level!
+              setCoins((c) => {
+                const next = c + 50;
+                saveCoins(next);
+                return next;
+              });
             }
             return nextCount;
           });
         } else if (item.type === "fruit") {
           // FRUIT SLICED!
           playFruitSquishSound();
+          // +2 Coins for slicing fruit
+          setCoins((c) => {
+            const next = c + 2;
+            saveCoins(next);
+            return next;
+          });
           setScore((s) => {
             const nextScore = s + 10;
             if (nextScore > bestScore) {
@@ -661,18 +758,31 @@ export default function NoorQaidaHarufNinjaGame({
     ctx.restore();
   };
 
-  // ── DRAW GLOWING LASER BLADE SLASH TRAIL ──
+  // ── DRAW GLOWING LASER BLADE SLASH TRAIL ACCORDING TO EQUIPPED WEAPON ──
   const drawBladeTrail = (ctx, trail) => {
     if (trail.length < 2) return;
+
+    const blade = SHOP_BLADES.find((b) => b.id === equippedBladeId) || SHOP_BLADES[0];
 
     ctx.save();
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
 
-    // Outer Golden Sword Glow
-    ctx.strokeStyle = "rgba(250, 204, 21, 0.75)";
+    // 1. Outer Blade Trail (Flaming, Rainbow, Golden, Steel, or Divine Light)
+    if (blade.id === "rainbow_saber") {
+      const grad = ctx.createLinearGradient(trail[0].x, trail[0].y, trail[trail.length - 1].x, trail[trail.length - 1].y);
+      grad.addColorStop(0, "#ef4444");
+      grad.addColorStop(0.2, "#f97316");
+      grad.addColorStop(0.4, "#eab308");
+      grad.addColorStop(0.6, "#10b981");
+      grad.addColorStop(0.8, "#06b6d4");
+      grad.addColorStop(1, "#a855f7");
+      ctx.strokeStyle = grad;
+    } else {
+      ctx.strokeStyle = blade.trailOuter;
+    }
     ctx.lineWidth = 14;
-    ctx.shadowColor = "#facc15";
+    ctx.shadowColor = blade.glowColor;
     ctx.shadowBlur = 18;
     ctx.beginPath();
     ctx.moveTo(trail[0].x, trail[0].y);
@@ -681,8 +791,8 @@ export default function NoorQaidaHarufNinjaGame({
     }
     ctx.stroke();
 
-    // Inner White Sharp Laser Core
-    ctx.strokeStyle = "#ffffff";
+    // 2. Inner Razor Core
+    ctx.strokeStyle = blade.trailInner;
     ctx.lineWidth = 4;
     ctx.shadowBlur = 0;
     ctx.beginPath();
@@ -714,17 +824,32 @@ export default function NoorQaidaHarufNinjaGame({
     >
       {/* ══════════════════════════════════════════════════════════
           TOP NINJA HUD (MATCHING USER SCREENSHOT)
-          (Home, Target Badge, Sliced Score, Best Score, Lives, Pause)
+          (Home, Shop/Coins, Target Badge, Sliced Slots, Sliced Score, Best Score, Lives)
       ══════════════════════════════════════════════════════════ */}
       <header className="relative z-30 p-2 sm:p-4 flex items-center justify-between gap-2 max-w-6xl mx-auto w-full pointer-events-auto">
-        {/* Left: Home Button (Back to Qaida) */}
-        <button
-          onClick={onClose}
-          className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-amber-900/90 hover:bg-amber-800 text-amber-200 border-2 border-amber-600 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95"
-          title="কায়দায় ফিরে যান"
-        >
-          <Home className="w-5 h-5 sm:w-6 sm:h-6" />
-        </button>
+        {/* Left: Home Button & Point Shop */}
+        <div className="flex items-center gap-1.5 sm:gap-2">
+          <button
+            onClick={onClose}
+            className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-amber-900/90 hover:bg-amber-800 text-amber-200 border-2 border-amber-600 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            title="কায়দায় ফিরে যান"
+          >
+            <Home className="w-5 h-5 sm:w-6 sm:h-6" />
+          </button>
+
+          {/* 🛒 Shop Button (সুই ও চাকু কেনা) */}
+          <button
+            onClick={() => setIsShopOpen(true)}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs shadow-xl border-2 border-amber-400 active:scale-95 transition hover:scale-105 cursor-pointer"
+            title="দোকান: নতুন চাকু ও তলোয়ার কিনুন"
+          >
+            <span className="text-sm">🛒</span>
+            <span className="hidden sm:inline">দোকান</span>
+            <span className="bg-black/40 px-1.5 py-0.5 rounded-full text-[10px] font-mono shadow-2xs">
+              🪙 {coins}
+            </span>
+          </button>
+        </div>
 
         {/* Center: Mission Target Letter & Score Box */}
         <div className="flex items-center gap-2 sm:gap-4 bg-amber-950/85 backdrop-blur-md px-3 sm:px-6 py-1.5 sm:py-2 rounded-2xl sm:rounded-3xl border-2 sm:border-3 border-amber-500 shadow-2xl text-white">
@@ -747,6 +872,22 @@ export default function NoorQaidaHarufNinjaGame({
             <span>
               {slicedTargetCount} / {TARGET_GOAL}
             </span>
+          </div>
+
+          {/* Target Sliced Wooden Collection Slots (Matching Image 6 Reference) */}
+          <div className="hidden lg:flex items-center gap-1 px-2.5 py-1 rounded-xl bg-black/40 border border-amber-600/50 shadow-inner">
+            {Array.from({ length: TARGET_GOAL }).map((_, idx) => (
+              <div
+                key={idx}
+                className={`w-6 h-7 rounded-md border flex items-center justify-center font-arabic text-sm font-black transition-all ${
+                  idx < slicedTargetCount
+                    ? "bg-gradient-to-t from-amber-500 to-yellow-300 text-amber-950 border-amber-200 shadow-xs scale-105"
+                    : "bg-amber-950/40 text-amber-500/30 border-amber-800/40"
+                }`}
+              >
+                {idx < slicedTargetCount ? targetItem.ar : "·"}
+              </div>
+            ))}
           </div>
 
           {/* Sliced Score with Pear icon matching screenshot */}
@@ -852,6 +993,11 @@ export default function NoorQaidaHarufNinjaGame({
               </div>
               <div className="h-8 w-px bg-amber-200" />
               <div>
+                <span className="text-xs text-slate-500 font-bold">পুরস্কার</span>
+                <div className="text-sm font-black text-amber-800">+৫০ 🪙 পয়েন্ট</div>
+              </div>
+              <div className="h-8 w-px bg-amber-200" />
+              <div>
                 <span className="text-xs text-slate-500 font-bold">অর্জন</span>
                 <div className="text-xl">⭐⭐⭐</div>
               </div>
@@ -941,6 +1087,213 @@ export default function NoorQaidaHarufNinjaGame({
                 className="w-full py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
               >
                 কায়দায় ফিরে যান
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          🛒 POINT SHOP MODAL (BUY & EQUIP SWORDS, NEEDLES, WANDS)
+      ══════════════════════════════════════════════════════════ */}
+      {isShopOpen && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in pointer-events-auto">
+          <div className="bg-white rounded-3xl p-5 sm:p-6 max-w-md w-full shadow-2xl border-4 border-amber-400 max-h-[90vh] flex flex-col">
+            {/* Shop Header */}
+            <div className="flex items-center justify-between border-b pb-3 mb-3">
+              <div className="flex items-center gap-2">
+                <span className="text-2xl">🛒</span>
+                <div>
+                  <h3 className="font-black text-slate-900 text-base sm:text-lg">
+                    নূর কায়দা গেমিং শপ
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    পয়েন্ট দিয়ে ধারালো তলোয়ার ও সুই আনলক করো!
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="px-2.5 py-1 rounded-full bg-amber-100 border border-amber-300 font-black text-amber-900 text-xs flex items-center gap-1">
+                  <span>🪙</span>
+                  <span>{coins}</span>
+                </div>
+                <button
+                  onClick={() => setIsShopOpen(false)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Shop Tabs */}
+            <div className="grid grid-cols-2 gap-2 p-1 bg-slate-100 rounded-2xl mb-3 shrink-0">
+              <button
+                onClick={() => setShopTab("blades")}
+                className={`py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  shopTab === "blades"
+                    ? "bg-white text-orange-600 shadow-xs border border-slate-200"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <span>⚔️</span>
+                <span>হরফ নিনজা তলোয়ার</span>
+              </button>
+              <button
+                onClick={() => setShopTab("needles")}
+                className={`py-2 rounded-xl text-xs font-black transition flex items-center justify-center gap-1.5 cursor-pointer ${
+                  shopTab === "needles"
+                    ? "bg-white text-emerald-600 shadow-xs border border-slate-200"
+                    : "text-slate-600 hover:text-slate-900"
+                }`}
+              >
+                <span>🪡</span>
+                <span>বুদ্বুদ সুই ও কাঠি</span>
+              </button>
+            </div>
+
+            {/* Swords & Blades List */}
+            <div className="flex-1 overflow-y-auto space-y-2.5 pr-1">
+              {shopTab === "blades" && (
+                <div className="space-y-2.5">
+                  {SHOP_BLADES.map((b) => {
+                    const isOwned = unlockedBlades.includes(b.id);
+                    const isEquipped = equippedBladeId === b.id;
+                    const canAfford = coins >= b.price;
+
+                    return (
+                      <div
+                        key={b.id}
+                        className={`p-3 rounded-2xl border-2 flex items-center justify-between gap-3 transition ${
+                          isEquipped
+                            ? "bg-amber-50 border-amber-400 shadow-xs"
+                            : isOwned
+                            ? "bg-white border-slate-200"
+                            : "bg-slate-50 border-slate-200 opacity-90"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl w-12 h-12 rounded-2xl bg-orange-100/60 flex items-center justify-center shadow-inner shrink-0">
+                            {b.icon}
+                          </span>
+                          <div>
+                            <div className="font-black text-xs sm:text-sm text-slate-900 font-hind-siliguri">
+                              {b.nameBn}
+                            </div>
+                            <div className="text-[10px] text-slate-500 leading-tight">
+                              {b.descBn}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0">
+                          {isEquipped ? (
+                            <span className="px-3 py-1.5 rounded-xl bg-amber-600 text-white font-black text-xs flex items-center gap-1">
+                              <Check className="w-3.5 h-3.5" />
+                              <span>রানিং</span>
+                            </span>
+                          ) : isOwned ? (
+                            <button
+                              onClick={() => handleEquipBlade(b.id)}
+                              className="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-amber-500 hover:text-white text-slate-800 font-black text-xs transition cursor-pointer"
+                            >
+                              ব্যবহার করো
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleBuyBlade(b)}
+                              disabled={!canAfford}
+                              className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-1 transition cursor-pointer ${
+                                canAfford
+                                  ? "bg-amber-400 hover:bg-amber-500 text-amber-950 shadow-xs active:scale-95"
+                                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                              }`}
+                            >
+                              <span>🪙</span>
+                              <span>{b.price}</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Needles & Magic Wands List */}
+              {shopTab === "needles" && (
+                <div className="space-y-2.5">
+                  {SHOP_NEEDLES.map((n) => {
+                    const isOwned = unlockedNeedles.includes(n.id);
+                    const isEquipped = equippedNeedleId === n.id;
+                    const canAfford = coins >= n.price;
+
+                    return (
+                      <div
+                        key={n.id}
+                        className={`p-3 rounded-2xl border-2 flex items-center justify-between gap-3 transition ${
+                          isEquipped
+                            ? "bg-emerald-50 border-emerald-400 shadow-xs"
+                            : isOwned
+                            ? "bg-white border-slate-200"
+                            : "bg-slate-50 border-slate-200 opacity-90"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-3xl w-12 h-12 rounded-2xl bg-amber-100/60 flex items-center justify-center shadow-inner shrink-0">
+                            {n.icon}
+                          </span>
+                          <div>
+                            <div className="font-black text-xs sm:text-sm text-slate-900 font-hind-siliguri">
+                              {n.nameBn}
+                            </div>
+                            <div className="text-[10px] text-slate-500 leading-tight">
+                              {n.descBn}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="shrink-0">
+                          {isEquipped ? (
+                            <span className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-black text-xs flex items-center gap-1">
+                              <Check className="w-3.5 h-3.5" />
+                              <span>রানিং</span>
+                            </span>
+                          ) : isOwned ? (
+                            <button
+                              onClick={() => handleEquipNeedle(n.id)}
+                              className="px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-emerald-500 hover:text-white text-slate-800 font-black text-xs transition cursor-pointer"
+                            >
+                              ব্যবহার করো
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleBuyNeedle(n)}
+                              disabled={!canAfford}
+                              className={`px-3 py-1.5 rounded-xl font-black text-xs flex items-center gap-1 transition cursor-pointer ${
+                                canAfford
+                                  ? "bg-amber-400 hover:bg-amber-500 text-amber-950 shadow-xs active:scale-95"
+                                  : "bg-slate-200 text-slate-400 cursor-not-allowed"
+                              }`}
+                            >
+                              <span>🪙</span>
+                              <span>{n.price}</span>
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="pt-3 border-t mt-3 text-center">
+              <button
+                onClick={() => setIsShopOpen(false)}
+                className="w-full py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs shadow-md cursor-pointer"
+              >
+                খেলায় ফিরে যাও
               </button>
             </div>
           </div>
