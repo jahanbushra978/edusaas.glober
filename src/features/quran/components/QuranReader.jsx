@@ -1354,20 +1354,33 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                         )}
                       </button>
 
-                      {/* Launch Nur AI Teacher on this Ayah */}
+                      {/* Launch Nur AI Ustad Chat on this Ayah */}
                       <button
                         onClick={() => {
                           if (onLaunchNurEngine) {
-                            onLaunchNurEngine(selectedSurahId, ayah.numberInSurah);
+                            onLaunchNurEngine(selectedSurahId, ayah.numberInSurah, ayah);
                           } else {
-                            toast.info(`সূরা ${selectedSurahId}, আয়াত ${ayah.numberInSurah} এআই শিক্ষকে পাঠানো হচ্ছে...`);
+                            try {
+                              localStorage.setItem(
+                                "rahmania_ustad_target_ayah",
+                                JSON.stringify({
+                                  surah: selectedSurahId,
+                                  ayah: ayah.numberInSurah,
+                                  text: ayah.text || "",
+                                  bengali: ayah.bengali || "",
+                                })
+                              );
+                            } catch {}
+                            if (typeof window !== "undefined") {
+                              window.location.href = `/quran-tutor/studio?feature=voice-tutor&surah=${selectedSurahId}&ayah=${ayah.numberInSurah}`;
+                            }
                           }
                         }}
                         className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-teal-700 to-emerald-800 hover:from-teal-600 hover:to-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-xs transition active:scale-95 cursor-pointer"
-                        title="এই আয়াতটি এআই শিক্ষক নূরের সাথে ৬ ধাপে অনুশীলন করুন"
+                        title="এই আয়াতের উচ্চারণ, তাফসীর ও অর্থ নিয়ে এআই উস্তাদ চ্যাটে কথা বলুন"
                       >
                         <Bot className="w-3.5 h-3.5 text-emerald-300" />
-                        <span className="hidden sm:inline">নূর শিক্ষক</span>
+                        <span className="hidden sm:inline">এআই উস্তাদ</span>
                       </button>
 
                       {/* Word Breakdown */}

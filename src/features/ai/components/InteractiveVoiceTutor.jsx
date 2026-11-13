@@ -50,6 +50,7 @@ export default function InteractiveVoiceTutor({
   onMakhrajHighlight,
   onClose,
   className = "",
+  initialContext = null,
 }) {
   // Tutor Submode: 'qa_dialogue' (উস্তাদের সাথে প্রশ্নোত্তর) | 'live_class' (লাইভ কুরআন মাশক)
   const [tutorMode, setTutorMode] = useState("qa_dialogue");
@@ -63,6 +64,7 @@ export default function InteractiveVoiceTutor({
   const [aiConfig, setAiConfig] = useState(getSavedAIConfig);
   const [isMicMuted, setIsMicMuted] = useState(false);
   const [currentlySpeakingIdx, setCurrentlySpeakingIdx] = useState(null);
+  const [activeAyahContext, setActiveAyahContext] = useState(initialContext);
 
   const [conversationHistory, setConversationHistory] = useState([
     {
@@ -71,6 +73,43 @@ export default function InteractiveVoiceTutor({
       timestamp: "এখন",
     },
   ]);
+
+  // Handle initial Ayah context from props, URL or localStorage
+  useEffect(() => {
+    let ctx = initialContext;
+    if (!ctx && typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("rahmania_ustad_target_ayah");
+        if (stored) {
+          ctx = JSON.parse(stored);
+          localStorage.removeItem("rahmania_ustad_target_ayah");
+        }
+      } catch {}
+      if (!ctx) {
+        const params = new URLSearchParams(window.location.search);
+        const s = params.get("surah");
+        const a = params.get("ayah");
+        if (s) {
+          ctx = { surah: Number(s), ayah: Number(a || 1) };
+        }
+      }
+    }
+    if (ctx && ctx.surah) {
+      setActiveAyahContext(ctx);
+      const ayahNum = ctx.ayah || 1;
+      const ayahText = ctx.text ? `\n\n"${ctx.text}"` : "";
+      const ayahBn = ctx.bengali ? `\n(অনুবাদ: "${ctx.bengali}")` : "";
+      const customGreeting = `আসসালামু আলাইকুম! আপনি সূরা ${ctx.surah}, আয়াত ${ayahNum} নিয়ে উস্তাদের সাথে কথা বলতে এসেছেন।${ayahText}${ayahBn}\n\nএই আয়াতের বিশুদ্ধ উচ্চারণ, মাখরাজ, তাজবীদের নিয়ম বা অর্থ সম্পর্কে আপনার প্রশ্ন সরাসরি মুখে বলুন বা নিচে লিখুন।`;
+
+      setConversationHistory([
+        {
+          role: "assistant",
+          text: customGreeting,
+          timestamp: "এখন",
+        },
+      ]);
+    }
+  }, [initialContext]);
 
   // Audio & Speech References
   const recognitionRef = useRef(null);
@@ -823,14 +862,20 @@ export default function InteractiveVoiceTutor({
                         {/* ── QUICK SUGGESTION CHIPS (Compact Single Row) ── */}
                         <div className="flex items-center gap-1.5 overflow-x-auto py-1 scrollbar-none">
                           <span className="text-[10px] font-bold text-slate-400 shrink-0">পরামর্শ:</span>
-                          {[
+                          {(activeAyahContext ? [
+                            `সূরা ${activeAyahContext.surah}:${activeAyahContext.ayah}-এর অর্থ কী?`,
+                            "এই আয়াতের তাজবীদ ও মাখরাজ বুঝিয়ে দিন",
+                            "আয়াতটির বিশুদ্ধ উচ্চারণ শুনতে চাই",
+                            "মাখরাজ কাকে বলে?",
+                            "ইখফার সঠিক নিয়ম",
+                          ] : [
                             "মাখরাজ কাকে বলে?",
                             "ইখফার সঠিক নিয়ম",
                             "ক্বলক্বলাহর হরফ কয়টি?",
                             "ওয়াজিব গুন্নাহ কী?",
                             "মদ্দে আসলী কত হরকত?",
                             "আইন (ع) হরফের মাখরাজ",
-                          ].map((q) => (
+                          ]).map((q) => (
                             <button
                               key={q}
                               type="button"

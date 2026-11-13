@@ -200,6 +200,11 @@ export default function QuranStudioPage() {
   // Active Workspace Feature State
   const [activeFeature, setActiveFeature] = useState(initialFeature);
   const [readerTarget, setReaderTarget] = useState({ surah: 1, ayah: 1 });
+  const paramSurah = searchParams ? searchParams.get("surah") : null;
+  const paramAyah = searchParams ? searchParams.get("ayah") : null;
+  const [ustadAyahContext, setUstadAyahContext] = useState(
+    paramSurah ? { surah: Number(paramSurah), ayah: Number(paramAyah || 1) } : null
+  );
 
   const [selectedZone, setSelectedZone] = useState("lisan");
   const [searchFilter, setSearchFilter] = useState("");
@@ -332,6 +337,30 @@ export default function QuranStudioPage() {
     setTimeout(() => {
       activeStageRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     }, 100);
+  };
+
+  // Launch AI Ustad Chat focused directly on a specific Quranic Ayah
+  const handleLaunchUstadChat = (surahId, ayahNum, ayahObj) => {
+    if (surahId) {
+      setUstadAyahContext({
+        surah: surahId,
+        ayah: ayahNum,
+        text: ayahObj?.text || "",
+        bengali: ayahObj?.bengali || "",
+      });
+      try {
+        localStorage.setItem(
+          "rahmania_ustad_target_ayah",
+          JSON.stringify({
+            surah: surahId,
+            ayah: ayahNum,
+            text: ayahObj?.text || "",
+            bengali: ayahObj?.bengali || "",
+          })
+        );
+      } catch {}
+    }
+    launchFeature("voice-tutor");
   };
 
   const theme = STUDIO_THEMES[currentTheme] || STUDIO_THEMES.ivory;
@@ -585,29 +614,29 @@ export default function QuranStudioPage() {
       {/* ── TOP HEADER (With Theme Changer & Navigation) ── */}
       <header
         suppressHydrationWarning
-        className={`h-16 border-b ${theme.headerBg} backdrop-blur-md px-3 sm:px-6 flex items-center justify-between z-30 sticky top-0 shadow-xs transition-colors`}
+        className={`h-14 sm:h-16 border-b ${theme.headerBg} backdrop-blur-md px-2.5 sm:px-6 flex items-center justify-between gap-1.5 sm:gap-3 z-30 sticky top-0 shadow-xs transition-colors`}
       >
         {/* Left: Brand & Back Link */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
+        <div className="flex items-center gap-1.5 sm:gap-3 min-w-0 flex-1">
           <Link
             href="/quran-tutor"
-            className={`px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-2xl ${theme.badgeBg} border ${theme.cardBorder} hover:opacity-90 transition-all flex items-center gap-1.5 text-xs font-bold shadow-xs cursor-pointer active:scale-95`}
+            className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl ${theme.badgeBg} border ${theme.cardBorder} hover:opacity-90 transition-all flex items-center gap-1.5 text-xs font-bold shadow-xs cursor-pointer active:scale-95 shrink-0`}
             title="নূর এআই টিউটর হোমে ফিরে যান"
           >
             <ArrowLeft className="w-4 h-4 text-emerald-700" />
-            <span className="text-[11px] sm:text-xs font-bold">এআই হোম</span>
+            <span className="hidden sm:inline text-xs font-bold whitespace-nowrap">এআই হোম</span>
           </Link>
 
-          <div className="h-5 w-px bg-stone-300 dark:bg-emerald-900 hidden sm:block" />
+          <div className="h-5 w-px bg-stone-300 dark:bg-emerald-900 hidden sm:block shrink-0" />
 
-          <div className="flex items-center gap-2">
-            <div className={`w-9 h-9 rounded-2xl ${theme.accentPill} flex items-center justify-center font-bold shadow-xs shrink-0`}>
+          <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+            <div className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl sm:rounded-2xl ${theme.accentPill} flex items-center justify-center font-bold shadow-xs shrink-0`}>
               <BookOpen className="w-4 h-4" />
             </div>
-            <div>
-              <h1 className="text-xs sm:text-base font-black flex items-center gap-1.5 leading-tight">
-                <span>নূর কুরআন স্টুডিও</span>
-                <span className={`text-[10px] ${theme.badgeBg} px-2.5 py-0.5 rounded-full font-black hidden xs:inline border ${theme.cardBorder} shadow-2xs`}>
+            <div className="min-w-0">
+              <h1 className="text-xs sm:text-base font-black flex items-center gap-1.5 leading-tight min-w-0">
+                <span className="truncate">নূর কুরআন স্টুডিও</span>
+                <span className={`text-[10px] ${theme.badgeBg} px-2.5 py-0.5 rounded-full font-black hidden md:inline shrink-0 border ${theme.cardBorder} shadow-2xs`}>
                   🌟 ছোট-বড় সবার
                 </span>
               </h1>
@@ -619,13 +648,13 @@ export default function QuranStudioPage() {
         </div>
 
         {/* Right: Quick Search, Prominent API Key, & Dynamic Theme Switcher */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           {/* Search Trigger */}
           <button
             type="button"
             suppressHydrationWarning
             onClick={() => setIsSearchOpen(true)}
-            className={`p-2 sm:px-3 sm:py-1.5 rounded-2xl ${theme.surfaceClass} border ${theme.cardBorder} hover:bg-stone-50 text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer`}
+            className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl ${theme.surfaceClass} border ${theme.cardBorder} hover:bg-stone-50 text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer shrink-0`}
             title="সূরা ও বিষয়ভিত্তিক কুরআন সার্চ"
           >
             <Search className="w-3.5 h-3.5" />
@@ -637,15 +666,18 @@ export default function QuranStudioPage() {
             type="button"
             suppressHydrationWarning
             onClick={() => setIsAISettingsOpen(true)}
-            className={`px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-2xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs ${aiConfig?.apiKey
+            className={`px-2 py-1.5 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border text-xs font-bold flex items-center gap-1 sm:gap-1.5 transition-all cursor-pointer shadow-xs whitespace-nowrap shrink-0 ${aiConfig?.apiKey
                 ? `${theme.badgeBg} ${theme.cardBorder} text-emerald-800 dark:text-emerald-200`
                 : "bg-amber-100 dark:bg-amber-950/70 border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-200 animate-pulse"
               }`}
             title="এআই প্রোভাইডার ও নিজস্ব API Key সেটিংস (ফ্রি Google Gemini Key)"
           >
-            <Key className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span className="text-[11px] sm:text-xs font-bold">
+            <Key className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400 shrink-0" />
+            <span className="hidden sm:inline text-xs font-bold">
               {aiConfig?.apiKey ? "কী সক্রিয়" : "API Key দিন"}
+            </span>
+            <span className="sm:hidden text-[11px] font-bold">
+              {aiConfig?.apiKey ? "কী" : "API"}
             </span>
           </button>
 
@@ -655,40 +687,37 @@ export default function QuranStudioPage() {
               type="button"
               suppressHydrationWarning
               onClick={() => setIsTutorialOpen(true)}
-              className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-2xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs bg-emerald-600/10 hover:bg-emerald-600/20 border-emerald-600/40 text-emerald-900 dark:text-emerald-200 active:scale-95"
+              className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs bg-emerald-600/10 hover:bg-emerald-600/20 border-emerald-600/40 text-emerald-900 dark:text-emerald-200 active:scale-95 shrink-0"
               title="নূর এআই ও কুরআন স্টুডিও ব্যবহারের নিয়মাবলী ও ভিডিও টিউটোরিয়াল দেখুন"
             >
               <BookOpen className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span className="text-[11px] sm:text-xs font-bold hidden sm:inline">ব্যবহার নির্দেশিকা</span>
-              <span className="text-[11px] sm:text-xs font-bold sm:hidden">গাইড</span>
+              <span className="text-xs font-bold hidden md:inline">ব্যবহার নির্দেশিকা</span>
             </button>
           )}
 
-          {/* 🎨 THEME CHANGER DROPDOWN (As Requested by User) */}
           {/* 💡 Site Feedback / Suggestion Trigger */}
           <button
             type="button"
             suppressHydrationWarning
             onClick={() => setIsFeedbackOpen(true)}
-            className="px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-2xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/40 text-amber-900 dark:text-amber-200 active:scale-95"
+            className="p-1.5 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl border text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer shadow-xs bg-amber-500/10 hover:bg-amber-500/20 border-amber-500/40 text-amber-900 dark:text-amber-200 active:scale-95 shrink-0"
             title="সাইটের উন্নতি বা আপনার কোনো পরামর্শ বা অভিযোগ থাকলে আমাদের জানান"
           >
             <MessageSquare className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-            <span className="text-[11px] sm:text-xs font-bold hidden sm:inline">পরামর্শ ও অভিযোগ</span>
-            <span className="text-[11px] sm:text-xs font-bold sm:hidden">মতামত</span>
+            <span className="text-xs font-bold hidden md:inline">পরামর্শ ও অভিযোগ</span>
           </button>
 
-          <div className="relative">
+          <div className="relative shrink-0">
             <button
               type="button"
               suppressHydrationWarning
               onClick={() => setIsThemeMenuOpen(!isThemeMenuOpen)}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-2xl ${theme.surfaceClass} border ${theme.cardBorder} hover:opacity-90 text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer`}
+              className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl sm:rounded-2xl ${theme.surfaceClass} border ${theme.cardBorder} hover:opacity-90 text-xs font-bold flex items-center gap-1.5 shadow-xs transition-all cursor-pointer`}
               title="অ্যাপের থিম পরিবর্তন করুন"
             >
               <Palette className="w-3.5 h-3.5 text-amber-600" />
               <span className="hidden sm:inline">{theme.name.split("(")[0].trim()}</span>
-              <ChevronDown className="w-3 h-3 opacity-60" />
+              <ChevronDown className="w-3 h-3 opacity-60 hidden sm:inline" />
             </button>
 
             {isThemeMenuOpen && (
@@ -725,11 +754,20 @@ export default function QuranStudioPage() {
           {/* ── 🌟 ACTIVE FEATURE SANCTUARY STAGE (Floats in when card clicked) ── */}
             { activeFeature === "voice-tutor" ? (
               <div ref={activeStageRef} className="w-full h-[85vh] sm:h-[88vh] mx-auto animate-fade-in flex flex-col">
-                <InteractiveVoiceTutor onClose={closeActiveFeature} className="flex-1" />
+                <InteractiveVoiceTutor
+                  onClose={closeActiveFeature}
+                  className="flex-1"
+                  initialContext={ustadAyahContext}
+                />
               </div>
             ) : activeFeature === "quran-reader" ? (
               <div ref={activeStageRef} className="w-full min-h-[90vh] mx-auto animate-fade-in flex flex-col">
-                <TahfizQuranApp onClose={closeActiveFeature} initialScreen="reader" initialSurah={readerTarget.surah} />
+                <TahfizQuranApp
+                  onClose={closeActiveFeature}
+                  initialScreen="reader"
+                  initialSurah={readerTarget.surah}
+                  onLaunchNurEngine={handleLaunchUstadChat}
+                />
               </div>
             ) : activeFeature && (
               <section
@@ -737,12 +775,12 @@ export default function QuranStudioPage() {
                 className={`w-full rounded-3xl ${theme.surfaceClass} border-2 ${theme.accentBorder} shadow-xl overflow-hidden animate-fade-in transition-all`}
               >
                 {/* Active Stage Header Bar */}
-                <div className={`px-4 py-3 border-b ${theme.cardBorder} bg-stone-50/70 dark:bg-stone-900/60 flex items-center justify-between gap-3`}>
-                  <div className="flex items-center gap-2.5">
+                <div className={`px-3 sm:px-4 py-2.5 sm:py-3 border-b ${theme.cardBorder} bg-stone-50/70 dark:bg-stone-900/60 flex items-center justify-between gap-2 sm:gap-3`}>
+                  <div className="flex items-center gap-2 sm:gap-2.5 min-w-0 flex-1">
                     <button
                       type="button"
                       onClick={closeActiveFeature}
-                      className={`p-1.5 sm:px-2.5 sm:py-1 rounded-xl ${theme.surfaceClass} border ${theme.cardBorder} text-xs font-bold flex items-center gap-1 hover:opacity-90 shadow-2xs cursor-pointer active:scale-95`}
+                      className={`p-1.5 sm:px-2.5 sm:py-1 rounded-xl ${theme.surfaceClass} border ${theme.cardBorder} text-xs font-bold flex items-center gap-1 hover:opacity-90 shadow-2xs cursor-pointer active:scale-95 shrink-0`}
                       title="সকল ফিচারের ক্যাটালগে ফিরে যান"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
@@ -751,22 +789,22 @@ export default function QuranStudioPage() {
                     <div className={`w-8 h-8 rounded-xl ${theme.accentPill} flex items-center justify-center font-bold shadow-xs shrink-0`}>
                       {currentActiveCard?.icon ? React.createElement(currentActiveCard.icon, { className: "w-4 h-4" }) : <BookOpen className="w-4 h-4" />}
                     </div>
-                    <div>
-                      <h2 className="text-xs sm:text-sm font-black flex items-center gap-1.5 leading-tight">
-                        <span>{currentActiveCard?.title || "সক্রিয় ফিচার"}</span>
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    <div className="min-w-0">
+                      <h2 className="text-xs sm:text-sm font-black flex items-center gap-1.5 leading-tight truncate">
+                        <span className="truncate">{currentActiveCard?.title || "সক্রিয় ফিচার"}</span>
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0" />
                       </h2>
-                      <p className="text-[11px] opacity-75 font-medium">
+                      <p className="text-[11px] opacity-75 font-medium truncate">
                         {currentActiveCard?.subtitle}
                       </p>
                     </div>
                   </div>
 
                   {/* Action Buttons: AI Home & Close Feature */}
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
                     <Link
                       href="/quran-tutor"
-                      className={`px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95`}
+                      className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800 text-xs font-bold flex items-center gap-1.5 transition-all shadow-xs cursor-pointer active:scale-95 shrink-0`}
                       title="এআই টিউটর হোমে ফিরুন"
                     >
                       <ArrowLeft className="w-3.5 h-3.5" />
@@ -775,7 +813,7 @@ export default function QuranStudioPage() {
                     <button
                       type="button"
                       onClick={closeActiveFeature}
-                      className={`px-3 py-1.5 rounded-xl ${theme.surfaceClass} border ${theme.cardBorder} text-xs font-bold flex items-center gap-1 hover:opacity-90 shadow-xs cursor-pointer active:scale-95`}
+                      className={`p-1.5 sm:px-3 sm:py-1.5 rounded-xl ${theme.surfaceClass} border ${theme.cardBorder} text-xs font-bold flex items-center gap-1 hover:opacity-90 shadow-xs cursor-pointer active:scale-95 shrink-0`}
                       title="ফিচার বন্ধ করে সম্পূর্ণ গ্রিড দেখুন"
                     >
                       <X className="w-3.5 h-3.5" />
@@ -797,8 +835,8 @@ export default function QuranStudioPage() {
                       <QuranReader
                         key={`tafseer-reader-${readerTarget.surah}`}
                         initialSurah={readerTarget.surah}
-                        onLaunchVoiceTutor={() => setActiveFeature("live-class")}
-                        onLaunchNurEngine={() => setActiveFeature("nur-teacher")}
+                        onLaunchVoiceTutor={() => launchFeature("live-class")}
+                        onLaunchNurEngine={handleLaunchUstadChat}
                       />
                     </div>
                   ) : activeFeature === "makhraj-3d" ? (
@@ -1352,11 +1390,11 @@ export default function QuranStudioPage() {
                 ))}
               </div>
 
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-sm sm:text-base font-black flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3">
+                <div className="min-w-0">
+                  <h2 className="text-sm sm:text-base font-black flex flex-wrap items-center gap-2">
                     <span>সকল নূর এআই ফিচার ও পাঠ</span>
-                    <span className={`text-[10px] ${theme.badgeBg} px-2.5 py-0.5 rounded-full font-extrabold border ${theme.cardBorder}`}>
+                    <span className={`text-[10px] ${theme.badgeBg} px-2.5 py-0.5 rounded-full font-extrabold border ${theme.cardBorder} whitespace-nowrap shrink-0`}>
                       {allCards.length}টি ফিচার
                     </span>
                   </h2>
@@ -1366,14 +1404,14 @@ export default function QuranStudioPage() {
                 </div>
 
                 {/* Quick search filter */}
-                <div className="relative w-40 sm:w-56">
-                  <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 opacity-50" />
+                <div className={`w-full sm:w-56 flex items-center gap-2 px-3 py-1.5 rounded-xl border ${theme.surfaceClass} ${theme.cardBorder} focus-within:ring-1 focus-within:ring-emerald-500 shrink-0`}>
+                  <Search className="w-3.5 h-3.5 opacity-50 shrink-0" />
                   <input
                     type="text"
                     value={searchFilter}
                     onChange={(e) => setSearchFilter(e.target.value)}
                     placeholder="ফিচার খুঁজুন..."
-                    className={`w-full pl-8 pr-3 py-1.5 rounded-xl text-xs font-semibold ${theme.surfaceClass} border ${theme.cardBorder} focus:outline-none focus:ring-1 focus:ring-emerald-500`}
+                    className="w-full !p-0 border-0 bg-transparent text-xs font-semibold focus:outline-none"
                   />
                 </div>
               </div>
@@ -1541,7 +1579,9 @@ export default function QuranStudioPage() {
         <button
           type="button"
           onClick={() => setIsFeedbackOpen(true)}
-          className="fixed bottom-4 left-4 z-40 px-3.5 py-2.5 rounded-2xl bg-emerald-950/90 hover:bg-emerald-900 text-amber-300 hover:text-amber-200 border border-emerald-500/50 shadow-2xl backdrop-blur-md text-xs font-black flex items-center gap-2 transition-all cursor-pointer hover:scale-105 active:scale-95"
+          className={`fixed bottom-4 left-4 z-40 px-3.5 py-2.5 rounded-2xl bg-emerald-950/90 hover:bg-emerald-900 text-amber-300 hover:text-amber-200 border border-emerald-500/50 shadow-2xl backdrop-blur-md text-xs font-black items-center gap-2 transition-all cursor-pointer hover:scale-105 active:scale-95 ${
+            activeFeature === "tafseer-quran" || activeFeature === "quran-reader" ? "hidden lg:flex" : "flex"
+          }`}
           title="সাইটের উন্নতি বা আপনার কোনো পরামর্শ বা অভিযোগ থাকলে দয়া করে এখানে লিখুন"
         >
           <MessageSquarePlus className="w-4 h-4 text-amber-400" />

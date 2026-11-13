@@ -51,7 +51,8 @@ export default function TahfizQuranApp({
   onClose,
   initialScreen = "home",
   initialPage = 1,
-  initialSurah = 2
+  initialSurah = 2,
+  onLaunchNurEngine,
 }) {
   // Navigation Screens: 'home' | 'surahs' | 'paras' | 'reader' | 'tasbih' | 'bookmarks' | 'last-read'
   const [currentScreen, setCurrentScreen] = useState(initialScreen);
@@ -1335,18 +1336,19 @@ export default function TahfizQuranApp({
               ) : (
                 <QuranReader
                   initialSurah={readerSurahId}
+                  onLaunchNurEngine={onLaunchNurEngine}
                 />
               )}
             </div>
 
             {/* ── FLOATING QARI AUDIO CONTROLLER BAR ── */}
             {playingAyahNumber && (
-              <div className="fixed bottom-16 inset-x-2 z-40 p-2.5 rounded-2xl bg-[#08221c]/95 border-2 border-amber-500/60 backdrop-blur-md shadow-2xl flex items-center justify-between gap-2 animate-fadeIn text-white max-w-md mx-auto">
-                <div className="flex items-center gap-2 min-w-0">
+              <div className="fixed bottom-[72px] sm:bottom-20 inset-x-2 z-40 p-2.5 rounded-2xl bg-[#08221c]/95 border-2 border-amber-500/60 backdrop-blur-md shadow-2xl flex items-center justify-between gap-2 animate-fadeIn text-white max-w-md mx-auto">
+                <div className="flex items-center gap-2 min-w-0 flex-1">
                   <div className="w-8 h-8 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 flex items-center justify-center shrink-0">
                     <Volume2 className="w-4 h-4 animate-pulse" />
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <p className="text-xs font-black truncate text-amber-300">
                       সূরা {ALL_SURAHS.find((s) => s.id === playingSurahId)?.nameBn || "আল-বাকারা"} — আয়াত {toBn(playingAyahNumber)}
                     </p>
@@ -1359,7 +1361,7 @@ export default function TahfizQuranApp({
                         setStoredQariPreference(qId);
                         handlePlayAyah(playingAyahNumber, playingSurahId);
                       }}
-                      className="text-[10px] bg-black/50 text-teal-300 border border-teal-500/30 rounded px-1.5 py-0.5 mt-0.5 font-bold focus:outline-none cursor-pointer"
+                      className="text-[10px] bg-black/50 text-teal-300 border border-teal-500/30 rounded px-1.5 py-0.5 mt-0.5 font-bold focus:outline-none cursor-pointer max-w-full truncate"
                     >
                       {QARI_REGISTRY.map((q) => (
                         <option key={q.id} value={q.id} className="bg-slate-900 text-white">
@@ -1410,7 +1412,7 @@ export default function TahfizQuranApp({
         )}
 
         {/* ── 6. FIXED BOTTOM NAVIGATION BAR ── */}
-        <div className="fixed bottom-0 inset-x-0 z-50 bg-[#041412]/95 border-t border-teal-900/70 backdrop-blur-md px-3 py-2 flex items-center justify-around shadow-2xl max-w-md sm:max-w-lg mx-auto">
+        <div className="fixed bottom-0 inset-x-0 z-50 bg-[#041412]/95 border-t border-teal-900/70 backdrop-blur-md px-1.5 sm:px-3 py-1.5 sm:py-2 flex items-center justify-between gap-1 shadow-2xl max-w-md sm:max-w-lg mx-auto">
           {/* 1. হোম */}
           <button
             type="button"
@@ -1418,12 +1420,12 @@ export default function TahfizQuranApp({
               setBottomNavTab("home");
               setCurrentScreen("home");
             }}
-            className={`flex flex-col items-center gap-1 transition cursor-pointer bg-transparent border-0 outline-none p-1.5 rounded-xl hover:bg-teal-950/40 ${
+            className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 sm:gap-1 transition cursor-pointer bg-transparent border-0 outline-none py-1 px-1 rounded-xl hover:bg-teal-950/40 ${
               currentScreen === "home" ? "text-[#00d2b8]" : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            <Compass className="w-5 h-5" />
-            <span className="text-[10px] font-bold">হোম</span>
+            <Compass className="w-5 h-5 shrink-0" />
+            <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap">হোম</span>
           </button>
 
           {/* 2. তাহফিজ কায়দা */}
@@ -1434,21 +1436,21 @@ export default function TahfizQuranApp({
               setReaderPageNum(1);
               setCurrentScreen("reader");
             }}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition cursor-pointer bg-transparent border-0 outline-none p-1.5 rounded-xl hover:bg-teal-950/40"
+            className="flex-1 min-w-0 flex flex-col items-center gap-0.5 sm:gap-1 text-slate-400 hover:text-slate-200 transition cursor-pointer bg-transparent border-0 outline-none py-1 px-1 rounded-xl hover:bg-teal-950/40"
           >
-            <BookOpen className="w-5 h-5" />
-            <span className="text-[10px] font-bold">তাহফিজ কায়দা</span>
+            <BookOpen className="w-5 h-5 shrink-0" />
+            <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap truncate max-w-full">তাহফিজ কায়দা</span>
           </button>
 
           {/* 3. সার্চ (ELEVATED GLOWING CYAN FLOATING BUTTON IN CENTER) */}
-          <div className="-mt-6">
+          <div className="-mt-6 shrink-0 px-1">
             <button
               type="button"
               onClick={() => setIsPageSearchOpen(true)}
-              className="w-13 h-13 rounded-full bg-gradient-to-tr from-[#00d2b8] to-[#14b8a6] text-slate-950 flex items-center justify-center shadow-[0_0_20px_rgba(0,210,184,0.7)] border-2 border-white/40 active:scale-95 transition cursor-pointer"
+              className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-[#00d2b8] to-[#14b8a6] text-slate-950 flex items-center justify-center shadow-[0_0_20px_rgba(0,210,184,0.7)] border-2 border-white/40 active:scale-95 transition cursor-pointer"
               title="পৃষ্ঠা ও সূরা সার্চ"
             >
-              <Search className="w-6 h-6 stroke-[2.5]" />
+              <Search className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.5]" />
             </button>
           </div>
 
@@ -1459,10 +1461,10 @@ export default function TahfizQuranApp({
               // Jump directly to Amma Para (Para 30, Page 1 of Para 30)
               handleJumpToParaAndPage(30, 1);
             }}
-            className="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-200 transition cursor-pointer bg-transparent border-0 outline-none p-1.5 rounded-xl hover:bg-teal-950/40"
+            className="flex-1 min-w-0 flex flex-col items-center gap-0.5 sm:gap-1 text-slate-400 hover:text-slate-200 transition cursor-pointer bg-transparent border-0 outline-none py-1 px-1 rounded-xl hover:bg-teal-950/40"
           >
-            <BookOpen className="w-5 h-5" />
-            <span className="text-[10px] font-bold">তাহফিজ আমপারা</span>
+            <BookOpen className="w-5 h-5 shrink-0" />
+            <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap truncate max-w-full">তাহফিজ আমপারা</span>
           </button>
 
           {/* 5. তাসবীহ */}
@@ -1472,12 +1474,12 @@ export default function TahfizQuranApp({
               setBottomNavTab("tasbih");
               setCurrentScreen("tasbih");
             }}
-            className={`flex flex-col items-center gap-1 transition cursor-pointer bg-transparent border-0 outline-none p-1.5 rounded-xl hover:bg-teal-950/40 ${
+            className={`flex-1 min-w-0 flex flex-col items-center gap-0.5 sm:gap-1 transition cursor-pointer bg-transparent border-0 outline-none py-1 px-1 rounded-xl hover:bg-teal-950/40 ${
               currentScreen === "tasbih" ? "text-[#00d2b8]" : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            <Compass className="w-5 h-5" />
-            <span className="text-[10px] font-bold">তাসবীহ</span>
+            <Compass className="w-5 h-5 shrink-0" />
+            <span className="text-[9px] sm:text-[10px] font-bold whitespace-nowrap">তাসবীহ</span>
           </button>
         </div>
 
