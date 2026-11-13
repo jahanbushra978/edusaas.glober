@@ -97,503 +97,1607 @@ const HARAKAT_PRONUNCIATION_MAP = {
   "ي": { fathah: "ইয়া", kasrah: "য়ি", dammah: "য়ু", sukoon: "আই" },
 };
 
-// ── 🎨 AUTHENTIC NASKH CALLIGRAPHY PATHS (BOARD-FILLING 70-80%, AUTHENTIC SHAPES) ──
-// Standard SVG Coordinate System: viewBox 0 0 900 560 | outerWall=78px | innerChannel=58px
+// ── 🎨 ALL 29 AUTHENTIC ARABIC LETTERS (PRECISELY CALIBRATED TO AMIRI CALLIGRAPHY) ──
+// ViewBox 0 0 900 560 | Center: (450, 280)
 const ARABIC_TRACING_PATHS = {
-  // 1. Alif (Tall vertical calligraphic stroke descending from top to bottom)
   "ا": {
-    path: "M 450 80 L 450 480",
-    arrow: "⬇️",
-    arrowText: "নিচে টানুন",
-    dots: [],
-    checkpoints: [
-      { x: 450, y: 80, label: "১", pct: 0.0, isStart: true },
-      { x: 450, y: 180, label: "২", pct: 0.25 },
-      { x: 450, y: 280, label: "৩", pct: 0.50 },
-      { x: 450, y: 380, label: "৪", pct: 0.75 },
-      { x: 450, y: 480, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "ar": "ا",
+    "nameBn": "আলিফ",
+    "scale": 1.15,
+    "fontSize": 350,
+    "y": 380,
+    "path": "M 449 145 L 449 375",
+    "arrow": "⬇️",
+    "arrowText": "ওপর থেকে সোজা নিচে নামুন",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 449,
+        "y": 145,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 449,
+        "y": 205,
+        "pct": 0.25,
+        "label": "২"
+      },
+      {
+        "x": 449,
+        "y": 265,
+        "pct": 0.5,
+        "label": "৩"
+      },
+      {
+        "x": 449,
+        "y": 320,
+        "pct": 0.75,
+        "label": "৪"
+      },
+      {
+        "x": 449,
+        "y": 375,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 2. Baa (Wide shallow symmetrical boat + 1 diamond dot below)
   "ب": {
-    path: "M 740 240 C 710 400, 580 440, 450 440 C 320 440, 190 400, 160 240",
-    arrow: "↙️",
-    arrowText: "ডান থেকে বাঁয়ে",
-    dots: [{ x: 450, y: 505, r: 20 }],
-    checkpoints: [
-      { x: 740, y: 240, label: "১", pct: 0.0, isStart: true },
-      { x: 660, y: 360, label: "২", pct: 0.20 },
-      { x: 550, y: 430, label: "৩", pct: 0.40 },
-      { x: 450, y: 440, label: "৪", pct: 0.55 },
-      { x: 350, y: 430, label: "৫", pct: 0.70 },
-      { x: 240, y: 360, label: "৬", pct: 0.85 },
-      { x: 160, y: 240, label: "শেষ", pct: 1.0, isEnd: true },
+    "ar": "ب",
+    "nameBn": "বা",
+    "scale": 1.25,
+    "fontSize": 340,
+    "y": 375,
+    "path": "M 575 260 C 565 340, 530 365, 450 365 C 370 365, 335 340, 325 260",
+    "arrow": "↙️",
+    "arrowText": "ডান থেকে বাঁয়ে টেনে নিচে ১টি নুকতা দিন",
+    "dots": [
+      {
+        "x": 450,
+        "y": 440,
+        "label": "নুকতা"
+      }
     ],
+    "checkpoints": [
+      {
+        "x": 575,
+        "y": 260,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 550,
+        "y": 345,
+        "pct": 0.22,
+        "label": "২"
+      },
+      {
+        "x": 450,
+        "y": 365,
+        "pct": 0.5,
+        "label": "৩"
+      },
+      {
+        "x": 350,
+        "y": 345,
+        "pct": 0.75,
+        "label": "৪"
+      },
+      {
+        "x": 325,
+        "y": 260,
+        "pct": 0.9,
+        "label": "৫"
+      },
+      {
+        "x": 450,
+        "y": 440,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 3. Taa (Same boat + 2 diamond dots above)
   "ت": {
-    path: "M 740 240 C 710 400, 580 440, 450 440 C 320 440, 190 400, 160 240",
-    arrow: "↙️",
-    arrowText: "ডান থেকে বাঁয়ে",
-    dots: [
-      { x: 415, y: 160, r: 18 },
-      { x: 485, y: 160, r: 18 },
+    "ar": "ت",
+    "nameBn": "তা",
+    "scale": 1.25,
+    "fontSize": 340,
+    "y": 375,
+    "path": "M 575 260 C 565 340, 530 365, 450 365 C 370 365, 335 340, 325 260",
+    "arrow": "↙️",
+    "arrowText": "ডান থেকে বাঁয়ে টেনে উপরে ২টি নুকতা দিন",
+    "dots": [
+      {
+        "x": 430,
+        "y": 215
+      },
+      {
+        "x": 470,
+        "y": 215
+      }
     ],
-    checkpoints: [
-      { x: 740, y: 240, label: "১", pct: 0.0, isStart: true },
-      { x: 660, y: 360, label: "২", pct: 0.20 },
-      { x: 550, y: 430, label: "৩", pct: 0.40 },
-      { x: 450, y: 440, label: "৪", pct: 0.55 },
-      { x: 350, y: 430, label: "৫", pct: 0.70 },
-      { x: 240, y: 360, label: "৬", pct: 0.85 },
-      { x: 160, y: 240, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "checkpoints": [
+      {
+        "x": 575,
+        "y": 260,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 550,
+        "y": 345,
+        "pct": 0.22,
+        "label": "২"
+      },
+      {
+        "x": 450,
+        "y": 365,
+        "pct": 0.5,
+        "label": "৩"
+      },
+      {
+        "x": 350,
+        "y": 345,
+        "pct": 0.75,
+        "label": "৪"
+      },
+      {
+        "x": 325,
+        "y": 260,
+        "pct": 0.88,
+        "label": "৫"
+      },
+      {
+        "x": 450,
+        "y": 215,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 4. Thaa (Same boat + 3 diamond dots in pyramid above)
   "ث": {
-    path: "M 740 240 C 710 400, 580 440, 450 440 C 320 440, 190 400, 160 240",
-    arrow: "↙️",
-    arrowText: "ডান থেকে বাঁয়ে",
-    dots: [
-      { x: 450, y: 120, r: 17 },
-      { x: 415, y: 175, r: 17 },
-      { x: 485, y: 175, r: 17 },
+    "ar": "ث",
+    "nameBn": "ছা",
+    "scale": 1.25,
+    "fontSize": 340,
+    "y": 375,
+    "path": "M 575 260 C 565 340, 530 365, 450 365 C 370 365, 335 340, 325 260",
+    "arrow": "↙️",
+    "arrowText": "ডান থেকে বাঁয়ে টেনে উপরে ৩টি নুকতা দিন",
+    "dots": [
+      {
+        "x": 450,
+        "y": 180
+      },
+      {
+        "x": 430,
+        "y": 215
+      },
+      {
+        "x": 470,
+        "y": 215
+      }
     ],
-    checkpoints: [
-      { x: 740, y: 240, label: "১", pct: 0.0, isStart: true },
-      { x: 660, y: 360, label: "২", pct: 0.20 },
-      { x: 550, y: 430, label: "৩", pct: 0.40 },
-      { x: 450, y: 440, label: "৪", pct: 0.55 },
-      { x: 350, y: 430, label: "৫", pct: 0.70 },
-      { x: 240, y: 360, label: "৬", pct: 0.85 },
-      { x: 160, y: 240, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "checkpoints": [
+      {
+        "x": 575,
+        "y": 260,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 550,
+        "y": 345,
+        "pct": 0.22,
+        "label": "২"
+      },
+      {
+        "x": 450,
+        "y": 365,
+        "pct": 0.5,
+        "label": "৩"
+      },
+      {
+        "x": 350,
+        "y": 345,
+        "pct": 0.75,
+        "label": "৪"
+      },
+      {
+        "x": 325,
+        "y": 260,
+        "pct": 0.88,
+        "label": "৫"
+      },
+      {
+        "x": 450,
+        "y": 195,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 5. Jeem (Authentic Naskh eyebrow crown + grand crescent belly + 1 diamond dot inside)
   "ج": {
-    path: "M 360 170 C 440 150, 540 150, 600 160 C 660 210, 670 330, 600 410 C 530 480, 360 480, 220 390",
-    arrow: "➡️",
-    arrowText: "ডানে গিয়ে নিচে গোল",
-    dots: [{ x: 440, y: 330, r: 22 }],
-    checkpoints: [
-      { x: 360, y: 170, label: "১", pct: 0.0, isStart: true },
-      { x: 480, y: 155, label: "২", pct: 0.18 },
-      { x: 600, y: 160, label: "৩", pct: 0.35 },
-      { x: 645, y: 280, label: "৪", pct: 0.55 },
-      { x: 570, y: 420, label: "৫", pct: 0.72 },
-      { x: 430, y: 475, label: "৬", pct: 0.88 },
-      { x: 220, y: 390, label: "শেষ", pct: 1.0, isEnd: true },
+    "ar": "ج",
+    "nameBn": "জীম",
+    "scale": 1.1,
+    "fontSize": 350,
+    "y": 370,
+    "path": "M 390 295 C 430 280, 510 275, 580 280 C 530 310, 460 325, 420 340 C 375 375, 370 440, 420 500 C 470 540, 540 535, 580 505",
+    "arrow": "➡️",
+    "arrowText": "ভ্রু ডানে গিয়ে পেটের ভেতর গোল ঘুরে আসুন",
+    "dots": [
+      {
+        "x": 475,
+        "y": 430,
+        "label": "নুকতা"
+      }
     ],
+    "checkpoints": [
+      {
+        "x": 390,
+        "y": 295,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 485,
+        "y": 280,
+        "pct": 0.18,
+        "label": "২"
+      },
+      {
+        "x": 580,
+        "y": 280,
+        "pct": 0.35,
+        "label": "৩"
+      },
+      {
+        "x": 430,
+        "y": 335,
+        "pct": 0.52,
+        "label": "৪"
+      },
+      {
+        "x": 375,
+        "y": 430,
+        "pct": 0.7,
+        "label": "৫"
+      },
+      {
+        "x": 460,
+        "y": 520,
+        "pct": 0.88,
+        "label": "৬"
+      },
+      {
+        "x": 580,
+        "y": 505,
+        "pct": 0.95,
+        "label": "৭"
+      },
+      {
+        "x": 475,
+        "y": 430,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 6. Haa (Same authentic body as Jeem, no dot)
   "ح": {
-    path: "M 360 170 C 440 150, 540 150, 600 160 C 660 210, 670 330, 600 410 C 530 480, 360 480, 220 390",
-    arrow: "➡️",
-    arrowText: "ডানে গিয়ে নিচে গোল",
-    dots: [],
-    checkpoints: [
-      { x: 360, y: 170, label: "১", pct: 0.0, isStart: true },
-      { x: 480, y: 155, label: "২", pct: 0.18 },
-      { x: 600, y: 160, label: "৩", pct: 0.35 },
-      { x: 645, y: 280, label: "৪", pct: 0.55 },
-      { x: 570, y: 420, label: "৫", pct: 0.72 },
-      { x: 430, y: 475, label: "৬", pct: 0.88 },
-      { x: 220, y: 390, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "ar": "ح",
+    "nameBn": "হা",
+    "scale": 1.1,
+    "fontSize": 350,
+    "y": 370,
+    "path": "M 390 295 C 430 280, 510 275, 580 280 C 530 310, 460 325, 420 340 C 375 375, 370 440, 420 500 C 470 540, 540 535, 580 505",
+    "arrow": "➡️",
+    "arrowText": "ভ্রু ডানে গিয়ে পেটের ভেতর গোল ঘুরে আসুন",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 390,
+        "y": 295,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 485,
+        "y": 280,
+        "pct": 0.18,
+        "label": "২"
+      },
+      {
+        "x": 580,
+        "y": 280,
+        "pct": 0.35,
+        "label": "৩"
+      },
+      {
+        "x": 430,
+        "y": 335,
+        "pct": 0.52,
+        "label": "৪"
+      },
+      {
+        "x": 375,
+        "y": 430,
+        "pct": 0.7,
+        "label": "৫"
+      },
+      {
+        "x": 460,
+        "y": 520,
+        "pct": 0.88,
+        "label": "৬"
+      },
+      {
+        "x": 580,
+        "y": 505,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 7. Kha (Same authentic body as Jeem + 1 diamond dot above eyebrow)
   "خ": {
-    path: "M 360 170 C 440 150, 540 150, 600 160 C 660 210, 670 330, 600 410 C 530 480, 360 480, 220 390",
-    arrow: "➡️",
-    arrowText: "ডানে গিয়ে নিচে গোল",
-    dots: [{ x: 500, y: 75, r: 22 }],
-    checkpoints: [
-      { x: 360, y: 170, label: "১", pct: 0.0, isStart: true },
-      { x: 480, y: 155, label: "২", pct: 0.18 },
-      { x: 600, y: 160, label: "৩", pct: 0.35 },
-      { x: 645, y: 280, label: "৪", pct: 0.55 },
-      { x: 570, y: 420, label: "৫", pct: 0.72 },
-      { x: 430, y: 475, label: "৬", pct: 0.88 },
-      { x: 220, y: 390, label: "শেষ", pct: 1.0, isEnd: true },
+    "ar": "خ",
+    "nameBn": "খা",
+    "scale": 1.1,
+    "fontSize": 350,
+    "y": 370,
+    "path": "M 390 295 C 430 280, 510 275, 580 280 C 530 310, 460 325, 420 340 C 375 375, 370 440, 420 500 C 470 540, 540 535, 580 505",
+    "arrow": "➡️",
+    "arrowText": "ভ্রু ডানে গিয়ে পেটের ভেতর ঘুরে মাথায় নুকতা দিন",
+    "dots": [
+      {
+        "x": 490,
+        "y": 220,
+        "label": "নুকতা"
+      }
     ],
+    "checkpoints": [
+      {
+        "x": 390,
+        "y": 295,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 485,
+        "y": 280,
+        "pct": 0.18,
+        "label": "২"
+      },
+      {
+        "x": 580,
+        "y": 280,
+        "pct": 0.35,
+        "label": "৩"
+      },
+      {
+        "x": 430,
+        "y": 335,
+        "pct": 0.52,
+        "label": "৪"
+      },
+      {
+        "x": 375,
+        "y": 430,
+        "pct": 0.7,
+        "label": "৫"
+      },
+      {
+        "x": 460,
+        "y": 520,
+        "pct": 0.88,
+        "label": "৬"
+      },
+      {
+        "x": 580,
+        "y": 505,
+        "pct": 0.95,
+        "label": "৭"
+      },
+      {
+        "x": 490,
+        "y": 220,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 8. Dal (Large Naskh hook descending from top-right to flat baseline)
   "د": {
-    path: "M 620 130 C 590 230, 560 350, 490 420 C 440 435, 330 435, 230 405",
-    arrow: "↙️",
-    arrowText: "নিচে নেমে বাঁয়ে",
-    dots: [],
-    checkpoints: [
-      { x: 620, y: 130, label: "১", pct: 0.0, isStart: true },
-      { x: 580, y: 230, label: "২", pct: 0.22 },
-      { x: 530, y: 340, label: "৩", pct: 0.45 },
-      { x: 460, y: 425, label: "৪", pct: 0.68 },
-      { x: 340, y: 430, label: "৫", pct: 0.85 },
-      { x: 230, y: 405, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "ar": "د",
+    "nameBn": "দাল",
+    "scale": 1.45,
+    "fontSize": 340,
+    "y": 375,
+    "path": "M 495 255 C 480 300, 465 340, 445 365 C 430 368, 415 368, 405 365",
+    "arrow": "↙️",
+    "arrowText": "ওপর থেকে কোণায় নেমে বাঁয়ে সোজা যান",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 495,
+        "y": 255,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 475,
+        "y": 315,
+        "pct": 0.35,
+        "label": "২"
+      },
+      {
+        "x": 445,
+        "y": 365,
+        "pct": 0.7,
+        "label": "৩"
+      },
+      {
+        "x": 405,
+        "y": 365,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 9. Dhal (Same large Dal + 1 diamond dot above the top tip)
   "ذ": {
-    path: "M 620 130 C 590 230, 560 350, 490 420 C 440 435, 330 435, 230 405",
-    arrow: "↙️",
-    arrowText: "নিচে নেমে বাঁয়ে",
-    dots: [{ x: 620, y: 55, r: 22 }],
-    checkpoints: [
-      { x: 620, y: 130, label: "১", pct: 0.0, isStart: true },
-      { x: 580, y: 230, label: "২", pct: 0.22 },
-      { x: 530, y: 340, label: "৩", pct: 0.45 },
-      { x: 460, y: 425, label: "৪", pct: 0.68 },
-      { x: 340, y: 430, label: "৫", pct: 0.85 },
-      { x: 230, y: 405, label: "শেষ", pct: 1.0, isEnd: true },
+    "ar": "ذ",
+    "nameBn": "যাল",
+    "scale": 1.45,
+    "fontSize": 340,
+    "y": 375,
+    "path": "M 495 255 C 480 300, 465 340, 445 365 C 430 368, 415 368, 405 365",
+    "arrow": "↙️",
+    "arrowText": "ওপর থেকে কোণায় নেমে বাঁয়ে গিয়ে ১টি নুকতা দিন",
+    "dots": [
+      {
+        "x": 450,
+        "y": 185,
+        "label": "নুকতা"
+      }
     ],
+    "checkpoints": [
+      {
+        "x": 495,
+        "y": 255,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 475,
+        "y": 315,
+        "pct": 0.35,
+        "label": "২"
+      },
+      {
+        "x": 445,
+        "y": 365,
+        "pct": 0.7,
+        "label": "৩"
+      },
+      {
+        "x": 405,
+        "y": 365,
+        "pct": 0.9,
+        "label": "৪"
+      },
+      {
+        "x": 450,
+        "y": 185,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 10. Ra (Sweeping diagonal crescent from top-right to lower-left)
   "ر": {
-    path: "M 590 140 C 620 230, 590 340, 520 420 C 450 490, 340 500, 240 490",
-    arrow: "↙️",
-    arrowText: "বাঁকা হয়ে নিচে",
-    dots: [],
-    checkpoints: [
-      { x: 590, y: 140, label: "১", pct: 0.0, isStart: true },
-      { x: 605, y: 240, label: "২", pct: 0.25 },
-      { x: 560, y: 350, label: "৩", pct: 0.50 },
-      { x: 470, y: 450, label: "৪", pct: 0.75 },
-      { x: 240, y: 490, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "ar": "ر",
+    "nameBn": "রা",
+    "scale": 1.35,
+    "fontSize": 340,
+    "y": 375,
+    "path": "M 490 285 C 480 340, 455 410, 420 445 C 390 460, 365 460, 355 455",
+    "arrow": "↙️",
+    "arrowText": "ওপর থেকে সুন্দর করে বাঁকা হয়ে নিচে নামুন",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 490,
+        "y": 285,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 475,
+        "y": 350,
+        "pct": 0.33,
+        "label": "২"
+      },
+      {
+        "x": 435,
+        "y": 435,
+        "pct": 0.7,
+        "label": "৩"
+      },
+      {
+        "x": 355,
+        "y": 455,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 11. Zay (Same crescent as Ra + 1 diamond dot above)
   "ز": {
-    path: "M 590 140 C 620 230, 590 340, 520 420 C 450 490, 340 500, 240 490",
-    arrow: "↙️",
-    arrowText: "বাঁকা হয়ে নিচে",
-    dots: [{ x: 590, y: 65, r: 22 }],
-    checkpoints: [
-      { x: 590, y: 140, label: "১", pct: 0.0, isStart: true },
-      { x: 605, y: 240, label: "২", pct: 0.25 },
-      { x: 560, y: 350, label: "৩", pct: 0.50 },
-      { x: 470, y: 450, label: "৪", pct: 0.75 },
-      { x: 240, y: 490, label: "শেষ", pct: 1.0, isEnd: true },
+    "ar": "ز",
+    "nameBn": "যা",
+    "scale": 1.35,
+    "fontSize": 340,
+    "y": 375,
+    "path": "M 490 285 C 480 340, 455 410, 420 445 C 390 460, 365 460, 355 455",
+    "arrow": "↙️",
+    "arrowText": "বাঁকা হয়ে নিচে নেমে মাথায় ১টি নুকতা দিন",
+    "dots": [
+      {
+        "x": 470,
+        "y": 205,
+        "label": "নুকতা"
+      }
     ],
+    "checkpoints": [
+      {
+        "x": 490,
+        "y": 285,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 475,
+        "y": 350,
+        "pct": 0.33,
+        "label": "২"
+      },
+      {
+        "x": 435,
+        "y": 435,
+        "pct": 0.7,
+        "label": "৩"
+      },
+      {
+        "x": 355,
+        "y": 455,
+        "pct": 0.9,
+        "label": "৪"
+      },
+      {
+        "x": 470,
+        "y": 205,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 12. Seen (Three teeth + deep crescent bowl)
   "س": {
-    path: "M 720 240 C 700 300, 660 300, 640 240 C 620 300, 580 300, 560 240 C 530 380, 470 470, 360 470 C 260 470, 200 410, 210 330",
-    arrow: "↙️",
-    arrowText: "তিন দাঁত → বাটি",
-    dots: [],
-    checkpoints: [
-      { x: 720, y: 240, label: "১", pct: 0.0, isStart: true },
-      { x: 640, y: 240, label: "২", pct: 0.22 },
-      { x: 560, y: 240, label: "৩", pct: 0.42 },
-      { x: 500, y: 400, label: "৪", pct: 0.62 },
-      { x: 370, y: 470, label: "৫", pct: 0.82 },
-      { x: 210, y: 330, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "ar": "س",
+    "nameBn": "সীন",
+    "scale": 1.2,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 590 260 C 585 305, 565 310, 555 265 C 545 305, 520 310, 500 270 C 470 360, 430 450, 375 450 C 335 450, 310 400, 310 345",
+    "arrow": "↙️",
+    "arrowText": "তিন দাঁত এঁকে নিচে গভীর পেয়ালা বানান",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 590,
+        "y": 260,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 555,
+        "y": 265,
+        "pct": 0.22,
+        "label": "২"
+      },
+      {
+        "x": 500,
+        "y": 270,
+        "pct": 0.4,
+        "label": "৩"
+      },
+      {
+        "x": 445,
+        "y": 390,
+        "pct": 0.65,
+        "label": "৪"
+      },
+      {
+        "x": 375,
+        "y": 450,
+        "pct": 0.85,
+        "label": "৫"
+      },
+      {
+        "x": 310,
+        "y": 345,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 13. Sheen (Same as Seen + 3 diamond dots in pyramid above teeth)
   "ش": {
-    path: "M 720 240 C 700 300, 660 300, 640 240 C 620 300, 580 300, 560 240 C 530 380, 470 470, 360 470 C 260 470, 200 410, 210 330",
-    arrow: "↙️",
-    arrowText: "তিন দাঁত → বাটি",
-    dots: [
-      { x: 640, y: 130, r: 17 },
-      { x: 605, y: 180, r: 17 },
-      { x: 675, y: 180, r: 17 },
+    "ar": "ش",
+    "nameBn": "শীন",
+    "scale": 1.2,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 590 260 C 585 305, 565 310, 555 265 C 545 305, 520 310, 500 270 C 470 360, 430 450, 375 450 C 335 450, 310 400, 310 345",
+    "arrow": "↙️",
+    "arrowText": "তিন দাঁত ও পেয়ালা এঁকে উপরে ৩টি নুকতা দিন",
+    "dots": [
+      {
+        "x": 545,
+        "y": 160
+      },
+      {
+        "x": 525,
+        "y": 195
+      },
+      {
+        "x": 565,
+        "y": 195
+      }
     ],
-    checkpoints: [
-      { x: 720, y: 240, label: "১", pct: 0.0, isStart: true },
-      { x: 640, y: 240, label: "২", pct: 0.22 },
-      { x: 560, y: 240, label: "৩", pct: 0.42 },
-      { x: 500, y: 400, label: "৪", pct: 0.62 },
-      { x: 370, y: 470, label: "৫", pct: 0.82 },
-      { x: 210, y: 330, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "checkpoints": [
+      {
+        "x": 590,
+        "y": 260,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 555,
+        "y": 265,
+        "pct": 0.22,
+        "label": "২"
+      },
+      {
+        "x": 500,
+        "y": 270,
+        "pct": 0.4,
+        "label": "৩"
+      },
+      {
+        "x": 445,
+        "y": 390,
+        "pct": 0.65,
+        "label": "৪"
+      },
+      {
+        "x": 375,
+        "y": 450,
+        "pct": 0.85,
+        "label": "৫"
+      },
+      {
+        "x": 310,
+        "y": 345,
+        "pct": 0.92,
+        "label": "৬"
+      },
+      {
+        "x": 545,
+        "y": 180,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 14. Saad (Loop head on right + small tooth + grand crescent bowl)
   "ص": {
-    path: "M 520 330 C 530 220, 660 220, 680 330 L 520 330 C 490 410, 420 470, 330 470 C 230 470, 180 400, 200 320",
-    arrow: "↗️",
-    arrowText: "গোল মাথা → বাটি",
-    dots: [],
-    checkpoints: [
-      { x: 520, y: 330, label: "১", pct: 0.0, isStart: true },
-      { x: 600, y: 220, label: "২", pct: 0.22 },
-      { x: 680, y: 330, label: "৩", pct: 0.42 },
-      { x: 520, y: 330, label: "৪", pct: 0.55 },
-      { x: 430, y: 440, label: "৫", pct: 0.75 },
-      { x: 330, y: 470, label: "৬", pct: 0.88 },
-      { x: 200, y: 320, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "ar": "ص",
+    "nameBn": "ছোয়াদ",
+    "scale": 1.1,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 500 330 C 540 280, 600 280, 625 320 C 600 335, 540 335, 490 290 C 460 380, 420 455, 360 455 C 310 455, 275 400, 275 345",
+    "arrow": "↗️",
+    "arrowText": "ডিম্বাকৃতি লুপ এঁকে দাঁত ও পেয়ালা বানান",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 500,
+        "y": 330,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 570,
+        "y": 285,
+        "pct": 0.2,
+        "label": "২"
+      },
+      {
+        "x": 625,
+        "y": 320,
+        "pct": 0.35,
+        "label": "৩"
+      },
+      {
+        "x": 490,
+        "y": 290,
+        "pct": 0.52,
+        "label": "৪"
+      },
+      {
+        "x": 430,
+        "y": 400,
+        "pct": 0.72,
+        "label": "৫"
+      },
+      {
+        "x": 360,
+        "y": 455,
+        "pct": 0.88,
+        "label": "৬"
+      },
+      {
+        "x": 275,
+        "y": 345,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 15. Daad (Same as Saad + 1 diamond dot above loop)
   "ض": {
-    path: "M 520 330 C 530 220, 660 220, 680 330 L 520 330 C 490 410, 420 470, 330 470 C 230 470, 180 400, 200 320",
-    arrow: "↗️",
-    arrowText: "গোল মাথা → বাটি",
-    dots: [{ x: 600, y: 140, r: 22 }],
-    checkpoints: [
-      { x: 520, y: 330, label: "১", pct: 0.0, isStart: true },
-      { x: 600, y: 220, label: "২", pct: 0.22 },
-      { x: 680, y: 330, label: "৩", pct: 0.42 },
-      { x: 520, y: 330, label: "৪", pct: 0.55 },
-      { x: 430, y: 440, label: "৫", pct: 0.75 },
-      { x: 330, y: 470, label: "৬", pct: 0.88 },
-      { x: 200, y: 320, label: "শেষ", pct: 1.0, isEnd: true },
+    "ar": "ض",
+    "nameBn": "দোয়াদ",
+    "scale": 1.1,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 500 330 C 540 280, 600 280, 625 320 C 600 335, 540 335, 490 290 C 460 380, 420 455, 360 455 C 310 455, 275 400, 275 345",
+    "arrow": "↗️",
+    "arrowText": "লুপ ও পেয়ালা এঁকে দাঁতের মাথায় ১টি নুকতা দিন",
+    "dots": [
+      {
+        "x": 510,
+        "y": 205,
+        "label": "নুকতা"
+      }
     ],
+    "checkpoints": [
+      {
+        "x": 500,
+        "y": 330,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 570,
+        "y": 285,
+        "pct": 0.2,
+        "label": "২"
+      },
+      {
+        "x": 625,
+        "y": 320,
+        "pct": 0.35,
+        "label": "৩"
+      },
+      {
+        "x": 490,
+        "y": 290,
+        "pct": 0.52,
+        "label": "৪"
+      },
+      {
+        "x": 430,
+        "y": 400,
+        "pct": 0.72,
+        "label": "৫"
+      },
+      {
+        "x": 360,
+        "y": 455,
+        "pct": 0.88,
+        "label": "৬"
+      },
+      {
+        "x": 275,
+        "y": 345,
+        "pct": 0.94,
+        "label": "৭"
+      },
+      {
+        "x": 510,
+        "y": 205,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 16. Taa (Tall vertical stem + oval loop)
   "ط": {
-    path: "M 380 90 L 380 380 C 440 435, 570 435, 660 380 C 680 330, 660 280, 580 280 C 480 280, 400 340, 270 380",
-    arrow: "⬇️",
-    arrowText: "সোজা নেমে গোল বেস",
-    dots: [],
-    checkpoints: [
-      { x: 380, y: 90, label: "১", pct: 0.0, isStart: true },
-      { x: 380, y: 230, label: "২", pct: 0.22 },
-      { x: 380, y: 380, label: "৩", pct: 0.45 },
-      { x: 520, y: 430, label: "৪", pct: 0.65 },
-      { x: 660, y: 350, label: "৫", pct: 0.80 },
-      { x: 540, y: 280, label: "৬", pct: 0.90 },
-      { x: 270, y: 380, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "ar": "ط",
+    "nameBn": "তোয়া",
+    "scale": 1.2,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 450 355 C 490 315, 540 315, 555 350 C 530 365, 460 365, 350 365 M 430 135 L 430 365",
+    "arrow": "⬇️",
+    "arrowText": "লুপ এঁকে ওপর থেকে সোজা লাঠি নামান",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 430,
+        "y": 135,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 430,
+        "y": 250,
+        "pct": 0.3,
+        "label": "২"
+      },
+      {
+        "x": 430,
+        "y": 365,
+        "pct": 0.55,
+        "label": "৩"
+      },
+      {
+        "x": 495,
+        "y": 325,
+        "pct": 0.75,
+        "label": "৪"
+      },
+      {
+        "x": 555,
+        "y": 350,
+        "pct": 0.88,
+        "label": "৫"
+      },
+      {
+        "x": 350,
+        "y": 365,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 17. Dhaa (Same as Taa + 1 diamond dot above loop)
   "ظ": {
-    path: "M 380 90 L 380 380 C 440 435, 570 435, 660 380 C 680 330, 660 280, 580 280 C 480 280, 400 340, 270 380",
-    arrow: "⬇️",
-    arrowText: "সোজা নেমে গোল বেস",
-    dots: [{ x: 520, y: 190, r: 22 }],
-    checkpoints: [
-      { x: 380, y: 90, label: "১", pct: 0.0, isStart: true },
-      { x: 380, y: 230, label: "২", pct: 0.22 },
-      { x: 380, y: 380, label: "৩", pct: 0.45 },
-      { x: 520, y: 430, label: "৪", pct: 0.65 },
-      { x: 660, y: 350, label: "৫", pct: 0.80 },
-      { x: 540, y: 280, label: "৬", pct: 0.90 },
-      { x: 270, y: 380, label: "শেষ", pct: 1.0, isEnd: true },
+    "ar": "ظ",
+    "nameBn": "যোয়া",
+    "scale": 1.2,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 450 355 C 490 315, 540 315, 555 350 C 530 365, 460 365, 350 365 M 430 135 L 430 365",
+    "arrow": "⬇️",
+    "arrowText": "তোয়া এঁকে লাঠির ডানে ১টি নুকতা দিন",
+    "dots": [
+      {
+        "x": 470,
+        "y": 230,
+        "label": "নুকতা"
+      }
     ],
+    "checkpoints": [
+      {
+        "x": 430,
+        "y": 135,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 430,
+        "y": 250,
+        "pct": 0.3,
+        "label": "২"
+      },
+      {
+        "x": 430,
+        "y": 365,
+        "pct": 0.55,
+        "label": "৩"
+      },
+      {
+        "x": 495,
+        "y": 325,
+        "pct": 0.75,
+        "label": "৪"
+      },
+      {
+        "x": 555,
+        "y": 350,
+        "pct": 0.88,
+        "label": "৫"
+      },
+      {
+        "x": 350,
+        "y": 365,
+        "pct": 0.94,
+        "label": "৬"
+      },
+      {
+        "x": 470,
+        "y": 230,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 18. Ayn (Small eyebrow head + grand crescent belly)
   "ع": {
-    path: "M 560 190 C 490 140, 410 180, 430 250 C 530 280, 630 350, 580 430 C 520 490, 360 490, 210 400",
-    arrow: "↖️",
-    arrowText: "ছোট মাথা → বড় পেট",
-    dots: [],
-    checkpoints: [
-      { x: 560, y: 190, label: "১", pct: 0.0, isStart: true },
-      { x: 450, y: 160, label: "২", pct: 0.18 },
-      { x: 430, y: 250, label: "৩", pct: 0.35 },
-      { x: 580, y: 330, label: "৪", pct: 0.55 },
-      { x: 560, y: 440, label: "৫", pct: 0.75 },
-      { x: 410, y: 490, label: "৬", pct: 0.90 },
-      { x: 210, y: 400, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "ar": "ع",
+    "nameBn": "আইন",
+    "scale": 1.1,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 535 240 C 490 225, 465 245, 490 280 C 445 325, 390 390, 420 480 C 460 535, 540 530, 590 510",
+    "arrow": "↙️",
+    "arrowText": "ছোট মাথা এঁকে নিচে বড় পেট ঘুরিয়ে আনুন",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 535,
+        "y": 240,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 480,
+        "y": 230,
+        "pct": 0.2,
+        "label": "২"
+      },
+      {
+        "x": 495,
+        "y": 280,
+        "pct": 0.38,
+        "label": "৩"
+      },
+      {
+        "x": 410,
+        "y": 390,
+        "pct": 0.6,
+        "label": "৪"
+      },
+      {
+        "x": 440,
+        "y": 505,
+        "pct": 0.82,
+        "label": "৫"
+      },
+      {
+        "x": 590,
+        "y": 510,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 19. Ghayn (Same as Ayn + 1 diamond dot above head)
   "غ": {
-    path: "M 560 190 C 490 140, 410 180, 430 250 C 530 280, 630 350, 580 430 C 520 490, 360 490, 210 400",
-    arrow: "↖️",
-    arrowText: "ছোট মাথা → বড় পেট",
-    dots: [{ x: 490, y: 85, r: 22 }],
-    checkpoints: [
-      { x: 560, y: 190, label: "১", pct: 0.0, isStart: true },
-      { x: 450, y: 160, label: "২", pct: 0.18 },
-      { x: 430, y: 250, label: "৩", pct: 0.35 },
-      { x: 580, y: 330, label: "৪", pct: 0.55 },
-      { x: 560, y: 440, label: "৫", pct: 0.75 },
-      { x: 410, y: 490, label: "৬", pct: 0.90 },
-      { x: 210, y: 400, label: "শেষ", pct: 1.0, isEnd: true },
+    "ar": "غ",
+    "nameBn": "গাইন",
+    "scale": 1.1,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 535 240 C 490 225, 465 245, 490 280 C 445 325, 390 390, 420 480 C 460 535, 540 530, 590 510",
+    "arrow": "↙️",
+    "arrowText": "আইন এঁকে মাথায় ১টি নুকতা দিন",
+    "dots": [
+      {
+        "x": 490,
+        "y": 175,
+        "label": "নুকতা"
+      }
     ],
+    "checkpoints": [
+      {
+        "x": 535,
+        "y": 240,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 480,
+        "y": 230,
+        "pct": 0.2,
+        "label": "২"
+      },
+      {
+        "x": 495,
+        "y": 280,
+        "pct": 0.38,
+        "label": "৩"
+      },
+      {
+        "x": 410,
+        "y": 390,
+        "pct": 0.6,
+        "label": "৪"
+      },
+      {
+        "x": 440,
+        "y": 505,
+        "pct": 0.82,
+        "label": "৫"
+      },
+      {
+        "x": 590,
+        "y": 510,
+        "pct": 0.94,
+        "label": "৬"
+      },
+      {
+        "x": 490,
+        "y": 175,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 20. Fa (Round loop head + wide boat on baseline + 1 diamond dot above)
   "ف": {
-    path: "M 580 290 C 620 210, 710 240, 690 320 L 630 330 C 580 420, 460 440, 340 440 C 240 440, 180 390, 190 300",
-    arrow: "↗️",
-    arrowText: "গোল মাথা → বাটি",
-    dots: [{ x: 650, y: 150, r: 22 }],
-    checkpoints: [
-      { x: 580, y: 290, label: "১", pct: 0.0, isStart: true },
-      { x: 650, y: 220, label: "২", pct: 0.20 },
-      { x: 690, y: 320, label: "৩", pct: 0.38 },
-      { x: 600, y: 350, label: "৪", pct: 0.50 },
-      { x: 480, y: 435, label: "৫", pct: 0.70 },
-      { x: 330, y: 440, label: "৬", pct: 0.85 },
-      { x: 190, y: 300, label: "শেষ", pct: 1.0, isEnd: true },
+    "ar": "ف",
+    "nameBn": "ফা",
+    "scale": 1.2,
+    "fontSize": 340,
+    "y": 375,
+    "path": "M 550 250 C 575 220, 540 205, 520 235 C 515 285, 485 365, 420 365 C 365 365, 325 340, 315 270",
+    "arrow": "🔄",
+    "arrowText": "গোল মাথা ঘুরিয়ে বাঁয়ে বোট বানান",
+    "dots": [
+      {
+        "x": 545,
+        "y": 160,
+        "label": "নুকতা"
+      }
     ],
+    "checkpoints": [
+      {
+        "x": 550,
+        "y": 250,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 530,
+        "y": 215,
+        "pct": 0.22,
+        "label": "২"
+      },
+      {
+        "x": 515,
+        "y": 285,
+        "pct": 0.4,
+        "label": "৩"
+      },
+      {
+        "x": 420,
+        "y": 365,
+        "pct": 0.68,
+        "label": "৪"
+      },
+      {
+        "x": 315,
+        "y": 270,
+        "pct": 0.9,
+        "label": "৫"
+      },
+      {
+        "x": 545,
+        "y": 160,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 21. Qaaf (Round loop head + deep crescent bowl + 2 diamond dots above)
   "ق": {
-    path: "M 550 280 C 590 200, 680 230, 660 300 L 610 310 C 580 410, 490 480, 360 480 C 240 480, 180 410, 200 320",
-    arrow: "↗️",
-    arrowText: "গোল মাথা → গভীর বাটি",
-    dots: [
-      { x: 590, y: 130, r: 18 },
-      { x: 660, y: 130, r: 18 },
+    "ar": "ق",
+    "nameBn": "ক্বাফ",
+    "scale": 1.2,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 495 240 C 525 215, 490 200, 470 230 C 460 300, 425 435, 375 435 C 335 435, 355 355, 365 330",
+    "arrow": "🔄",
+    "arrowText": "গোল মাথা ঘুরিয়ে গভীর কাপ এঁকে ২টি নুকতা দিন",
+    "dots": [
+      {
+        "x": 470,
+        "y": 180
+      },
+      {
+        "x": 510,
+        "y": 180
+      }
     ],
-    checkpoints: [
-      { x: 550, y: 280, label: "১", pct: 0.0, isStart: true },
-      { x: 630, y: 210, label: "২", pct: 0.20 },
-      { x: 660, y: 300, label: "৩", pct: 0.38 },
-      { x: 580, y: 330, label: "৪", pct: 0.50 },
-      { x: 480, y: 460, label: "৫", pct: 0.70 },
-      { x: 340, y: 480, label: "৬", pct: 0.86 },
-      { x: 200, y: 320, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "checkpoints": [
+      {
+        "x": 495,
+        "y": 240,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 480,
+        "y": 210,
+        "pct": 0.22,
+        "label": "২"
+      },
+      {
+        "x": 460,
+        "y": 290,
+        "pct": 0.42,
+        "label": "৩"
+      },
+      {
+        "x": 410,
+        "y": 425,
+        "pct": 0.7,
+        "label": "৪"
+      },
+      {
+        "x": 365,
+        "y": 330,
+        "pct": 0.9,
+        "label": "৫"
+      },
+      {
+        "x": 490,
+        "y": 180,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 22. Kaaf (Tall vertical mast on right + wide flat boat sweeping left + inner diamond mark)
   "ك": {
-    path: "M 640 100 L 640 380 C 580 440, 440 450, 320 420 C 230 380, 190 320, 210 240",
-    arrow: "⬇️",
-    arrowText: "নিচে নেমে বাঁয়ে বাটি",
-    dots: [{ x: 490, y: 280, r: 18 }],
-    checkpoints: [
-      { x: 640, y: 100, label: "১", pct: 0.0, isStart: true },
-      { x: 640, y: 250, label: "২", pct: 0.28 },
-      { x: 640, y: 380, label: "৩", pct: 0.52 },
-      { x: 480, y: 445, label: "৪", pct: 0.72 },
-      { x: 310, y: 410, label: "৫", pct: 0.88 },
-      { x: 210, y: 240, label: "শেষ", pct: 1.0, isEnd: true },
+    "ar": "ك",
+    "nameBn": "কাফ",
+    "scale": 1.25,
+    "fontSize": 340,
+    "y": 375,
+    "path": "M 515 115 L 515 315 C 500 365, 450 365, 365 365",
+    "arrow": "⬇️",
+    "arrowText": "ওপর থেকে নেমে বাঁয়ে ঘুরে যান",
+    "dots": [
+      {
+        "x": 445,
+        "y": 260,
+        "label": "চিহ্ন"
+      }
     ],
+    "checkpoints": [
+      {
+        "x": 515,
+        "y": 115,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 515,
+        "y": 220,
+        "pct": 0.3,
+        "label": "২"
+      },
+      {
+        "x": 515,
+        "y": 320,
+        "pct": 0.6,
+        "label": "৩"
+      },
+      {
+        "x": 440,
+        "y": 365,
+        "pct": 0.85,
+        "label": "৪"
+      },
+      {
+        "x": 365,
+        "y": 365,
+        "pct": 0.94,
+        "label": "৫"
+      },
+      {
+        "x": 445,
+        "y": 260,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "চিহ্ন"
+      }
+    ]
   },
-
-  // 23. Laam (Tall vertical mast plunging straight down into deep crescent bowl)
   "ل": {
-    path: "M 580 90 L 580 340 C 560 440, 470 490, 360 490 C 250 490, 190 420, 220 340",
-    arrow: "⬇️",
-    arrowText: "সোজা নেমে নিচে গোল",
-    dots: [],
-    checkpoints: [
-      { x: 580, y: 90, label: "১", pct: 0.0, isStart: true },
-      { x: 580, y: 220, label: "২", pct: 0.25 },
-      { x: 580, y: 340, label: "৩", pct: 0.50 },
-      { x: 500, y: 460, label: "৪", pct: 0.72 },
-      { x: 360, y: 490, label: "৫", pct: 0.88 },
-      { x: 220, y: 340, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "ar": "ل",
+    "nameBn": "লাম",
+    "scale": 1.25,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 505 125 L 505 310 C 505 385, 440 405, 395 395 C 375 375, 375 340, 380 325",
+    "arrow": "⬇️",
+    "arrowText": "ওপর থেকে সোজা নেমে নিচে বক্র কাপ বানান",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 505,
+        "y": 125,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 505,
+        "y": 220,
+        "pct": 0.3,
+        "label": "২"
+      },
+      {
+        "x": 505,
+        "y": 315,
+        "pct": 0.6,
+        "label": "৩"
+      },
+      {
+        "x": 450,
+        "y": 395,
+        "pct": 0.85,
+        "label": "৪"
+      },
+      {
+        "x": 380,
+        "y": 325,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 24. Meem (Round head loop + descending vertical tail)
   "م": {
-    path: "M 530 270 C 590 200, 670 230, 650 300 C 620 360, 520 370, 480 320 L 380 320 C 370 380, 360 440, 330 490",
-    arrow: "↗️",
-    arrowText: "গোল মাথা → লেজ নিচে",
-    dots: [],
-    checkpoints: [
-      { x: 530, y: 270, label: "১", pct: 0.0, isStart: true },
-      { x: 610, y: 210, label: "২", pct: 0.20 },
-      { x: 650, y: 300, label: "৩", pct: 0.40 },
-      { x: 520, y: 350, label: "৪", pct: 0.55 },
-      { x: 400, y: 320, label: "৫", pct: 0.72 },
-      { x: 360, y: 420, label: "৬", pct: 0.88 },
-      { x: 330, y: 490, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "ar": "م",
+    "nameBn": "মীম",
+    "scale": 1.2,
+    "fontSize": 340,
+    "y": 360,
+    "path": "M 485 280 C 465 265, 440 280, 465 305 L 470 545",
+    "arrow": "🔄",
+    "arrowText": "মাথা গোল করে সোজা নিচে লম্বা টান দিন",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 485,
+        "y": 280,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 445,
+        "y": 280,
+        "pct": 0.25,
+        "label": "২"
+      },
+      {
+        "x": 468,
+        "y": 305,
+        "pct": 0.45,
+        "label": "৩"
+      },
+      {
+        "x": 470,
+        "y": 420,
+        "pct": 0.72,
+        "label": "৪"
+      },
+      {
+        "x": 470,
+        "y": 545,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 25. Noon (Deep, wide grand crescent bowl + 1 diamond dot inside)
   "ن": {
-    path: "M 700 240 C 680 420, 560 480, 450 480 C 330 480, 210 420, 200 260",
-    arrow: "↙️",
-    arrowText: "ডান থেকে গভীর গোল",
-    dots: [{ x: 450, y: 320, r: 22 }],
-    checkpoints: [
-      { x: 700, y: 240, label: "১", pct: 0.0, isStart: true },
-      { x: 650, y: 380, label: "২", pct: 0.25 },
-      { x: 540, y: 475, label: "৩", pct: 0.50 },
-      { x: 420, y: 480, label: "৪", pct: 0.70 },
-      { x: 280, y: 430, label: "৫", pct: 0.85 },
-      { x: 200, y: 260, label: "শেষ", pct: 1.0, isEnd: true },
+    "ar": "ن",
+    "nameBn": "নূন",
+    "scale": 1.35,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 515 275 C 515 385, 435 405, 385 275",
+    "arrow": "↙️",
+    "arrowText": "ডান থেকে নিচে গোল ঘুরে বাঁয়ে এসে নুকতা দিন",
+    "dots": [
+      {
+        "x": 450,
+        "y": 200,
+        "label": "নুকতা"
+      }
     ],
+    "checkpoints": [
+      {
+        "x": 515,
+        "y": 275,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 495,
+        "y": 370,
+        "pct": 0.35,
+        "label": "২"
+      },
+      {
+        "x": 450,
+        "y": 395,
+        "pct": 0.6,
+        "label": "৩"
+      },
+      {
+        "x": 385,
+        "y": 275,
+        "pct": 0.88,
+        "label": "৪"
+      },
+      {
+        "x": 450,
+        "y": 200,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
   },
-
-  // 26. Waw (Round head loop + sweeping tail to the left)
   "و": {
-    path: "M 530 260 C 580 190, 670 230, 650 300 C 620 370, 520 420, 440 460 C 370 490, 290 490, 230 470",
-    arrow: "↗️",
-    arrowText: "গোল মাথা → লেজ বাঁয়ে",
-    dots: [],
-    checkpoints: [
-      { x: 530, y: 260, label: "১", pct: 0.0, isStart: true },
-      { x: 610, y: 205, label: "২", pct: 0.22 },
-      { x: 650, y: 300, label: "৩", pct: 0.42 },
-      { x: 560, y: 390, label: "৪", pct: 0.65 },
-      { x: 430, y: 465, label: "৫", pct: 0.82 },
-      { x: 230, y: 470, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "ar": "و",
+    "nameBn": "ওয়াও",
+    "scale": 1.35,
+    "fontSize": 340,
+    "y": 375,
+    "path": "M 465 305 C 485 275, 455 270, 440 295 C 450 355, 420 425, 360 450",
+    "arrow": "🔄",
+    "arrowText": "মাথা গোল করে বাঁকা হয়ে নিচে নামুন",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 465,
+        "y": 305,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 455,
+        "y": 275,
+        "pct": 0.25,
+        "label": "২"
+      },
+      {
+        "x": 440,
+        "y": 320,
+        "pct": 0.5,
+        "label": "৩"
+      },
+      {
+        "x": 410,
+        "y": 420,
+        "pct": 0.78,
+        "label": "৪"
+      },
+      {
+        "x": 360,
+        "y": 450,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 27. Haa (Teardrop pear loop)
-  "هـ": {
-    path: "M 480 130 C 350 250, 360 410, 460 440 C 560 440, 610 320, 540 210 C 510 160, 490 140, 480 130",
-    arrow: "↙️",
-    arrowText: "বাঁকা হয়ে গোল লুপ",
-    dots: [],
-    checkpoints: [
-      { x: 480, y: 130, label: "১", pct: 0.0, isStart: true },
-      { x: 380, y: 250, label: "২", pct: 0.25 },
-      { x: 450, y: 440, label: "৩", pct: 0.55 },
-      { x: 580, y: 320, label: "৪", pct: 0.80 },
-      { x: 480, y: 130, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+  "ه": {
+    "ar": "ه",
+    "nameBn": "হা (গোল)",
+    "scale": 1.45,
+    "fontSize": 340,
+    "y": 375,
+    "path": "M 450 360 C 485 320, 465 275, 435 295 C 415 325, 435 360, 450 360",
+    "arrow": "🔄",
+    "arrowText": "নিচ থেকে ঘুরে গোল বৃত্ত আঁকুন",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 450,
+        "y": 360,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 480,
+        "y": 310,
+        "pct": 0.3,
+        "label": "২"
+      },
+      {
+        "x": 450,
+        "y": 275,
+        "pct": 0.6,
+        "label": "৩"
+      },
+      {
+        "x": 420,
+        "y": 315,
+        "pct": 0.85,
+        "label": "৪"
+      },
+      {
+        "x": 450,
+        "y": 360,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 28. Hamzah (Small angular calligraphic head with base)
   "ء": {
-    path: "M 530 200 C 470 150, 400 190, 420 260 L 510 270 L 370 360",
-    arrow: "↖️",
-    arrowText: "বাঁকা মাথা → নিচে টান",
-    dots: [],
-    checkpoints: [
-      { x: 530, y: 200, label: "১", pct: 0.0, isStart: true },
-      { x: 430, y: 175, label: "২", pct: 0.30 },
-      { x: 420, y: 260, label: "৩", pct: 0.55 },
-      { x: 510, y: 270, label: "৪", pct: 0.75 },
-      { x: 370, y: 360, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
+    "ar": "ء",
+    "nameBn": "হামযা",
+    "scale": 1.5,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 480 290 C 450 275, 440 290, 465 325 L 420 370",
+    "arrow": "↙️",
+    "arrowText": "ছোট মাথা এঁকে বাঁয়ে তির্যক দাগ দিন",
+    "dots": [],
+    "checkpoints": [
+      {
+        "x": 480,
+        "y": 290,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 445,
+        "y": 280,
+        "pct": 0.35,
+        "label": "২"
+      },
+      {
+        "x": 465,
+        "y": 325,
+        "pct": 0.7,
+        "label": "৩"
+      },
+      {
+        "x": 420,
+        "y": 370,
+        "pct": 1,
+        "isEnd": true,
+        "label": "শেষ"
+      }
+    ]
   },
-
-  // 29. Yaa (Authentic swan curve + 2 diamond dots below belly)
   "ي": {
-    path: "M 560 210 C 620 170, 670 220, 640 280 C 600 330, 520 340, 470 380 C 440 450, 350 480, 260 480 C 180 470, 160 410, 190 350",
-    arrow: "↗️",
-    arrowText: "ঘাড় ঘুরে নিচে বাটি",
-    dots: [
-      { x: 300, y: 525, r: 18 },
-      { x: 370, y: 525, r: 18 },
+    "ar": "ي",
+    "nameBn": "ইয়া",
+    "scale": 1.15,
+    "fontSize": 340,
+    "y": 370,
+    "path": "M 495 255 C 455 275, 480 305, 520 325 C 475 390, 420 460, 360 435 C 340 420, 345 375, 350 365",
+    "arrow": "〰️",
+    "arrowText": "হাঁসের গলার মতো এঁকে নিচে ২টি নুকতা দিন",
+    "dots": [
+      {
+        "x": 430,
+        "y": 495
+      },
+      {
+        "x": 470,
+        "y": 495
+      }
     ],
-    checkpoints: [
-      { x: 560, y: 210, label: "১", pct: 0.0, isStart: true },
-      { x: 640, y: 210, label: "২", pct: 0.20 },
-      { x: 620, y: 290, label: "৩", pct: 0.38 },
-      { x: 510, y: 350, label: "৪", pct: 0.55 },
-      { x: 420, y: 440, label: "৫", pct: 0.72 },
-      { x: 300, y: 480, label: "৬", pct: 0.86 },
-      { x: 190, y: 350, label: "শেষ", pct: 1.0, isEnd: true },
-    ],
-  },
+    "checkpoints": [
+      {
+        "x": 495,
+        "y": 255,
+        "pct": 0,
+        "isStart": true,
+        "label": "১"
+      },
+      {
+        "x": 460,
+        "y": 280,
+        "pct": 0.2,
+        "label": "২"
+      },
+      {
+        "x": 520,
+        "y": 325,
+        "pct": 0.4,
+        "label": "৩"
+      },
+      {
+        "x": 430,
+        "y": 435,
+        "pct": 0.68,
+        "label": "৪"
+      },
+      {
+        "x": 350,
+        "y": 365,
+        "pct": 0.9,
+        "label": "৫"
+      },
+      {
+        "x": 450,
+        "y": 495,
+        "pct": 1,
+        "isEnd": true,
+        "isDot": true,
+        "label": "নুকতা"
+      }
+    ]
+  }
 };
 
-// SVG standard coordinate system constants
 const SVG_VIEWBOX_WIDTH = 900;
 const SVG_VIEWBOX_HEIGHT = 560;
 
@@ -683,6 +1787,17 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
       }
     );
   }, [selectedLetter.ar]);
+
+  
+  // Compute scaled root coordinate for hit testing
+  const getCheckpointRootPos = useCallback((cp) => {
+    if (!cp) return { x: 450, y: 280 };
+    const s = currentTracingDef.scale || 1.0;
+    return {
+      x: 450 + (cp.x - 450) * s,
+      y: 280 + (cp.y - 280) * s,
+    };
+  }, [currentTracingDef.scale]);
 
   const checkpoints = currentTracingDef.checkpoints;
   const currentMascot = MASCOTS[selectedMascotIndex];
@@ -833,13 +1948,17 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
   const handleTracingPointerDown = (e) => {
     if (boardMode !== "trace" || isCelebrationFiredRef.current) return;
     if (e.button !== undefined && e.button !== 0) return; // Left mouse button or touch only
+    if (e.target?.setPointerCapture && e.pointerId !== undefined) {
+      try { e.target.setPointerCapture(e.pointerId); } catch {}
+    }
     const p = getSvgPoint(e);
 
     // If tracing hasn't started yet, user must press near Ball 0 (the start checkpoint)
     if (reachedIndex < 0) {
       if (checkpoints[0]) {
-        const dist = Math.hypot(p.x - checkpoints[0].x, p.y - checkpoints[0].y);
-        if (dist < 48) {
+        const root0 = getCheckpointRootPos(checkpoints[0]);
+        const dist = Math.hypot(p.x - root0.x, p.y - root0.y);
+        if (dist < 55) {
           isDraggingRef.current = true;
           advanceToCheckpoint(0);
         }
@@ -851,8 +1970,9 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
     const nextIdx = reachedIndex + 1;
     if (nextIdx < checkpoints.length) {
       const nextCp = checkpoints[nextIdx];
-      const distToNext = Math.hypot(p.x - nextCp.x, p.y - nextCp.y);
-      if (distToNext < 48) {
+      const nextRoot = getCheckpointRootPos(nextCp);
+      const distToNext = Math.hypot(p.x - nextRoot.x, p.y - nextRoot.y);
+      if (distToNext < 55) {
         isDraggingRef.current = true;
         advanceToCheckpoint(nextIdx);
         return;
@@ -862,30 +1982,40 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
     // Or resuming drag from current ball
     const currentCp = checkpoints[reachedIndex];
     if (currentCp) {
-      const distToCurrent = Math.hypot(p.x - currentCp.x, p.y - currentCp.y);
-      if (distToCurrent < 60) {
+      const curRoot = getCheckpointRootPos(currentCp);
+      const distToCurrent = Math.hypot(p.x - curRoot.x, p.y - curRoot.y);
+      if (distToCurrent < 65) {
         isDraggingRef.current = true;
       }
     }
   };
 
-  // ── POINTER MOVE: শুধুমাত্র isDraggingRef=true হলেই কাজ করবে (hover করলে নয়!) ──
+  // ── POINTER MOVE: শুধুমাত্র isDraggingRef=true এবং মাউস বাটন চাপা থাকলেই কাজ করবে ──
   const handleTracingPointerMove = (e) => {
     if (!isDraggingRef.current || boardMode !== "trace" || isCelebrationFiredRef.current) return;
+    // Mouse button release safety check (e.buttons === 1 means primary button held down)
+    if (e.pointerType === "mouse" && e.buttons !== 1) {
+      isDraggingRef.current = false;
+      return;
+    }
     const p = getSvgPoint(e);
 
     const nextIdx = reachedIndex + 1;
     if (nextIdx < checkpoints.length) {
       const nextCp = checkpoints[nextIdx];
-      const dist = Math.hypot(p.x - nextCp.x, p.y - nextCp.y);
-      if (dist < 42) {
+      const nextRoot = getCheckpointRootPos(nextCp);
+      const dist = Math.hypot(p.x - nextRoot.x, p.y - nextRoot.y);
+      if (dist < 46) {
         advanceToCheckpoint(nextIdx);
       }
     }
   };
 
-  const handleTracingPointerUp = () => {
+  const handleTracingPointerUp = (e) => {
     isDraggingRef.current = false;
+    if (e?.target?.releasePointerCapture && e?.pointerId !== undefined) {
+      try { e.target.releasePointerCapture(e.pointerId); } catch {}
+    }
   };
 
   // ── ✏️ FREEHAND CANVAS EVENTS ──
@@ -1157,8 +2287,18 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
                 ))}
               </div>
 
-              {/* 🎯 7. SVG DOUBLE-WALLED HOLLOW LETTER TRACING ENGINE */}
-              {/* Zero ink can leak outside! The walls are 100% solid! */}
+              {/* 🧭 DIRECTIONAL INSTRUCTION PILL (TOP-CENTER, ZERO LETTER OVERLAP) */}
+              {reachedIndex < 0 && (
+                <div className="absolute top-3.5 inset-x-0 flex justify-center z-30 pointer-events-none animate-fade-in">
+                  <div className="px-4 py-1.5 rounded-full bg-emerald-800/95 backdrop-blur-md border border-emerald-400/80 text-white font-bold text-xs shadow-lg shadow-emerald-950/40 flex items-center gap-2">
+                    <span className="text-sm">{currentTracingDef.arrow}</span>
+                    <span>{currentTracingDef.arrowText}</span>
+                  </div>
+                </div>
+              )}
+
+              {/* 🎯 7. GRAND AUTHENTIC ARABIC LETTER TRACING ENGINE (DUOLINGO / ABC TRACING STYLE) */}
+              {/* শিশু যখন অক্ষর নির্বাচন করবে, মাঝখানে সেই অক্ষরটি ক্যালিগ্রাফি ফন্টে বড় ও স্পষ্ট দেখা যাবে! */}
               <svg
                 ref={svgRef}
                 viewBox={`0 0 ${SVG_VIEWBOX_WIDTH} ${SVG_VIEWBOX_HEIGHT}`}
@@ -1171,231 +2311,192 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
                   boardMode === "trace" ? "cursor-crosshair touch-none" : "pointer-events-none"
                 }`}
               >
-                {/* 🛡️ THE TWO SOLID WALLS OF THE LETTER (৬২ পিক্সেল পুরু সাদা আউটলাইন) */}
-                <path
-                  d={currentTracingDef.path}
-                  fill="none"
-                  stroke="#ffffff"
-                  strokeWidth="78"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  style={{
-                    filter: "drop-shadow(0 8px 18px rgba(0,0,0,0.45))",
-                  }}
-                  className="pointer-events-none"
-                />
-
-                {/* 🕳️ THE HOLLOW CHANNEL BETWEEN THE TWO WALLS (৪৮ পিক্সেল ফাঁপা চ্যানেল) */}
-                <path
-                  d={currentTracingDef.path}
-                  fill="none"
-                  stroke="rgba(255, 255, 255, 0.35)"
-                  strokeWidth="58"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="pointer-events-none"
-                />
-
-                {/* 🎨 THE FILLED INK (STRICTLY CLAMPED INSIDE THE TWO WALLS!) */}
-                {/* Ink flows strictly along the hollow channel — zero ink leaks outside! */}
-                <path
-                  ref={fullPathRef}
-                  d={currentTracingDef.path}
-                  fill="none"
-                  stroke={penColor || "#fbbf24"}
-                  strokeWidth="58"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeDasharray={totalPathLength}
-                  strokeDashoffset={strokeDashOffset}
-                  style={{
-                    transition: isDraggingRef.current ? "none" : "stroke-dashoffset 0.3s ease-out",
-                    filter: `drop-shadow(0 0 16px ${penColor})`,
-                  }}
-                  className="pointer-events-none"
-                />
-
-                {/* ⚪ CALLIGRAPHIC RHOMBIC DIAMOND NUKTA (AUTHENTIC ARABIC NUKTA) */}
-                {currentTracingDef.dots?.map((d, i) => {
-                  const isDotsFilled = fillProgress >= 0.98;
-                  const size = (d.r || 18) * 1.5;
-                  return (
-                    <g key={i} className="pointer-events-none">
-                      {/* Outer White Calligraphic Diamond Wall */}
-                      <rect
-                        x={d.x - size / 2 - 6}
-                        y={d.y - size / 2 - 6}
-                        width={size + 12}
-                        height={size + 12}
-                        rx="6"
-                        transform={`rotate(45 ${d.x} ${d.y})`}
-                        fill="#ffffff"
-                        style={{ filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.35))" }}
-                      />
-                      {/* Inner Translucent Channel / Golden Filled Nukta */}
-                      <rect
-                        x={d.x - size / 2}
-                        y={d.y - size / 2}
-                        width={size}
-                        height={size}
-                        rx="4"
-                        transform={`rotate(45 ${d.x} ${d.y})`}
-                        fill={isDotsFilled ? (penColor || "#fbbf24") : "rgba(255, 255, 255, 0.45)"}
-                        style={{ transition: "fill 0.4s ease" }}
-                      />
-                    </g>
-                  );
-                })}
-
-                {/* ⚽ 8. COLLECTIBLE BALLS / ITEMS ALONG THE PATH (ক্লিক বা ড্র্যাগ করলেই সাথে সাথে টুস টুস শব্দে ফুটবে!) */}
-                {checkpoints.map((cp, idx) => {
-                  const isPopped = idx <= reachedIndex;
-                  const isCurrent = idx === reachedIndex;
-                  const isNext = idx === reachedIndex + 1;
-                  const isInitialStart = reachedIndex < 0 && idx === 0;
-                  const isTarget = isInitialStart || isNext;
-
-                  return (
-                    <g
-                      key={idx}
-                      transform={`translate(${cp.x}, ${cp.y})`}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (isTarget) {
-                          advanceToCheckpoint(idx);
-                        }
-                      }}
-                      className={isTarget ? "cursor-pointer" : "pointer-events-none"}
+                <defs>
+                  {/* Clip Path of Authentic Arabic Glyph */}
+                  <clipPath id={`letter-clip-${selectedLetter.ar}`}>
+                    <text
+                      x="450"
+                      y={currentTracingDef.y || 380}
+                      textAnchor="middle"
+                      fontFamily="'Amiri', 'Traditional Arabic', 'Scheherazade New', serif"
+                      fontSize={currentTracingDef.fontSize || 340}
+                      fontWeight="700"
                     >
-                      {/* 🎯 INVISIBLE EXPANDED TOUCH HIT AREA (RADIUS 45 = 90x90px) — ১ ক্লিকেই নিখুঁত রেসপন্স */}
-                      {isTarget && (
-                        <circle
-                          r="45"
-                          fill="transparent"
-                          className="cursor-pointer"
-                        />
-                      )}
+                      {selectedLetter.ar}
+                    </text>
+                  </clipPath>
+                </defs>
 
-                      {/* Active target pulse ring */}
-                      {isTarget && (
-                        <circle
-                          r="30"
-                          fill="none"
-                          stroke={isInitialStart ? "#10b981" : "#fbbf24"}
-                          strokeWidth="3.5"
-                          className="animate-ping opacity-85 pointer-events-none"
-                        />
-                      )}
+                {/* 🌟 SCALED GROUP AROUND BOARD CENTER (450, 280) */}
+                <g transform={`translate(450, 280) scale(${currentTracingDef.scale || 1.1}) translate(-450, -280)`}>
+                  {/* 🛡️ 1. THICK OUTER WHITE CALLIGRAPHIC WALL (রেফারেন্স ছবির মতো স্পষ্ট সাদা সীমানা) */}
+                  <text
+                    x="450"
+                    y={currentTracingDef.y || 380}
+                    textAnchor="middle"
+                    fontFamily="'Amiri', 'Traditional Arabic', 'Scheherazade New', serif"
+                    fontSize={currentTracingDef.fontSize || 340}
+                    fontWeight="700"
+                    stroke="#ffffff"
+                    strokeWidth="28"
+                    strokeLinejoin="round"
+                    fill="#ffffff"
+                    style={{ filter: "drop-shadow(0 14px 30px rgba(0,0,0,0.5))" }}
+                    className="pointer-events-none select-none"
+                  >
+                    {selectedLetter.ar}
+                  </text>
 
-                      {/* Ball Circle (বাচ্চাদের পছন্দের বল / খাবার) */}
-                      {!isPopped ? (
-                        <g className="pointer-events-none">
+                  {/* 🕳️ 2. TRANSLUCENT DARK BODY (রেফারেন্স ছবির মতো ব্লু-গ্রে শেড যা ট্রেস করলে পূরণ হবে) */}
+                  <text
+                    x="450"
+                    y={currentTracingDef.y || 380}
+                    textAnchor="middle"
+                    fontFamily="'Amiri', 'Traditional Arabic', 'Scheherazade New', serif"
+                    fontSize={currentTracingDef.fontSize || 340}
+                    fontWeight="700"
+                    fill="rgba(15, 30, 55, 0.72)"
+                    stroke="rgba(255, 255, 255, 0.85)"
+                    strokeWidth="4"
+                    strokeLinejoin="round"
+                    className="pointer-events-none select-none"
+                  >
+                    {selectedLetter.ar}
+                  </text>
+
+                  {/* 🎨 3. VIBRANT GOLDEN INK CLIPPED STRICTLY INSIDE THE LETTER GLYPH! (ZERO LEAK!) */}
+                  <g clipPath={`url(#letter-clip-${selectedLetter.ar})`}>
+                    <path
+                      ref={fullPathRef}
+                      d={currentTracingDef.path}
+                      fill="none"
+                      stroke={penColor || "#fbbf24"}
+                      strokeWidth="105"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeDasharray={totalPathLength}
+                      strokeDashoffset={strokeDashOffset}
+                      style={{
+                        transition: isDraggingRef.current ? "none" : "stroke-dashoffset 0.3s ease-out",
+                        filter: `drop-shadow(0 0 25px ${penColor || "#fbbf24"})`,
+                      }}
+                      className="pointer-events-none"
+                    />
+                  </g>
+
+                  {/* 🧭 4. SUBTLE STROKE GUIDE DASHED LINE (হালকা গাইড পথ) */}
+                  <path
+                    d={currentTracingDef.path}
+                    fill="none"
+                    stroke="rgba(255, 255, 255, 0.45)"
+                    strokeWidth="3.5"
+                    strokeDasharray="6 6"
+                    className="pointer-events-none"
+                  />
+
+                  {/* ⚽ 5. COLLECTIBLE BALLS / ITEMS ALONG THE REAL STROKE PATH */}
+                  {checkpoints.map((cp, idx) => {
+                    const isPopped = idx <= reachedIndex;
+                    const isNext = idx === reachedIndex + 1;
+                    const isInitialStart = reachedIndex < 0 && idx === 0;
+                    const isTarget = isInitialStart || isNext;
+
+                    return (
+                      <g
+                        key={idx}
+                        transform={`translate(${cp.x}, ${cp.y})`}
+                        className="pointer-events-none select-none"
+                      >
+                        {/* Active target pulse ring */}
+                        {isTarget && (
                           <circle
-                            r={isTarget ? "22" : "16"}
-                            fill={isInitialStart ? "#10b981" : isNext ? "#f59e0b" : "#ffffff"}
-                            stroke="#ffffff"
+                            r="28"
+                            fill="none"
+                            stroke={isInitialStart ? "#10b981" : cp.isDot ? "#ef4444" : "#fbbf24"}
                             strokeWidth="3.5"
-                            style={{ filter: "drop-shadow(0 4px 8px rgba(0,0,0,0.35))" }}
+                            className="animate-ping opacity-85 pointer-events-none"
                           />
-                          <text
-                            y="6"
-                            textAnchor="middle"
-                            fill={isTarget ? "#ffffff" : "#0f172a"}
-                            fontSize={isTarget ? "14" : "12"}
-                            fontWeight="bold"
-                            className="select-none pointer-events-none font-sans"
-                          >
-                            {cp.isStart ? "১" : cp.isEnd ? "শেষ" : currentMascot.item}
-                          </text>
-                        </g>
-                      ) : (
-                        // Popped State: Golden Star with Checkmark
-                        <g className="pointer-events-none animate-scale-up">
-                          <circle
-                            r="16"
-                            fill="#fbbf24"
-                            stroke="#ffffff"
-                            strokeWidth="3"
-                            style={{ filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.3))" }}
-                          />
-                          <text
-                            y="5"
-                            textAnchor="middle"
-                            fill="#0f172a"
-                            fontSize="13"
-                            fontWeight="black"
-                            className="select-none pointer-events-none font-sans"
-                          >
-                            ✓
-                          </text>
-                        </g>
-                      )}
+                        )}
 
-                      {/* ⬇️ DIRECTIONAL ARROW BANNER AT START (ব্যবহারকারীর চাহিদা অনুযায়ী তীর চিহ্ন) */}
-                      {isInitialStart && (() => {
-                        const hasDotAbove = currentTracingDef.dots?.some(
-                          (d) => Math.hypot(d.x - cp.x, d.y - (cp.y - 46)) < 55
-                        );
-                        const bannerTransform = hasDotAbove ? "translate(-105, 0)" : "translate(0, -46)";
-                        return (
-                          <g transform={bannerTransform}>
-                            <rect
-                              x="-90"
-                              y="-18"
-                              width="180"
-                              height="36"
-                              rx="18"
-                              fill="rgba(16, 185, 129, 0.95)"
+                        {/* Ball / Item Circle */}
+                        {!isPopped ? (
+                          <g className="pointer-events-none">
+                            <circle
+                              r={isTarget ? "22" : "17"}
+                              fill={
+                                cp.isDot
+                                  ? "#ef4444"
+                                  : isInitialStart
+                                  ? "#10b981"
+                                  : isNext
+                                  ? "#f59e0b"
+                                  : "#ffffff"
+                              }
                               stroke="#ffffff"
-                              strokeWidth="2.5"
-                              filter="drop-shadow(0 4px 10px rgba(0,0,0,0.35))"
+                              strokeWidth="3"
+                              style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.35))" }}
                             />
                             <text
-                              y="6"
+                              y="5"
                               textAnchor="middle"
-                              fill="#ffffff"
-                              fontSize="13"
-                              fontWeight="bold"
+                              fill={isTarget || cp.isDot ? "#ffffff" : "#0f172a"}
+                              fontSize={isTarget ? "13" : "11"}
+                              fontWeight="black"
                               className="select-none pointer-events-none font-sans"
                             >
-                              {currentTracingDef.arrow} {currentTracingDef.arrowText}
+                              {cp.isDot ? "ন" : cp.isStart ? "১" : cp.isEnd ? "শেষ" : currentMascot.item}
                             </text>
                           </g>
-                        );
-                      })()}
-                    </g>
-                  );
-                })}
+                        ) : (
+                          // Popped State: Golden Checkmark Star
+                          <g className="pointer-events-none animate-scale-up">
+                            <circle
+                              r="16"
+                              fill="#fbbf24"
+                              stroke="#ffffff"
+                              strokeWidth="2.5"
+                              style={{ filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.3))" }}
+                            />
+                            <text
+                              y="5"
+                              textAnchor="middle"
+                              fill="#0f172a"
+                              fontSize="13"
+                              fontWeight="black"
+                              className="select-none pointer-events-none font-sans"
+                            >
+                              ✓
+                            </text>
+                          </g>
+                        )}
+                      </g>
+                    );
+                  })}
 
-                {/* 🐘 9. ANIMATED MASCOT FOLLOWING DIRECTLY ON THE ACTIVE BALL */}
-                {activeMascotPos && (() => {
-                  const hasDotAbove = currentTracingDef.dots?.some(
-                    (d) => Math.hypot(d.x - activeMascotPos.x, d.y - (activeMascotPos.y - 34)) < 45
-                  );
-                  const mascotYOffset = hasDotAbove ? 44 : -34;
-                  return (
+                  {/* 🐘 6. CUTE ANIMATED MASCOT SITTING DIRECTLY ON THE ACTIVE BALL / TOUCH POINT */}
+                  {activeMascotPos && (
                     <g
-                      transform={`translate(${activeMascotPos.x}, ${activeMascotPos.y + mascotYOffset})`}
-                      className="pointer-events-none transition-all duration-300 ease-out"
+                      transform={`translate(${activeMascotPos.x}, ${activeMascotPos.y})`}
+                      className="pointer-events-none transition-all duration-200 ease-out"
                     >
                       <circle
-                        r="22"
+                        r="24"
                         fill="#ffffff"
                         stroke="#fbbf24"
-                        strokeWidth="2.5"
-                        style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.35))" }}
+                        strokeWidth="3.5"
+                        style={{ filter: "drop-shadow(0 6px 14px rgba(0,0,0,0.4))" }}
                       />
                       <text
-                        y="8"
+                        y="9"
                         textAnchor="middle"
-                        fontSize="24"
-                        className="select-none pointer-events-none animate-bounce"
+                        fontSize="26"
+                        className="select-none pointer-events-none font-sans"
                       >
                         {currentMascot.emoji}
                       </text>
                     </g>
-                  );
-                })()}
+                  )}
+                </g>
               </svg>
 
               {/* ✏️ FREEHAND CANVAS (মুক্ত ড্রয়িং মোড চালু করলে) */}
