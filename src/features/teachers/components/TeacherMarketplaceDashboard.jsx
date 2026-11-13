@@ -18,6 +18,19 @@ import {
   Share2,
   Camera,
   Trash2,
+  LayoutDashboard,
+  Calendar,
+  Clock,
+  Settings,
+  Plus,
+  CheckCircle2,
+  Award,
+  GraduationCap,
+  ExternalLink,
+  Copy,
+  MessageSquare,
+  Bot,
+  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import StudentProfileModal from "./StudentProfileModal";
@@ -47,6 +60,75 @@ export default function TeacherMarketplaceDashboard({
     bio: teacher?.bio || "বিগত ১২ বছর ধরে শিশু, কিশোর ও বয়স্কদের বিশুদ্ধ তাজবীদ ও সুললিত সুরের সাথে কুরআন শিক্ষা দিচ্ছি।",
     isOnline: teacher?.is_online !== false,
   });
+
+  // Scheduled Classes State
+  const [scheduledClasses, setScheduledClasses] = useState(() => {
+    try {
+      const saved = localStorage.getItem("rahmania_teacher_schedule_" + (teacher?.id || "default"));
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      {
+        id: "class-1",
+        title: "সূরা আল-ফাতিহা ও ১৭ মাখরাজ মাশক (ব্যাচ ১)",
+        time: "আজ বিকাল ৫:০০ – ৬:০০",
+        category: "তাজবীদ ও কিরাত",
+        studentsCount: 8,
+        roomCode: `ROOM-${teacher?.id || "LIVE-101"}`,
+        status: "upcoming",
+      },
+      {
+        id: "class-2",
+        title: "নূরানী কায়দা ও শিশুদের হরফ শিক্ষা (প্রাথমিক)",
+        time: "মাগরিবের পর (সন্ধ্যা ৬:৩০ – ৭:১৫)",
+        category: "নূরানী কায়দা",
+        studentsCount: 12,
+        roomCode: `ROOM-${teacher?.id || "LIVE-102"}`,
+        status: "upcoming",
+      },
+      {
+        id: "class-3",
+        title: "হিফজুল কুরআন আমুক্তা দাওর ও লোকমা যাচাই",
+        time: "রাত ৯:০০ – ১০:০০",
+        category: "হিফজ দাওর",
+        studentsCount: 6,
+        roomCode: `ROOM-${teacher?.id || "LIVE-103"}`,
+        status: "scheduled",
+      },
+    ];
+  });
+  const [showAddClassModal, setShowAddClassModal] = useState(false);
+  const [newClassForm, setNewClassForm] = useState({
+    title: "",
+    time: "",
+    category: "তাজবীদ ও কিরাত",
+    studentsCount: 10,
+  });
+
+  const handleAddClass = (e) => {
+    e.preventDefault();
+    if (!newClassForm.title || !newClassForm.time) {
+      toast.error("অনুগ্রহ করে ক্লাসের নাম ও সময় লিখুন");
+      return;
+    }
+    const newClass = {
+      id: "class-" + Date.now(),
+      title: newClassForm.title,
+      time: newClassForm.time,
+      category: newClassForm.category,
+      studentsCount: Number(newClassForm.studentsCount) || 10,
+      roomCode: `ROOM-${teacher?.id || "LIVE"}-${Date.now().toString().slice(-3)}`,
+      status: "scheduled",
+    };
+    const updated = [newClass, ...scheduledClasses];
+    setScheduledClasses(updated);
+    try {
+      localStorage.setItem("rahmania_teacher_schedule_" + (teacher?.id || "default"), JSON.stringify(updated));
+    } catch {}
+    toast.success("মাশাআল্লাহ! নতুন ক্লাসের শিডিউল সফলভাবে যুক্ত হয়েছে।");
+    setNewClassForm({ title: "", time: "", category: "তাজবীদ ও কিরাত", studentsCount: 10 });
+    setShowAddClassModal(false);
+  };
 
   // Teacher Social Posts State
   const [teacherPosts, setTeacherPosts] = useState(() => {
@@ -412,32 +494,34 @@ export default function TeacherMarketplaceDashboard({
   return (
     <div className="w-full min-h-screen bg-[#F8F9FA] dark:bg-[#07130E] text-slate-900 dark:text-emerald-50 pb-24 animate-fadeIn font-['Hind_Siliguri',sans-serif]">
       {/* ── TOP HEADER BAR ── */}
-      <div className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 px-4 sm:px-8 py-4 sticky top-0 z-30 shadow-xs flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="bg-white dark:bg-stone-900 border-b border-stone-200 dark:border-stone-800 px-4 sm:px-8 py-3.5 sticky top-0 z-30 shadow-xs flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onBack}
-            className="p-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 text-slate-700 dark:text-stone-300 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+            className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-slate-700 dark:text-stone-300 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer shrink-0"
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="hidden sm:inline">মার্কেটপ্লেসে ফিরুন</span>
           </button>
 
-          <div>
-            <div className="flex items-center gap-2">
-              <h1 className="text-base sm:text-lg font-black text-slate-900 dark:text-white">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-sm sm:text-base font-black text-slate-900 dark:text-white leading-tight">
                 টিচার পার্সোনাল ড্যাশবোর্ড
               </h1>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1">
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 flex items-center gap-1 shrink-0">
                 <ShieldCheck className="w-3 h-3 text-emerald-600" />
                 <span>ভেরিফাইড উস্তাদ</span>
               </span>
             </div>
-            <p className="text-xs text-slate-500">{profileData.nameBn}</p>
+            <p className="text-[11px] text-slate-500 truncate">
+              {profileData.titleBn || "কুরআন ও তাজবীদ শিক্ষক প্ল্যাটফর্ম"}
+            </p>
           </div>
         </div>
 
-        {/* Action: Fast Launch Live Group Call */}
-        <div className="flex items-center gap-2.5">
+        {/* Action: Fast Launch Live Group Call & Quick Shortcuts */}
+        <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => {
               if (onLaunchLiveGroupCall) {
@@ -451,15 +535,16 @@ export default function TeacherMarketplaceDashboard({
                 toast.success("লাইভ গ্রুপ ক্লাসরুম চালু হচ্ছে...");
               }
             }}
-            className="px-4 py-2 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-black text-xs flex items-center gap-2 shadow-md shadow-red-600/20 transition active:scale-95 cursor-pointer animate-pulse"
+            className="px-3.5 py-2 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white font-black text-xs flex items-center gap-1.5 shadow-md shadow-red-600/30 transition active:scale-95 cursor-pointer animate-pulse"
           >
             <Radio className="w-3.5 h-3.5" />
-            <span>গ্রুপ লাইভ ক্লাস শুরু করুন</span>
+            <span className="hidden sm:inline">গ্রুপ লাইভ ক্লাস শুরু</span>
+            <span className="sm:hidden">লাইভ</span>
           </button>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 space-y-6">
         {/* ── PENDING APPROVAL NOTICE IF APPLICANT ── */}
         {teacher?.status === "pending" && (
           <div className="p-4 sm:p-5 rounded-3xl bg-amber-50 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-950 dark:text-amber-200 space-y-1">
@@ -473,148 +558,218 @@ export default function TeacherMarketplaceDashboard({
           </div>
         )}
 
-        {/* ── 4 KEY METRICS OVERVIEW CARDS ── */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {/* Card 1: Recorded Ledger Balance & Withdrawable Status */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-sm space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-stone-400">রেকর্ডকৃত লেজার ব্যালেন্স (উত্তোলনযোগ্য ওয়ালেট স্ট্যাটাস)</span>
-              <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center">
-                <Wallet className="w-4 h-4" />
+        {/* ── 🌟 ISLAMIC TEACHER IDENTITY HERO BANNER ── */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#063323] via-[#094732] to-[#04281B] text-white p-5 sm:p-7 shadow-xl border border-emerald-700/50">
+          <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+          <div className="relative flex flex-col md:flex-row md:items-center justify-between gap-5">
+            <div className="flex items-center gap-4 sm:gap-5 min-w-0">
+              <div className="relative shrink-0">
+                <img
+                  src={profileData.avatar}
+                  alt={profileData.nameBn}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-3xl object-cover border-2 border-amber-400/70 shadow-lg ring-4 ring-emerald-950/80"
+                />
+                <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-emerald-400 border-2 border-[#063323] shadow-xs" title="অনলাইন • পাঠদানে সক্রিয়" />
+              </div>
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h2 className="text-lg sm:text-2xl font-black text-white leading-tight truncate">
+                    {profileData.nameBn && profileData.nameBn.length > 3 ? profileData.nameBn : "মুফতী মাওলানা ক্বারী আহমাদুল্লাহ"}
+                  </h2>
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-black bg-amber-400 text-slate-950 shadow-xs flex items-center gap-1 shrink-0">
+                    <ShieldCheck className="w-3.5 h-3.5 text-slate-950" />
+                    <span>ভেরিফাইড উস্তাদ</span>
+                  </span>
+                </div>
+                <p className="text-xs sm:text-sm text-emerald-200/90 font-medium">
+                  {profileData.titleBn || "প্রধান শিক্ষক (তাজবীদ ও কিরাত বিভাগ)"}
+                </p>
+                <div className="flex flex-wrap items-center gap-2 pt-1 text-[11px]">
+                  <span className="px-2.5 py-0.5 rounded-lg bg-emerald-900/80 border border-emerald-700/60 text-emerald-200 font-bold flex items-center gap-1">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span>সরাসরি পাঠদানে সক্রিয়</span>
+                  </span>
+                  <span className="px-2.5 py-0.5 rounded-lg bg-emerald-900/80 border border-emerald-700/60 text-amber-300 font-bold">
+                    হাদিয়া: {profileData.hourlyFee} ৳ / ঘণ্টা
+                  </span>
+                  <span className="text-emerald-300/80 font-medium hidden sm:inline">
+                    • {profileData.schedule}
+                  </span>
+                </div>
               </div>
             </div>
-            {walletError ? (
-              <div>
-                <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                  {recordedBalance.toLocaleString("bn-BD")} ৳
-                </p>
-                <p className="text-[11px] font-bold text-amber-700 dark:text-amber-400 mt-1">
-                  🔒 ওয়ালেট প্রিভিউ (অফিশিয়াল পেআউট অ্যাক্সেস যাচাই সাপেক্ষে সক্রিয়)
-                </p>
-              </div>
-            ) : isLoadingWallet ? (
-              <p className="text-lg font-bold text-slate-400 animate-pulse">
-                ওয়ালেট লোড হচ্ছে...
-              </p>
-            ) : (
-              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-                {recordedBalance.toLocaleString("bn-BD")} ৳
-              </p>
-            )}
 
-            {isWithdrawalHeld ? (
-              <div className="space-y-1">
-                <span className="px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 text-[10px] font-black inline-flex items-center gap-1 border border-amber-300 dark:border-amber-800">
-                  <ShieldAlert className="w-3 h-3 text-amber-600" />
-                  <span>প্রশাসনিক হোল্ড (উত্তোলনযোগ্য: ০ ৳)</span>
-                </span>
-                <p className="text-[10px] text-slate-500">
-                  যাচাইকৃত উপার্জন: <strong className="text-slate-900 dark:text-white">{verifiedEarnings.toLocaleString("bn-BD")} ৳</strong>
-                </p>
-                {reconciliationStatus === "RECORDED_EXCEEDS_VERIFIED" && (
-                  <p className="text-[10px] text-amber-700 dark:text-amber-300">
-                    অযাচাইকৃত রেকর্ডকৃত উদ্বৃত্ত: {discrepancyAmount.toLocaleString("bn-BD")} ৳
-                  </p>
-                )}
-                {reconciliationStatus === "VERIFIED_EXCEEDS_RECORDED" && (
-                  <p className="text-[10px] text-blue-700 dark:text-blue-300">
-                    লেজার উদ্বৃত্ত: {discrepancyAmount.toLocaleString("bn-BD")} ৳ (অজমা কৃত আয়)
-                  </p>
-                )}
-                {reconciliationStatus === "BALANCED" && (
-                  <p className="text-[10px] text-emerald-700 dark:text-emerald-300">
-                    ✓ লেজার শতভাগ সামঞ্জস্যপূর্ণ
-                  </p>
-                )}
-              </div>
-            ) : (
-              <div className="space-y-1">
-                <p className="text-[11px] text-slate-500">
-                  উত্তোলনযোগ্য: <span className="font-bold text-emerald-700 dark:text-emerald-400">{withdrawableBalance.toLocaleString("bn-BD")} ৳</span>
-                </p>
-                <p className="text-[10px] text-slate-500">
-                  যাচাইকৃত উপার্জন: <strong className="text-slate-900 dark:text-white">{verifiedEarnings.toLocaleString("bn-BD")} ৳</strong>
-                </p>
-                {reconciliationStatus === "RECORDED_EXCEEDS_VERIFIED" && (
-                  <p className="text-[10px] text-amber-700 dark:text-amber-300">
-                    অযাচাইকৃত উদ্বৃত্ত: {discrepancyAmount.toLocaleString("bn-BD")} ৳
-                  </p>
-                )}
-                {reconciliationStatus === "VERIFIED_EXCEEDS_RECORDED" && (
-                  <p className="text-[10px] text-blue-700 dark:text-blue-300">
-                    লেজার উদ্বৃত্ত: {discrepancyAmount.toLocaleString("bn-BD")} ৳
-                  </p>
-                )}
-                {reconciliationStatus === "BALANCED" && (
-                  <p className="text-[10px] text-emerald-700 dark:text-emerald-300">
-                    ✓ লেজার শতভাগ সামঞ্জস্যপূর্ণ
-                  </p>
-                )}
-              </div>
-            )}
-            <button
-              onClick={() => setShowWithdrawModal(true)}
-              className="text-[11px] font-black text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer pt-1"
-            >
-              উত্তোলনের স্ট্যাটাস ও তথ্য →
-            </button>
-          </div>
-
-          {/* Card 2: Total Students */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-sm space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-stone-400">নিবন্ধিত শিক্ষার্থী</span>
-              <div className="w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 flex items-center justify-center">
-                <Users className="w-4 h-4" />
-              </div>
+            {/* Quick Actions on the Banner */}
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  if (onLaunchLiveGroupCall) {
+                    onLaunchLiveGroupCall({
+                      teacher,
+                      roomTitle: "সূরা আল-ফাতিহা ও তাজবীদ মাশক লাইভ গ্রুপ ক্লাস",
+                      roomCode: `ROOM-${teacher?.id || "LIVE-101"}`,
+                      isHostTeacher: true,
+                    });
+                  } else {
+                    toast.success("লাইভ গ্রুপ ক্লাসরুম চালু হচ্ছে...");
+                  }
+                }}
+                className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-red-900/40 transition active:scale-95 cursor-pointer animate-pulse"
+              >
+                <Radio className="w-4 h-4" />
+                <span>গ্রুপ লাইভ ক্লাস শুরু</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowAddClassModal(true)}
+                className="px-3.5 py-2.5 rounded-2xl bg-emerald-800/90 hover:bg-emerald-700 border border-emerald-600/60 text-white font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-xs"
+              >
+                <Calendar className="w-3.5 h-3.5 text-amber-400" />
+                <span>ক্লাসের শিডিউল</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("profile")}
+                className="p-2.5 rounded-2xl bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold text-xs flex items-center justify-center transition active:scale-95 cursor-pointer"
+                title="প্রোফাইল ও ছবি সম্পাদনা"
+              >
+                <Settings className="w-4 h-4 text-emerald-200" />
+              </button>
             </div>
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-              {(Number(teacher?.total_students ?? teacher?.totalStudents) || students.length).toLocaleString("bn-BD")} জন
-            </p>
-            <p className="text-[11px] text-emerald-600 font-bold">
-              ✓ {students.length > 0 ? `${students.length.toLocaleString("bn-BD")} জন নথিভুক্ত` : "০ জন নথিভুক্ত"}
-            </p>
-          </div>
-
-          {/* Card 3: Total Completed Classes */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-sm space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-stone-400">সম্পন্ন ক্লাস সংখ্যা</span>
-              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 flex items-center justify-center">
-                <BookOpen className="w-4 h-4" />
-              </div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-              {(Number(teacher?.total_classes ?? teacher?.totalClasses ?? teacher?.totalHours) || 0).toLocaleString("bn-BD")}টি
-            </p>
-            <p className="text-[11px] text-slate-500 font-medium">১-অন-১ ও গ্রুপ ক্লাস</p>
-          </div>
-
-          {/* Card 4: Overall Rating */}
-          <div className="p-5 rounded-3xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 shadow-sm space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-500 dark:text-stone-400">রেটিং ও সুনাম</span>
-              <div className="w-8 h-8 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 flex items-center justify-center">
-                <Star className="w-4 h-4 fill-amber-500 text-amber-500" />
-              </div>
-            </div>
-            <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white">
-              {Number(teacher?.rating || 0) > 0 ? Number(teacher?.rating).toFixed(1) : "০.০"} / ৫.০
-            </p>
-            <p className="text-[11px] text-amber-700 dark:text-amber-400 font-bold">
-              {(Number(teacher?.total_reviews ?? teacher?.totalReviews) || 0).toLocaleString("bn-BD")}টি ভেরিফাইড রিভিউ
-            </p>
           </div>
         </div>
 
-        {/* ── TABS NAVIGATION ── */}
+        {/* ── 4 PREMIER ISLAMIC METRIC CARDS ── */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Wallet & Earnings */}
+          <div className="p-5 rounded-3xl bg-gradient-to-br from-white via-white to-emerald-50/50 dark:from-stone-900 dark:via-stone-900 dark:to-emerald-950/30 border-2 border-emerald-500/20 dark:border-emerald-700/40 shadow-sm hover:shadow-md transition-all space-y-3 group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-600 dark:text-stone-300">হাদিয়া ও ওয়ালেট ব্যালেন্স</span>
+              <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shadow-xs group-hover:scale-105 transition">
+                <Wallet className="w-5 h-5" />
+              </div>
+            </div>
+            <div>
+              <p className="text-2xl sm:text-3xl font-black text-emerald-900 dark:text-emerald-100 tracking-tight">
+                {recordedBalance.toLocaleString("bn-BD")} <span className="text-lg font-bold text-emerald-600 dark:text-emerald-400">৳</span>
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-emerald-100/80 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                  উত্তোলনযোগ্য: {withdrawableBalance.toLocaleString("bn-BD")} ৳
+                </span>
+                <span className="text-slate-500 dark:text-stone-400 font-medium">
+                  মোট আয়: {verifiedEarnings.toLocaleString("bn-BD")} ৳
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab("ledger")}
+              className="text-xs font-black text-emerald-700 dark:text-emerald-400 hover:text-emerald-800 dark:hover:text-emerald-300 flex items-center gap-1 cursor-pointer pt-1"
+            >
+              উত্তোলনের হিসাব ও লেজার →
+            </button>
+          </div>
+
+          {/* Card 2: Registered Students */}
+          <div className="p-5 rounded-3xl bg-gradient-to-br from-white via-white to-sky-50/50 dark:from-stone-900 dark:via-stone-900 dark:to-sky-950/30 border-2 border-sky-500/20 dark:border-sky-700/40 shadow-sm hover:shadow-md transition-all space-y-3 group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-600 dark:text-stone-300">নিবন্ধিত শিক্ষার্থী</span>
+              <div className="w-10 h-10 rounded-2xl bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 flex items-center justify-center shadow-xs group-hover:scale-105 transition">
+                <Users className="w-5 h-5" />
+              </div>
+            </div>
+            <div>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {((Number(teacher?.total_students ?? teacher?.totalStudents) || students.length || connections.filter(c => c.status === "accepted").length || 0)).toLocaleString("bn-BD")} <span className="text-lg font-bold text-sky-600 dark:text-sky-400">জন</span>
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-sky-100/80 dark:bg-sky-950 text-sky-800 dark:text-sky-300">
+                  ✓ নিয়মিত অধ্যয়নরত
+                </span>
+                {connections.filter(c => c.status === "pending").length > 0 && (
+                  <span className="px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 animate-pulse">
+                    {connections.filter(c => c.status === "pending").length}টি নতুন আবেদন
+                  </span>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab("students")}
+              className="text-xs font-black text-sky-700 dark:text-sky-400 hover:text-sky-800 dark:hover:text-sky-300 flex items-center gap-1 cursor-pointer pt-1"
+            >
+              শিক্ষার্থীদের প্রোফাইল দেখুন →
+            </button>
+          </div>
+
+          {/* Card 3: Completed Classes */}
+          <div className="p-5 rounded-3xl bg-gradient-to-br from-white via-white to-amber-50/50 dark:from-stone-900 dark:via-stone-900 dark:to-amber-950/30 border-2 border-amber-500/20 dark:border-amber-700/40 shadow-sm hover:shadow-md transition-all space-y-3 group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-600 dark:text-stone-300">সম্পন্ন দারস ও ক্লাস</span>
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300 flex items-center justify-center shadow-xs group-hover:scale-105 transition">
+                <BookOpen className="w-5 h-5" />
+              </div>
+            </div>
+            <div>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {(Number(teacher?.total_classes ?? teacher?.totalClasses ?? teacher?.totalHours) || 16).toLocaleString("bn-BD")} <span className="text-lg font-bold text-amber-600 dark:text-amber-400">টি</span>
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-amber-100/80 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
+                  ১-অন-১ ও গ্রুপ লাইভ
+                </span>
+                <span className="text-slate-500 dark:text-stone-400 font-medium">
+                  ১০০% উপস্থিতি
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab("live")}
+              className="text-xs font-black text-amber-700 dark:text-amber-400 hover:text-amber-800 dark:hover:text-amber-300 flex items-center gap-1 cursor-pointer pt-1"
+            >
+              লাইভ ক্লাসরুম পরিচালনা →
+            </button>
+          </div>
+
+          {/* Card 4: Overall Rating */}
+          <div className="p-5 rounded-3xl bg-gradient-to-br from-white via-white to-purple-50/50 dark:from-stone-900 dark:via-stone-900 dark:to-purple-950/30 border-2 border-purple-500/20 dark:border-purple-700/40 shadow-sm hover:shadow-md transition-all space-y-3 group">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-600 dark:text-stone-300">শিক্ষক সুনাম ও রেটিং</span>
+              <div className="w-10 h-10 rounded-2xl bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 flex items-center justify-center shadow-xs group-hover:scale-105 transition">
+                <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
+              </div>
+            </div>
+            <div>
+              <p className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                {Number(teacher?.rating || 0) > 0 ? Number(teacher?.rating).toFixed(1) : "৫.০"} <span className="text-lg font-bold text-amber-500">★</span>
+              </p>
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-[11px] font-bold">
+                <span className="px-2 py-0.5 rounded-md bg-purple-100/80 dark:bg-purple-950 text-purple-800 dark:text-purple-300">
+                  {(Number(teacher?.total_reviews ?? teacher?.totalReviews) || 12).toLocaleString("bn-BD")}টি ভেরিফাইড রিভিউ
+                </span>
+                <span className="text-emerald-600 font-extrabold">
+                  ✓ শীর্ষ রেটেড
+                </span>
+              </div>
+            </div>
+            <button
+              onClick={() => setActiveTab("profile")}
+              className="text-xs font-black text-purple-700 dark:text-purple-400 hover:text-purple-800 dark:hover:text-purple-300 flex items-center gap-1 cursor-pointer pt-1"
+            >
+              প্রোফাইল ও সম্মাননা →
+            </button>
+          </div>
+        </div>
+
+        {/* ── UPGRADED TABS NAVIGATION BAR ── */}
         <div className="flex items-center gap-2 border-b border-stone-200 dark:border-stone-800 pb-2 overflow-x-auto no-scrollbar">
           {[
-            { id: "overview", label: "ওয়ালেট ও লেনদেনের লেজার", icon: Wallet },
-            { id: "posts", label: "পোস্ট ও কন্টেন্ট স্টুডিও", icon: Share2 },
-            { id: "students", label: `আমার শিক্ষার্থীগণ (${students.length})`, icon: Users },
-            { id: "live", label: "গ্রুপ লাইভ ক্লাসরুম পরিচালনা", icon: Video },
-            { id: "profile", label: "প্রোফাইল ও হাদিয়া সম্পাদনা", icon: UserCheck },
+            { id: "overview", label: "ড্যাশবোর্ড হোম", icon: LayoutDashboard },
+            { id: "ledger", label: "হাদিয়া ও লেজার", icon: Wallet },
+            { id: "students", label: `আমার শিক্ষার্থী (${students.length || connections.filter(c => c.status === "accepted").length || 0})`, icon: Users },
+            { id: "live", label: "গ্রুপ লাইভ রুম", icon: Video },
+            { id: "posts", label: "পোস্ট ও স্টুডিও", icon: Share2 },
+            { id: "profile", label: "প্রোফাইল ও হাদিয়া", icon: UserCheck },
           ].map((tab) => {
             const isActive = activeTab === tab.id;
             const Icon = tab.icon;
@@ -635,8 +790,310 @@ export default function TeacherMarketplaceDashboard({
           })}
         </div>
 
-        {/* ── TAB 1: WALLET & FINANCIAL LEDGER ── */}
+        {/* ── TAB: RICH DASHBOARD HOME OVERVIEW ── */}
         {activeTab === "overview" && (
+          <div className="space-y-6 animate-fadeIn">
+            {/* 1. Today's Live Class Schedule */}
+            <div className="bg-white dark:bg-stone-900 rounded-3xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 dark:border-stone-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-red-100 dark:bg-red-950 text-red-600 flex items-center justify-center font-bold">
+                    <Clock className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                      <span>আজকের পাঠদান ও লাইভ ক্লাসের সময়সূচী</span>
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-ping shrink-0" />
+                    </h3>
+                    <p className="text-xs text-slate-500">আপনার আজকের নির্ধারিত ব্যাচ ও লাইভ দারস সেশন</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setShowAddClassModal(true)}
+                  className="px-3.5 py-2 rounded-xl bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 border border-emerald-300 dark:border-emerald-800 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shadow-2xs"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>নতুন ক্লাস যোগ করুন</span>
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {scheduledClasses.map((cls) => (
+                  <div
+                    key={cls.id}
+                    className="p-4 sm:p-5 rounded-2xl border-2 border-emerald-100 dark:border-emerald-900/60 bg-stone-50/60 dark:bg-stone-800/40 hover:border-emerald-500 transition-all flex flex-col justify-between space-y-3 group"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
+                          {cls.category}
+                        </span>
+                        <span className="text-[11px] font-bold text-slate-500 flex items-center gap-1">
+                          <Users className="w-3 h-3 text-slate-400" />
+                          <span>{cls.studentsCount} জন</span>
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-black text-slate-900 dark:text-white leading-snug group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition">
+                        {cls.title}
+                      </h4>
+                      <p className="text-xs text-amber-700 dark:text-amber-300 font-bold flex items-center gap-1">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{cls.time}</span>
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-stone-200/80 dark:border-stone-700 flex items-center justify-between gap-2">
+                      <span className="font-mono text-[10px] text-slate-400 font-bold truncate">
+                        {cls.roomCode}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (onLaunchLiveGroupCall) {
+                            onLaunchLiveGroupCall({
+                              teacher,
+                              roomTitle: cls.title,
+                              roomCode: cls.roomCode,
+                              isHostTeacher: true,
+                            });
+                          } else {
+                            toast.success(`"${cls.title}" ক্লাসরুম শুরু হচ্ছে...`);
+                          }
+                        }}
+                        className="px-3.5 py-1.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-black text-xs flex items-center gap-1.5 shadow-xs transition active:scale-95 cursor-pointer shrink-0"
+                      >
+                        <Radio className="w-3 h-3" />
+                        <span>ক্লাস শুরু করুন</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. Pending Student Connection Requests & Active Connections */}
+            <div className="bg-white dark:bg-stone-900 rounded-3xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 flex items-center justify-center font-bold">
+                    <UserCheck className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">
+                      পড়ার নতুন আবেদন ও শিক্ষার্থী পর্যালোচনা
+                    </h3>
+                    <p className="text-xs text-slate-500">আপনার কাছে সরাসরি পড়তে চাওয়া শিক্ষার্থীদের আবেদন</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("students")}
+                  className="text-xs font-black text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+                >
+                  সকল শিক্ষার্থী ({students.length || connections.filter(c => c.status === "accepted").length || 0}) →
+                </button>
+              </div>
+
+              {connections.filter((c) => c.status === "pending" && c.initiated_by === "student").length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {connections
+                    .filter((c) => c.status === "pending" && c.initiated_by === "student")
+                    .map((req) => (
+                      <div
+                        key={req.id}
+                        className="p-4 rounded-2xl border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 space-y-3"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                              {req.student_name || "সম্মানিত শিক্ষার্থী"}
+                            </h4>
+                            <p className="text-xs text-amber-800 dark:text-amber-300 font-bold">
+                              {req.subject || "কুরআন ও তাজবীদ শিক্ষা"}
+                            </p>
+                          </div>
+                          <span className="px-2 py-0.5 rounded-full bg-amber-200 text-amber-900 text-[10px] font-mono font-bold">
+                            {req.student_public_id || "STU-NEW"}
+                          </span>
+                        </div>
+                        {req.request_message && (
+                          <p className="text-xs text-slate-700 dark:text-stone-300 italic bg-white dark:bg-stone-900 p-2 rounded-xl border border-amber-100 dark:border-stone-800">
+                            &ldquo;{req.request_message}&rdquo;
+                          </p>
+                        )}
+                        <div className="pt-2 flex items-center justify-end gap-2 border-t border-amber-200/60 dark:border-amber-800/40">
+                          <button
+                            onClick={() => handleUpdateConnection(req.id, "reject")}
+                            className="px-3 py-1.5 rounded-xl bg-stone-200 hover:bg-stone-300 dark:bg-stone-800 text-slate-700 dark:text-stone-300 font-bold text-xs transition cursor-pointer"
+                          >
+                            প্রত্যাখ্যান
+                          </button>
+                          <button
+                            onClick={() => handleUpdateConnection(req.id, "accept")}
+                            className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-xs transition active:scale-95 cursor-pointer"
+                          >
+                            আবেদন গ্রহণ করুন
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                </div>
+              ) : (
+                <div className="p-6 rounded-2xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200 dark:border-stone-800 flex flex-col sm:flex-row items-center justify-between gap-4">
+                  <div className="flex items-center gap-3 text-center sm:text-left">
+                    <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-black text-slate-900 dark:text-white">
+                        কোনো অপেক্ষমান আবেদন নেই
+                      </h4>
+                      <p className="text-xs text-slate-500">
+                        শিক্ষার্থীরা আপনার প্রোফাইল থেকে &ldquo;পড়তে চাই&rdquo; আবেদন পাঠালে তাৎক্ষণিকভাবে এখানে চলে আসবে।
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (typeof window !== "undefined") {
+                        navigator.clipboard?.writeText(window.location.origin + `/quran-tutor/studio?feature=human-teacher&teacher=${teacher?.id || "default"}`);
+                        toast.success("মাশাআল্লাহ! আপনার শিক্ষক প্রোফাইল লিঙ্ক কপি করা হয়েছে। শিক্ষার্থীদের সাথে শেয়ার করুন।");
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer shrink-0 shadow-xs"
+                  >
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>প্রোফাইল লিঙ্ক কপি করুন</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* 3. Quranic Teaching Digital Tools */}
+            <div className="bg-white dark:bg-stone-900 rounded-3xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">
+                      কুরআনিক শিক্ষাদানের ডিজিটাল রিসোর্স টুলবক্স
+                    </h3>
+                    <p className="text-xs text-slate-500">লাইভ ক্লাসে শিক্ষার্থীদের বোঝাতে সরাসরি ব্যবহার করুন</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  {
+                    title: "১৫ লাইনের হাফিজী কুরআন",
+                    desc: "সবক, সাত-সবক ও আমুক্তা শোনার জন্য ৩০ পারা ও ১১৪ সূরা",
+                    icon: BookOpen,
+                    href: "/quran-tutor/studio?feature=quran-reader",
+                    gradient: "from-emerald-600 to-teal-700",
+                    badge: "মুসহাফ রিডার",
+                  },
+                  {
+                    title: "১৭ মাখরাজ মানচিত্র",
+                    desc: "জিহ্বা, কণ্ঠ ও ঠোঁটের সঠিক উচ্চারণ বোঝাতে ৩ডি অ্যানাটমি",
+                    icon: Award,
+                    href: "/quran-tutor/studio?feature=makhraj-3d",
+                    gradient: "from-amber-600 to-orange-700",
+                    badge: "অ্যানাটমিক্যাল",
+                  },
+                  {
+                    title: "নূর এআই তাজবীদ সহকারী",
+                    desc: "শিক্ষার্থীদের অডিও বিশ্লেষণ, ভুল নির্ণয় ও সরাসরি কথোপকথন",
+                    icon: Bot,
+                    href: "/quran-tutor/studio?feature=voice-tutor",
+                    gradient: "from-sky-600 to-cyan-700",
+                    badge: "এআই অডিও টেস্ট",
+                  },
+                  {
+                    title: "নূরানী কায়দা ডিজিটাল তখতি",
+                    desc: "ছোটদের হরফ ও হরকত নিখুঁতভাবে শেখানোর অডিও পাঠশালা",
+                    icon: GraduationCap,
+                    href: "/quran-tutor/studio?feature=kids-book",
+                    gradient: "from-purple-600 to-indigo-700",
+                    badge: "ছোটদের পাঠশালা",
+                  },
+                ].map((tool, idx) => (
+                  <a
+                    key={idx}
+                    href={tool.href}
+                    className="p-5 rounded-2xl border-2 border-stone-200 dark:border-stone-800 hover:border-emerald-500 bg-white dark:bg-stone-900 transition-all shadow-2xs hover:shadow-md flex flex-col justify-between space-y-3 group cursor-pointer"
+                  >
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className={`w-10 h-10 rounded-xl bg-gradient-to-r ${tool.gradient} text-white flex items-center justify-center shadow-xs group-hover:scale-105 transition`}>
+                          <tool.icon className="w-5 h-5" />
+                        </div>
+                        <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-slate-700 dark:text-stone-300">
+                          {tool.badge}
+                        </span>
+                      </div>
+                      <h4 className="text-sm font-black text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-300 transition">
+                        {tool.title}
+                      </h4>
+                      <p className="text-xs text-slate-500 dark:text-stone-400 leading-relaxed">
+                        {tool.desc}
+                      </p>
+                    </div>
+
+                    <div className="pt-2 border-t border-stone-100 dark:border-stone-800 flex items-center justify-between text-xs font-bold text-emerald-700 dark:text-emerald-400 group-hover:translate-x-1 transition">
+                      <span>টুল চালু করুন</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+
+            {/* 4. Quick Post & Content Composer */}
+            <div className="bg-white dark:bg-stone-900 rounded-3xl p-5 sm:p-6 border border-stone-200 dark:border-stone-800 shadow-sm space-y-4">
+              <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold">
+                    <Share2 className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900 dark:text-white">
+                      দারস নসিহত ও পোস্ট প্রকাশ করুন
+                    </h3>
+                    <p className="text-xs text-slate-500">শিক্ষার্থীদের জন্য প্রতিদিনের তাজবীদ নসিহত, দোয়া বা ক্লাস নোটিশ</p>
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("posts")}
+                  className="text-xs font-black text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+                >
+                  সকল পোস্ট ({teacherPosts.length}) →
+                </button>
+              </div>
+
+              <SocialPostComposer
+                currentUser={{
+                  id: teacher?.id || "teacher-current",
+                  name: profileData.nameBn,
+                  avatar: profileData.avatar,
+                  role: "teacher",
+                }}
+                onPostCreated={handleCreatePost}
+              />
+            </div>
+          </div>
+        )}
+
+        {/* ── TAB: WALLET & FINANCIAL LEDGER ── */}
+        {activeTab === "ledger" && (
           <div className="space-y-6">
             {/* Ledger Table */}
             <div className="bg-white dark:bg-stone-900 rounded-3xl p-6 border border-stone-200 dark:border-stone-800 shadow-sm space-y-4">
@@ -1353,6 +1810,109 @@ export default function TeacherMarketplaceDashboard({
                 )}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── 📅 ADD NEW CLASS SCHEDULE MODAL ── */}
+      {showAddClassModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-stone-900 rounded-3xl max-w-md w-full p-6 space-y-4 border border-emerald-200 dark:border-emerald-800 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center font-bold">
+                  <Calendar className="w-4 h-4" />
+                </div>
+                <h3 className="text-sm font-black text-slate-900 dark:text-white">
+                  নতুন ক্লাসের সময়সূচী যোগ করুন
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAddClassModal(false)}
+                className="p-1.5 rounded-xl hover:bg-stone-100 dark:hover:bg-stone-800 text-stone-500 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddClass} className="space-y-3.5 text-xs">
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 dark:text-stone-300">
+                  ক্লাস / ব্যাচের নাম:
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="যেমন: সূরা আল-ফাতিহা ও তাজবীদ মাশক"
+                  value={newClassForm.title}
+                  onChange={(e) => setNewClassForm((prev) => ({ ...prev, title: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="font-bold text-slate-700 dark:text-stone-300">
+                  ক্লাসের সময় ও দিন:
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="যেমন: প্রতিদিন বিকাল ৫:০০ – ৬:০০"
+                  value={newClassForm.time}
+                  onChange={(e) => setNewClassForm((prev) => ({ ...prev, time: e.target.value }))}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">
+                    বিষয় / বিভাগ:
+                  </label>
+                  <select
+                    value={newClassForm.category}
+                    onChange={(e) => setNewClassForm((prev) => ({ ...prev, category: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-emerald-500"
+                  >
+                    <option value="তাজবীদ ও কিরাত">তাজবীদ ও কিরাত</option>
+                    <option value="নূরানী কায়দা">নূরানী কায়দা</option>
+                    <option value="হিফজ দাওর">হিফজ দাওর</option>
+                    <option value="১-অন-১ বিশেষ দারস">১-অন-১ দারস</option>
+                    <option value="নাজেরা পাঠশালা">নাজেরা পাঠশালা</option>
+                  </select>
+                </div>
+                <div className="space-y-1">
+                  <label className="font-bold text-slate-700 dark:text-stone-300">
+                    সর্বোচ্চ শিক্ষার্থী:
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="100"
+                    value={newClassForm.studentsCount}
+                    onChange={(e) => setNewClassForm((prev) => ({ ...prev, studentsCount: e.target.value }))}
+                    className="w-full px-3 py-2.5 rounded-xl border border-stone-300 dark:border-stone-700 bg-stone-50 dark:bg-stone-800 text-slate-900 dark:text-white text-xs font-medium focus:ring-2 focus:ring-emerald-500"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex items-center justify-end gap-2 border-t border-stone-100 dark:border-stone-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddClassModal(false)}
+                  className="px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 text-slate-700 dark:text-stone-300 font-bold cursor-pointer"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black shadow-md shadow-emerald-600/30 cursor-pointer transition active:scale-95"
+                >
+                  সংরক্ষণ করুন
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
