@@ -1,6 +1,62 @@
 import React from "react";
 
 /**
+ * Voice Engine Profiles
+ * ইঞ্জিন ২ (প্রাকৃতিক মানবিক স্টুডিও কণ্ঠ — ElevenLabs v3) ডিফল্ট হিসেবে সেট করা হয়েছে
+ */
+export const ELEVENLABS_STUDIO_VOICES = {
+  brian: {
+    id: "brian",
+    voiceId: "nPczCjzI2devNBz1zQrb",
+    name: "উস্তাদ ভয়েস ১ (Brian — গভীর ও শান্ত)",
+    shortName: "গভীর ও শান্ত",
+  },
+  bill: {
+    id: "bill",
+    voiceId: "pqHfZKP75CvOlQylNhV4",
+    name: "উস্তাদ ভয়েস ২ (Bill — অভিজ্ঞ ও স্থির)",
+    shortName: "অভিজ্ঞ ও স্থির",
+  },
+  george: {
+    id: "george",
+    voiceId: "JBFqnCBsd6RMkjVDRZzb",
+    name: "উস্তাদ ভয়েস ৩ (George — স্পষ্ট ও মধুর)",
+    shortName: "স্পষ্ট ও মধুর",
+  },
+  daniel: {
+    id: "daniel",
+    voiceId: "onwK4e9ZLuTAKqWW03F9",
+    name: "উস্তাদ ভয়েস ৪ (Daniel — ধীর ও হৃদয়স্পর্শী)",
+    shortName: "ধীর ও হৃদয়স্পর্শী",
+  },
+};
+
+export const BANGLA_VOICE_ENGINES = {
+  "engine-2": {
+    id: "engine-2",
+    code: "engine-2",
+    name: "ইঞ্জিন ২: প্রাকৃতিক মানবিক স্টুডিও কণ্ঠ (ElevenLabs v3)",
+    shortName: "প্রাকৃতিক স্টুডিও কণ্ঠ (v3)",
+    description: "রোবোটিকতামুক্ত স্বাভাবিক মানবিক ও হৃদয়স্পর্শী বাংলা ভয়েস",
+    pitch: "0Hz",
+    rate: "-3%",
+    isDefault: true,
+  },
+  "engine-1": {
+    id: "engine-1",
+    code: "engine-1",
+    name: "ইঞ্জিন ১: প্রদীপ স্টুডিও (ফ্রি)",
+    shortName: "প্রদীপ স্টুডিও (ফ্রি)",
+    description: "রোবোটিকতামুক্ত এনালগ স্টুডিও মাস্টার্ড বাংলা কণ্ঠ (সীমাহীন ও সম্পূর্ণ ফ্রি)",
+    pitch: "default",
+    rate: "default",
+    isDefault: false,
+  },
+};
+
+export const EL_VOICE_STORAGE_KEY = "rahmania_bangla_el_voice";
+
+/**
  * Universal Bengali Quran Translation Audio Engine
  * (সার্বজনীন বাংলা অনুবাদ অডিও ইঞ্জিন)
  *
@@ -26,6 +82,38 @@ class UniversalBanglaAudioEngine {
       window.addEventListener("rahmania-arabic-audio-start", () => {
         this.stop();
       });
+    }
+  }
+
+  /**
+   * Get currently active voice engine (Default: 'engine-2' ElevenLabs v3 Studio)
+   */
+  getActiveEngine() {
+    if (typeof window === "undefined") return "engine-2";
+    try {
+      return localStorage.getItem("rahmania_bangla_voice_engine") || "engine-2";
+    } catch {
+      return "engine-2";
+    }
+  }
+
+  /**
+   * Switch the active voice engine globally
+   */
+  setActiveEngine(engineId) {
+    if (typeof window === "undefined") return;
+    try {
+      const validId = engineId === "engine-1" ? "engine-1" : "engine-2";
+      localStorage.setItem("rahmania_bangla_voice_engine", validId);
+      if (this.status === "playing" || this.status === "loading") {
+        this.stop();
+      }
+      this.notify();
+      window.dispatchEvent(
+        new CustomEvent("rahmania-bangla-engine-changed", { detail: { engine: validId } })
+      );
+    } catch (e) {
+      console.warn("Could not save active engine:", e);
     }
   }
 
@@ -56,10 +144,31 @@ class UniversalBanglaAudioEngine {
   /**
    * Get direct neural audio URL for Bengali text
    */
-  getAudioUrl(text) {
+  getActiveElVoice() {
+    if (typeof window === "undefined") return "brian";
+    try {
+      const saved = localStorage.getItem(EL_VOICE_STORAGE_KEY);
+      if (saved && ELEVENLABS_STUDIO_VOICES[saved]) return saved;
+    } catch {}
+    return "brian";
+  }
+
+  setActiveElVoice(voiceKey) {
+    if (!ELEVENLABS_STUDIO_VOICES[voiceKey]) return;
+    try {
+      if (typeof window !== "undefined") {
+        localStorage.setItem(EL_VOICE_STORAGE_KEY, voiceKey);
+      }
+    } catch {}
+    this.notify();
+  }
+
+  getAudioUrl(text, engineOverride = null, elVoiceOverride = null) {
     const clean = this.cleanText(text);
     if (!clean) return "";
-    return `/api/ai/tts?text=${encodeURIComponent(clean)}&lang=bn&gender=male&v=pradeep-male-v12`;
+    const activeEngine = engineOverride || this.getActiveEngine();
+    const activeElVoice = elVoiceOverride || this.getActiveElVoice();
+    return `/api/ai/tts?text=${encodeURIComponent(clean)}&lang=bn&gender=male&engine=${encodeURIComponent(activeEngine)}&elVoice=${encodeURIComponent(activeElVoice)}&v=studio-v14`;
   }
 
   /**
@@ -77,6 +186,8 @@ class UniversalBanglaAudioEngine {
       progress: this.progress,
       currentTime: this.currentTime,
       duration: this.duration,
+      activeEngine: this.getActiveEngine(),
+      activeElVoice: this.getActiveElVoice(),
     });
 
     return () => {
@@ -94,6 +205,8 @@ class UniversalBanglaAudioEngine {
       progress: this.progress,
       currentTime: this.currentTime,
       duration: this.duration,
+      activeEngine: this.getActiveEngine(),
+      activeElVoice: this.getActiveElVoice(),
     };
     this.listeners.forEach((fn) => {
       try {
@@ -222,23 +335,35 @@ class UniversalBanglaAudioEngine {
       return;
     }
 
-    // Stop whatever was playing previously
-    this.stop();
+    // Stop previous audio playback cleanly
+    if (this.audio) {
+      try {
+        this.audio.pause();
+        this.audio.currentTime = 0;
+        this.audio.ontimeupdate = null;
+        this.audio.onplay = null;
+        this.audio.onplaying = null;
+        this.audio.oncanplay = null;
+        this.audio.onended = null;
+        this.audio.onerror = null;
+      } catch (e) {}
+      this.audio = null;
+    }
 
     this.currentId = id;
     this.status = "loading";
-    this.currentWords = clean.split(/\s+/).filter(Boolean);
-    this.activeWordIndex = 0;
     this.notify();
 
     const audioUrl = this.getAudioUrl(clean);
 
     try {
       const audio = new Audio();
-      audio.src = audioUrl;
+      audio.preload = "auto";
+      audio.crossOrigin = "anonymous";
       audio.volume = 1.0;
       audio.preservesPitch = true;
       audio.playbackRate = 1.0; // Natural, authentic human cadence
+      audio.src = audioUrl;
       this.audio = audio;
 
       audio.onplay = () => {
@@ -249,9 +374,15 @@ class UniversalBanglaAudioEngine {
       };
 
       audio.onplaying = () => {
-        if (this.currentId === id && this.status !== "playing") {
+        if (this.currentId === id) {
           this.status = "playing";
           this.notify();
+        }
+      };
+
+      audio.oncanplay = () => {
+        if (this.currentId === id && this.status === "loading") {
+          audio.play().catch(() => {});
         }
       };
 
@@ -276,9 +407,10 @@ class UniversalBanglaAudioEngine {
               this.notify();
             }
           } else {
-            // Compensate for TTS lead-in silence (0.15s) and trailing silence (0.35s)
-            const leadIn = 0.15;
-            const trailSilence = 0.35;
+            // Compensate for TTS lead-in silence (0.25s) and trailing silence (0.45s)
+            // বাংলা TTS কণ্ঠস্বর শুরু হওয়ার পরে হাইলাইট জ্বলবে, আগে নয়
+            const leadIn = 0.25;
+            const trailSilence = 0.45;
             const effectiveTime = Math.max(0, currentTime - leadIn);
             const effectiveDuration = Math.max(0.1, duration - leadIn - trailSilence);
             const progress = Math.min(0.999, Math.max(0, effectiveTime / effectiveDuration));
@@ -286,8 +418,8 @@ class UniversalBanglaAudioEngine {
 
             // Acoustically weighted pacing based on syllables, character length and punctuation pauses
             const weights = this.currentWords.map((w, idx) => {
-              const clean = w.replace(/[।?!,;:\s"'()\[\]]/g, "");
-              let wt = Math.max(1.8, clean.length * 1.05);
+              const cleanW = w.replace(/[।?!,;:\s"'()\[\]]/g, "");
+              let wt = Math.max(1.8, cleanW.length * 1.05);
 
               // Pause bonus for commas (TTS pauses ~350ms)
               if (/[,،]/.test(w)) {
@@ -344,10 +476,21 @@ class UniversalBanglaAudioEngine {
         }
       };
 
-      await audio.play();
-      if (this.currentId === id && this.status !== "playing") {
-        this.status = "playing";
-        this.notify();
+      // Call play() immediately within the synchronous click event gesture
+      audio.load();
+      const playPromise = audio.play();
+      if (playPromise !== undefined) {
+        playPromise
+          .then(() => {
+            if (this.currentId === id) {
+              this.status = "playing";
+              this.notify();
+            }
+          })
+          .catch((err) => {
+            if (err.name === "AbortError") return;
+            console.warn("Audio play rejected, awaiting buffer stream:", err);
+          });
       }
     } catch (err) {
       console.warn("Audio play call failed, switching to browser speech synthesis:", err);
@@ -397,6 +540,8 @@ export function useBanglaAudioEngine() {
     progress: typeof window !== "undefined" ? (banglaAudioEngine.progress ?? 0) : 0,
     currentTime: typeof window !== "undefined" ? (banglaAudioEngine.currentTime ?? 0) : 0,
     duration: typeof window !== "undefined" ? (banglaAudioEngine.duration ?? 0) : 0,
+    activeEngine: typeof window !== "undefined" ? banglaAudioEngine.getActiveEngine() : "engine-2",
+    activeElVoice: typeof window !== "undefined" ? banglaAudioEngine.getActiveElVoice() : "brian",
   }));
 
   React.useEffect(() => {
@@ -413,6 +558,14 @@ export function useBanglaAudioEngine() {
 
   const toggle = React.useCallback((text, id) => {
     banglaAudioEngine.toggle(text, id);
+  }, []);
+
+  const setActiveEngine = React.useCallback((engineId) => {
+    banglaAudioEngine.setActiveEngine(engineId);
+  }, []);
+
+  const setActiveElVoice = React.useCallback((voiceKey) => {
+    banglaAudioEngine.setActiveElVoice(voiceKey);
   }, []);
 
   const isPlayingId = React.useCallback((id) => {
@@ -432,10 +585,16 @@ export function useBanglaAudioEngine() {
     progress: state.progress ?? 0,
     currentTime: state.currentTime ?? 0,
     duration: state.duration ?? 0,
+    activeEngine: state.activeEngine || "engine-2",
+    activeElVoice: state.activeElVoice || "brian",
+    engines: BANGLA_VOICE_ENGINES,
+    elVoices: ELEVENLABS_STUDIO_VOICES,
     isPlayingId,
     isLoadingId,
     play,
     stop,
     toggle,
+    setActiveEngine,
+    setActiveElVoice,
   };
 }

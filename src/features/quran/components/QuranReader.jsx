@@ -203,9 +203,18 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
     activeWordIndex: activeBanglaWordIndex,
     toggle: toggleBanglaAudio,
     stop: stopBanglaAudio,
+    activeEngine: activeBanglaEngine,
+    setActiveEngine: setActiveBanglaEngine,
+    activeElVoice,
+    setActiveElVoice,
+    elVoices,
   } = useBanglaAudioEngine();
 
   const handleToggleBangla = (text, id) => {
+    if (!text) {
+      toast.error("এই আয়াতের বাংলা অনুবাদ পাওয়া যায়নি");
+      return;
+    }
     if (isPlayingAudio && audioRef.current) {
       audioRef.current.pause();
       setIsPlayingAudio(false);
@@ -485,6 +494,8 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
     }
 
     // Precise word-by-word tracking during playback (QuranCDN Millisecond Segments + Tajweed Pacing)
+    // lastHighlightedWordRef: হাইলাইট যেন কখনো পিছিয়ে না যায় (monotonically non-decreasing)
+    let lastHighlightedWord = startWordIdx >= 0 ? startWordIdx : 0;
     audio.ontimeupdate = () => {
       if (!audioRef.current || audioRef.current !== audio) return;
       const { currentTime, duration } = audio;
@@ -499,7 +510,20 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
         words: cleanWords,
       });
 
-      setActiveWordIndex(computedIndex);
+      // Monotonic guard: হাইলাইট শুধু সামনে যাবে, কখনো হঠাৎ পিছিয়ে আসবে না
+      // (Qari-র repeat/waqf pause-এর সময় সাময়িক পিছিয়ে আসা স্বাভাবিক তবে flickering ঠেকাতে হবে)
+      const safeIndex = Math.max(lastHighlightedWord, computedIndex);
+      if (safeIndex !== lastHighlightedWord) {
+        lastHighlightedWord = safeIndex;
+        setActiveWordIndex(safeIndex);
+      } else if (computedIndex !== lastHighlightedWord) {
+        // If computedIndex jumped back significantly (genuine repeat/waqf), allow it
+        // but only if it's a real backward jump (> 2 words back = likely genuine Qari repeat)
+        if (lastHighlightedWord - computedIndex > 2) {
+          lastHighlightedWord = computedIndex;
+          setActiveWordIndex(computedIndex);
+        }
+      }
     };
 
     // Dynamic onended using synchronized refs (100% immune to stale closures)
@@ -765,29 +789,76 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
             </div>
           </div>
 
-          {/* Center: Reciter Selection */}
-          <div className="flex items-center gap-1.5 hidden md:flex">
-            <span className={`text-xs font-bold ${isDay ? "text-stone-600" : "text-slate-400"}`}>ক্বারী:</span>
-            <select
-              value={selectedQari}
-              onChange={(e) => handleQariChange(e.target.value)}
-              className={`${isDay ? "bg-white text-emerald-950 border border-emerald-300 shadow-2xs" : "bg-emerald-950/90 text-emerald-200 border border-emerald-800/70"} rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500`}
-            >
-              {QARI_REGISTRY.map((qari) => (
-                <option key={qari.id} value={qari.id} className="bg-white text-slate-900">
-                  {qari.displayTitleBn} ({qari.styleBn})
-                </option>
-              ))}
-            </select>
+          {/* Center: Reciter & Bengali Voice Selection */}
+          <div className="flex items-center gap-2 hidden md:flex">
+            <div className="flex items-center gap-1.5">
+              <span className={`text-xs font-bold ${isDay ? "text-stone-600" : "text-slate-400"}`}>ক্বারী:</span>
+              <select
+                value={selectedQari}
+                onChange={(e) => handleQariChange(e.target.value)}
+                className={`${isDay ? "bg-white text-emerald-950 border border-emerald-300 shadow-2xs" : "bg-emerald-950/90 text-emerald-200 border border-emerald-800/70"} rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500`}
+              >
+                {QARI_REGISTRY.map((qari) => (
+                  <option key={qari.id} value={qari.id} className="bg-white text-slate-900">
+                    {qari.displayTitleBn} ({qari.styleBn})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <span className={`text-xs font-bold ${isDay ? "text-stone-600" : "text-slate-400"}`}>বাংলা কণ্ঠ:</span>
+              <select
+                value={activeBanglaEngine || "engine-2"}
+                onChange={(e) => {
+                  setActiveBanglaEngine(e.target.value);
+                  toast.success(
+                    e.target.value === "engine-2"
+                      ? "ইঞ্জিন ২: প্রাকৃতিক মানবিক স্টুডিও কণ্ঠ (v3) সক্রিয় করা হয়েছে"
+                      : "ইঞ্জিন ১: প্রদীপ স্টুডিও (ফ্রি) সক্রিয় করা হয়েছে"
+                  );
+                }}
+                className={`${
+                  isDay
+                    ? "bg-amber-50 text-amber-950 border border-amber-300 shadow-2xs"
+                    : "bg-[#071d15] text-amber-300 border border-amber-600/60"
+                } rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-black focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer`}
+                title="বাংলা অনুবাদ ও ব্যাখ্যার ভয়েস ইঞ্জিন নির্বাচন করুন"
+              >
+                <option value="engine-2">🎙️ ইঞ্জিন ২: প্রাকৃতিক স্টুডিও কণ্ঠ (v3) [ডিফল্ট]</option>
+                <option value="engine-1">🎙️ ইঞ্জিন ১: প্রদীপ স্টুডিও (ফ্রি)</option>
+              </select>
+              {(activeBanglaEngine || "engine-2") !== "engine-1" && elVoices && (
+                <select
+                  value={activeElVoice || "brian"}
+                  onChange={(e) => {
+                    setActiveElVoice(e.target.value);
+                    toast.success(`${elVoices[e.target.value]?.shortName || "নতুন"} স্টুডিও কণ্ঠ সক্রিয়`);
+                  }}
+                  className={`${
+                    isDay
+                      ? "bg-white text-emerald-950 border border-emerald-300 shadow-2xs"
+                      : "bg-emerald-950/90 text-emerald-200 border border-emerald-700/70"
+                  } rounded-xl px-2 py-1.5 text-xs font-bold focus:outline-none focus:ring-1 focus:ring-emerald-500 cursor-pointer`}
+                  title="বাংলা অনুবাদের স্টুডিও কণ্ঠ পরিবর্তন করুন"
+                >
+                  {Object.values(elVoices).map((v) => (
+                    <option key={v.id} value={v.id} className="bg-white text-slate-900">
+                      {v.shortName}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
           </div>
 
           {/* Right: View Mode, Theme & Font Zoom Controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2 w-full sm:w-auto justify-between sm:justify-end">
             {/* Day / Night Theme Toggle */}
             <button
               type="button"
               onClick={toggleReaderTheme}
-              className={`px-2.5 sm:px-3 py-1.5 rounded-xl border text-xs font-bold transition flex items-center gap-1.5 shadow-2xs cursor-pointer active:scale-95 ${
+              className={`px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl border text-[11px] sm:text-xs font-bold transition flex items-center gap-1 shadow-2xs cursor-pointer active:scale-95 ${
                 isDay
                   ? "bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-950 font-black"
                   : "bg-emerald-950/80 hover:bg-emerald-900 border-emerald-700 text-emerald-300"
@@ -798,46 +869,48 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
             </button>
 
             {/* View Mode Toggle: Ayah vs Mushaf */}
-            <div className={`flex items-center ${isDay ? "bg-stone-200/60 border border-stone-300/80" : "bg-black/40 border border-emerald-900/60"} p-0.5 sm:p-1 rounded-xl text-xs`}>
+            <div className={`flex items-center ${isDay ? "bg-stone-200/60 border border-stone-300/80" : "bg-black/40 border border-emerald-900/60"} p-0.5 sm:p-1 rounded-xl text-[11px] sm:text-xs`}>
               <button
                 onClick={handleSwitchToAyah}
-                className={`px-2 sm:px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer ${
+                className={`px-1.5 sm:px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer ${
                   viewMode === "ayah"
                     ? isDay ? "bg-emerald-600 text-white shadow-2xs" : "bg-emerald-600 text-white"
                     : isDay ? "text-stone-600 hover:text-stone-900" : "text-slate-400 hover:text-slate-200"
                 }`}
                 title="আয়াতভিত্তিক পাঠ ও অনুবাদ"
               >
-                <List className="w-3.5 h-3.5" />
+                <List className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 <span>আয়াত</span>
               </button>
               <button
                 onClick={handleSwitchToMushaf}
-                className={`px-2 sm:px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer ${
+                className={`px-1.5 sm:px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition cursor-pointer ${
                   viewMode === "mushaf"
                     ? isDay ? "bg-emerald-600 text-white shadow-2xs" : "bg-emerald-600 text-white"
                     : isDay ? "text-stone-600 hover:text-stone-900" : "text-slate-400 hover:text-slate-200"
                 }`}
                 title="১৫ লাইনের খাঁটি হাফেজী কুরআন মুসহাফ"
               >
-                <FileText className="w-3.5 h-3.5" />
+                <FileText className="w-3 sm:w-3.5 h-3 sm:h-3.5" />
                 <span>মুসহাফ</span>
               </button>
             </div>
 
             {/* Font Zoom Controls */}
-            <div className={`flex items-center ${isDay ? "bg-stone-200/60 border border-stone-300/80" : "bg-black/40 border border-emerald-900/60"} px-1.5 sm:px-2 py-1 rounded-xl text-xs gap-1 sm:gap-1.5`}>
+            <div className={`flex items-center ${isDay ? "bg-stone-200/60 border border-stone-300/80" : "bg-black/40 border border-emerald-900/60"} px-1 sm:px-2 py-0.5 sm:py-1 rounded-xl text-[11px] sm:text-xs gap-0.5 sm:gap-1.5`}>
               <button
                 onClick={() => changeFontSize(-2)}
-                className={`px-1.5 py-0.5 rounded ${isDay ? "hover:bg-white text-stone-700" : "hover:bg-emerald-900/60 text-slate-300"} font-black cursor-pointer`}
+                className={`px-1 sm:px-1.5 py-0.5 rounded ${isDay ? "hover:bg-white text-stone-700" : "hover:bg-emerald-900/60 text-slate-300"} font-black cursor-pointer`}
                 title="ফন্ট ছোট করুন"
               >
                 A-
               </button>
-              <span className={`text-[11px] ${isDay ? "text-emerald-700" : "text-emerald-400"} font-black`}>{arabicFontSize}px</span>
+              <span className={`text-[11px] ${isDay ? "text-emerald-700" : "text-emerald-400"} font-black`}>
+                {arabicFontSize}<span className="hidden sm:inline">px</span>
+              </span>
               <button
                 onClick={() => changeFontSize(2)}
-                className={`px-1.5 py-0.5 rounded ${isDay ? "hover:bg-white text-stone-700" : "hover:bg-emerald-900/60 text-slate-300"} font-black cursor-pointer`}
+                className={`px-1 sm:px-1.5 py-0.5 rounded ${isDay ? "hover:bg-white text-stone-700" : "hover:bg-emerald-900/60 text-slate-300"} font-black cursor-pointer`}
                 title="ফন্ট বড় করুন"
               >
                 A+
@@ -848,7 +921,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
             {viewMode === "ayah" && (
               <button
                 onClick={() => setShowBengali((v) => !v)}
-                className={`px-2.5 py-1.5 rounded-xl border text-xs font-bold transition cursor-pointer ${
+                className={`px-2 sm:px-2.5 py-1 sm:py-1.5 rounded-xl border text-[11px] sm:text-xs font-bold transition cursor-pointer shrink-0 ${
                   showBengali
                     ? isDay
                       ? "bg-emerald-600 border-emerald-700 text-white shadow-2xs"
@@ -863,6 +936,65 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
               </button>
             )}
           </div>
+        </div>
+
+        {/* MOBILE-ONLY QUICK QARI & BANGLA VOICE SELECTOR ROW */}
+        <div className="flex md:hidden items-center gap-1.5 w-full">
+          <select
+            value={selectedQari}
+            onChange={(e) => handleQariChange(e.target.value)}
+            className={`${isDay ? "bg-white text-emerald-950 border border-emerald-300 shadow-2xs" : "bg-emerald-950/90 text-emerald-200 border border-emerald-800/70"} rounded-xl px-2 py-1 text-[11px] font-bold flex-1 min-w-0 truncate focus:outline-none`}
+            title="ক্বারী নির্বাচন"
+          >
+            {QARI_REGISTRY.map((qari) => (
+              <option key={qari.id} value={qari.id} className="bg-white text-slate-900">
+                {qari.displayTitleBn}
+              </option>
+            ))}
+          </select>
+
+          <select
+            value={activeBanglaEngine || "engine-2"}
+            onChange={(e) => {
+              setActiveBanglaEngine(e.target.value);
+              toast.success(
+                e.target.value === "engine-2"
+                  ? "ইঞ্জিন ২: স্টুডিও কণ্ঠ (v3) সক্রিয়"
+                  : "ইঞ্জিন ১: প্রদীপ স্টুডিও (ফ্রি) সক্রিয়"
+              );
+            }}
+            className={`${
+              isDay
+                ? "bg-amber-50 text-amber-950 border border-amber-300 shadow-2xs"
+                : "bg-[#071d15] text-amber-300 border border-amber-600/60"
+            } rounded-xl px-2 py-1 text-[11px] font-black w-[112px] shrink-0 truncate focus:outline-none cursor-pointer`}
+            title="বাংলা ভয়েস ইঞ্জিন"
+          >
+            <option value="engine-2">ইঞ্জিন ২ (v3)</option>
+            <option value="engine-1">ইঞ্জিন ১ (ফ্রি)</option>
+          </select>
+
+          {(activeBanglaEngine || "engine-2") !== "engine-1" && elVoices && (
+            <select
+              value={activeElVoice || "brian"}
+              onChange={(e) => {
+                setActiveElVoice(e.target.value);
+                toast.success(`${elVoices[e.target.value]?.shortName || "নতুন"} স্টুডিও কণ্ঠ`);
+              }}
+              className={`${
+                isDay
+                  ? "bg-white text-emerald-950 border border-emerald-300 shadow-2xs"
+                  : "bg-emerald-950/90 text-emerald-200 border border-emerald-700/70"
+              } rounded-xl px-1.5 py-1 text-[11px] font-bold w-[76px] shrink-0 truncate focus:outline-none cursor-pointer`}
+              title="স্টুডিও কণ্ঠস্বর"
+            >
+              {Object.values(elVoices).map((v) => (
+                <option key={v.id} value={v.id} className="bg-white text-slate-900">
+                  {v.shortName}
+                </option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* ROW 2: NEW SMART SURAH & AYAH / HAFIZI PARA & PAGE JUMPER SEARCHER (Only in Ayah Mode to keep Hafizi Mushaf clean) */}
@@ -912,7 +1044,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                     setJumperSurahId(newSurahId);
                     setJumperAyahNum("");
                   }}
-                  className={`rounded-xl px-2.5 py-1.5 text-xs font-bold border focus:outline-none focus:ring-1 focus:ring-amber-500 max-w-[190px] sm:max-w-[220px] truncate ${
+                  className={`rounded-xl px-2.5 py-1.5 text-xs font-bold border focus:outline-none focus:ring-1 focus:ring-amber-500 max-w-[175px] sm:max-w-[220px] truncate ${
                     isDay
                       ? "bg-white border-amber-300 text-slate-900 shadow-2xs"
                       : "bg-emerald-950/90 border-emerald-700 text-white"
@@ -939,7 +1071,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                     }
                   }}
                   placeholder={`আয়াত (১-${ALL_SURAHS.find((s) => s.id === jumperSurahId)?.versesCount || 286})`}
-                  className={`w-24 sm:w-28 px-2.5 py-1.5 rounded-xl border text-xs font-bold text-center focus:outline-none focus:ring-1 focus:ring-amber-500 ${
+                  className={`w-28 sm:w-32 !px-2 py-1.5 rounded-xl border text-xs font-bold text-center focus:outline-none focus:ring-1 focus:ring-amber-500 ${
                     isDay
                       ? "bg-white border-amber-300 text-slate-900 shadow-2xs"
                       : "bg-emerald-950/90 border-emerald-700 text-white"
@@ -1440,7 +1572,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
 
       {/* ── FLOATING MOBILE ACTION HUB & BACK TO TOP (Smart Quick Controls for Phone View) ── */}
       <div className={`fixed ${
-        playingAyahNumber !== null ? "bottom-24 sm:bottom-28" : "bottom-4 sm:bottom-6"
+        playingAyahNumber !== null ? "bottom-28 sm:bottom-24" : "bottom-4 sm:bottom-6"
       } left-1/2 -translate-x-1/2 sm:left-auto sm:right-6 sm:translate-x-0 z-40 flex flex-col items-center sm:items-end gap-2 pointer-events-auto transition-all duration-300 max-w-[96vw]`}>
         {/* Back to Top Smooth Floating Button */}
         {showBackToTop && (
@@ -1607,6 +1739,57 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
               </button>
             </div>
 
+            {/* Mobile Quick Audio Settings: Bangla Voice Engine & Studio Voice */}
+            <div className={`p-2.5 rounded-2xl border space-y-2 ${
+              isDay ? "bg-amber-50/70 border-amber-200" : "bg-emerald-950/50 border-emerald-800/70"
+            }`}>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-[11px] font-black text-amber-600 dark:text-amber-300">
+                  🎙️ বাংলা অনুবাদ ভয়েস ইঞ্জিন
+                </span>
+                <select
+                  value={activeBanglaEngine || "engine-2"}
+                  onChange={(e) => {
+                    setActiveBanglaEngine(e.target.value);
+                    toast.success(
+                      e.target.value === "engine-2"
+                        ? "ইঞ্জিন ২: প্রাকৃতিক স্টুডিও কণ্ঠ (v3) সক্রিয়"
+                        : "ইঞ্জিন ১: প্রদীপ স্টুডিও (ফ্রি) সক্রিয়"
+                    );
+                  }}
+                  className={`rounded-xl px-2 py-1 text-[11px] font-bold border focus:outline-none ${
+                    isDay ? "bg-white border-amber-300 text-slate-900" : "bg-[#071d15] border-emerald-700 text-amber-200"
+                  }`}
+                >
+                  <option value="engine-2" className="bg-white text-slate-900">ইঞ্জিন ২: স্টুডিও কণ্ঠ (v3) [ডিফল্ট]</option>
+                  <option value="engine-1" className="bg-white text-slate-900">ইঞ্জিন ১: প্রদীপ স্টুডিও (ফ্রি)</option>
+                </select>
+              </div>
+              {(activeBanglaEngine || "engine-2") !== "engine-1" && elVoices && (
+                <div className="grid grid-cols-2 gap-1.5">
+                  {Object.values(elVoices).map((v) => (
+                    <button
+                      key={v.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveElVoice(v.id);
+                        toast.success(`${v.shortName} কণ্ঠ নির্বাচন করা হয়েছে`);
+                      }}
+                      className={`px-2 py-1 rounded-xl text-[10px] font-bold border transition cursor-pointer ${
+                        (activeElVoice || "brian") === v.id
+                          ? "bg-emerald-600 text-white border-emerald-500 shadow-xs"
+                          : isDay
+                          ? "bg-white text-stone-700 border-stone-200"
+                          : "bg-black/30 text-slate-300 border-emerald-900/60"
+                      }`}
+                    >
+                      {v.shortName}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* TAB 1: SURAH & AYAH SELECTION */}
             {jumperTab === "surah" && (
               <div className="space-y-3 animate-fadeIn">
@@ -1733,114 +1916,160 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
 
       {/* ── FIXED BOTTOM AUDIO PLAYER BAR (Always Visible & Pinned to Viewport Bottom like Qurani Amal) ── */}
       {playingAyahNumber !== null && (
-        <div className="fixed bottom-0 inset-x-0 z-50 bg-white/95 dark:bg-[#071d15]/95 backdrop-blur-md border-t border-emerald-300 dark:border-emerald-800 shadow-2xl p-3 sm:p-4 animate-slideUp">
-          <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
-            {/* Left: Info */}
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold text-xs shadow-xs shrink-0">
-                আরবী
+        <div className="fixed bottom-0 inset-x-0 z-50 bg-white/95 dark:bg-[#071d15]/95 backdrop-blur-md border-t border-emerald-300 dark:border-emerald-800 shadow-2xl px-3 py-2.5 sm:p-4 animate-slideUp">
+          <div className="max-w-5xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+            {/* Top Row on Mobile / Left on Desktop: Info + Mobile Close Button */}
+            <div className="flex items-center justify-between gap-2 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold text-[11px] sm:text-xs shadow-xs shrink-0">
+                  আরবী
+                </div>
+                <div className="min-w-0">
+                  <h4 className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-white truncate">
+                    সূরা {currentSurahMeta.nameBn} ({currentSurahMeta.nameAr})
+                  </h4>
+                  <p className="text-[11px] sm:text-xs text-emerald-700 dark:text-emerald-300 font-bold truncate">
+                    আয়াত {playingAyahNumber}/{surahData?.ayahs?.length || currentSurahMeta.versesCount} • {QARI_REGISTRY.find((q) => q.id === selectedQari)?.displayTitleBn || "মিশারী আল-আফাসী"}
+                    {!isPlayingAudio && " • (বিরতি)"}
+                  </p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <h4 className="font-extrabold text-sm text-slate-900 dark:text-white truncate">
-                  সূরা {currentSurahMeta.nameBn} ({currentSurahMeta.nameAr})
-                </h4>
-                <p className="text-xs text-emerald-700 dark:text-emerald-300 font-bold truncate">
-                  আয়াত {playingAyahNumber}/{surahData?.ayahs?.length || currentSurahMeta.versesCount} • ক্বারী: {QARI_REGISTRY.find((q) => q.id === selectedQari)?.displayTitleBn || "মিশারী রাশিদ আল-আফাসী"}
-                  {!isPlayingAudio && " • (বিরতি)"}
-                </p>
-              </div>
-            </div>
 
-            {/* Center: Controls */}
-            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+              {/* Mobile Close / Stop Button */}
               <button
                 type="button"
-                onClick={() => {
-                  if (playingAyahNumber > 1) playAyahAudio(playingAyahNumber - 1);
-                }}
-                disabled={playingAyahNumber <= 1}
-                className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-emerald-900/60 disabled:opacity-40 transition cursor-pointer"
-                title="পূর্ববর্তী আয়াত"
+                onClick={closePlayerBar}
+                className="sm:hidden p-1.5 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer shrink-0"
+                title="তিলাওয়াত সম্পূর্ণ বন্ধ করুন"
               >
-                <SkipBack className="w-4 h-4" />
-              </button>
-
-              {/* Play / Pause Toggle Button */}
-              <button
-                type="button"
-                onClick={togglePlayPauseAudio}
-                className={`w-10 h-10 rounded-full text-white flex items-center justify-center shadow-lg transition active:scale-95 cursor-pointer ${
-                  isPlayingAudio
-                    ? "bg-amber-600 hover:bg-amber-700 shadow-amber-950/20"
-                    : "bg-emerald-700 hover:bg-emerald-800 shadow-emerald-950/20"
-                }`}
-                title={isPlayingAudio ? "থামান (Pause)" : "চালু করুন (Play)"}
-              >
-                {isPlayingAudio ? (
-                  <Pause className="w-4 h-4 fill-white" />
-                ) : (
-                  <Play className="w-4 h-4 fill-white ml-0.5" />
-                )}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  if (playingAyahNumber < (surahData?.ayahs?.length || 1)) {
-                    playAyahAudio(playingAyahNumber + 1);
-                  }
-                }}
-                disabled={playingAyahNumber >= (surahData?.ayahs?.length || 1)}
-                className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-emerald-900/60 disabled:opacity-40 transition cursor-pointer"
-                title="পরবর্তী আয়াত"
-              >
-                <SkipForward className="w-4 h-4" />
-              </button>
-
-              {/* Repeat Mode Cycle */}
-              <button
-                type="button"
-                onClick={() => {
-                  const nextMode =
-                    repeatMode === "none" ? "1x" : repeatMode === "1x" ? "3x" : repeatMode === "3x" ? "surah" : "none";
-                  setRepeatMode(nextMode);
-                  repeatModeRef.current = nextMode;
-                  repeatCounterRef.current = 0;
-                  setRepeatCounter(0);
-                  toast.info(`রিপিট মোড: ${nextMode === "none" ? "বন্ধ" : nextMode === "surah" ? "পুরো সূরা" : nextMode}`);
-                }}
-                className={`hidden sm:flex px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition items-center gap-1 cursor-pointer ${
-                  repeatMode !== "none"
-                    ? "bg-purple-900/80 border-purple-500 text-purple-200"
-                    : "bg-stone-100 dark:bg-black/30 border-stone-200 dark:border-emerald-900 text-slate-600 dark:text-slate-400"
-                }`}
-                title="রিপিট মোড"
-              >
-                <RotateCcw className="w-3 h-3" />
-                <span>{repeatMode === "none" ? "রিপিট বন্ধ" : repeatMode}</span>
-              </button>
-
-              {/* Playback Speed Selector */}
-              <button
-                type="button"
-                onClick={() => {
-                  const speeds = [0.75, 1.0, 1.25, 1.5];
-                  const currentIndex = speeds.indexOf(playbackSpeed);
-                  const nextSpeed = speeds[(currentIndex + 1) % speeds.length];
-                  handleSpeedChange(nextSpeed);
-                }}
-                className="hidden md:flex px-2.5 py-1.5 rounded-xl bg-stone-100 dark:bg-black/60 hover:bg-stone-200 dark:hover:bg-emerald-950 border border-stone-200 dark:border-emerald-800 text-slate-700 dark:text-emerald-200 text-[11px] font-bold transition items-center gap-1 shadow-2xs cursor-pointer active:scale-95"
-                title="গতি পরিবর্তন"
-              >
-                <span>⚡ {playbackSpeed}x</span>
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Right: Close / Stop */}
+            {/* Bottom Row on Mobile / Center on Desktop: Controls */}
+            <div className="flex items-center justify-between sm:justify-end flex-wrap gap-1 sm:gap-2 shrink-0">
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (playingAyahNumber > 1) playAyahAudio(playingAyahNumber - 1);
+                  }}
+                  disabled={playingAyahNumber <= 1}
+                  className="p-1.5 sm:p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-emerald-900/60 disabled:opacity-40 transition cursor-pointer"
+                  title="পূর্ববর্তী আয়াত"
+                >
+                  <SkipBack className="w-4 h-4" />
+                </button>
+
+                {/* Play / Pause Toggle Button */}
+                <button
+                  type="button"
+                  onClick={togglePlayPauseAudio}
+                  className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full text-white flex items-center justify-center shadow-lg transition active:scale-95 cursor-pointer ${
+                    isPlayingAudio
+                      ? "bg-amber-600 hover:bg-amber-700 shadow-amber-950/20"
+                      : "bg-emerald-700 hover:bg-emerald-800 shadow-emerald-950/20"
+                  }`}
+                  title={isPlayingAudio ? "থামান (Pause)" : "চালু করুন (Play)"}
+                >
+                  {isPlayingAudio ? (
+                    <Pause className="w-4 h-4 fill-white" />
+                  ) : (
+                    <Play className="w-4 h-4 fill-white ml-0.5" />
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (playingAyahNumber < (surahData?.ayahs?.length || 1)) {
+                      playAyahAudio(playingAyahNumber + 1);
+                    }
+                  }}
+                  disabled={playingAyahNumber >= (surahData?.ayahs?.length || 1)}
+                  className="p-1.5 sm:p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-stone-100 dark:hover:bg-emerald-900/60 disabled:opacity-40 transition cursor-pointer"
+                  title="পরবর্তী আয়াত"
+                >
+                  <SkipForward className="w-4 h-4" />
+                </button>
+              </div>
+
+              <div className="flex items-center gap-1 sm:gap-1.5">
+                {/* Repeat Mode Cycle */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const nextMode =
+                      repeatMode === "none" ? "1x" : repeatMode === "1x" ? "3x" : repeatMode === "3x" ? "surah" : "none";
+                    setRepeatMode(nextMode);
+                    repeatModeRef.current = nextMode;
+                    repeatCounterRef.current = 0;
+                    setRepeatCounter(0);
+                    toast.info(`রিপিট মোড: ${nextMode === "none" ? "বন্ধ" : nextMode === "surah" ? "পুরো সূরা" : nextMode}`);
+                  }}
+                  className={`flex px-2 py-1.5 rounded-xl border text-[11px] font-bold transition items-center gap-1 cursor-pointer ${
+                    repeatMode !== "none"
+                      ? "bg-purple-900/80 border-purple-500 text-purple-200"
+                      : "bg-stone-100 dark:bg-black/30 border-stone-200 dark:border-emerald-900 text-slate-600 dark:text-slate-400"
+                  }`}
+                  title="রিপিট মোড"
+                >
+                  <RotateCcw className="w-3 h-3" />
+                  <span>{repeatMode === "none" ? "রিপিট" : repeatMode === "surah" ? "সূরা" : repeatMode}</span>
+                </button>
+
+                {/* Playback Speed Selector */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    const speeds = [0.75, 1.0, 1.25, 1.5];
+                    const currentIndex = speeds.indexOf(playbackSpeed);
+                    const nextSpeed = speeds[(currentIndex + 1) % speeds.length];
+                    handleSpeedChange(nextSpeed);
+                  }}
+                  className="flex px-2 py-1.5 rounded-xl bg-stone-100 dark:bg-black/60 hover:bg-stone-200 dark:hover:bg-emerald-950 border border-stone-200 dark:border-emerald-800 text-slate-700 dark:text-emerald-200 text-[11px] font-bold transition items-center gap-1 shadow-2xs cursor-pointer active:scale-95"
+                  title="গতি পরিবর্তন"
+                >
+                  <span>{playbackSpeed}x</span>
+                </button>
+
+                {/* Dedicated Bengali Translation Audio Button in Player Bar (Always visible on Mobile & Desktop) */}
+                {(() => {
+                  const curAyah = surahData?.ayahs?.find((a) => a.numberInSurah === playingAyahNumber);
+                  const bText = curAyah?.bengali;
+                  const bKey = `bottom-bar-${selectedSurahId}-${playingAyahNumber}`;
+                  const isPlayingB = playingBanglaId === bKey;
+                  if (!bText) return null;
+                  return (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (isPlayingAudio && audioRef.current) {
+                          audioRef.current.pause();
+                          setIsPlayingAudio(false);
+                        }
+                        toggleBanglaAudio(bText, bKey);
+                      }}
+                      className={`flex px-2.5 py-1.5 rounded-xl border text-[11px] font-bold transition items-center gap-1 cursor-pointer shadow-2xs whitespace-nowrap ${
+                        isPlayingB
+                          ? "bg-amber-500 text-slate-950 border-amber-300 font-extrabold animate-pulse"
+                          : "bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/70 dark:hover:bg-amber-900 border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-200"
+                      }`}
+                      title={`এই আয়াতের বাংলা অনুবাদ শুনুন (${activeBanglaEngine === "engine-1" ? "প্রদীপ স্টুডিও (ফ্রি)" : "প্রাকৃতিক স্টুডিও কণ্ঠ (v3)"})`}
+                    >
+                      <Volume2 className="w-3.5 h-3.5 shrink-0" />
+                      <span>{isPlayingB ? "থামুন" : "বাংলা অর্থ"}</span>
+                    </button>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {/* Right on Desktop: Close / Stop */}
             <button
               type="button"
               onClick={closePlayerBar}
-              className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer shrink-0"
+              className="hidden sm:flex p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer shrink-0"
               title="তিলাওয়াত সম্পূর্ণ বন্ধ করুন (মাঝপথে বন্ধ করার বাটন)"
             >
               <X className="w-5 h-5" />

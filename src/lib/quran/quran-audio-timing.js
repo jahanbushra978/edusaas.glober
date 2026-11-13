@@ -168,10 +168,11 @@ export function calculateTajweedWordIndex(currentTimeSec, durationSec, words = [
   if (!words || words.length <= 1) return 0;
   if (!durationSec || durationSec <= 0) return 0;
 
-  // Account for typical introductory silence (0.35s) and trailing reverb (0.3s)
+  // Account for typical introductory silence (0.5s) and trailing reverb (0.4s)
   // Plus human vocalization perceptual lag so highlight never rushes ahead of the voice
-  const introSilence = 0.35;
-  const outroSilence = 0.3;
+  // ক্বারীর কণ্ঠস্বর রেজিস্ট্রেশনের পরেই হাইলাইট জ্বলে উঠবে, আগে নয়
+  const introSilence = 0.5;
+  const outroSilence = 0.4;
   const effectiveTime = Math.max(0, currentTimeSec - introSilence);
   const effectiveDuration = Math.max(0.1, durationSec - introSilence - outroSilence);
   const progress = Math.min(0.999, effectiveTime / effectiveDuration);
@@ -272,15 +273,19 @@ export function getActiveArabicWordIndex({
       const maxSegEndMs = rawSegments[rawSegments.length - 1].endMs || (duration * 1000);
       const audioDurationMs = duration * 1000;
 
-      // Proportional scale factor between QuranCDN verse segments and actual EveryAyah audio duration
-      const scale = (maxSegEndMs > 1000 && audioDurationMs > 1000)
+      // Proportional scale factor between QuranCDN verse segments and actual EveryAyah audio duration.
+      // Clamp scale to [0.6, 1.8] to prevent extreme drift when segment/audio durations mismatch.
+      const rawScale = (maxSegEndMs > 1000 && audioDurationMs > 1000)
         ? audioDurationMs / maxSegEndMs
         : 1.0;
+      const scale = Math.min(1.8, Math.max(0.6, rawScale));
 
-      // Compensate for perceptual vocalization lag (~200ms) so highlight illuminates
-      // synchronously as the word resonates, rather than jumping ahead prematurely.
-      const currentMs = Math.max(0, (currentTime * 1000) - 200);
+      // Compensate for perceptual vocalization lag (~400ms):
+      // শব্দ শুনতে পাওয়ার সাথে সাথে হাইলাইট জ্বলে উঠবে, আগে নয়।
+      // 200ms ছিল অপর্যাপ্ত — 400ms এখন সঠিক।
+      const currentMs = Math.max(0, (currentTime * 1000) - 400);
 
+      // Find which segment the current time falls within
       for (let i = 0; i < rawSegments.length; i++) {
         const seg = rawSegments[i];
         const segStart = seg.startMs * scale;
@@ -289,11 +294,15 @@ export function getActiveArabicWordIndex({
         if (currentMs >= segStart && currentMs < segEnd) {
           return Math.min(seg.wordIndex, totalWords - 1);
         }
-        // If past the last segment, hold on the last word until playback ends
-        if (i === rawSegments.length - 1 && currentMs >= segEnd) {
-          return totalWords - 1;
-        }
       }
+
+      // If currentMs is before the very first segment, stay on word 0
+      if (currentMs < rawSegments[0].startMs * scale) {
+        return 0;
+      }
+
+      // If past the last segment, hold on the last word until playback ends
+      return totalWords - 1;
     }
   }
 
@@ -327,8 +336,8 @@ export function calculateTajweedWordStartTime(targetWordIndex, durationSec, word
     accumulatedBefore += weights[i];
   }
 
-  const introSilence = 0.35;
-  const outroSilence = 0.3;
+  const introSilence = 0.5;
+  const outroSilence = 0.4;
   const effectiveDuration = Math.max(0.1, (durationSec || (totalWords * 1.5)) - introSilence - outroSilence);
   const ratio = totalWeight > 0 ? accumulatedBefore / totalWeight : 0;
   return Math.max(0, introSilence + (ratio * effectiveDuration));
