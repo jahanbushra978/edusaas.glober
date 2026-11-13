@@ -7,12 +7,12 @@ import {
   Eraser,
   PenTool,
   Download,
+  Eye,
+  EyeOff,
   Award,
   ArrowRight,
-  ChevronRight,
   CheckCircle2,
-  Home,
-  Grid,
+  Target,
 } from "lucide-react";
 import { toast } from "sonner";
 import { useLearningLanguage } from "../hooks/useLearningLanguage";
@@ -23,499 +23,733 @@ import {
 } from "../lib/arabicSoundPlayer";
 import { fireCelebrationConfetti } from "../lib/confetti";
 
-// ── 29 ARABIC ALPHABET DEFINITIONS ──
+// ── 29 ARABIC ALPHABET WITH FORMS ──
 const ARABIC_ALPHABET = [
-  { ar: "ا", nameBn: "আলিফ", nameEn: "Alif", color: "#ef4444", makhraj: "মুখের খালি জায়গা (হলক) থেকে" },
-  { ar: "ب", nameBn: "বা", nameEn: "Ba", color: "#f59e0b", makhraj: "দুই ঠোঁটের ভেজা অংশ থেকে" },
-  { ar: "ت", nameBn: "তা", nameEn: "Ta", color: "#10b981", makhraj: "জিহ্বার ডগা ও সামনের ওপরের দাঁতের গোড়া" },
-  { ar: "ث", nameBn: "ছা", nameEn: "Tha", color: "#06b6d4", makhraj: "জিহ্বার ডগা ও সামনের ওপরের দাঁতের আগা" },
-  { ar: "ج", nameBn: "জীম", nameEn: "Jeem", color: "#8b5cf6", makhraj: "জিহ্বার মধ্যভাগ ও তার ওপরের তালু" },
-  { ar: "ح", nameBn: "হা", nameEn: "Haa", color: "#ec4899", makhraj: "কণ্ঠনালীর মধ্যভাগ থেকে" },
-  { ar: "خ", nameBn: "খা", nameEn: "Kha", color: "#f97316", makhraj: "কণ্ঠনালীর শেষভাগ (মুখের দিকের অংশ)" },
-  { ar: "د", nameBn: "দাল", nameEn: "Dal", color: "#14b8a6", makhraj: "জিহ্বার ডগা ও সামনের ওপরের দাঁতের গোড়া" },
-  { ar: "ذ", nameBn: "যাল", nameEn: "Dhal", color: "#6366f1", makhraj: "জিহ্বার ডগা ও সামনের ওপরের দাঁতের আগা" },
-  { ar: "ر", nameBn: "রা", nameEn: "Ra", color: "#e11d48", makhraj: "জিহ্বার ডগার পিঠ ও তার ওপরের তালু" },
-  { ar: "ز", nameBn: "যা", nameEn: "Zay", color: "#84cc16", makhraj: "জিহ্বার ডগা ও সামনের নিচের দুই দাঁতের পেট" },
-  { ar: "س", nameBn: "সীন", nameEn: "Seen", color: "#0ea5e9", makhraj: "জিহ্বার ডগা ও সামনের নিচের দুই দাঁতের পেট" },
-  { ar: "ش", nameBn: "শীন", nameEn: "Sheen", color: "#a855f7", makhraj: "জিহ্বার মধ্যভাগ ও তার ওপরের তালু" },
-  { ar: "ص", nameBn: "ছোয়াদ", nameEn: "Saad", color: "#d97706", makhraj: "জিহ্বার ডগা ও নিচের দাঁতের পেট (মোটা হরফ)" },
-  { ar: "ض", nameBn: "দোয়াদ", nameEn: "Daad", color: "#059669", makhraj: "জিহ্বার গোড়ার কিনারা ও ওপরের মাড়ির দাঁত" },
-  { ar: "ط", nameBn: "ত্বোয়া", nameEn: "Taa", color: "#2563eb", makhraj: "জিহ্বার ডগা ও ওপরের দাঁতের গোড়া (মোটা হরফ)" },
-  { ar: "ظ", nameBn: "যোয়া", nameEn: "Dhaa", color: "#7c3aed", makhraj: "জিহ্বার ডগা ও ওপরের দাঁতের আগা (মোটা হরফ)" },
-  { ar: "ع", nameBn: "আইন", nameEn: "Ayn", color: "#db2777", makhraj: "কণ্ঠনালীর মধ্যভাগ থেকে চাপ দিয়ে" },
-  { ar: "غ", nameBn: "গইন", nameEn: "Ghayn", color: "#ea580c", makhraj: "কণ্ঠনালীর শেষভাগ থেকে নরমভাবে" },
-  { ar: "ف", nameBn: "ফা", nameEn: "Fa", color: "#0d9488", makhraj: "নিচের ঠোঁটের পেট ও ওপরের সামনের দুই দাঁত" },
-  { ar: "ق", nameBn: "ক্বাফ", nameEn: "Qaaf", color: "#4f46e5", makhraj: "জিহ্বার গোড়া ও ওপরের নরম তালু" },
-  { ar: "ك", nameBn: "কাফ", nameEn: "Kaaf", color: "#ca8a04", makhraj: "জিহ্বার গোড়া থেকে একটু সামনে তালুর সাথে" },
-  { ar: "ل", nameBn: "লাম", nameEn: "Laam", color: "#16a34a", makhraj: "জিহ্বার অগ্রভাগের কিনারা ও ওপরের মাড়ি" },
-  { ar: "م", nameBn: "মীম", nameEn: "Meem", color: "#0284c7", makhraj: "দুই ঠোঁটের শুকনা অংশ থেকে" },
-  { ar: "ن", nameBn: "নূন", nameEn: "Noon", color: "#9333ea", makhraj: "জিহ্বার ডগা ও ওপরের মাড়ি (গুন্নাহ)" },
-  { ar: "و", nameBn: "ওয়াও", nameEn: "Waw", color: "#dc2626", makhraj: "দুই ঠোঁট গোল করে সামান্য ফাঁক রেখে" },
-  { ar: "هـ", nameBn: "হা", nameEn: "Haa", color: "#65a30d", makhraj: "কণ্ঠনালীর শুরুভাগ (বুকের দিকের অংশ)" },
-  { ar: "ء", nameBn: "হামযাহ", nameEn: "Hamzah", color: "#0891b2", makhraj: "কণ্ঠনালীর শুরুভাগ থেকে স্পষ্টভাবে" },
-  { ar: "ي", nameBn: "ইয়া", nameEn: "Yaa", color: "#c026d3", makhraj: "জিহ্বার মধ্যভাগ ও তার ওপরের তালু" }
+  { ar: "ا", nameBn: "আলিফ", nameEn: "Alif", forms: { isolated: "ا", initial: "ا", medial: "ـا", final: "ـا" } },
+  { ar: "ب", nameBn: "বা", nameEn: "Ba", forms: { isolated: "ب", initial: "بـ", medial: "ـبـ", final: "ـب" } },
+  { ar: "ت", nameBn: "তা", nameEn: "Ta", forms: { isolated: "ت", initial: "تـ", medial: "ـتـ", final: "ـت" } },
+  { ar: "ث", nameBn: "ছা", nameEn: "Tha", forms: { isolated: "ث", initial: "ثـ", medial: "ـثـ", final: "ـث" } },
+  { ar: "ج", nameBn: "জীম", nameEn: "Jeem", forms: { isolated: "ج", initial: "جـ", medial: "ـجـ", final: "ـج" } },
+  { ar: "ح", nameBn: "হা", nameEn: "Haa", forms: { isolated: "ح", initial: "حـ", medial: "ـحـ", final: "ـح" } },
+  { ar: "خ", nameBn: "খা", nameEn: "Kha", forms: { isolated: "خ", initial: "خـ", medial: "ـخـ", final: "ـخ" } },
+  { ar: "د", nameBn: "দাল", nameEn: "Dal", forms: { isolated: "د", initial: "د", medial: "ـد", final: "ـد" } },
+  { ar: "ذ", nameBn: "যাল", nameEn: "Dhal", forms: { isolated: "ذ", initial: "ذ", medial: "ـذ", final: "ـذ" } },
+  { ar: "ر", nameBn: "রা", nameEn: "Ra", forms: { isolated: "ر", initial: "ر", medial: "ـر", final: "ـر" } },
+  { ar: "ز", nameBn: "যা", nameEn: "Zay", forms: { isolated: "ز", initial: "ز", medial: "ـز", final: "ـز" } },
+  { ar: "س", nameBn: "সীন", nameEn: "Seen", forms: { isolated: "س", initial: "সـ", medial: "ـسـ", final: "ـس" } },
+  { ar: "ش", nameBn: "শীন", nameEn: "Sheen", forms: { isolated: "ش", initial: "شـ", medial: "ـشـ", final: "ـش" } },
+  { ar: "ص", nameBn: "ছোয়াদ", nameEn: "Saad", forms: { isolated: "ص", initial: "صـ", medial: "ـصـ", final: "ـص" } },
+  { ar: "ض", nameBn: "দোয়াদ", nameEn: "Daad", forms: { isolated: "ض", initial: "ضـ", medial: "ـضـ", final: "ـض" } },
+  { ar: "ط", nameBn: "ত্বোয়া", nameEn: "Taa", forms: { isolated: "ط", initial: "طـ", medial: "ـطـ", final: "ـط" } },
+  { ar: "ظ", nameBn: "যোয়া", nameEn: "Dhaa", forms: { isolated: "ظ", initial: "ظـ", medial: "ـظـ", final: "ـظ" } },
+  { ar: "ع", nameBn: "আইন", nameEn: "Ayn", forms: { isolated: "ع", initial: "عـ", medial: "ـعـ", final: "ـع" } },
+  { ar: "غ", nameBn: "গইন", nameEn: "Ghayn", forms: { isolated: "غ", initial: "غـ", medial: "ـغـ", final: "ـغ" } },
+  { ar: "ف", nameBn: "ফা", nameEn: "Fa", forms: { isolated: "ف", initial: "فـ", medial: "ـفـ", final: "ـف" } },
+  { ar: "ق", nameBn: "ক্বাফ", nameEn: "Qaaf", forms: { isolated: "ق", initial: "قـ", medial: "ـقـ", final: "ـق" } },
+  { ar: "ك", nameBn: "কাফ", nameEn: "Kaaf", forms: { isolated: "ك", initial: "كـ", medial: "ـكـ", final: "ـك" } },
+  { ar: "ل", nameBn: "লাম", nameEn: "Laam", forms: { isolated: "ل", initial: "لـ", medial: "ـلـ", final: "ـل" } },
+  { ar: "م", nameBn: "মীম", nameEn: "Meem", forms: { isolated: "م", initial: "مـ", medial: "ـمـ", final: "ـم" } },
+  { ar: "ن", nameBn: "নূন", nameEn: "Noon", forms: { isolated: "ن", initial: "نـ", medial: "ـنـ", final: "ـن" } },
+  { ar: "و", nameBn: "ওয়াও", nameEn: "Waw", forms: { isolated: "و", initial: "و", medial: "ـو", final: "ـو" } },
+  { ar: "هـ", nameBn: "হা", nameEn: "Haa", forms: { isolated: "هـ", initial: "هـ", medial: "ـهـ", final: "ـه" } },
+  { ar: "ء", nameBn: "হামযাহ", nameEn: "Hamzah", forms: { isolated: "ء", initial: "ء", medial: "ء", final: "ء" } },
+  { ar: "ي", nameBn: "ইয়া", nameEn: "Yaa", forms: { isolated: "ي", initial: "يـ", medial: "ـيـ", final: "ـي" } }
 ];
 
-// ── 🐾 MASCOTS & DELICIOUS COLLECTIBLES (EXACTLY MATCHING USER'S 5 IMAGES) ──
-const MASCOTS = [
-  { id: "elephant", name: "হাতি ছানা", emoji: "🐘", itemEmoji: "⚽", itemName: "রঙিন বল" },
-  { id: "lion", name: "সিংহ ছানা", emoji: "🦁", itemEmoji: "🥩", itemName: "মজাদার মাংস" },
-  { id: "mouse", name: "ইঁদুর ছানা", emoji: "🐭", itemEmoji: "🧀", itemName: "সুস্বাদু পনির" },
-  { id: "camel", name: "মরুর উট", emoji: "🐪", itemEmoji: "🍈", itemName: "মিষ্টি খেজুর" },
-  { id: "sheep", name: "মিষ্টি ভেড়া", emoji: "🐑", itemEmoji: "🍎", itemName: "রসালো আপেল" },
-  { id: "dove", name: "শান্তির ঘুঘু", emoji: "🕊️", itemEmoji: "⭐", itemName: "সোনার তারা" },
+// ── 5 HARAKAT (DIACRITICS) ──
+const HARAKAT_LIST = [
+  { id: "none", labelBn: "হরকত ছাড়া", labelEn: "None", labelAr: "بدون حركة", symbol: "" },
+  { id: "fathah", labelBn: "যবর (—َ)", labelEn: "Fathah", labelAr: "فَتْحَة", symbol: "َ" },
+  { id: "kasrah", labelBn: "যের (—ِ)", labelEn: "Kasrah", labelAr: "كَسْرَة", symbol: "ِ" },
+  { id: "dammah", labelBn: "পেশ (—ُ)", labelEn: "Dammah", labelAr: "ضَمَّة", symbol: "ُ" },
+  { id: "sukoon", labelBn: "সাকিন (—ْ)", labelEn: "Sukoon", labelAr: "سُكُون", symbol: "ْ" }
 ];
 
-// ── 🎯 ACCURATE CALLIGRAPHY STROKE PATHS FOR ALL 29 ARABIC LETTERS ──
-// SVG Coordinate System: 0 0 900 560 (Baseline at y = 370)
-// Every checkpoint is 100% mathematically locked dead-center on the stroke path.
-const ARABIC_STROKE_DATA = {
+const HARAKAT_PRONUNCIATION_MAP = {
+  "ا": { fathah: "আ", kasrah: "ই", dammah: "উ", sukoon: "আহ্" },
+  "ب": { fathah: "বা", kasrah: "বি", dammah: "বু", sukoon: "আব্" },
+  "ت": { fathah: "তা", kasrah: "তি", dammah: "তু", sukoon: "আৎ" },
+  "ث": { fathah: "ছা", kasrah: "ছি", dammah: "ছু", sukoon: "আছ্" },
+  "ج": { fathah: "জা", kasrah: "জি", dammah: "জু", sukoon: "আজ্" },
+  "ح": { fathah: "হা", kasrah: "হি", dammah: "হু", sukoon: "আহ্" },
+  "خ": { fathah: "খা", kasrah: "খি", dammah: "খু", sukoon: "আখ্" },
+  "د": { fathah: "দা", kasrah: "দি", dammah: "দু", sukoon: "আদ্" },
+  "ذ": { fathah: "যা", kasrah: "যি", dammah: "যু", sukoon: "আয্" },
+  "ر": { fathah: "র", kasrah: "রি", dammah: "রু", sukoon: "আর্" },
+  "ز": { fathah: "যা", kasrah: "যি", dammah: "যু", sukoon: "আয্" },
+  "س": { fathah: "সা", kasrah: "সি", dammah: "সু", sukoon: "আস্" },
+  "ش": { fathah: "শা", kasrah: "শি", dammah: "শু", sukoon: "আশ্" },
+  "ص": { fathah: "ছ", kasrah: "ছি", dammah: "ছু", sukoon: "আছ্" },
+  "ض": { fathah: "দ", kasrah: "দি", dammah: "দু", sukoon: "আদ্" },
+  "ط": { fathah: "ত্ব", kasrah: "ত্বি", dammah: "ত্বু", sukoon: "আত্ব্" },
+  "ظ": { fathah: "য্ব", kasrah: "য্বি", dammah: "য্বু", sukoon: "আয্ব্" },
+  "ع": { fathah: "আ'", kasrah: "ই'", dammah: "উ'", sukoon: "আ'" },
+  "غ": { fathah: "গ", kasrah: "গি", dammah: "গু", sukoon: "আগ্" },
+  "ف": { fathah: "ফা", kasrah: "ফি", dammah: "ফু", sukoon: "আফ্" },
+  "ق": { fathah: "ক্বা", kasrah: "ক্বি", dammah: "ক্বু", sukoon: "আক্ব্" },
+  "ك": { fathah: "কা", kasrah: "কি", dammah: "কু", sukoon: "আক্" },
+  "ل": { fathah: "লা", kasrah: "লি", dammah: "লু", sukoon: "আল্" },
+  "م": { fathah: "মা", kasrah: "মি", dammah: "মু", sukoon: "আম্" },
+  "ن": { fathah: "না", kasrah: "নি", dammah: "নু", sukoon: "আন্" },
+  "و": { fathah: "ওয়া", kasrah: "ওয়ি", dammah: "উ", sukoon: "আও" },
+  "هـ": { fathah: "হা", kasrah: "হি", dammah: "হু", sukoon: "আহ্" },
+  "ء": { fathah: "আ", kasrah: "ই", dammah: "উ", sukoon: "আহ্" },
+  "ي": { fathah: "ইয়া", kasrah: "য়ি", dammah: "য়ু", sukoon: "আই" },
+};
+
+// ── 🎨 HIGH-DEFINITION HOLLOW CALLIGRAPHY PATHS (DOUBLE-WALLED CHANNELS) ──
+// Standard SVG Coordinate System: viewBox 0 0 900 560
+// The two walls strictly bound the ink! Zero ink can ever leak outside!
+const ARABIC_TRACING_PATHS = {
+  // Alif (Top to Bottom)
   "ا": {
-    path: "M 450 110 L 450 420",
+    path: "M 450 100 L 450 440",
+    arrow: "⬇️",
+    arrowText: "নিচে টানুন",
     dots: [],
-    points: [
-      { x: 450, y: 110, t: 0 },
-      { x: 450, y: 190, t: 0.25 },
-      { x: 450, y: 270, t: 0.50 },
-      { x: 450, y: 350, t: 0.75 },
-      { x: 450, y: 420, t: 1.0 },
+    checkpoints: [
+      { x: 450, y: 100, label: "১", isStart: true },
+      { x: 450, y: 185, label: "২" },
+      { x: 450, y: 270, label: "৩" },
+      { x: 450, y: 355, label: "৪" },
+      { x: 450, y: 440, label: "শেষ", isEnd: true },
     ],
   },
+  // Baa (Right tip -> Baseline -> Left tip + 1 dot below)
   "ب": {
-    path: "M 660 250 Q 620 400 450 400 Q 280 400 240 250",
-    dots: [{ x: 450, y: 470, r: 18 }],
-    points: [
-      { x: 660, y: 250, t: 0 },
-      { x: 600, y: 360, t: 0.25 },
-      { x: 450, y: 400, t: 0.50 },
-      { x: 300, y: 360, t: 0.75 },
-      { x: 240, y: 250, t: 1.0 },
+    path: "M 680 230 Q 640 420 450 420 Q 260 420 220 230",
+    arrow: "↙️",
+    arrowText: "ডান থেকে বাঁয়ে",
+    dots: [{ x: 450, y: 490, r: 20 }],
+    checkpoints: [
+      { x: 680, y: 230, label: "১", isStart: true },
+      { x: 630, y: 340, label: "২" },
+      { x: 540, y: 410, label: "৩" },
+      { x: 450, y: 420, label: "৪" },
+      { x: 360, y: 410, label: "৫" },
+      { x: 270, y: 340, label: "৬" },
+      { x: 220, y: 230, label: "শেষ", isEnd: true },
     ],
   },
+  // Taa (Right tip -> Baseline -> Left tip + 2 dots on top)
   "ت": {
-    path: "M 660 250 Q 620 400 450 400 Q 280 400 240 250",
+    path: "M 680 230 Q 640 420 450 420 Q 260 420 220 230",
+    arrow: "↙️",
+    arrowText: "ডান থেকে বাঁয়ে",
     dots: [
-      { x: 485, y: 160, r: 16 },
-      { x: 415, y: 160, r: 16 },
+      { x: 485, y: 160, r: 18 },
+      { x: 415, y: 160, r: 18 },
     ],
-    points: [
-      { x: 660, y: 250, t: 0 },
-      { x: 600, y: 360, t: 0.25 },
-      { x: 450, y: 400, t: 0.50 },
-      { x: 300, y: 360, t: 0.75 },
-      { x: 240, y: 250, t: 1.0 },
+    checkpoints: [
+      { x: 680, y: 230, label: "১", isStart: true },
+      { x: 630, y: 340, label: "২" },
+      { x: 540, y: 410, label: "৩" },
+      { x: 450, y: 420, label: "৪" },
+      { x: 360, y: 410, label: "৫" },
+      { x: 270, y: 340, label: "৬" },
+      { x: 220, y: 230, label: "শেষ", isEnd: true },
     ],
   },
+  // Thaa (Right tip -> Baseline -> Left tip + 3 dots on top)
   "ث": {
-    path: "M 660 250 Q 620 400 450 400 Q 280 400 240 250",
+    path: "M 680 230 Q 640 420 450 420 Q 260 420 220 230",
+    arrow: "↙️",
+    arrowText: "ডান থেকে বাঁয়ে",
     dots: [
-      { x: 450, y: 125, r: 15 },
-      { x: 485, y: 170, r: 15 },
-      { x: 415, y: 170, r: 15 },
+      { x: 450, y: 125, r: 16 },
+      { x: 485, y: 170, r: 16 },
+      { x: 415, y: 170, r: 16 },
     ],
-    points: [
-      { x: 660, y: 250, t: 0 },
-      { x: 600, y: 360, t: 0.25 },
-      { x: 450, y: 400, t: 0.50 },
-      { x: 300, y: 360, t: 0.75 },
-      { x: 240, y: 250, t: 1.0 },
+    checkpoints: [
+      { x: 680, y: 230, label: "১", isStart: true },
+      { x: 630, y: 340, label: "২" },
+      { x: 540, y: 410, label: "৩" },
+      { x: 450, y: 420, label: "৪" },
+      { x: 360, y: 410, label: "৫" },
+      { x: 270, y: 340, label: "৬" },
+      { x: 220, y: 230, label: "শেষ", isEnd: true },
     ],
   },
+  // Jeem (Top brow -> center tuck -> crescent belly)
   "ج": {
-    path: "M 360 170 L 530 170 Q 460 250 440 260 Q 570 330 530 440 Q 450 520 310 470 Q 230 420 210 350",
-    dots: [{ x: 370, y: 370, r: 18 }],
-    points: [
-      { x: 360, y: 170, t: 0 },
-      { x: 530, y: 170, t: 0.20 },
-      { x: 440, y: 260, t: 0.40 },
-      { x: 530, y: 400, t: 0.65 },
-      { x: 370, y: 480, t: 0.85 },
-      { x: 210, y: 350, t: 1.0 },
+    path: "M 360 180 L 540 180 Q 460 260 440 270 Q 580 340 530 460 Q 450 530 310 490 Q 220 450 200 370",
+    arrow: "➡️",
+    arrowText: "ডানে গিয়ে নিচে গোল",
+    dots: [{ x: 370, y: 380, r: 20 }],
+    checkpoints: [
+      { x: 360, y: 180, label: "১", isStart: true },
+      { x: 450, y: 180, label: "২" },
+      { x: 540, y: 180, label: "৩" },
+      { x: 440, y: 270, label: "৪" },
+      { x: 520, y: 380, label: "৫" },
+      { x: 450, y: 490, label: "৬" },
+      { x: 310, y: 490, label: "৭" },
+      { x: 200, y: 370, label: "শেষ", isEnd: true },
     ],
   },
+  // Haa (Same crescent without dots)
   "ح": {
-    path: "M 360 170 L 530 170 Q 460 250 440 260 Q 570 330 530 440 Q 450 520 310 470 Q 230 420 210 350",
+    path: "M 360 180 L 540 180 Q 460 260 440 270 Q 580 340 530 460 Q 450 530 310 490 Q 220 450 200 370",
+    arrow: "➡️",
+    arrowText: "ডানে গিয়ে নিচে গোল",
     dots: [],
-    points: [
-      { x: 360, y: 170, t: 0 },
-      { x: 530, y: 170, t: 0.20 },
-      { x: 440, y: 260, t: 0.40 },
-      { x: 530, y: 400, t: 0.65 },
-      { x: 370, y: 480, t: 0.85 },
-      { x: 210, y: 350, t: 1.0 },
+    checkpoints: [
+      { x: 360, y: 180, label: "১", isStart: true },
+      { x: 450, y: 180, label: "২" },
+      { x: 540, y: 180, label: "৩" },
+      { x: 440, y: 270, label: "৪" },
+      { x: 520, y: 380, label: "৫" },
+      { x: 450, y: 490, label: "৬" },
+      { x: 310, y: 490, label: "৭" },
+      { x: 200, y: 370, label: "শেষ", isEnd: true },
     ],
   },
+  // Kha (Same crescent + 1 dot on top)
   "خ": {
-    path: "M 360 170 L 530 170 Q 460 250 440 260 Q 570 330 530 440 Q 450 520 310 470 Q 230 420 210 350",
-    dots: [{ x: 460, y: 105, r: 18 }],
-    points: [
-      { x: 360, y: 170, t: 0 },
-      { x: 530, y: 170, t: 0.20 },
-      { x: 440, y: 260, t: 0.40 },
-      { x: 530, y: 400, t: 0.65 },
-      { x: 370, y: 480, t: 0.85 },
-      { x: 210, y: 350, t: 1.0 },
+    path: "M 360 180 L 540 180 Q 460 260 440 270 Q 580 340 530 460 Q 450 530 310 490 Q 220 450 200 370",
+    arrow: "➡️",
+    arrowText: "ডানে গিয়ে নিচে গোল",
+    dots: [{ x: 460, y: 110, r: 20 }],
+    checkpoints: [
+      { x: 360, y: 180, label: "১", isStart: true },
+      { x: 450, y: 180, label: "২" },
+      { x: 540, y: 180, label: "৩" },
+      { x: 440, y: 270, label: "৪" },
+      { x: 520, y: 380, label: "৫" },
+      { x: 450, y: 490, label: "৬" },
+      { x: 310, y: 490, label: "৭" },
+      { x: 200, y: 370, label: "শেষ", isEnd: true },
     ],
   },
+  // Dal (Top slope down -> flat baseline left)
   "د": {
-    path: "M 560 210 Q 500 310 460 350 Q 430 380 320 380",
+    path: "M 560 200 Q 500 310 460 350 Q 430 380 310 380",
+    arrow: "↙️",
+    arrowText: "বাঁকা হয়ে বামে",
     dots: [],
-    points: [
-      { x: 560, y: 210, t: 0 },
-      { x: 490, y: 320, t: 0.35 },
-      { x: 430, y: 380, t: 0.70 },
-      { x: 320, y: 380, t: 1.0 },
+    checkpoints: [
+      { x: 560, y: 200, label: "১", isStart: true },
+      { x: 490, y: 310, label: "২" },
+      { x: 430, y: 370, label: "৩" },
+      { x: 310, y: 380, label: "শেষ", isEnd: true },
     ],
   },
+  // Dhal (Same + 1 dot on top)
   "ذ": {
-    path: "M 560 210 Q 500 310 460 350 Q 430 380 320 380",
-    dots: [{ x: 550, y: 140, r: 18 }],
-    points: [
-      { x: 560, y: 210, t: 0 },
-      { x: 490, y: 320, t: 0.35 },
-      { x: 430, y: 380, t: 0.70 },
-      { x: 320, y: 380, t: 1.0 },
+    path: "M 560 200 Q 500 310 460 350 Q 430 380 310 380",
+    arrow: "↙️",
+    arrowText: "বাঁকা হয়ে বামে",
+    dots: [{ x: 560, y: 125, r: 20 }],
+    checkpoints: [
+      { x: 560, y: 200, label: "১", isStart: true },
+      { x: 490, y: 310, label: "২" },
+      { x: 430, y: 370, label: "৩" },
+      { x: 310, y: 380, label: "শেষ", isEnd: true },
     ],
   },
+  // Ra (Starts above baseline, sweeps into tail)
   "ر": {
-    path: "M 540 270 Q 490 350 440 420 Q 380 480 270 490",
+    path: "M 540 260 Q 490 350 430 420 Q 360 490 250 500",
+    arrow: "↙️",
+    arrowText: "নিচে বাঁয়ে ঢালু",
     dots: [],
-    points: [
-      { x: 540, y: 270, t: 0 },
-      { x: 480, y: 360, t: 0.30 },
-      { x: 410, y: 440, t: 0.70 },
-      { x: 270, y: 490, t: 1.0 },
+    checkpoints: [
+      { x: 540, y: 260, label: "১", isStart: true },
+      { x: 480, y: 360, label: "২" },
+      { x: 410, y: 440, label: "৩" },
+      { x: 330, y: 485, label: "৪" },
+      { x: 250, y: 500, label: "শেষ", isEnd: true },
     ],
   },
+  // Zay (Same + 1 dot on top)
   "ز": {
-    path: "M 540 270 Q 490 350 440 420 Q 380 480 270 490",
-    dots: [{ x: 540, y: 200, r: 18 }],
-    points: [
-      { x: 540, y: 270, t: 0 },
-      { x: 480, y: 360, t: 0.30 },
-      { x: 410, y: 440, t: 0.70 },
-      { x: 270, y: 490, t: 1.0 },
+    path: "M 540 260 Q 490 350 430 420 Q 360 490 250 500",
+    arrow: "↙️",
+    arrowText: "নিচে বাঁয়ে ঢালু",
+    dots: [{ x: 540, y: 185, r: 20 }],
+    checkpoints: [
+      { x: 540, y: 260, label: "১", isStart: true },
+      { x: 480, y: 360, label: "২" },
+      { x: 410, y: 440, label: "৩" },
+      { x: 330, y: 485, label: "৪" },
+      { x: 250, y: 500, label: "শেষ", isEnd: true },
     ],
   },
+  // Seen (Three teeth -> deep bowl)
   "س": {
-    path: "M 660 250 Q 640 330 600 330 Q 590 250 560 250 Q 540 330 500 330 L 500 350 Q 470 490 350 490 Q 240 490 220 360 L 220 320",
+    path: "M 670 240 Q 645 320 600 320 Q 590 240 550 240 Q 530 320 480 320 L 480 350 Q 460 500 340 500 Q 220 500 200 370 L 200 330",
+    arrow: "⬇️",
+    arrowText: "দাঁত থেকে বাটিতে",
     dots: [],
-    points: [
-      { x: 660, y: 250, t: 0 },
-      { x: 600, y: 330, t: 0.18 },
-      { x: 560, y: 250, t: 0.32 },
-      { x: 500, y: 340, t: 0.48 },
-      { x: 400, y: 480, t: 0.75 },
-      { x: 220, y: 320, t: 1.0 },
+    checkpoints: [
+      { x: 670, y: 240, label: "১", isStart: true },
+      { x: 600, y: 320, label: "২" },
+      { x: 550, y: 240, label: "৩" },
+      { x: 480, y: 330, label: "৪" },
+      { x: 410, y: 490, label: "৫" },
+      { x: 300, y: 490, label: "৬" },
+      { x: 200, y: 330, label: "শেষ", isEnd: true },
     ],
   },
-  "শ": {
-    path: "M 660 250 Q 640 330 600 330 Q 590 250 560 250 Q 540 330 500 330 L 500 350 Q 470 490 350 490 Q 240 490 220 360 L 220 320",
+  // Sheen (Three teeth -> deep bowl + 3 dots)
+  "ش": {
+    path: "M 670 240 Q 645 320 600 320 Q 590 240 550 240 Q 530 320 480 320 L 480 350 Q 460 500 340 500 Q 220 500 200 370 L 200 330",
+    arrow: "⬇️",
+    arrowText: "দাঁত থেকে বাটিতে",
     dots: [
-      { x: 580, y: 160, r: 15 },
-      { x: 610, y: 200, r: 15 },
-      { x: 550, y: 200, r: 15 },
+      { x: 575, y: 150, r: 16 },
+      { x: 605, y: 190, r: 16 },
+      { x: 545, y: 190, r: 16 },
     ],
-    points: [
-      { x: 660, y: 250, t: 0 },
-      { x: 600, y: 330, t: 0.18 },
-      { x: 560, y: 250, t: 0.32 },
-      { x: 500, y: 340, t: 0.48 },
-      { x: 400, y: 480, t: 0.75 },
-      { x: 220, y: 320, t: 1.0 },
+    checkpoints: [
+      { x: 670, y: 240, label: "১", isStart: true },
+      { x: 600, y: 320, label: "২" },
+      { x: 550, y: 240, label: "৩" },
+      { x: 480, y: 330, label: "৪" },
+      { x: 410, y: 490, label: "৫" },
+      { x: 300, y: 490, label: "৬" },
+      { x: 200, y: 330, label: "শেষ", isEnd: true },
     ],
   },
+  // Saad (Oval head loop -> tooth -> deep bowl)
   "ص": {
-    path: "M 470 370 Q 530 270 630 290 Q 670 320 640 370 L 460 370 L 460 330 L 440 370 Q 420 490 330 490 Q 230 490 210 370 L 210 330",
+    path: "M 480 370 Q 550 260 640 280 Q 690 310 650 370 L 470 370 L 470 340 L 440 370 Q 420 500 320 500 Q 210 500 190 370 L 190 330",
+    arrow: "↗️",
+    arrowText: "উপরে গোল ঘুরে বাটি",
     dots: [],
-    points: [
-      { x: 470, y: 370, t: 0 },
-      { x: 590, y: 280, t: 0.22 },
-      { x: 640, y: 360, t: 0.40 },
-      { x: 450, y: 340, t: 0.55 },
-      { x: 370, y: 480, t: 0.80 },
-      { x: 210, y: 330, t: 1.0 },
+    checkpoints: [
+      { x: 480, y: 370, label: "১", isStart: true },
+      { x: 580, y: 270, label: "২" },
+      { x: 650, y: 350, label: "৩" },
+      { x: 460, y: 350, label: "৪" },
+      { x: 370, y: 490, label: "৫" },
+      { x: 250, y: 490, label: "৬" },
+      { x: 190, y: 330, label: "শেষ", isEnd: true },
     ],
   },
+  // Daad (Same + 1 dot on top of oval)
   "ض": {
-    path: "M 470 370 Q 530 270 630 290 Q 670 320 640 370 L 460 370 L 460 330 L 440 370 Q 420 490 330 490 Q 230 490 210 370 L 210 330",
-    dots: [{ x: 590, y: 200, r: 18 }],
-    points: [
-      { x: 470, y: 370, t: 0 },
-      { x: 590, y: 280, t: 0.22 },
-      { x: 640, y: 360, t: 0.40 },
-      { x: 450, y: 340, t: 0.55 },
-      { x: 370, y: 480, t: 0.80 },
-      { x: 210, y: 330, t: 1.0 },
+    path: "M 480 370 Q 550 260 640 280 Q 690 310 650 370 L 470 370 L 470 340 L 440 370 Q 420 500 320 500 Q 210 500 190 370 L 190 330",
+    arrow: "↗️",
+    arrowText: "উপরে গোল ঘুরে বাটি",
+    dots: [{ x: 590, y: 190, r: 20 }],
+    checkpoints: [
+      { x: 480, y: 370, label: "১", isStart: true },
+      { x: 580, y: 270, label: "২" },
+      { x: 650, y: 350, label: "৩" },
+      { x: 460, y: 350, label: "৪" },
+      { x: 370, y: 490, label: "৫" },
+      { x: 250, y: 490, label: "৬" },
+      { x: 190, y: 330, label: "শেষ", isEnd: true },
     ],
   },
+  // Taa (Vertical mast -> oval loop)
   "ط": {
-    path: "M 430 110 L 430 380 Q 530 290 630 310 Q 670 340 640 380 L 280 380",
+    path: "M 430 100 L 430 370 Q 530 270 630 300 Q 680 330 640 370 L 280 370",
+    arrow: "⬇️",
+    arrowText: "দাঁড় থেকে লুপে",
     dots: [],
-    points: [
-      { x: 430, y: 110, t: 0 },
-      { x: 430, y: 280, t: 0.30 },
-      { x: 560, y: 300, t: 0.55 },
-      { x: 640, y: 360, t: 0.75 },
-      { x: 280, y: 380, t: 1.0 },
+    checkpoints: [
+      { x: 430, y: 100, label: "১", isStart: true },
+      { x: 430, y: 260, label: "২" },
+      { x: 530, y: 280, label: "৩" },
+      { x: 640, y: 340, label: "৪" },
+      { x: 460, y: 370, label: "৫" },
+      { x: 280, y: 370, label: "শেষ", isEnd: true },
     ],
   },
+  // Dhaa (Vertical mast -> oval loop + 1 dot)
   "ظ": {
-    path: "M 430 110 L 430 380 Q 530 290 630 310 Q 670 340 640 380 L 280 380",
-    dots: [{ x: 500, y: 200, r: 18 }],
-    points: [
-      { x: 430, y: 110, t: 0 },
-      { x: 430, y: 280, t: 0.30 },
-      { x: 560, y: 300, t: 0.55 },
-      { x: 640, y: 360, t: 0.75 },
-      { x: 280, y: 380, t: 1.0 },
+    path: "M 430 100 L 430 370 Q 530 270 630 300 Q 680 330 640 370 L 280 370",
+    arrow: "⬇️",
+    arrowText: "দাঁড় থেকে লুপে",
+    dots: [{ x: 480, y: 180, r: 20 }],
+    checkpoints: [
+      { x: 430, y: 100, label: "১", isStart: true },
+      { x: 430, y: 260, label: "২" },
+      { x: 530, y: 280, label: "৩" },
+      { x: 640, y: 340, label: "৪" },
+      { x: 460, y: 370, label: "৫" },
+      { x: 280, y: 370, label: "শেষ", isEnd: true },
     ],
   },
+  // Ayn (Small top crescent -> large bottom belly)
   "ع": {
-    path: "M 390 230 Q 480 180 520 220 Q 520 270 450 280 Q 570 360 530 460 Q 450 530 310 480 Q 230 430 210 350",
+    path: "M 390 230 Q 480 170 530 220 Q 530 280 440 290 Q 580 370 530 470 Q 440 540 300 490 Q 210 440 190 360",
+    arrow: "➡️",
+    arrowText: "ছোট মাথা থেকে পেট",
     dots: [],
-    points: [
-      { x: 390, y: 230, t: 0 },
-      { x: 500, y: 200, t: 0.22 },
-      { x: 450, y: 280, t: 0.40 },
-      { x: 530, y: 400, t: 0.65 },
-      { x: 390, y: 500, t: 0.85 },
-      { x: 210, y: 350, t: 1.0 },
+    checkpoints: [
+      { x: 390, y: 230, label: "১", isStart: true },
+      { x: 490, y: 190, label: "২" },
+      { x: 440, y: 290, label: "৩" },
+      { x: 530, y: 410, label: "৪" },
+      { x: 420, y: 510, label: "৫" },
+      { x: 300, y: 490, label: "৬" },
+      { x: 190, y: 360, label: "শেষ", isEnd: true },
     ],
   },
+  // Ghayn (Same + 1 dot on top)
   "غ": {
-    path: "M 390 230 Q 480 180 520 220 Q 520 270 450 280 Q 570 360 530 460 Q 450 530 310 480 Q 230 430 210 350",
-    dots: [{ x: 480, y: 125, r: 18 }],
-    points: [
-      { x: 390, y: 230, t: 0 },
-      { x: 500, y: 200, t: 0.22 },
-      { x: 450, y: 280, t: 0.40 },
-      { x: 530, y: 400, t: 0.65 },
-      { x: 390, y: 500, t: 0.85 },
-      { x: 210, y: 350, t: 1.0 },
+    path: "M 390 230 Q 480 170 530 220 Q 530 280 440 290 Q 580 370 530 470 Q 440 540 300 490 Q 210 440 190 360",
+    arrow: "➡️",
+    arrowText: "ছোট মাথা থেকে পেট",
+    dots: [{ x: 480, y: 110, r: 20 }],
+    checkpoints: [
+      { x: 390, y: 230, label: "১", isStart: true },
+      { x: 490, y: 190, label: "২" },
+      { x: 440, y: 290, label: "৩" },
+      { x: 530, y: 410, label: "৪" },
+      { x: 420, y: 510, label: "৫" },
+      { x: 300, y: 490, label: "৬" },
+      { x: 190, y: 360, label: "শেষ", isEnd: true },
     ],
   },
+  // Fa (Head circle on right -> baseline -> left tip + 1 dot)
   "ف": {
-    path: "M 560 270 Q 530 220 580 200 Q 630 220 600 280 L 590 370 Q 440 370 290 370 Q 250 370 230 280",
-    dots: [{ x: 580, y: 135, r: 18 }],
-    points: [
-      { x: 560, y: 270, t: 0 },
-      { x: 580, y: 200, t: 0.20 },
-      { x: 590, y: 330, t: 0.40 },
-      { x: 440, y: 370, t: 0.70 },
-      { x: 230, y: 280, t: 1.0 },
+    path: "M 570 280 Q 530 210 590 190 Q 650 210 610 290 L 600 370 Q 450 370 290 370 Q 250 370 220 270",
+    arrow: "⬆️",
+    arrowText: "গোল মাথা ঘুরে বামে",
+    dots: [{ x: 590, y: 120, r: 20 }],
+    checkpoints: [
+      { x: 570, y: 280, label: "১", isStart: true },
+      { x: 590, y: 190, label: "২" },
+      { x: 600, y: 330, label: "৩" },
+      { x: 450, y: 370, label: "৪" },
+      { x: 320, y: 370, label: "৫" },
+      { x: 220, y: 270, label: "শেষ", isEnd: true },
     ],
   },
+  // Qaaf (Head circle on right -> deep bowl below baseline + 2 dots)
   "ق": {
-    path: "M 560 250 Q 530 200 580 180 Q 630 200 600 260 L 590 310 Q 550 480 410 480 Q 270 480 250 350 L 250 300",
+    path: "M 570 260 Q 530 190 590 170 Q 650 190 610 270 L 600 320 Q 550 490 410 490 Q 270 490 240 350 L 240 310",
+    arrow: "⬆️",
+    arrowText: "গোল মাথা ঘুরে বাটি",
     dots: [
-      { x: 605, y: 120, r: 16 },
-      { x: 555, y: 120, r: 16 },
+      { x: 615, y: 105, r: 18 },
+      { x: 565, y: 105, r: 18 },
     ],
-    points: [
-      { x: 560, y: 250, t: 0 },
-      { x: 580, y: 180, t: 0.18 },
-      { x: 590, y: 300, t: 0.35 },
-      { x: 490, y: 460, t: 0.65 },
-      { x: 340, y: 470, t: 0.85 },
-      { x: 250, y: 300, t: 1.0 },
+    checkpoints: [
+      { x: 570, y: 260, label: "১", isStart: true },
+      { x: 590, y: 170, label: "২" },
+      { x: 600, y: 290, label: "৩" },
+      { x: 490, y: 470, label: "৪" },
+      { x: 350, y: 480, label: "৫" },
+      { x: 240, y: 310, label: "শেষ", isEnd: true },
     ],
   },
+  // Kaaf (Top mast -> flat baseline + center hamzah)
   "ك": {
-    path: "M 590 120 L 590 350 Q 580 370 300 370 Q 260 370 250 310",
-    dots: [{ x: 440, y: 270, r: 18 }],
-    points: [
-      { x: 590, y: 120, t: 0 },
-      { x: 590, y: 260, t: 0.30 },
-      { x: 550, y: 370, t: 0.55 },
-      { x: 400, y: 370, t: 0.80 },
-      { x: 250, y: 310, t: 1.0 },
+    path: "M 610 110 L 610 350 Q 600 380 300 380 Q 250 380 240 320",
+    arrow: "⬇️",
+    arrowText: "দাঁড় থেকে নিচে বামে",
+    dots: [{ x: 450, y: 280, r: 20 }],
+    checkpoints: [
+      { x: 610, y: 110, label: "১", isStart: true },
+      { x: 610, y: 250, label: "২" },
+      { x: 570, y: 370, label: "৩" },
+      { x: 430, y: 380, label: "৪" },
+      { x: 240, y: 320, label: "শেষ", isEnd: true },
     ],
   },
+  // Laam (Tall mast -> deep bowl)
   "ل": {
-    path: "M 540 100 L 540 340 Q 520 490 380 490 Q 240 490 220 360 L 220 320",
+    path: "M 550 100 L 550 350 Q 530 500 380 500 Q 240 500 220 360 L 220 320",
+    arrow: "⬇️",
+    arrowText: "দাঁড় থেকে নিচে বাটি",
     dots: [],
-    points: [
-      { x: 540, y: 100, t: 0 },
-      { x: 540, y: 260, t: 0.28 },
-      { x: 480, y: 450, t: 0.58 },
-      { x: 340, y: 480, t: 0.82 },
-      { x: 220, y: 320, t: 1.0 },
+    checkpoints: [
+      { x: 550, y: 100, label: "১", isStart: true },
+      { x: 550, y: 250, label: "২" },
+      { x: 490, y: 460, label: "৩" },
+      { x: 350, y: 495, label: "৪" },
+      { x: 220, y: 320, label: "শেষ", isEnd: true },
     ],
   },
+  // Meem (Circle on baseline -> tail down)
   "م": {
-    path: "M 490 320 Q 540 260 590 320 Q 540 370 470 360 L 330 360 L 330 510",
+    path: "M 500 330 Q 550 270 600 330 Q 550 380 490 370 L 330 370 L 330 520",
+    arrow: "↗️",
+    arrowText: "মাথা গোল করে লেজ",
     dots: [],
-    points: [
-      { x: 490, y: 320, t: 0 },
-      { x: 560, y: 280, t: 0.22 },
-      { x: 530, y: 360, t: 0.45 },
-      { x: 330, y: 360, t: 0.70 },
-      { x: 330, y: 510, t: 1.0 },
+    checkpoints: [
+      { x: 500, y: 330, label: "১", isStart: true },
+      { x: 575, y: 285, label: "২" },
+      { x: 550, y: 370, label: "৩" },
+      { x: 330, y: 370, label: "৪" },
+      { x: 330, y: 520, label: "শেষ", isEnd: true },
     ],
   },
+  // Noon (Deep bowl + 1 center dot)
   "ن": {
-    path: "M 630 270 Q 610 470 450 470 Q 290 470 270 270",
-    dots: [{ x: 450, y: 310, r: 18 }],
-    points: [
-      { x: 630, y: 270, t: 0 },
-      { x: 570, y: 410, t: 0.25 },
-      { x: 450, y: 470, t: 0.50 },
-      { x: 330, y: 410, t: 0.75 },
-      { x: 270, y: 270, t: 1.0 },
+    path: "M 630 280 Q 610 490 450 490 Q 290 490 270 280",
+    arrow: "⬇️",
+    arrowText: "ডান থেকে নিচে গোল",
+    dots: [{ x: 450, y: 310, r: 22 }],
+    checkpoints: [
+      { x: 630, y: 280, label: "১", isStart: true },
+      { x: 580, y: 430, label: "২" },
+      { x: 450, y: 490, label: "৩" },
+      { x: 320, y: 430, label: "৪" },
+      { x: 270, y: 280, label: "শেষ", isEnd: true },
     ],
   },
+  // Waw (Loop at baseline -> tail below)
   "و": {
-    path: "M 490 280 Q 530 210 580 240 Q 620 280 570 320 Q 500 380 450 450 Q 400 490 300 490",
+    path: "M 500 290 Q 540 220 600 250 Q 630 300 570 330 Q 500 390 440 460 Q 380 510 290 510",
+    arrow: "↗️",
+    arrowText: "মাথা ঘুরে নিচে লেজ",
     dots: [],
-    points: [
-      { x: 490, y: 280, t: 0 },
-      { x: 560, y: 220, t: 0.20 },
-      { x: 570, y: 320, t: 0.40 },
-      { x: 450, y: 440, t: 0.70 },
-      { x: 300, y: 490, t: 1.0 },
+    checkpoints: [
+      { x: 500, y: 290, label: "১", isStart: true },
+      { x: 580, y: 240, label: "২" },
+      { x: 570, y: 330, label: "৩" },
+      { x: 450, y: 440, label: "৪" },
+      { x: 290, y: 510, label: "শেষ", isEnd: true },
     ],
   },
+  // Haa (Outer curve and inner loop)
   "هـ": {
-    path: "M 570 260 Q 490 190 410 280 Q 390 360 510 360 Q 580 340 550 280 Q 510 240 450 320 L 300 360",
+    path: "M 580 270 Q 500 200 420 290 Q 390 370 520 370 Q 590 350 560 290 Q 520 250 460 320 L 300 370",
+    arrow: "↖️",
+    arrowText: "বাইরে ঘুরে ভেতরে নট",
     dots: [],
-    points: [
-      { x: 570, y: 260, t: 0 },
-      { x: 430, y: 220, t: 0.25 },
-      { x: 470, y: 360, t: 0.50 },
-      { x: 540, y: 280, t: 0.75 },
-      { x: 300, y: 360, t: 1.0 },
+    checkpoints: [
+      { x: 580, y: 270, label: "১", isStart: true },
+      { x: 440, y: 230, label: "২" },
+      { x: 480, y: 370, label: "৩" },
+      { x: 540, y: 290, label: "৪" },
+      { x: 300, y: 370, label: "শেষ", isEnd: true },
     ],
   },
+  // Hamzah
   "ء": {
-    path: "M 420 220 Q 490 170 520 230 Q 510 280 440 290 L 500 330",
+    path: "M 420 240 Q 490 190 520 250 Q 500 290 430 300 L 490 340",
+    arrow: "↗️",
+    arrowText: "ছোট বাঁকা মাথা",
     dots: [],
-    points: [
-      { x: 420, y: 220, t: 0 },
-      { x: 500, y: 200, t: 0.33 },
-      { x: 440, y: 290, t: 0.66 },
-      { x: 500, y: 330, t: 1.0 },
+    checkpoints: [
+      { x: 420, y: 240, label: "১", isStart: true },
+      { x: 500, y: 210, label: "২" },
+      { x: 440, y: 300, label: "৩" },
+      { x: 490, y: 340, label: "শেষ", isEnd: true },
     ],
   },
+  // Yaa (Swan neck -> wide bowl + 2 dots below)
   "ي": {
-    path: "M 540 210 Q 590 190 600 230 Q 590 280 500 300 Q 440 320 450 370 Q 450 480 340 480 Q 230 480 210 370 L 210 330",
+    path: "M 550 230 Q 600 200 610 250 Q 600 290 510 310 Q 450 330 460 380 Q 460 490 330 490 Q 220 490 200 370 L 200 330",
+    arrow: "➡️",
+    arrowText: "ঘাড় ঘুরে নিচে বাটি",
     dots: [
-      { x: 370, y: 520, r: 16 },
-      { x: 310, y: 520, r: 16 },
+      { x: 370, y: 535, r: 18 },
+      { x: 310, y: 535, r: 18 },
     ],
-    points: [
-      { x: 540, y: 210, t: 0 },
-      { x: 590, y: 230, t: 0.20 },
-      { x: 480, y: 310, t: 0.40 },
-      { x: 420, y: 470, t: 0.75 },
-      { x: 210, y: 330, t: 1.0 },
+    checkpoints: [
+      { x: 550, y: 230, label: "১", isStart: true },
+      { x: 600, y: 240, label: "২" },
+      { x: 490, y: 320, label: "৩" },
+      { x: 400, y: 480, label: "৪" },
+      { x: 200, y: 330, label: "শেষ", isEnd: true },
     ],
   },
 };
 
+// SVG standard coordinate system constants
+const SVG_VIEWBOX_WIDTH = 900;
+const SVG_VIEWBOX_HEIGHT = 560;
+
+// Mascot Choices matching User Reference Images
+const MASCOTS = [
+  { id: "elephant", name: "হাতি ছানা", emoji: "🐘", item: "⚽" },
+  { id: "lion", name: "সিংহ ছানা", emoji: "🦁", item: "🥩" },
+  { id: "mouse", name: "ইঁদুর", emoji: "🐭", item: "🧀" },
+  { id: "camel", name: "মরু উট", emoji: "🐪", item: "🍈" },
+];
+
 export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteExercise }) {
-  const { t: _t, isRTL: _isRTL, dir: _dir, lang: _lang } = useLearningLanguage();
+  const { t, isRTL: _isRTL, dir, lang } = useLearningLanguage();
 
-  // Navigation Views: "tracing" (The Cartoon Meadow Game) vs "selector" (Select Letter Grid)
-  const [viewMode, setViewMode] = useState("tracing");
+  const [selectedLetter, setSelectedLetter] = useState(ARABIC_ALPHABET[0]); // Default 'Alif' (as user requested)
+  const [selectedForm, setSelectedForm] = useState("isolated");
+  const [selectedHarakat, setSelectedHarakat] = useState("none");
 
-  const [selectedLetterIndex, setSelectedLetterIndex] = useState(2); // Default 'Taa' (ت)
-  const [activeMascotIndex, setActiveMascotIndex] = useState(0); // 0: Elephant, 1: Lion, 2: Mouse...
+  // Mode: "trace" (Default, strictly bounded inside two walls) vs "freehand"
+  const [boardMode, setBoardMode] = useState("trace");
 
-  // Progress along the path: 0.0 to 1.0
-  const [progressRatio, setProgressRatio] = useState(0);
-  const [hitCheckpointIndex, setHitCheckpointIndex] = useState(0);
-  const [isCompleted, setIsCompleted] = useState(false);
-  const [showCelebrationModal, setShowCelebrationModal] = useState(false);
+  // Chalk & Duster Tools
+  const [tool, setTool] = useState("pen");
+  const [penColor, setPenColor] = useState("#fbbf24"); // Rich golden amber
+  const [penWidth, setPenWidth] = useState(10);
+  const [showGuide, setShowGuide] = useState(true);
 
-  // Gamification coins & stars
-  const [coins, setCoins] = useState(150);
-  const [completedLetterMap, setCompletedLetterMap] = useState({});
+  // Mascot Selection
+  const [selectedMascotIndex, setSelectedMascotIndex] = useState(0);
 
+  // Bounded Tracing State: tracks how many checkpoints have been reached (0..N-1)
+  const [reachedIndex, setReachedIndex] = useState(-1);
+  const [fillProgress, setFillProgress] = useState(0); // 0 to 1
+
+  // Gamification & Celebration
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [starsRevealed, setStarsRevealed] = useState(0);
+  const [dimensions, setDimensions] = useState({ width: 800, height: 520 });
+
+  const boardContainerRef = useRef(null);
   const svgRef = useRef(null);
+  const fullPathRef = useRef(null);
+  const drawCanvasRef = useRef(null);
+
   const isDraggingRef = useRef(false);
-  const pathLengthRef = useRef(1000);
+  const isFreehandDrawingRef = useRef(false);
+  const lastFreehandPointRef = useRef({ x: 0, y: 0 });
+  const isCelebrationFiredRef = useRef(false);
+  const [totalPathLength, setTotalPathLength] = useState(1000);
 
-  const currentLetter = ARABIC_ALPHABET[selectedLetterIndex] || ARABIC_ALPHABET[0];
-  const currentMascot = MASCOTS[activeMascotIndex] || MASCOTS[0];
-  const strokeData = ARABIC_STROKE_DATA[currentLetter.ar] || ARABIC_STROKE_DATA["ا"];
-  const checkpoints = strokeData.points;
+  // Active Arabic character with harakat
+  const activeChar =
+    (selectedLetter.forms[selectedForm] || selectedLetter.ar) +
+    (HARAKAT_LIST.find((h) => h.id === selectedHarakat)?.symbol || "");
 
-  // Initialize coins from localStorage
-  useEffect(() => {
-    try {
-      const storedCoins = localStorage.getItem("nur_student_coins");
-      if (storedCoins) setCoins(parseInt(storedCoins, 10));
-
-      const storedMap = localStorage.getItem("nur_blackboard_stars");
-      if (storedMap) setCompletedLetterMap(JSON.parse(storedMap));
-    } catch {}
+  // Canonical token for sound playback
+  const getAudioToken = useCallback((letterAr, harakatId) => {
+    let char = letterAr;
+    if (harakatId === "fathah") char += "َ";
+    else if (harakatId === "kasrah") char += "ِ";
+    else if (harakatId === "dammah") char += "ُ";
+    else if (harakatId === "sukoon") char += "ْ";
+    return char;
   }, []);
 
-  // Compute exact path length for strokeDashoffset
+  // Play authentic pronunciation
+  const playPronunciation = useCallback(() => {
+    try {
+      const charToSpeak = getAudioToken(selectedLetter.ar, selectedHarakat);
+      playArabicSound(charToSpeak);
+    } catch {}
+  }, [getAudioToken, selectedHarakat, selectedLetter]);
+
+  // Active Calligraphy Tracing Definition
+  const currentTracingDef = useMemo(() => {
+    return (
+      ARABIC_TRACING_PATHS[selectedLetter.ar] || {
+        path: "M 450 100 L 450 440",
+        arrow: "⬇️",
+        arrowText: "নিচে টানুন",
+        dots: [],
+        checkpoints: [
+          { x: 450, y: 100, label: "১", isStart: true },
+          { x: 450, y: 270, label: "২" },
+          { x: 450, y: 440, label: "শেষ", isEnd: true },
+        ],
+      }
+    );
+  }, [selectedLetter.ar]);
+
+  const checkpoints = currentTracingDef.checkpoints;
+  const currentMascot = MASCOTS[selectedMascotIndex];
+
+  // Measure path length dynamically
   useEffect(() => {
-    if (typeof document !== "undefined") {
-      const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
-      pathEl.setAttribute("d", strokeData.path);
-      pathLengthRef.current = Math.max(100, pathEl.getTotalLength());
+    if (fullPathRef.current) {
+      try {
+        const len = fullPathRef.current.getTotalLength();
+        if (len > 0) setTotalPathLength(len);
+      } catch {}
     }
-  }, [strokeData.path]);
+  }, [currentTracingDef]);
 
-  // Reset tracing state when letter changes
-  const resetLetterState = useCallback(() => {
-    setProgressRatio(0);
-    setHitCheckpointIndex(0);
-    setIsCompleted(false);
-    setShowCelebrationModal(false);
+  // Clear Board and reset stroke tracking
+  const handleClear = useCallback(() => {
+    // Clear freehand canvas
+    const canvas = drawCanvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext("2d");
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    }
+
+    // Reset bounded tracing
+    setReachedIndex(-1);
+    setFillProgress(0);
+    isCelebrationFiredRef.current = false;
     isDraggingRef.current = false;
+    setShowCelebration(false);
   }, []);
 
-  useEffect(() => {
-    resetLetterState();
-  }, [selectedLetterIndex, resetLetterState]);
+  // ── TRIGGER MA SHA ALLAH GAME CELEBRATION (Only on 100% Genuine Completion) ──
+  const triggerCelebration = useCallback(() => {
+    if (isCelebrationFiredRef.current) return;
+    isCelebrationFiredRef.current = true;
+    setFillProgress(1);
+    setShowCelebration(true);
 
-  // Audio Playback
-  const playCurrentSound = useCallback(() => {
-    try {
-      playArabicSound(currentLetter.ar);
-    } catch {}
-  }, [currentLetter.ar]);
-
-  // Trigger Victory Fanfare
-  const triggerVictory = useCallback(() => {
-    if (isCompleted) return;
-    setIsCompleted(true);
-    setProgressRatio(1.0);
-    setHitCheckpointIndex(checkpoints.length - 1);
-    setShowCelebrationModal(true);
-
+    // 1. Triumphant fanfare audio
     playMaShaAllahCelebration();
+
+    // 2. Confetti explosion
     fireCelebrationConfetti();
-    playCurrentSound();
 
-    // Award +5 coins
-    const newCoins = coins + 5;
-    setCoins(newCoins);
+    // 3. Sequential star pop animation
+    setStarsRevealed(0);
+    const starTimers = [1, 2, 3].map((starIdx) =>
+      setTimeout(() => {
+        setStarsRevealed(starIdx);
+        playStarPopSound(starIdx);
+      }, starIdx * 320)
+    );
+
+    // 4. Pronounce the completed letter proudly
+    setTimeout(() => {
+      playPronunciation();
+    }, 1100);
+
+    // 5. Award +5 Coins to student wallet
     try {
-      localStorage.setItem("nur_student_coins", String(newCoins));
-      const newMap = { ...completedLetterMap, [currentLetter.ar]: 3 };
-      setCompletedLetterMap(newMap);
-      localStorage.setItem("nur_blackboard_stars", JSON.stringify(newMap));
+      const currentCoins = parseInt(localStorage.getItem("nur_student_coins") || "150", 10);
+      localStorage.setItem("nur_student_coins", String(currentCoins + 5));
     } catch {}
-  }, [checkpoints.length, coins, completedLetterMap, currentLetter.ar, isCompleted, playCurrentSound]);
 
-  // Next Letter Handler
-  const handleNextLetter = useCallback(() => {
-    const nextIdx = (selectedLetterIndex + 1) % ARABIC_ALPHABET.length;
-    setSelectedLetterIndex(nextIdx);
-    resetLetterState();
-    try {
-      playArabicSound(ARABIC_ALPHABET[nextIdx].ar);
-    } catch {}
-  }, [resetLetterState, selectedLetterIndex]);
+    return () => starTimers.forEach(clearTimeout);
+  }, [playPronunciation]);
 
-  // SVG Matrix coordinate converter
-  const getSvgCoordinates = useCallback((e) => {
+  // Dynamic 1:1 Pixel Canvas Dimensions Observer
+  useEffect(() => {
+    const updateDimensions = () => {
+      if (!boardContainerRef.current) return;
+      const rect = boardContainerRef.current.getBoundingClientRect();
+      const w = Math.max(320, Math.floor(rect.width));
+      const h = Math.max(300, Math.floor(rect.height));
+      setDimensions((prev) => {
+        if (prev.width === w && prev.height === h) return prev;
+        return { width: w, height: h };
+      });
+    };
+
+    updateDimensions();
+    window.addEventListener("resize", updateDimensions);
+    const stopDrag = () => {
+      isDraggingRef.current = false;
+      isFreehandDrawingRef.current = false;
+    };
+    window.addEventListener("pointerup", stopDrag);
+    window.addEventListener("touchend", stopDrag);
+    const ro = new ResizeObserver(updateDimensions);
+    if (boardContainerRef.current) ro.observe(boardContainerRef.current);
+
+    return () => {
+      window.removeEventListener("resize", updateDimensions);
+      window.removeEventListener("pointerup", stopDrag);
+      window.removeEventListener("touchend", stopDrag);
+      ro.disconnect();
+    };
+  }, []);
+
+  // Reset tracing state when active letter changes
+  useEffect(() => {
+    handleClear();
+  }, [selectedLetter, selectedHarakat, selectedForm, handleClear]);
+
+  // Accurate SVG Coordinate Mapper using matrix inversion
+  const getSvgPoint = useCallback((e) => {
     const svg = svgRef.current;
     if (!svg) return { x: 0, y: 0 };
     const pt = svg.createSVGPoint();
@@ -526,552 +760,893 @@ export default function InteractiveBlackboard({ onCompleteExercise: _onCompleteE
     const ctm = svg.getScreenCTM();
     if (!ctm) return { x: 0, y: 0 };
     const p = pt.matrixTransform(ctm.inverse());
-    return { x: p.x, y: p.y };
+    return { x: Math.round(p.x), y: Math.round(p.y) };
   }, []);
 
-  // ── 🐾 TOUCH & DRAG EVENT HANDLERS (MASCOT ADVANCES ALONG PATH) ──
-  const handlePointerDown = (e) => {
-    if (isCompleted) return;
-    const coords = getSvgCoordinates(e);
+  // ── 🎯 STRICTLY BOUNDED TRACING: ZERO INK CAN EVER LEAK OUTSIDE! ──
+  // The ink ONLY flows through the hollow channel between the two walls!
+  const handleTracingPointerDown = (e) => {
+    if (boardMode !== "trace" || isCelebrationFiredRef.current) return;
+    const p = getSvgPoint(e);
 
-    const activeCp = checkpoints[hitCheckpointIndex];
-    const dist = Math.hypot(coords.x - activeCp.x, coords.y - activeCp.y);
+    const firstCp = checkpoints[0];
+    const distToFirst = Math.hypot(p.x - firstCp.x, p.y - firstCp.y);
 
-    // If touching near the current mascot/checkpoint, capture drag
-    if (dist < 90) {
+    const currentCp = reachedIndex >= 0 ? checkpoints[reachedIndex] : null;
+    const distToCurrent = currentCp ? Math.hypot(p.x - currentCp.x, p.y - currentCp.y) : 999;
+
+    // Start at checkpoint 0 or continue from current position
+    if (reachedIndex <= 0 && distToFirst < 95) {
+      isDraggingRef.current = true;
+      setReachedIndex(0);
+      setFillProgress(1 / (checkpoints.length * 1.5));
+      playStarPopSound(1); // "টুস" sound
+    } else if (reachedIndex >= 0 && distToCurrent < 95) {
       isDraggingRef.current = true;
     }
   };
 
-  const handlePointerMove = (e) => {
-    if (!isDraggingRef.current || isCompleted) return;
-    const coords = getSvgCoordinates(e);
+  const handleTracingPointerMove = (e) => {
+    if (boardMode !== "trace" || isCelebrationFiredRef.current) return;
+    const p = getSvgPoint(e);
 
-    // Check hit on the next checkpoint
-    const nextIdx = hitCheckpointIndex + 1;
+    // If child pressed and dragged into ball 0 without releasing:
+    if (!isDraggingRef.current) {
+      if (reachedIndex < 0 && checkpoints[0]) {
+        const distToFirst = Math.hypot(p.x - checkpoints[0].x, p.y - checkpoints[0].y);
+        if (distToFirst < 85) {
+          isDraggingRef.current = true;
+          setReachedIndex(0);
+          setFillProgress(1 / (checkpoints.length * 1.5));
+          playStarPopSound(1);
+        }
+      }
+      return;
+    }
+
+    // Target is the next checkpoint
+    const nextIdx = Math.max(0, reachedIndex) + 1;
     if (nextIdx < checkpoints.length) {
       const nextCp = checkpoints[nextIdx];
-      const dist = Math.hypot(coords.x - nextCp.x, coords.y - nextCp.y);
+      const dist = Math.hypot(p.x - nextCp.x, p.y - nextCp.y);
 
-      // Hit radius: 65px
-      if (dist < 65) {
-        setHitCheckpointIndex(nextIdx);
-        setProgressRatio(nextCp.t);
-        playStarPopSound(nextIdx);
+      // When child's drag reaches within 75px of the next ball:
+      if (dist < 75) {
+        setReachedIndex(nextIdx);
+        const progress = (nextIdx + 0.1) / (checkpoints.length - 1);
+        setFillProgress(Math.min(1, progress));
+        playStarPopSound(nextIdx + 1); // "টুস টুস" popping sound!
 
+        // When reaching the final checkpoint:
         if (nextIdx === checkpoints.length - 1) {
           isDraggingRef.current = false;
-          triggerVictory();
+          triggerCelebration();
         }
       }
     }
   };
 
-  const handlePointerUp = () => {
+  const handleTracingPointerUp = () => {
     isDraggingRef.current = false;
   };
 
-  // Position of the animated Mascot
-  const activeMascotPos = checkpoints[hitCheckpointIndex] || checkpoints[0];
+  // ── ✏️ FREEHAND CANVAS EVENTS ──
+  const getFreehandPos = (e) => {
+    const canvas = drawCanvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    return {
+      x: (clientX - rect.left) * (canvas.width / rect.width),
+      y: (clientY - rect.top) * (canvas.height / rect.height),
+    };
+  };
+
+  const startFreehandDrawing = (e) => {
+    if (boardMode !== "freehand") return;
+    isFreehandDrawingRef.current = true;
+    const pos = getFreehandPos(e);
+    lastFreehandPointRef.current = pos;
+  };
+
+  const drawFreehand = (e) => {
+    if (!isFreehandDrawingRef.current || boardMode !== "freehand") return;
+    const canvas = drawCanvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    const pos = getFreehandPos(e);
+
+    ctx.beginPath();
+    ctx.moveTo(lastFreehandPointRef.current.x, lastFreehandPointRef.current.y);
+    ctx.lineTo(pos.x, pos.y);
+
+    if (tool === "eraser") {
+      ctx.globalCompositeOperation = "destination-out";
+      ctx.lineWidth = penWidth * 3.5;
+    } else {
+      ctx.globalCompositeOperation = "source-over";
+      ctx.strokeStyle = penColor;
+      ctx.lineWidth = penWidth;
+      ctx.shadowBlur = 4;
+      ctx.shadowColor = penColor;
+    }
+
+    ctx.stroke();
+    lastFreehandPointRef.current = pos;
+  };
+
+  const stopFreehandDrawing = () => {
+    isFreehandDrawingRef.current = false;
+  };
+
+  // Next Letter Handler
+  const handleNextLetter = () => {
+    const currentIndex = ARABIC_ALPHABET.findIndex((item) => item.ar === selectedLetter.ar);
+    const nextIndex = (currentIndex + 1) % ARABIC_ALPHABET.length;
+    const nextLetter = ARABIC_ALPHABET[nextIndex];
+
+    setSelectedLetter(nextLetter);
+    setShowCelebration(false);
+    handleClear();
+
+    const charToSpeak = getAudioToken(nextLetter.ar, selectedHarakat);
+    playArabicSound(charToSpeak);
+    toast.success(`মাশাআল্লাহ! পরবর্তী হরফ "${nextLetter.nameBn}" শুরু হয়েছে।`);
+  };
+
+  // Repeat current letter
+  const handleRepeatCurrentLetter = () => {
+    setShowCelebration(false);
+    handleClear();
+    playPronunciation();
+  };
+
+  // Download drawn handwriting as PNG
+  const handleDownloadImage = () => {
+    try {
+      const tempCanvas = document.createElement("canvas");
+      tempCanvas.width = dimensions.width;
+      tempCanvas.height = dimensions.height;
+      const tCtx = tempCanvas.getContext("2d");
+
+      tCtx.fillStyle = "#38bdf8";
+      tCtx.fillRect(0, 0, tempCanvas.width, tempCanvas.height);
+
+      if (drawCanvasRef.current) {
+        tCtx.drawImage(drawCanvasRef.current, 0, 0);
+      }
+
+      const link = document.createElement("a");
+      link.download = `arabic-blackboard-${selectedLetter.nameBn || "letter"}.png`;
+      link.href = tempCanvas.toDataURL("image/png");
+      link.click();
+      toast.success("মাশাআল্লাহ! আপনার হাতের লেখার ছবি ডাউনলোড হয়েছে।");
+    } catch {
+      toast.error("ছবি সেভ করতে সমস্যা হয়েছে।");
+    }
+  };
+
+  // Active Mascot Position along the path
+  const activeMascotPos = useMemo(() => {
+    if (reachedIndex >= 0 && reachedIndex < checkpoints.length) {
+      return checkpoints[reachedIndex];
+    }
+    return checkpoints[0];
+  }, [checkpoints, reachedIndex]);
+
+  // Dash offset for progressive ink fill:
+  // Starts with total length (0% revealed), reveals smoothly to 0 (100% revealed)
+  const strokeDashOffset = useMemo(() => {
+    if (fillProgress >= 0.98) return 0;
+    if (fillProgress <= 0) return totalPathLength;
+    return totalPathLength * (1 - fillProgress);
+  }, [totalPathLength, fillProgress]);
+
+  const tracingPercent = Math.min(100, Math.round(fillProgress * 100));
 
   return (
-    <div className="relative w-full min-h-[640px] md:min-h-[720px] rounded-[36px] overflow-hidden border-4 border-sky-300 shadow-2xl select-none flex flex-col justify-between font-hind-siliguri">
-      {/* ══════════════════════════════════════════════════════════
-          🌞 1. GLORIOUS CARTOON MEADOW & SKY BACKGROUND
-          (Matching all 5 reference images: blue sky, clouds, rolling green hills & Dutch windmills)
-      ══════════════════════════════════════════════════════════ */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#38bdf8] via-[#7dd3fc] to-[#bae6fd] pointer-events-none" />
-
-      {/* Sunlight Flare */}
-      <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-yellow-200/50 blur-3xl pointer-events-none" />
-
-      {/* Floating Clouds */}
-      <div className="absolute top-8 left-12 w-36 h-12 bg-white/80 rounded-full blur-[1px] shadow-sm animate-pulse pointer-events-none" />
-      <div className="absolute top-16 right-24 w-48 h-14 bg-white/85 rounded-full blur-[1px] shadow-sm pointer-events-none" />
-      <div className="absolute top-28 left-1/3 w-40 h-10 bg-white/70 rounded-full blur-[1px] pointer-events-none" />
-
-      {/* Lush Green Rolling Hills */}
-      <div
-        className="absolute bottom-0 inset-x-0 h-44 sm:h-52 bg-gradient-to-t from-[#4d7c0f] via-[#65a30d] to-[#84cc16] rounded-t-[50%] scale-x-125 pointer-events-none shadow-inner"
-        style={{ transformOrigin: "bottom center" }}
-      />
-      <div
-        className="absolute -bottom-8 -right-16 w-[480px] h-48 bg-gradient-to-t from-[#3f6212] to-[#65a30d] rounded-t-[45%] pointer-events-none"
-      />
-
-      {/* 2 Traditional Dutch Windmills on Right Hill (Matching Reference Images 2, 3, 4, 5, 6) */}
-      <div className="absolute bottom-20 right-8 sm:right-16 pointer-events-none z-10 flex items-end gap-3 scale-90 sm:scale-100">
-        {/* Main Big Windmill */}
-        <div className="relative flex flex-col items-center">
-          {/* Rotating Blades */}
-          <div className="w-20 h-20 -mb-10 relative flex items-center justify-center animate-[spin_12s_linear_infinite]">
-            <div className="absolute w-1.5 h-20 bg-amber-900 border border-amber-950 rounded-full" />
-            <div className="absolute w-20 h-1.5 bg-amber-900 border border-amber-950 rounded-full" />
-            <div className="w-3.5 h-3.5 rounded-full bg-amber-700 border-2 border-white z-10" />
+    <div dir={dir} className="w-full flex flex-col space-y-6">
+      {/* ── TOP HEADER & CONTROLS ── */}
+      <div className="flex flex-wrap items-center justify-between gap-3 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-[#091a14] via-[#0b241b] to-[#071610] border border-emerald-900/60 shadow-xl">
+        <div className="flex items-center gap-3.5">
+          <div className="w-12 h-12 rounded-2xl bg-amber-500/20 border border-amber-500/50 flex items-center justify-center text-amber-300 font-bold text-2xl font-amiri shadow-md shadow-amber-950/40 ring-1 ring-amber-400/30">
+            {activeChar}
           </div>
-          {/* Windmill Body */}
-          <div className="w-10 h-16 bg-gradient-to-b from-[#29170e] to-[#140b07] border-2 border-[#452719] rounded-t-lg shadow-xl" />
+          <div>
+            <h2 className="text-base font-extrabold text-white flex items-center gap-2">
+              <span>{t.blackboard}</span>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-900/90 border border-emerald-600 text-emerald-200 font-bold shadow-xs">
+                {lang === "en" ? selectedLetter.nameEn : selectedLetter.nameBn}
+              </span>
+            </h2>
+            <p className="text-xs text-slate-300/80">
+              নিখুঁত ট্রেসিং: হরফের দুই দেওয়ালের ভেতরে তীর অনুযায়ী টেনে যান—বল ফুটবে এবং হরফ ভরাট হবে! 🎮
+            </p>
+          </div>
         </div>
 
-        {/* Small Distant Windmill */}
-        <div className="relative flex flex-col items-center opacity-85 scale-75 -ml-2">
-          <div className="w-16 h-16 -mb-8 relative flex items-center justify-center animate-[spin_16s_linear_infinite]">
-            <div className="absolute w-1.5 h-16 bg-amber-900 rounded-full" />
-            <div className="absolute w-16 h-1.5 bg-amber-900 rounded-full" />
-            <div className="w-3 h-3 rounded-full bg-amber-700 z-10" />
+        {/* Real-time Progress Bar & Audio Action */}
+        <div className="flex items-center gap-3">
+          <div className="flex flex-col items-end gap-1 min-w-[150px]">
+            <div className="flex items-center justify-between w-full text-[11px] font-bold">
+              <span className="text-slate-300">ট্রেসিং অগ্রগতি:</span>
+              <span
+                className={`font-mono font-black ${
+                  tracingPercent === 100 ? "text-emerald-400" : "text-amber-400"
+                }`}
+              >
+                {tracingPercent}%
+              </span>
+            </div>
+            <div className="w-full h-2.5 rounded-full bg-black/60 border border-emerald-900/60 overflow-hidden shadow-inner">
+              <div
+                className={`h-full transition-all duration-300 rounded-full ${
+                  tracingPercent === 100
+                    ? "bg-gradient-to-r from-emerald-400 to-teal-300 shadow-md shadow-emerald-500/50"
+                    : "bg-gradient-to-r from-emerald-600 via-amber-500 to-amber-400"
+                }`}
+                style={{ width: `${tracingPercent}%` }}
+              />
+            </div>
           </div>
-          <div className="w-8 h-12 bg-gradient-to-b from-[#29170e] to-[#140b07] rounded-t-md" />
+
+          <button
+            type="button"
+            onClick={playPronunciation}
+            className="px-4 py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-amber-600 to-amber-700 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-black text-xs flex items-center gap-2 transition-all shadow-lg shadow-amber-950/40 cursor-pointer active:scale-95"
+            title="বিশুদ্ধ ক্বারীর কণ্ঠে উচ্চারণ শুনুন"
+          >
+            <Volume2 className="w-4 h-4 text-slate-950" />
+            <span>{t.listenAudio}</span>
+          </button>
         </div>
       </div>
 
-      {/* ══════════════════════════════════════════════════════════
-          🕹️ 2. TOP CONTROLS & HEADER
-          (Home, Mascot Selector, Target Badge, Reset, Next Arrow)
-      ══════════════════════════════════════════════════════════ */}
-      <header className="relative z-30 p-3 sm:p-5 flex items-center justify-between gap-2 max-w-6xl mx-auto w-full">
-        {/* Left: Home Button (Switch to Letter Grid) */}
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setViewMode(viewMode === "selector" ? "tracing" : "selector")}
-            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-teal-500 hover:bg-teal-600 text-white border-3 border-white shadow-xl flex items-center justify-center transition hover:scale-105 active:scale-95 cursor-pointer"
-            title="হরফ নির্বাচন তালিকায় যান"
-          >
-            {viewMode === "selector" ? (
-              <ChevronRight className="w-6 h-6 stroke-[3]" />
-            ) : (
-              <Home className="w-6 h-6 stroke-[2.5]" />
-            )}
-          </button>
+      {/* ── MAIN BLACKBOARD CANVAS STAGE ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* LEFT COLUMN: THE GRAND BLACKBOARD (col-span-8) */}
+        <div className="lg:col-span-8 flex flex-col space-y-4">
+          {/* WOODEN SLATE CASING (আসল কাঠের ফ্রেমযুক্ত স্লেট) */}
+          <div className="relative rounded-[32px] p-2.5 sm:p-4 bg-gradient-to-b from-[#3d1f11] via-[#24130a] to-[#140a04] border-4 border-[#522a16] shadow-[0_25px_60px_-15px_rgba(0,0,0,0.95),inset_0_2px_4px_rgba(255,255,255,0.18),inset_0_-2px_4px_rgba(0,0,0,0.8)] ring-1 ring-amber-700/60 flex flex-col">
+            {/* Wooden Slate Corner Studs */}
+            <div className="absolute top-2 left-2 w-3 h-3 rounded-full bg-gradient-to-br from-amber-300 to-amber-700 shadow border border-amber-900/60" />
+            <div className="absolute top-2 right-2 w-3 h-3 rounded-full bg-gradient-to-br from-amber-300 to-amber-700 shadow border border-amber-900/60" />
+            <div className="absolute bottom-2 left-2 w-3 h-3 rounded-full bg-gradient-to-br from-amber-300 to-amber-700 shadow border border-amber-900/60" />
+            <div className="absolute bottom-2 right-2 w-3 h-3 rounded-full bg-gradient-to-br from-amber-300 to-amber-700 shadow border border-amber-900/60" />
 
-          {/* Grid View Shortcut */}
-          <button
-            onClick={() => setViewMode("selector")}
-            className={`px-3 py-1.5 rounded-2xl bg-white/80 hover:bg-white text-slate-800 font-black text-xs shadow-md border border-white/60 flex items-center gap-1.5 transition active:scale-95 cursor-pointer ${
-              viewMode === "selector" ? "ring-2 ring-teal-500 bg-white" : ""
-            }`}
-          >
-            <Grid className="w-3.5 h-3.5 text-teal-600" />
-            <span className="hidden sm:inline">হরফ তালিকা</span>
-          </button>
-        </div>
-
-        {/* Center: Active Target Badge & Pronunciation */}
-        {viewMode === "tracing" && (
-          <div className="flex items-center gap-2 sm:gap-3 bg-white/90 backdrop-blur-md px-3.5 sm:px-5 py-1.5 rounded-full border-2 border-sky-400 shadow-xl">
-            <span className="text-xs font-black text-slate-700 hidden sm:inline">হরফ:</span>
+            {/* 🌄 THE BEAUTIFUL WRITING STAGE (SUNNY MEADOW, CLOUDS & WINDMILLS BACKGROUND) */}
             <div
-              className="px-3 py-0.5 rounded-full font-arabic font-black text-2xl sm:text-3xl text-white shadow-sm"
-              style={{ backgroundColor: currentLetter.color }}
+              ref={boardContainerRef}
+              className="relative rounded-[24px] border-2 border-emerald-950 shadow-[inset_0_10px_30px_rgba(0,0,0,0.7)] overflow-hidden h-[490px] sm:h-[550px] md:h-[600px] w-full select-none"
             >
-              {currentLetter.ar}
-            </div>
-            <span className="text-xs sm:text-sm font-black text-slate-900">
-              {currentLetter.nameBn}
-            </span>
-            <button
-              onClick={playCurrentSound}
-              className="p-1.5 rounded-full bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 transition active:scale-95 cursor-pointer"
-              title="খাঁটি তিলাওয়াত শুনুন"
-            >
-              <Volume2 className="w-4 h-4" />
-            </button>
-          </div>
-        )}
+              {/* 1. SUNNY BLUE SKY GRADIENT */}
+              <div className="absolute inset-0 bg-gradient-to-b from-[#38bdf8] via-[#7dd3fc] to-[#bae6fd] pointer-events-none" />
 
-        {/* Right: Reset & Next Letter Arrow */}
-        <div className="flex items-center gap-2">
-          {viewMode === "tracing" && (
-            <button
-              onClick={resetLetterState}
-              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-amber-400 hover:bg-amber-500 text-amber-950 border-2 border-white shadow-lg flex items-center justify-center transition active:scale-95 cursor-pointer"
-              title="আবার নতুন করে খেলুন"
-            >
-              <RotateCcw className="w-5 h-5" />
-            </button>
-          )}
+              {/* 2. SUN FLARE IN TOP-RIGHT */}
+              <div className="absolute -top-12 -right-12 w-64 h-64 rounded-full bg-amber-200/90 blur-2xl pointer-events-none" />
 
-          {/* Next Letter Circle Arrow (Exact Teal Circle matching User Images) */}
-          <button
-            onClick={handleNextLetter}
-            className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-gradient-to-tr from-teal-500 to-emerald-400 hover:from-teal-600 hover:to-emerald-500 text-white border-3 border-white shadow-xl flex items-center justify-center transition hover:scale-105 active:scale-95 cursor-pointer"
-            title="পরবর্তী হরফে যান"
-          >
-            <ChevronRight className="w-7 h-7 stroke-[3]" />
-          </button>
-        </div>
-      </header>
+              {/* 3. FLUFFY ANIMATED CLOUDS */}
+              <div className="absolute top-6 left-8 flex items-center gap-1.5 opacity-80 pointer-events-none">
+                <div className="w-16 h-8 rounded-full bg-white shadow-sm" />
+                <div className="w-24 h-12 rounded-full bg-white -ml-8 -mt-2 shadow-sm" />
+                <div className="w-14 h-8 rounded-full bg-white -ml-6 shadow-sm" />
+              </div>
+              <div className="absolute top-12 right-28 flex items-center gap-1.5 opacity-70 pointer-events-none hidden sm:flex">
+                <div className="w-20 h-10 rounded-full bg-white shadow-sm" />
+                <div className="w-28 h-14 rounded-full bg-white -ml-10 -mt-2 shadow-sm" />
+              </div>
 
-      {/* ══════════════════════════════════════════════════════════
-          VIEW 1: 📋 SELECT LETTER GRID (MATCHING IMAGE 9)
-      ══════════════════════════════════════════════════════════ */}
-      {viewMode === "selector" && (
-        <div className="relative z-20 flex-1 max-w-5xl mx-auto w-full p-4 sm:p-6 overflow-y-auto animate-fade-in flex flex-col justify-between">
-          <div className="space-y-4">
-            {/* Title Bar matching "Select Letter" in Reference */}
-            <div className="text-center space-y-1">
-              <h2 className="text-2xl sm:text-3xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.5)]">
-                Select Letter • আরবী হরফ নির্বাচন করুন
-              </h2>
-              <p className="text-xs sm:text-sm text-sky-100 font-bold drop-shadow">
-                যে হরফটি খেলতে ও শিখতে চাও, সেটিতে ট্যাপ করো!
-              </p>
-            </div>
+              {/* 4. ROLLING GREEN HILLS AT BOTTOM */}
+              <svg
+                className="absolute bottom-0 inset-x-0 w-full h-[160px] sm:h-[190px] pointer-events-none"
+                viewBox="0 0 900 180"
+                preserveAspectRatio="none"
+              >
+                {/* Far Hill */}
+                <path
+                  d="M 0 70 Q 220 20 450 70 Q 680 120 900 50 L 900 180 L 0 180 Z"
+                  fill="#84cc16"
+                  opacity="0.9"
+                />
+                {/* Near Hill */}
+                <path
+                  d="M 0 100 Q 300 50 600 100 Q 760 140 900 80 L 900 180 L 0 180 Z"
+                  fill="#65a30d"
+                />
+              </svg>
 
-            {/* Grid of 29 Arabic Letter Glass Cards */}
-            <div className="grid grid-cols-4 sm:grid-cols-7 gap-3 sm:gap-4 max-h-[55vh] overflow-y-auto p-2">
-              {ARABIC_ALPHABET.map((item, idx) => {
-                const isCurrent = idx === selectedLetterIndex;
-                const stars = completedLetterMap[item.ar] || 0;
+              {/* 5. ROTATING DUTCH WINDMILLS (MATCHING USER REFERENCE IMAGES) */}
+              <div className="absolute bottom-14 right-6 sm:right-14 flex items-end gap-3 pointer-events-none opacity-90">
+                <div className="relative flex flex-col items-center">
+                  <div className="w-14 h-14 animate-spin [animation-duration:12s] relative flex items-center justify-center">
+                    <div className="absolute w-14 h-1.5 bg-[#451a03] rounded-full" />
+                    <div className="absolute h-14 w-1.5 bg-[#451a03] rounded-full" />
+                  </div>
+                  <div
+                    className="w-7 h-10 bg-[#78350f] border-t-2 border-[#451a03] -mt-7 shadow-md"
+                    style={{ clipPath: "polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%)" }}
+                  />
+                </div>
+                <div className="relative flex flex-col items-center hidden xs:flex">
+                  <div className="w-10 h-10 animate-spin [animation-duration:8s] relative flex items-center justify-center">
+                    <div className="absolute w-10 h-1 bg-[#451a03] rounded-full" />
+                    <div className="absolute h-10 w-1 bg-[#451a03] rounded-full" />
+                  </div>
+                  <div
+                    className="w-5 h-7 bg-[#78350f] -mt-5 shadow-sm"
+                    style={{ clipPath: "polygon(15% 0%, 85% 0%, 100% 100%, 0% 100%)" }}
+                  />
+                </div>
+              </div>
 
-                const borderColors = [
-                  "border-amber-300 hover:border-amber-400 text-amber-100",
-                  "border-lime-300 hover:border-lime-400 text-lime-100",
-                  "border-cyan-300 hover:border-cyan-400 text-cyan-100",
-                  "border-purple-300 hover:border-purple-400 text-purple-100",
-                  "border-orange-300 hover:border-orange-400 text-orange-100",
-                  "border-rose-300 hover:border-rose-400 text-rose-100",
-                  "border-sky-300 hover:border-sky-400 text-sky-100",
-                ];
-                const borderColor = borderColors[idx % borderColors.length];
-
-                return (
+              {/* 6. MASCOT PICKER PILL (TOP-LEFT INSIDE STAGE) */}
+              <div className="absolute top-3 left-3 z-30 flex items-center gap-1.5 p-1 rounded-2xl bg-white/70 backdrop-blur-md border border-white/60 shadow-md">
+                <span className="text-[10px] font-black text-slate-700 pl-1.5 hidden xs:inline">সাথী:</span>
+                {MASCOTS.map((m, idx) => (
                   <button
-                    key={item.ar}
-                    onClick={() => {
-                      setSelectedLetterIndex(idx);
-                      setViewMode("tracing");
-                    }}
-                    className={`relative p-3.5 rounded-2xl bg-white/20 hover:bg-white/35 backdrop-blur-md border-3 transition-all duration-200 transform hover:scale-105 active:scale-95 flex flex-col items-center justify-center gap-1 shadow-lg cursor-pointer ${borderColor} ${
-                      isCurrent ? "ring-4 ring-white shadow-2xl scale-105 bg-white/40" : ""
+                    key={m.id}
+                    type="button"
+                    onClick={() => setSelectedMascotIndex(idx)}
+                    className={`px-2 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      selectedMascotIndex === idx
+                        ? "bg-amber-400 text-slate-950 shadow-md scale-105 font-black ring-1 ring-white"
+                        : "bg-white/40 hover:bg-white/70 text-slate-700"
                     }`}
                   >
-                    <span className="font-arabic font-black text-3xl sm:text-4xl text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-                      {item.ar}
-                    </span>
-                    <span className="text-[11px] sm:text-xs font-bold text-white drop-shadow">
-                      {item.nameBn}
-                    </span>
-                    {stars > 0 && (
-                      <span className="text-[10px] text-amber-300 drop-shadow">⭐⭐⭐</span>
-                    )}
+                    <span>{m.emoji}</span>
                   </button>
-                );
-              })}
-            </div>
-          </div>
+                ))}
+              </div>
 
-          <div className="pt-4 text-center">
-            <button
-              onClick={() => setViewMode("tracing")}
-              className="px-6 py-2.5 rounded-full bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-black text-sm shadow-xl active:scale-95 transition cursor-pointer"
-            >
-              <span>ট্রেসিং খেলায় ফিরে যাও</span>
-              <span className="ml-2">➔</span>
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════
-          VIEW 2: 🎨 CARTOON TRACING GAME STAGE
-          (Left: Solid Reference Letter; Right: Hollow Tracing Path with Mascot)
-          (NOTHING can spill outside because strokeDashoffset fills the path itself!)
-      ══════════════════════════════════════════════════════════ */}
-      {viewMode === "tracing" && (
-        <div className="relative z-20 flex-1 max-w-6xl mx-auto w-full p-2 sm:p-4 flex flex-col justify-between">
-          {/* Mascot Selector Strip */}
-          <div className="flex items-center justify-center gap-1.5 sm:gap-2 flex-wrap mb-2">
-            <span className="text-xs font-bold text-white drop-shadow hidden sm:inline">
-              সাথী প্রাণী:
-            </span>
-            {MASCOTS.map((m, mIdx) => (
-              <button
-                key={m.id}
-                onClick={() => setActiveMascotIndex(mIdx)}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                  activeMascotIndex === mIdx
-                    ? "bg-white text-slate-900 shadow-md font-black scale-105 ring-2 ring-amber-300"
-                    : "bg-white/40 hover:bg-white/60 text-white drop-shadow"
+              {/* 🎯 7. SVG DOUBLE-WALLED HOLLOW LETTER TRACING ENGINE */}
+              {/* Zero ink can leak outside! The walls are 100% solid! */}
+              <svg
+                ref={svgRef}
+                viewBox={`0 0 ${SVG_VIEWBOX_WIDTH} ${SVG_VIEWBOX_HEIGHT}`}
+                preserveAspectRatio="xMidYMid meet"
+                onPointerDown={handleTracingPointerDown}
+                onPointerMove={handleTracingPointerMove}
+                onPointerUp={handleTracingPointerUp}
+                onPointerCancel={handleTracingPointerUp}
+                onTouchStart={handleTracingPointerDown}
+                onTouchMove={handleTracingPointerMove}
+                onTouchEnd={handleTracingPointerUp}
+                className={`absolute inset-0 w-full h-full z-20 ${
+                  boardMode === "trace" ? "cursor-crosshair touch-none" : "pointer-events-none"
                 }`}
               >
-                <span>{m.emoji}</span>
-                <span className="hidden sm:inline">{m.name}</span>
-                <span className="text-[11px] opacity-80">({m.itemEmoji})</span>
-              </button>
-            ))}
-          </div>
+                {/* 🛡️ THE TWO SOLID WALLS OF THE LETTER (৬২ পিক্সেল পুরু সাদা আউটলাইন) */}
+                <path
+                  d={currentTracingDef.path}
+                  fill="none"
+                  stroke="#ffffff"
+                  strokeWidth="68"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    filter: "drop-shadow(0 8px 18px rgba(0,0,0,0.45))",
+                  }}
+                  className="pointer-events-none"
+                />
 
-          {/* TWO-COLUMN SPLIT STAGE (MATCHING EXACT COMPOSITION OF REFERENCE IMAGES 2, 3, 4, 5, 6) */}
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 items-center flex-1 my-auto">
-            {/* ── LEFT COLUMN: SOLID BOLD REFERENCE LETTER (Like Red W, Yellow J, Teal A) ── */}
-            <div className="md:col-span-5 flex flex-col items-center justify-center text-center p-4 rounded-3xl bg-white/20 backdrop-blur-md border-3 border-white/50 shadow-2xl">
-              <div
-                className="font-arabic font-black text-[140px] sm:text-[180px] md:text-[210px] leading-none drop-shadow-[0_8px_16px_rgba(0,0,0,0.45)] transition-all animate-pulse select-none"
-                style={{
-                  color: currentLetter.color,
-                  WebkitTextStroke: "5px #ffffff",
-                }}
-              >
-                {currentLetter.ar}
-              </div>
+                {/* 🕳️ THE HOLLOW CHANNEL BETWEEN THE TWO WALLS (৪৮ পিক্সেল ফাঁপা চ্যানেল) */}
+                <path
+                  d={currentTracingDef.path}
+                  fill="none"
+                  stroke="rgba(255, 255, 255, 0.35)"
+                  strokeWidth="48"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="pointer-events-none"
+                />
 
-              <div className="space-y-1 mt-2">
-                <div className="text-2xl sm:text-3xl font-black text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-                  {currentLetter.nameBn} ({currentLetter.nameEn})
-                </div>
-                <div className="text-xs text-sky-100 font-bold drop-shadow">
-                  মাখরাজ: {currentLetter.makhraj}
-                </div>
-              </div>
+                {/* 🎨 THE FILLED INK (STRICTLY CLAMPED INSIDE THE TWO WALLS!) */}
+                {/* Ink flows strictly along the hollow channel — zero ink leaks outside! */}
+                <path
+                  ref={fullPathRef}
+                  d={currentTracingDef.path}
+                  fill="none"
+                  stroke={penColor || "#fbbf24"}
+                  strokeWidth="48"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeDasharray={totalPathLength}
+                  strokeDashoffset={strokeDashOffset}
+                  style={{
+                    transition: isDraggingRef.current ? "none" : "stroke-dashoffset 0.3s ease-out",
+                    filter: `drop-shadow(0 0 16px ${penColor})`,
+                  }}
+                  className="pointer-events-none"
+                />
 
-              <button
-                onClick={playCurrentSound}
-                className="mt-3 px-5 py-2.5 rounded-full bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs shadow-lg flex items-center gap-2 active:scale-95 transition cursor-pointer"
-              >
-                <Volume2 className="w-4 h-4" />
-                <span>উচ্চারণ শোনো</span>
-              </button>
-            </div>
-
-            {/* ── RIGHT COLUMN: INTERACTIVE HOLLOW TRACING STAGE WITH MASCOT ── */}
-            <div className="md:col-span-7 flex flex-col items-center justify-center">
-              <div
-                onPointerDown={handlePointerDown}
-                onPointerMove={handlePointerMove}
-                onPointerUp={handlePointerUp}
-                onPointerCancel={handlePointerUp}
-                onTouchStart={handlePointerDown}
-                onTouchMove={handlePointerMove}
-                onTouchEnd={handlePointerUp}
-                className="relative w-full max-w-lg h-[360px] sm:h-[430px] rounded-3xl bg-white/20 backdrop-blur-md border-3 border-white/60 shadow-2xl flex items-center justify-center overflow-hidden cursor-crosshair touch-none"
-              >
-                {/* SVG TRACING SURFACE */}
-                <svg
-                  ref={svgRef}
-                  viewBox="0 0 900 560"
-                  preserveAspectRatio="xMidYMid meet"
-                  className="w-full h-full pointer-events-none"
-                >
-                  {/* 1. OUTER HOLLOW TUBE CONTOUR (Pristine White Outline) */}
-                  <path
-                    d={strokeData.path}
-                    fill="none"
-                    stroke="#ffffff"
-                    strokeWidth="68"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    style={{
-                      filter: "drop-shadow(0 4px 12px rgba(0,0,0,0.35))",
-                    }}
-                  />
-
-                  {/* 2. INNER HOLLOW CHANNEL (Translucent Glass Interior) */}
-                  <path
-                    d={strokeData.path}
-                    fill="none"
-                    stroke="rgba(15, 23, 42, 0.45)"
-                    strokeWidth="48"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-
-                  {/* 3. SOLID CANDY FILL (PROGRESSIVELY FILLS INSIDE HOLLOW TUBE — 0% SPILL GUARANTEED!) */}
-                  <path
-                    d={strokeData.path}
-                    fill="none"
-                    stroke={currentLetter.color}
-                    strokeWidth="48"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeDasharray={pathLengthRef.current}
-                    strokeDashoffset={pathLengthRef.current * (1 - progressRatio)}
-                    style={{
-                      transition: isDraggingRef.current ? "none" : "stroke-dashoffset 0.25s ease-out",
-                      filter: `drop-shadow(0 0 8px ${currentLetter.color})`,
-                    }}
-                  />
-
-                  {/* 4. DOTS (নুক্তা) for letters that possess dots */}
-                  {strokeData.dots?.map((d, i) => (
-                    <g key={i}>
+                {/* ⚪ DOTS / NUKTA (FOR LETTERS WITH DOTS) */}
+                {currentTracingDef.dots?.map((d, i) => {
+                  const isDotsFilled = fillProgress >= 0.98;
+                  return (
+                    <g key={i} className="pointer-events-none">
                       <circle
                         cx={d.x}
                         cy={d.y}
                         r={d.r + 8}
                         fill="#ffffff"
-                        style={{ filter: "drop-shadow(0 2px 6px rgba(0,0,0,0.3))" }}
+                        style={{ filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.35))" }}
                       />
                       <circle
                         cx={d.x}
                         cy={d.y}
                         r={d.r}
-                        fill={isCompleted ? currentLetter.color : "rgba(15, 23, 42, 0.45)"}
+                        fill={isDotsFilled ? penColor : "rgba(255, 255, 255, 0.4)"}
                         style={{ transition: "fill 0.4s ease" }}
                       />
                     </g>
-                  ))}
+                  );
+                })}
 
-                  {/* 5. COLLECTIBLE ITEMS PLACED ALONG CHECKPOINTS (Cheese, Meat, Balls, Stars) */}
-                  {checkpoints.map((cp, idx) => {
-                    const isCollected = idx <= hitCheckpointIndex;
-                    const isNextToEat = idx === hitCheckpointIndex + 1;
+                {/* ⚽ 8. COLLECTIBLE BALLS / ITEMS ALONG THE PATH (টুস টুস শব্দে ফুটবে!) */}
+                {checkpoints.map((cp, idx) => {
+                  const isPopped = idx <= reachedIndex;
+                  const isCurrent = idx === reachedIndex;
+                  const isNext = idx === reachedIndex + 1;
+                  const isInitialStart = reachedIndex < 0 && idx === 0;
 
-                    return (
-                      <g key={idx} transform={`translate(${cp.x}, ${cp.y})`}>
-                        {!isCollected && (
-                          <g className={isNextToEat ? "animate-bounce" : ""}>
-                            <text
-                              textAnchor="middle"
-                              dominantBaseline="central"
-                              fontSize="32"
-                              style={{
-                                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.4))",
-                              }}
-                            >
-                              {currentMascot.itemEmoji}
-                            </text>
-                          </g>
-                        )}
-                      </g>
-                    );
-                  })}
+                  return (
+                    <g key={idx} transform={`translate(${cp.x}, ${cp.y})`}>
+                      {/* Active target pulse ring */}
+                      {(isInitialStart || isNext) && (
+                        <circle
+                          r="28"
+                          fill="none"
+                          stroke={isInitialStart ? "#10b981" : "#fbbf24"}
+                          strokeWidth="3.5"
+                          className="animate-ping opacity-85 pointer-events-none"
+                        />
+                      )}
 
-                  {/* 6. ANIMATED MASCOT SITTING AT ACTIVE CHECKPOINT */}
-                  <g transform={`translate(${activeMascotPos.x}, ${activeMascotPos.y})`}>
-                    {/* Pulsing Aura */}
-                    <circle r="36" fill="none" stroke="#fde047" strokeWidth="4" className="animate-ping opacity-75" />
+                      {/* Ball Circle (বাচ্চাদের পছন্দের বল / খাবার) */}
+                      {!isPopped ? (
+                        <g className="pointer-events-none">
+                          <circle
+                            r={isInitialStart || isNext ? "20" : "15"}
+                            fill={isInitialStart ? "#10b981" : isNext ? "#f59e0b" : "#ffffff"}
+                            stroke="#ffffff"
+                            strokeWidth="3"
+                            filter="drop-shadow(0 3px 6px rgba(0,0,0,0.35))"
+                          />
+                          <text
+                            y="5"
+                            textAnchor="middle"
+                            fill={isInitialStart ? "#ffffff" : isNext ? "#ffffff" : "#0f172a"}
+                            fontSize={isInitialStart || isNext ? "13" : "11"}
+                            fontWeight="bold"
+                            className="select-none pointer-events-none font-sans"
+                          >
+                            {cp.isStart ? "১" : cp.isEnd ? "শেষ" : currentMascot.item}
+                          </text>
+                        </g>
+                      ) : (
+                        // Popped State: Golden Star
+                        <g className="pointer-events-none animate-scale-up">
+                          <circle r="14" fill="#fbbf24" stroke="#ffffff" strokeWidth="2.5" />
+                          <text
+                            y="4.5"
+                            textAnchor="middle"
+                            fill="#0f172a"
+                            fontSize="11"
+                            fontWeight="bold"
+                            className="select-none pointer-events-none font-sans"
+                          >
+                            ✓
+                          </text>
+                        </g>
+                      )}
+
+                      {/* ⬇️ DIRECTIONAL ARROW BANNER AT START (ব্যবহারকারীর চাহিদা অনুযায়ী তীর চিহ্ন) */}
+                      {isInitialStart && (
+                        <g transform="translate(0, -42)">
+                          <rect
+                            x="-85"
+                            y="-16"
+                            width="170"
+                            height="32"
+                            rx="16"
+                            fill="rgba(16, 185, 129, 0.95)"
+                            stroke="#ffffff"
+                            strokeWidth="2"
+                            filter="drop-shadow(0 4px 10px rgba(0,0,0,0.35))"
+                          />
+                          <text
+                            y="5"
+                            textAnchor="middle"
+                            fill="#ffffff"
+                            fontSize="12"
+                            fontWeight="bold"
+                            className="select-none pointer-events-none font-sans"
+                          >
+                            {currentTracingDef.arrow} {currentTracingDef.arrowText}
+                          </text>
+                        </g>
+                      )}
+                    </g>
+                  );
+                })}
+
+                {/* 🐘 9. ANIMATED MASCOT FOLLOWING THE TOUCH ALONG THE STROKE */}
+                {activeMascotPos && (
+                  <g
+                    transform={`translate(${activeMascotPos.x}, ${activeMascotPos.y - 36})`}
+                    className="pointer-events-none transition-transform duration-200"
+                  >
                     <text
                       textAnchor="middle"
-                      dominantBaseline="central"
-                      fontSize="52"
-                      style={{
-                        filter: "drop-shadow(0 4px 10px rgba(0,0,0,0.5))",
-                      }}
+                      fontSize="36"
+                      className="filter drop-shadow-[0_4px_8px_rgba(0,0,0,0.4)] animate-bounce select-none pointer-events-none"
                     >
                       {currentMascot.emoji}
                     </text>
                   </g>
-                </svg>
+                )}
+              </svg>
 
-                {/* Tracing Instruction Banner */}
-                <div className="absolute bottom-2 inset-x-2 text-center pointer-events-none">
-                  <span className="px-4 py-1.5 rounded-full bg-black/40 backdrop-blur-md text-xs font-bold text-white shadow-sm">
-                    👆 {currentMascot.name}-কে আঙুল দিয়ে টেনে {currentMascot.itemName} খাওয়াও!
-                  </span>
+              {/* ✏️ FREEHAND CANVAS (মুক্ত ড্রয়িং মোড চালু করলে) */}
+              <canvas
+                ref={drawCanvasRef}
+                width={dimensions.width}
+                height={dimensions.height}
+                onMouseDown={startFreehandDrawing}
+                onMouseMove={drawFreehand}
+                onMouseUp={stopFreehandDrawing}
+                onMouseLeave={stopFreehandDrawing}
+                onTouchStart={startFreehandDrawing}
+                onTouchMove={drawFreehand}
+                onTouchEnd={stopFreehandDrawing}
+                className={`absolute inset-0 z-20 ${
+                  boardMode === "freehand"
+                    ? "cursor-crosshair touch-none"
+                    : "pointer-events-none opacity-0"
+                }`}
+              />
+
+              {/* 🌟 GAME CELEBRATION MODAL OVERLAY */}
+              {showCelebration && (
+                <div className="absolute inset-0 z-40 bg-black/85 backdrop-blur-md rounded-[24px] flex flex-col items-center justify-center p-6 text-center animate-fade-in select-none">
+                  <div className="px-5 py-2 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-sm sm:text-base shadow-2xl shadow-amber-500/60 mb-3 border-2 border-white animate-bounce">
+                    مَا شَاءَ اللَّهُ! মাশাআল্লাহ!
+                  </div>
+
+                  {/* 3 Popping Stars */}
+                  <div className="flex items-center gap-2.5 mb-3">
+                    {[1, 2, 3].map((starIdx) => (
+                      <div
+                        key={starIdx}
+                        className={`transition-all duration-300 transform ${
+                          starIdx <= starsRevealed
+                            ? "scale-110 opacity-100 text-amber-400 drop-shadow-[0_0_20px_rgba(251,191,36,0.9)]"
+                            : "scale-75 opacity-25 text-slate-600"
+                        }`}
+                      >
+                        <Award className="w-10 h-10 sm:w-12 sm:h-12 fill-current" />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Big Arabic Letter with golden aura */}
+                  <div className="w-24 h-24 rounded-3xl bg-gradient-to-br from-emerald-900 to-[#03150d] border-2 border-amber-400/90 flex items-center justify-center font-amiri text-5xl font-extrabold text-amber-300 shadow-2xl mb-2.5 shadow-amber-500/30 ring-4 ring-emerald-500/40">
+                    {activeChar}
+                  </div>
+
+                  <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-600/70 text-emerald-300 text-xs font-black mb-2 shadow-xs">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>১০০% নিখুঁতভাবে সম্পূর্ণ হয়েছে · ৩ স্টার! +৫ 🪙</span>
+                  </div>
+
+                  <h3 className="text-lg sm:text-2xl font-black text-white mb-1">
+                    দারুণ! হরফটি সঠিক নিয়মে শেষ হয়েছে!
+                  </h3>
+                  <p className="text-xs sm:text-sm text-emerald-200/90 max-w-sm mb-5">
+                    আপনি <span className="font-bold text-amber-300 font-amiri text-base">{activeChar}</span> হরফটি খাঁটি মাখরাজে পূর্ণ করেছেন।
+                  </p>
+
+                  <div className="flex flex-wrap items-center justify-center gap-3">
+                    <button
+                      type="button"
+                      onClick={handleNextLetter}
+                      className="px-6 py-3 rounded-2xl bg-gradient-to-r from-emerald-500 via-emerald-600 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-white font-black text-sm flex items-center gap-2 shadow-xl shadow-emerald-900/60 transition-all cursor-pointer active:scale-95"
+                    >
+                      <span>পরবর্তী হরফে যাও</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRepeatCurrentLetter}
+                      className="px-5 py-3 rounded-2xl bg-black/60 hover:bg-black/80 text-amber-300 border border-amber-500/60 font-bold text-xs flex items-center gap-2 transition-all cursor-pointer active:scale-95"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>আবার আঁকো</span>
+                    </button>
+                  </div>
                 </div>
+              )}
+            </div>
+
+            {/* ── TOOLBAR UNDER BLACKBOARD (টুলস ও প্যালেট) ── */}
+            <div className="mt-3 px-3 py-2.5 rounded-2xl bg-gradient-to-r from-[#071912] via-[#05140e] to-[#04100b] border border-emerald-900/70 shadow-lg flex flex-wrap items-center justify-between gap-2.5">
+              {/* Left Group: Mode Selector & Chalk Colors */}
+              <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <div className="flex items-center p-0.5 rounded-xl bg-black/60 border border-emerald-900/60">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBoardMode("trace");
+                      handleClear();
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1 ${
+                      boardMode === "trace"
+                        ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-xs"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                    title="হরফের ভেতরের পথ ধরে নিখুঁত ট্রেসিং"
+                  >
+                    <Target className="w-3.5 h-3.5" />
+                    <span>গাইড ট্রেসিং</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setBoardMode("freehand");
+                      handleClear();
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-black transition cursor-pointer flex items-center gap-1 ${
+                      boardMode === "freehand"
+                        ? "bg-gradient-to-r from-emerald-600 to-teal-500 text-white shadow-xs"
+                        : "text-slate-400 hover:text-slate-200"
+                    }`}
+                    title="মুক্তভাবে চক দিয়ে লেখার স্লেট"
+                  >
+                    <PenTool className="w-3.5 h-3.5" />
+                    <span>মুক্ত চকখড়ি</span>
+                  </button>
+                </div>
+
+                {/* Chalk Colors Palette */}
+                <div className="flex items-center gap-1.5 pl-2 border-l border-emerald-900/60">
+                  {[
+                    { color: "#fbbf24", name: "সোনালী" },
+                    { color: "#ffffff", name: "সাদা" },
+                    { color: "#34d399", name: "সবুজ" },
+                    { color: "#38bdf8", name: "আকাশি" },
+                    { color: "#f472b6", name: "গোলাপী" },
+                    { color: "#c084fc", name: "বেগুনী" },
+                  ].map((c) => (
+                    <button
+                      key={c.color}
+                      type="button"
+                      onClick={() => setPenColor(c.color)}
+                      style={{ backgroundColor: c.color }}
+                      className={`w-5 h-5 rounded-full border-2 transition-all cursor-pointer shadow-xs ${
+                        penColor === c.color
+                          ? "border-white scale-125 shadow-md ring-2 ring-amber-400"
+                          : "border-black/50 hover:scale-110"
+                      }`}
+                      title={`${c.name} চক`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Group: Action Buttons */}
+              <div className="flex items-center gap-1.5 sm:gap-2">
+                <button
+                  type="button"
+                  onClick={handleDownloadImage}
+                  className="px-2.5 py-1.5 rounded-xl bg-black/60 hover:bg-emerald-950 text-slate-300 hover:text-emerald-300 border border-emerald-900/70 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                  title="আপনার হাতের লেখা ছবি হিসেবে সেভ করুন"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">সেভ</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleClear}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-rose-950 hover:text-rose-300 text-slate-300 border border-slate-800 text-xs font-bold flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                  title="স্লেট পরিষ্কার করুন"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>{t.clear}</span>
+                </button>
               </div>
             </div>
           </div>
 
-          {/* Footer Rewards & Quick Navigation */}
-          <div className="flex items-center justify-between px-3 py-2 bg-white/20 backdrop-blur-md rounded-2xl border border-white/40 mt-2">
-            <div className="flex items-center gap-2">
-              <span className="text-xl">🪙</span>
-              <span className="text-xs font-black text-slate-800">
-                মুদ্রা: {coins} কয়েন
+          {/* ── LETTER FORMS SELECTION (শব্দে হরফের ৪টি রূপ — একক, শুরু, মাঝ, শেষ) ── */}
+          <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-[#091a14] via-[#071912] to-[#04120c] border border-emerald-900/60 shadow-xl flex flex-col space-y-3.5">
+            <div className="flex items-center justify-between border-b border-emerald-900/50 pb-2">
+              <span className="text-xs sm:text-sm font-extrabold text-white flex items-center gap-2">
+                <span className="text-amber-400">❖</span>
+                <span>
+                  {lang === "ar"
+                    ? "أشكال الحرف في الكلمة:"
+                    : lang === "en"
+                    ? "4 Forms of the Letter:"
+                    : "শব্দে হরফের ৪টি রূপ:"}
+                </span>
+              </span>
+              <span className="text-[11px] text-emerald-300/80">
+                হরফ ক্লিক করে বোর্ডে লেখার ধরন পরিবর্তন করুন
               </span>
             </div>
 
-            <div className="text-xs font-bold text-white drop-shadow">
-              হরফ {selectedLetterIndex + 1} / {ARABIC_ALPHABET.length}
-            </div>
-
-            <button
-              onClick={handleNextLetter}
-              className="px-4 py-1.5 rounded-xl bg-teal-500 hover:bg-teal-600 text-white font-bold text-xs shadow-md flex items-center gap-1 active:scale-95 cursor-pointer"
-            >
-              <span>পরের হরফ</span>
-              <ChevronRight className="w-3.5 h-3.5" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════
-          🏆 3. "মাশাআল্লাহ!" VICTORY CELEBRATION MODAL
-      ══════════════════════════════════════════════════════════ */}
-      {showCelebrationModal && (
-        <div className="absolute inset-0 z-50 bg-black/60 backdrop-blur-md flex items-center justify-center p-4 select-none animate-fade-in">
-          <div className="relative max-w-sm w-full p-6 rounded-3xl bg-gradient-to-b from-white via-sky-50 to-emerald-50 border-4 border-amber-300 shadow-2xl text-center flex flex-col items-center gap-3">
-            {/* Triumphant Arabic Banner */}
-            <div className="px-5 py-1.5 rounded-full bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-sm shadow-md animate-bounce border border-white">
-              مَا شَاءَ اللَّهُ! মাশাআল্লাহ!
-            </div>
-
-            {/* 3 Sequential Popping Stars */}
-            <div className="flex items-center justify-center gap-2 text-amber-400 text-3xl">
-              <span className="animate-bounce">⭐</span>
-              <span className="animate-bounce [animation-delay:150ms]">⭐</span>
-              <span className="animate-bounce [animation-delay:300ms]">⭐</span>
-            </div>
-
-            {/* Giant Arabic Letter */}
-            <div
-              className="w-24 h-24 rounded-3xl flex items-center justify-center font-arabic font-black text-5xl text-white shadow-xl"
-              style={{ backgroundColor: currentLetter.color }}
-            >
-              {currentLetter.ar}
-            </div>
-
-            <div className="space-y-0.5">
-              <h3 className="text-xl font-black text-slate-900">
-                চমৎকার! হরফটি পূর্ণ হয়েছে!
-              </h3>
-              <p className="text-xs text-slate-600">
-                {currentMascot.name} সবকটি {currentMascot.itemName} খেয়েছে!
-              </p>
-            </div>
-
-            {/* Rewards Badge */}
-            <div className="flex items-center gap-4 py-2 px-4 rounded-2xl bg-amber-100 border border-amber-300">
-              <div className="text-center">
-                <span className="text-xs text-slate-500 font-bold">অর্জন</span>
-                <div className="text-sm font-black text-amber-900">৩ স্টার ⭐</div>
-              </div>
-              <div className="h-8 w-px bg-amber-300" />
-              <div className="text-center">
-                <span className="text-xs text-slate-500 font-bold">পুরস্কার</span>
-                <div className="text-sm font-black text-amber-900">+৫ 🪙 কয়েন</div>
-              </div>
-            </div>
-
-            {/* Action Buttons */}
-            <div className="w-full space-y-2 pt-2">
-              <button
-                onClick={() => {
-                  setShowCelebrationModal(false);
-                  handleNextLetter();
-                }}
-                className="w-full py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
-              >
-                <span>পরবর্তী হরফে যাও</span>
-                <ChevronRight className="w-5 h-5" />
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowCelebrationModal(false);
-                  resetLetterState();
-                }}
-                className="w-full py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>আবার খেলো</span>
-              </button>
-
-              <button
-                onClick={() => {
-                  setShowCelebrationModal(false);
-                  setViewMode("selector");
-                }}
-                className="w-full py-2 rounded-2xl bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold text-xs cursor-pointer"
-              >
-                হরফ তালিকায় ফেরো
-              </button>
+            {/* 4 Large Rich Form Cards */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {[
+                {
+                  id: "isolated",
+                  title: "একক রূপ",
+                  subtitle: "স্বাধীন বা পূর্ণাঙ্গ রূপ",
+                  label: t.letters.isolated,
+                  form: selectedLetter.forms.isolated,
+                },
+                {
+                  id: "initial",
+                  title: "শুরুর রূপ",
+                  subtitle: "শব্দের শুরুতে বসার রূপ",
+                  label: t.letters.initial,
+                  form: selectedLetter.forms.initial,
+                },
+                {
+                  id: "medial",
+                  title: "মাঝের রূপ",
+                  subtitle: "শব্দের মাঝে যুক্ত রূপ",
+                  label: t.letters.medial,
+                  form: selectedLetter.forms.medial,
+                },
+                {
+                  id: "final",
+                  title: "শেষের রূপ",
+                  subtitle: "শব্দের শেষে যুক্ত রূপ",
+                  label: t.letters.final,
+                  form: selectedLetter.forms.final,
+                },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedForm(f.id);
+                    handleClear();
+                  }}
+                  className={`p-3 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer border ${
+                    selectedForm === f.id
+                      ? "bg-gradient-to-br from-emerald-900/90 via-emerald-800/80 to-[#052818] border-amber-400 text-white shadow-lg ring-2 ring-amber-400/50 scale-102"
+                      : "bg-[#061810]/80 border-emerald-950/80 text-slate-300 hover:border-emerald-700/80 hover:bg-emerald-950/50"
+                  }`}
+                >
+                  <span className="font-amiri text-3xl sm:text-4xl font-extrabold text-amber-300 drop-shadow-xs mb-1">
+                    {f.form}
+                  </span>
+                  <span className="text-xs font-bold text-white">{f.title}</span>
+                  <span className="text-[10px] text-emerald-300/70">{f.subtitle}</span>
+                </button>
+              ))}
             </div>
           </div>
+
+          {/* ── HARAKAT SELECTION (হরকত ও বিশুদ্ধ মাখরাজ উচ্চারণ) ── */}
+          <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-[#091a14] via-[#071912] to-[#04120c] border border-emerald-900/60 shadow-xl flex flex-col space-y-3">
+            <div className="flex items-center justify-between border-b border-emerald-900/50 pb-2">
+              <span className="text-xs sm:text-sm font-extrabold text-white flex items-center gap-2">
+                <span className="text-amber-400">❖</span>
+                <span>
+                  {lang === "ar"
+                    ? "الحركات الإعرابية:"
+                    : lang === "en"
+                    ? "Select Harakat (Vowels):"
+                    : "হরকত যুক্ত করুন (উচ্চারণ পরিবর্তন):"}
+                </span>
+              </span>
+              <span className="text-[11px] text-emerald-300/85 font-medium">
+                হরকত বাছাই করলে বোর্ডে চিহ্ন যুক্ত হবে
+              </span>
+            </div>
+
+            {/* 5 Harakat Buttons */}
+            <div className="flex flex-wrap items-center gap-2">
+              {HARAKAT_LIST.map((h) => (
+                <button
+                  key={h.id}
+                  type="button"
+                  onClick={() => {
+                    setSelectedHarakat(h.id);
+                    handleClear();
+                    const charToSpeak = getAudioToken(selectedLetter.ar, h.id);
+                    playArabicSound(charToSpeak);
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border ${
+                    selectedHarakat === h.id
+                      ? "bg-gradient-to-r from-amber-600 to-amber-700 border-amber-300 text-slate-950 shadow-md ring-2 ring-amber-400/50 scale-105"
+                      : "bg-[#05140d] border-emerald-900/70 text-slate-300 hover:border-emerald-600 hover:bg-emerald-950"
+                  }`}
+                >
+                  {lang === "ar" ? h.labelAr : lang === "en" ? h.labelEn : h.labelBn}
+                </button>
+              ))}
+            </div>
+
+            {/* Active Sound Pronunciation Indicator */}
+            <div className="w-full pt-2 flex items-center justify-between text-xs border-t border-emerald-900/40">
+              <span className="text-slate-300 font-medium">
+                {lang === "ar"
+                  ? "النطق الصحيح:"
+                  : lang === "en"
+                  ? "Correct Pronunciation:"
+                  : "বিশুদ্ধ নূরানী উচ্চারণ গাইড:"}
+              </span>
+              <span className="font-bold text-amber-300 bg-amber-500/15 px-3 py-1 rounded-xl border border-amber-500/40 font-amiri text-sm sm:text-base flex items-center gap-2 shadow-xs">
+                <Volume2 className="w-4 h-4 text-amber-400 animate-pulse" />
+                <span>
+                  {selectedHarakat === "none"
+                    ? lang === "en"
+                      ? selectedLetter.nameEn
+                      : selectedLetter.nameBn
+                    : HARAKAT_PRONUNCIATION_MAP[selectedLetter.ar]?.[selectedHarakat] || activeChar}
+                </span>
+              </span>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* RIGHT COLUMN: 29 ARABIC ALPHABET SELECTOR (col-span-4) - KEPT 100% INTACT */}
+        <div className="lg:col-span-4 flex flex-col space-y-3">
+          <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-b from-[#091a14] via-[#071a13] to-[#04120c] border border-emerald-900/60 shadow-xl flex flex-col space-y-3">
+            <h3 className="text-xs sm:text-sm font-extrabold text-white flex items-center justify-between border-b border-emerald-900/50 pb-2.5">
+              <span className="flex items-center gap-1.5">
+                <span className="text-amber-400">❖</span>
+                <span>{t.selectLetterForPractice}</span>
+              </span>
+              <span className="text-emerald-400 text-xs font-bold px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-700/60">
+                {t.lettersCount29}
+              </span>
+            </h3>
+
+            {/* Grid of 29 Arabic Letters */}
+            <div className="grid grid-cols-4 sm:grid-cols-5 lg:grid-cols-4 gap-2.5 max-h-[580px] md:max-h-[640px] overflow-y-auto pr-1 select-none">
+              {ARABIC_ALPHABET.map((item) => {
+                const isSelected = selectedLetter.ar === item.ar;
+                return (
+                  <button
+                    key={item.ar}
+                    type="button"
+                    onClick={() => {
+                      setSelectedLetter(item);
+                      setShowCelebration(false);
+                      handleClear();
+                      const charToSpeak = getAudioToken(item.ar, selectedHarakat);
+                      playArabicSound(charToSpeak);
+                    }}
+                    className={`p-2.5 sm:p-3 rounded-2xl flex flex-col items-center justify-center transition-all cursor-pointer border ${
+                      isSelected
+                        ? "bg-gradient-to-b from-amber-400 via-amber-500 to-amber-600 border-amber-200 text-slate-950 font-black shadow-lg shadow-amber-950/50 scale-105 ring-2 ring-amber-300"
+                        : "bg-[#05140d]/90 border-emerald-950/80 text-slate-200 hover:border-emerald-500 hover:bg-emerald-950/80"
+                    }`}
+                  >
+                    <span className="font-amiri text-2xl sm:text-3xl font-extrabold drop-shadow-xs">
+                      {item.ar}
+                    </span>
+                    <span
+                      className={`text-[11px] mt-0.5 font-bold ${
+                        isSelected ? "text-slate-950" : "text-slate-400"
+                      }`}
+                    >
+                      {lang === "en" ? item.nameEn : lang === "ar" ? item.ar : item.nameBn}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
