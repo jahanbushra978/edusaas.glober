@@ -29,6 +29,7 @@ import {
   Search,
   Settings,
   User,
+  Users,
   Plus,
   X,
   ExternalLink,
