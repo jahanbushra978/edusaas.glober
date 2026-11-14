@@ -21,6 +21,7 @@ import {
   X,
   FileText,
   Loader2,
+  Repeat,
 } from "lucide-react";
 import {
   QURANI_AMAL_ITEMS,
@@ -58,6 +59,35 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
   const [playbackType, setPlaybackType] = useState(null); // 'arabic' | 'bangla_meaning' | 'fazilat'
   const [activeAmalIndex, setActiveAmalIndex] = useState(-1);
   const [activeAyahIndex, setActiveAyahIndex] = useState(0);
+
+  // 🔁 Repeat & Multiple Playback Loop State (একাধিক বার ও একটানা বাজানোর নিয়ন্ত্রণ)
+  const [repeatCount, setRepeatCount] = useState("1"); // '1' | '3' | '5' | '7' | '11' | '33' | '100' | 'infinite'
+  const [currentLoopCycle, setCurrentLoopCycle] = useState(1);
+  const repeatCountRef = useRef("1");
+  const currentLoopCycleRef = useRef(1);
+
+  // Helper to extract numeric repetition from text (e.g. "৩ বার" -> 3, "৭ বার" -> 7)
+  const extractRepetitionNumber = (repText) => {
+    if (!repText) return 1;
+    if (repText.includes("১০০")) return 100;
+    if (repText.includes("৩৩")) return 33;
+    if (repText.includes("১১")) return 11;
+    if (repText.includes("৭")) return 7;
+    if (repText.includes("৫")) return 5;
+    if (repText.includes("৩")) return 3;
+    return 1;
+  };
+
+  const handleRepeatCountChange = (newCount) => {
+    const val = String(newCount);
+    repeatCountRef.current = val;
+    setRepeatCount(val);
+    const label =
+      val === "infinite"
+        ? "একটানা অসীম লুপ (Continuous Loop)"
+        : `${val} বার পুনরাবৃত্তি (Repeat ${val}x)`;
+    toast.success(`পুনরাবৃত্তি সংখ্যা নির্ধারণ: ${label}`);
+  };
 
   // Fast loading indicators
   const [loadingAudioKey, setLoadingAudioKey] = useState(null);
@@ -135,6 +165,8 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
     setLoadingAudioKey(null);
     playlistQueueRef.current = [];
     currentQueueStepRef.current = 0;
+    currentLoopCycleRef.current = 1;
+    setCurrentLoopCycle(1);
   }, []);
 
   // Cleanup on unmount
@@ -149,8 +181,30 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
   const playQueueStep = useCallback((stepIndex) => {
     const queue = playlistQueueRef.current;
     if (!queue || stepIndex < 0 || stepIndex >= queue.length) {
+      const isInfinite = repeatCountRef.current === "infinite";
+      const targetRepeat = isInfinite ? Infinity : Number(repeatCountRef.current || 1);
+
+      // 🔁 Loop Check: If more repeat cycles remain, restart the queue from the beginning!
+      if (currentLoopCycleRef.current < targetRepeat) {
+        currentLoopCycleRef.current += 1;
+        setCurrentLoopCycle(currentLoopCycleRef.current);
+        const cycleLabel = isInfinite
+          ? `চক্র ${currentLoopCycleRef.current}`
+          : `চক্র ${currentLoopCycleRef.current}/${targetRepeat}`;
+        toast.info(`🔁 পুনরাবৃত্তি: ${cycleLabel} শুরু হচ্ছে...`);
+
+        setTimeout(() => {
+          if (!isPlayingRef.current) return;
+          playQueueStep(0);
+        }, 500);
+        return;
+      }
+
       stopAllAudio();
-      toast.success("মাশাআল্লাহ! নির্বাচিত তিলাওয়াত সমাপ্ত হয়েছে।");
+      const completedMsg = targetRepeat > 1
+        ? `মাশাআল্লাহ! সফলভাবে ${targetRepeat} বার তিলাওয়াত সম্পন্ন হয়েছে।`
+        : "মাশাআল্লাহ! নির্বাচিত তিলাওয়াত সমাপ্ত হয়েছে।";
+      toast.success(completedMsg);
       return;
     }
 
@@ -222,9 +276,16 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
     }
   }, [selectedQari, stopAllAudio]);
 
-  // Start Playing An Entire Single Amal (Arabic)
-  const handlePlaySingleAmal = (amalItem) => {
+  // Start Playing An Entire Single Amal (Arabic) - Supports Custom / Multiple Repeat Counts
+  const handlePlaySingleAmal = (amalItem, specificRepeat = null) => {
     stopAllAudio();
+    if (specificRepeat !== null && specificRepeat !== undefined) {
+      repeatCountRef.current = String(specificRepeat);
+      setRepeatCount(String(specificRepeat));
+    }
+    currentLoopCycleRef.current = 1;
+    setCurrentLoopCycle(1);
+
     const globalIdx = QURANI_AMAL_ITEMS.findIndex((i) => i.id === amalItem.id);
     const queue = amalItem.verses.map((v, vIdx) => ({
       type: "arabic",
@@ -240,7 +301,15 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
     playlistQueueRef.current = queue;
     setExpandedAmalId(amalItem.id);
     playQueueStep(0);
-    toast.info(`সূরা ${amalItem.titleBn} তিলাওয়াত শুরু হয়েছে`);
+
+    const count = specificRepeat !== null ? String(specificRepeat) : repeatCountRef.current;
+    const countLabel =
+      count === "infinite"
+        ? " (একটানা লুপ)"
+        : Number(count) > 1
+        ? ` (${count} বার পুনরাবৃত্তি)`
+        : "";
+    toast.info(`সূরা ${amalItem.titleBn} তিলাওয়াত শুরু হয়েছে${countLabel}`);
   };
 
   // Start Playing Bengali Translation for an Amal
@@ -264,9 +333,16 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
     toast.info(`${amalItem.titleBn}-এর বাংলা অর্থ শুরু হচ্ছে...`);
   };
 
-  // Play SINGLE Ayah Arabic Audio
-  const handlePlaySingleAyahArabic = (amalItem, verse, vIdx) => {
+  // Play SINGLE Ayah Arabic Audio - Supports Custom / Multiple Repeat Counts
+  const handlePlaySingleAyahArabic = (amalItem, verse, vIdx, specificRepeat = null) => {
     stopAllAudio();
+    if (specificRepeat !== null && specificRepeat !== undefined) {
+      repeatCountRef.current = String(specificRepeat);
+      setRepeatCount(String(specificRepeat));
+    }
+    currentLoopCycleRef.current = 1;
+    setCurrentLoopCycle(1);
+
     const globalIdx = QURANI_AMAL_ITEMS.findIndex((i) => i.id === amalItem.id);
     playlistQueueRef.current = [
       {
@@ -282,7 +358,9 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
     ];
     setExpandedAmalId(amalItem.id);
     playQueueStep(0);
-    toast.info(`${amalItem.titleBn} - আয়াত ${verse.ayahNumber} তিলাওয়াত`);
+    const count = specificRepeat !== null ? String(specificRepeat) : repeatCountRef.current;
+    const countLabel = count === "infinite" ? " (একটানা লুপ)" : Number(count) > 1 ? ` (${count} বার)` : "";
+    toast.info(`${amalItem.titleBn} - আয়াত ${verse.ayahNumber} তিলাওয়াত শুরু${countLabel}`);
   };
 
   // Play SINGLE Ayah Bengali Meaning Fast
@@ -371,8 +449,12 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
     });
 
     playlistQueueRef.current = fullQueue;
+    currentLoopCycleRef.current = 1;
+    setCurrentLoopCycle(1);
     playQueueStep(0);
-    toast.success(`${targetItems.length}টি আমলের ধারাবাহিক তিলাওয়াত শুরু হয়েছে`);
+    const count = repeatCountRef.current;
+    const countLabel = count === "infinite" ? " (একটানা লুপ)" : Number(count) > 1 ? ` (${count} বার)` : "";
+    toast.success(`${targetItems.length}টি আমলের ধারাবাহিক তিলাওয়াত শুরু হয়েছে${countLabel}`);
   };
 
   // Toggle Play / Pause
@@ -517,21 +599,45 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
               <span className="text-amber-300 font-extrabold">{QURANI_AMAL_ITEMS.length}টি ফযিলতপূর্ণ আমল</span>
             </div>
 
-            {/* Qari Selector Dropdown */}
-            <div className="flex items-center gap-2 bg-emerald-950/70 border border-emerald-600/40 px-3 py-1.5 rounded-2xl backdrop-blur-md">
-              <Volume2 className="w-4 h-4 text-amber-400" />
-              <span className="text-xs font-bold text-emerald-200 hidden sm:inline">ক্বারী:</span>
-              <select
-                value={selectedQari}
-                onChange={(e) => handleQariChange(e.target.value)}
-                className="bg-transparent text-xs font-extrabold text-amber-300 focus:outline-none cursor-pointer"
-              >
-                {SHAYKH_REGISTRY.map((qari) => (
-                  <option key={qari.id} value={qari.id} className="bg-emerald-950 text-white font-medium">
-                    {qari.displayTitleBn || qari.nameBn} ({qari.roleBn})
-                  </option>
-                ))}
-              </select>
+            {/* Qari Selector & Repeat / Loop Controls */}
+            <div className="flex flex-wrap items-center gap-2">
+              {/* Qari Selector Dropdown */}
+              <div className="flex items-center gap-2 bg-emerald-950/70 border border-emerald-600/40 px-3 py-1.5 rounded-2xl backdrop-blur-md">
+                <Volume2 className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-bold text-emerald-200 hidden sm:inline">ক্বারী:</span>
+                <select
+                  value={selectedQari}
+                  onChange={(e) => handleQariChange(e.target.value)}
+                  className="bg-transparent text-xs font-extrabold text-amber-300 focus:outline-none cursor-pointer"
+                >
+                  {SHAYKH_REGISTRY.map((qari) => (
+                    <option key={qari.id} value={qari.id} className="bg-emerald-950 text-white font-medium">
+                      {qari.displayTitleBn || qari.nameBn} ({qari.roleBn})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* 🔁 Global Repeat / Loop Selector (একাধিক বার বাজানোর কন্ট্রোল) */}
+              <div className="flex items-center gap-1.5 bg-emerald-950/70 border border-emerald-600/40 px-3 py-1.5 rounded-2xl backdrop-blur-md">
+                <Repeat className="w-4 h-4 text-amber-400" />
+                <span className="text-xs font-bold text-emerald-200 hidden sm:inline">পুনরাবৃত্তি:</span>
+                <select
+                  value={repeatCount}
+                  onChange={(e) => handleRepeatCountChange(e.target.value)}
+                  className="bg-transparent text-xs font-extrabold text-amber-300 focus:outline-none cursor-pointer"
+                  title="কোনো সূরা বা আমল কতবার বাজবে তা নির্ধারণ করুন"
+                >
+                  <option value="1" className="bg-emerald-950 text-white font-medium">১ বার (একবার বাজবে)</option>
+                  <option value="3" className="bg-emerald-950 text-white font-medium">৩ বার (সুন্নাহ আমল)</option>
+                  <option value="5" className="bg-emerald-950 text-white font-medium">৫ বার (হিফজ ও মুখস্থ)</option>
+                  <option value="7" className="bg-emerald-950 text-white font-medium">৭ বার (শিফা ও রুকইয়াহ)</option>
+                  <option value="11" className="bg-emerald-950 text-white font-medium">১১ বার (আমল)</option>
+                  <option value="33" className="bg-emerald-950 text-white font-medium">৩৩ বার (তাসবীহ সংখ্যা)</option>
+                  <option value="100" className="bg-emerald-950 text-white font-medium">১০০ বার (যিকির সংখ্যা)</option>
+                  <option value="infinite" className="bg-emerald-950 text-white font-medium">🔁 একটানা / অসীম বার</option>
+                </select>
+              </div>
             </div>
           </div>
 
@@ -714,9 +820,16 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                         <span>{item.timingBadge}</span>
                       </span>
 
-                      <span className="font-bold px-2.5 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300">
-                        পড়ার সংখ্যা: {item.repetition}
-                      </span>
+                      {/* Interactive Sunnah repetition button */}
+                      <button
+                        type="button"
+                        onClick={() => handlePlaySingleAmal(item, extractRepetitionNumber(item.repetition))}
+                        className="inline-flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/70 dark:hover:bg-amber-900 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60 transition active:scale-95 cursor-pointer shadow-2xs"
+                        title={`সুন্নাহ আমল অনুযায়ী এই সূরাটি ${item.repetition} বাজান`}
+                      >
+                        <Repeat className="w-3 h-3 text-amber-600 dark:text-amber-400" />
+                        <span>পড়ার সংখ্যা: <b>{item.repetition}</b> (বাজান)</span>
+                      </button>
 
                       <span className="text-[11px] text-slate-500 dark:text-stone-400">
                         {item.totalVerses}টি আয়াত
@@ -727,14 +840,36 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
 
                 {/* Quick Action Controls on Header Right */}
                 <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
-                  {/* Play Qari Audio Button */}
-                  <button
-                    onClick={() => handlePlaySingleAmal(item)}
-                    className="px-3 py-1.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-xs transition active:scale-95 cursor-pointer"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-white" />
-                    <span>তিলাওয়াত</span>
-                  </button>
+                  {/* Play Qari Audio with Integrated Loop Selector */}
+                  <div className="flex items-center rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs overflow-hidden transition">
+                    <button
+                      type="button"
+                      onClick={() => handlePlaySingleAmal(item)}
+                      className="px-3 py-1.5 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer active:scale-95 transition"
+                      title="এই সূরাটি তিলাওয়াত শুনুন"
+                    >
+                      <Play className="w-3.5 h-3.5 fill-white" />
+                      <span>তিলাওয়াত {repeatCount === "infinite" ? "♾️" : Number(repeatCount) > 1 ? `(${repeatCount}x)` : ""}</span>
+                    </button>
+                    <select
+                      value={repeatCount}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        handleRepeatCountChange(e.target.value);
+                      }}
+                      className="bg-emerald-950/90 text-amber-300 hover:bg-black px-1.5 py-1.5 text-[11px] font-black border-l border-emerald-600/70 focus:outline-none cursor-pointer"
+                      title="সূরাটি কতবার পুনরাবৃত্তি হবে নির্বাচন করুন"
+                    >
+                      <option value="1">১x</option>
+                      <option value="3">৩x (সুন্নাহ)</option>
+                      <option value="5">৫x</option>
+                      <option value="7">৭x (শিফা)</option>
+                      <option value="11">১১x</option>
+                      <option value="33">৩৩x</option>
+                      <option value="100">১০০x</option>
+                      <option value="infinite">♾️ লুপ</option>
+                    </select>
+                  </div>
 
                   {/* Play Bangla Translation Button */}
                   <button
@@ -767,6 +902,28 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                   </button>
                 </div>
               </div>
+
+              {/* Active Loop / Repetition Status Banner inside Playing Card */}
+              {isThisAmalPlaying && (Number(repeatCount) > 1 || repeatCount === "infinite") && (
+                <div className="mx-4 sm:mx-6 mb-3 p-2.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-emerald-500/15 to-teal-500/15 border border-amber-400/60 dark:border-amber-600/50 flex items-center justify-between text-xs font-bold text-amber-900 dark:text-amber-200 animate-pulse shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <Repeat className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                    <span>
+                      {repeatCount === "infinite"
+                        ? `🔁 একটানা লুপ চলছে — বর্তমান চক্র: ${currentLoopCycle}`
+                        : `🔁 পুনরাবৃত্তি তিলাওয়াত চলছে — চক্র ${currentLoopCycle} / ${repeatCount} (${currentLoopCycle === 1 ? "১ম বার" : currentLoopCycle === 2 ? "২য় বার" : currentLoopCycle === 3 ? "৩য় বার" : `${currentLoopCycle}ম বার`})`}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => handleRepeatCountChange("1")}
+                    className="px-2 py-0.5 rounded-lg bg-amber-200/80 dark:bg-amber-900/60 hover:bg-amber-300 text-amber-950 dark:text-amber-100 text-[10px] font-black transition cursor-pointer"
+                    title="পুনরাবৃত্তি বন্ধ করে স্বাভাবিক ১ বার করুন"
+                  >
+                    লুপ বন্ধ (১x)
+                  </button>
+                </div>
+              )}
 
               {/* Card Tabs: [ আয়াত ও অনুবাদ ] vs [ ফযিলত ও পড়ার নিয়ম ] */}
               <div className="px-4 sm:px-5 pb-2">
@@ -1071,16 +1228,30 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
               </div>
             </div>
 
-            <button
-              onClick={() => {
-                setFazilatModalItem(null);
-                handlePlaySingleAmal(fazilatModalItem);
-              }}
-              className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md"
-            >
-              <Play className="w-4 h-4 fill-white" />
-              <span>এই আমলের তিলাওয়াত শুরু করুন</span>
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setFazilatModalItem(null);
+                  handlePlaySingleAmal(fazilatModalItem);
+                }}
+                className="flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md transition active:scale-95"
+              >
+                <Play className="w-4 h-4 fill-white" />
+                <span>তিলাওয়াত শুরু করুন {repeatCount === "infinite" ? "(♾️ লুপ)" : Number(repeatCount) > 1 ? `(${repeatCount}x)` : ""}</span>
+              </button>
+
+              <button
+                onClick={() => {
+                  setFazilatModalItem(null);
+                  handlePlaySingleAmal(fazilatModalItem, extractRepetitionNumber(fazilatModalItem.repetition));
+                }}
+                className="py-2.5 px-3 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-md transition active:scale-95 shrink-0"
+                title={`সুন্নাহ আমল অনুযায়ী ${fazilatModalItem.repetition} বাজান`}
+              >
+                <Repeat className="w-4 h-4 text-slate-950" />
+                <span>{fazilatModalItem.repetition} বাজান</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1156,16 +1327,16 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                     ? `বাংলা অর্থ • আয়াত ${activeAyahIndex + 1}/${activeAmalData.totalVerses}`
                     : playbackType === "fazilat"
                     ? "ফযিলতের অডিও বিবরণ"
-                    : `আয়াত ${activeAyahIndex + 1}/${activeAmalData.totalVerses} • ক্বারী: ${SHAYKH_REGISTRY.find((q) => q.id === selectedQari)?.displayTitleBn || selectedQari}`}
+                    : `আয়াত ${activeAyahIndex + 1}/${activeAmalData.totalVerses} • ক্বারী: ${SHAYKH_REGISTRY.find((q) => q.id === selectedQari)?.displayTitleBn || selectedQari}${Number(repeatCount) > 1 ? ` • 🔁 চক্র ${currentLoopCycle}/${repeatCount}` : repeatCount === "infinite" ? ` • 🔁 লুপ চক্র ${currentLoopCycle}` : ""}`}
                 </p>
               </div>
             </div>
 
-            {/* Center Controls */}
-            <div className="flex items-center gap-2">
+            {/* Center Controls & Repeat Selector */}
+            <div className="flex items-center gap-1.5 sm:gap-2">
               <button
                 onClick={handleSkipPrev}
-                className="p-2 rounded-xl text-slate-600 dark:text-emerald-200 hover:bg-stone-100 dark:hover:bg-emerald-900/50 cursor-pointer"
+                className="p-1.5 sm:p-2 rounded-xl text-slate-600 dark:text-emerald-200 hover:bg-stone-100 dark:hover:bg-emerald-900/50 cursor-pointer"
                 title="পূর্ববর্তী আয়াত"
               >
                 <SkipBack className="w-4 h-4" />
@@ -1173,7 +1344,7 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
 
               <button
                 onClick={handleTogglePlayPause}
-                className="p-3 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white shadow-md active:scale-95 transition cursor-pointer"
+                className="p-2.5 sm:p-3 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white shadow-md active:scale-95 transition cursor-pointer"
               >
                 {playbackStatus === "playing" ? (
                   <Pause className="w-4 h-4 fill-white" />
@@ -1184,11 +1355,36 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
 
               <button
                 onClick={handleSkipNext}
-                className="p-2 rounded-xl text-slate-600 dark:text-emerald-200 hover:bg-stone-100 dark:hover:bg-emerald-900/50 cursor-pointer"
+                className="p-1.5 sm:p-2 rounded-xl text-slate-600 dark:text-emerald-200 hover:bg-stone-100 dark:hover:bg-emerald-900/50 cursor-pointer"
                 title="পরবর্তী আয়াত"
               >
                 <SkipForward className="w-4 h-4" />
               </button>
+
+              {/* 🔁 Live Repeat Selector inside Bottom Player Bar */}
+              <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-emerald-100/90 dark:bg-emerald-900/60 border border-emerald-300/80 dark:border-emerald-700/60 shadow-2xs ml-0.5 sm:ml-2">
+                <Repeat className="w-3.5 h-3.5 text-emerald-800 dark:text-amber-400 shrink-0" />
+                <select
+                  value={repeatCount}
+                  onChange={(e) => handleRepeatCountChange(e.target.value)}
+                  className="bg-transparent font-black text-emerald-950 dark:text-emerald-100 text-[11px] sm:text-xs focus:outline-none cursor-pointer"
+                  title="পুনরাবৃত্তি সংখ্যা পরিবর্তন করুন"
+                >
+                  <option value="1">১ বার</option>
+                  <option value="3">৩ বার (সুন্নাহ)</option>
+                  <option value="5">৫ বার (হিফজ)</option>
+                  <option value="7">৭ বার (শিফা)</option>
+                  <option value="11">১১ বার</option>
+                  <option value="33">৩৩ বার</option>
+                  <option value="100">১০০ বার</option>
+                  <option value="infinite">♾️ একটানা লুপ</option>
+                </select>
+                {(Number(repeatCount) > 1 || repeatCount === "infinite") && (
+                  <span className="text-[10px] font-black text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 px-1.5 py-0.5 rounded-md border border-amber-300 dark:border-amber-700/60 shrink-0">
+                    {repeatCount === "infinite" ? `চক্র ${currentLoopCycle}` : `${currentLoopCycle}/${repeatCount}`}
+                  </span>
+                )}
+              </div>
             </div>
 
             {/* Right: Close / Stop */}
