@@ -16,181 +16,137 @@ import {
   Check,
   ShieldCheck,
   Bell,
+  Plus,
+  Utensils,
+  Edit2,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  getMosqueDatabase,
+  assignMealScheduleToDatabase,
+} from "../../services/mosqueStorage";
 
 export function ImamMealRosterModal({
   onClose,
   mosqueName = "বাইতুন নূর জামে মসজিদ ও কমপ্লেক্স",
-  currentUserName = "মুহাম্মদ আব্দুল্লাহ",
-  currentUserPhone = "০১৭১১-২২৩৩৪৪",
+  onDataUpdated,
 }) {
-  const [activeTab, setActiveTab] = useState("roster"); // "roster" | "my-turn" | "transfer-requests" | "history"
+  const [db, setDb] = useState(() => getMosqueDatabase());
+  const [activeTab, setActiveTab] = useState("roster"); // "roster" | "assign" | "my-turn" | "transfer-requests"
 
-  // Master Meal Schedule
-  const [schedule, setSchedule] = useState([
-    {
-      id: "meal-1",
-      date: "১৪ নভেম্বর ২০২৬",
-      dayName: "শনিবার",
-      mealType: "দুপুর ও রাত",
-      family: "হাজী মুহাম্মদ আব্দুল্লাহর পরিবার",
-      memberId: "M-101",
-      phone: "০১৭১১-২২৩৩৪৪",
-      status: "COMPLETED",
-      notes: "আলহামদুলিল্লাহ, খাবার যথাসময়ে প্রদান করা হয়েছে।",
-      isMyTurn: true,
-    },
-    {
-      id: "meal-2",
-      date: "১৫ নভেম্বর ২০২৬",
-      dayName: "রবিবার (আজ)",
-      mealType: "দুপুর ও রাত",
-      family: "হাজী রফিকুল ইসলামের পরিবার",
-      memberId: "M-102",
-      phone: "০১৮১৯-১১২২৩৩",
-      status: "CONFIRMED",
-      notes: "নির্ধারিত সময়ে হুজরার দস্তরখানে খাবার পৌঁছানো হবে।",
-      isMyTurn: false,
-    },
-    {
-      id: "meal-3",
-      date: "১৬ নভেম্বর ২০২৬",
-      dayName: "সোমবার (আগামীকাল)",
-      mealType: "দুপুর ও রাত",
-      family: "জনাব শাহিনুর রহমানের পরিবার",
-      memberId: "M-104",
-      phone: "০১৭২১-৯৯৮৮৭৭",
-      status: "CONFIRMED",
-      notes: "সম্মতি প্রদান করেছেন।",
-      isMyTurn: false,
-    },
-    {
-      id: "meal-4",
-      date: "১৭ নভেম্বর ২০২৬",
-      dayName: "মঙ্গলবার",
-      mealType: "দুপুর ও রাত",
-      family: "ডা. আরিফুল ইসলামের পরিবার",
-      memberId: "M-105",
-      phone: "০১৫২১-৩৩৪৪৫৫",
-      status: "PENDING_TRANSFER",
-      notes: "জরুরি পারিবারিক সফরে থাকায় অন্য ভাইয়ের কাছে হস্তান্তরের আবেদন করেছেন।",
-      isMyTurn: false,
-    },
-    {
-      id: "meal-5",
-      date: "১৮ নভেম্বর ২০২৬",
-      dayName: "বুধবার",
-      mealType: "দুপুর ও রাত",
-      family: "মো. কামরুল হাসানের পরিবার",
-      memberId: "M-106",
-      phone: "০১৮১২-৫৬৭৮৯০",
-      status: "CONFIRMED",
-      notes: "সম্মতি জ্ঞাপন করেছেন।",
-      isMyTurn: false,
-    },
-    {
-      id: "meal-6",
-      date: "১৯ নভেম্বর ২০২৬",
-      dayName: "বৃহস্পতিবার",
-      mealType: "দুপুর ও রাত",
-      family: "ইঞ্জি. মোস্তাফিজুর রহমানের পরিবার",
-      memberId: "M-107",
-      phone: "০১৭৩৩-১১২২৪৪",
-      status: "CONFIRMED",
-      notes: "নির্ধারিত।",
-      isMyTurn: false,
-    },
-    {
-      id: "meal-7",
-      date: "২০ নভেম্বর ২০২৬",
-      dayName: "শুক্রবার (জুমাবার)",
-      mealType: "দুপুর ও রাত (বিশেষ মেহমানদারি)",
-      family: "আলহাজ্ব জয়নাল আবেদীনের পরিবার",
-      memberId: "M-109",
-      phone: "০১৭৮৮-৩৩৪৪৫৫",
-      status: "CONFIRMED",
-      notes: "জুমার দিন বিশেষ তবাররক ও মেহমানদারি।",
-      isMyTurn: false,
-    },
-  ]);
+  // Schedule list from DB
+  const [schedule, setSchedule] = useState(() => db.mealRoster || []);
 
-  // Transfer Application State ("আজকের খাবার দিতে পারব না / অন্য ভাইয়ের কাছে হস্তান্তর")
+  // Form State for Assigning a New Meal Host (দাবি অনুযায়ী খানা নির্দিষ্ট করার পূর্ণাঙ্গ ফর্ম)
+  const [assignForm, setAssignForm] = useState({
+    date: "২০২৬-১১-১৬",
+    displayDate: "১৬ নভেম্বর ২০২৬",
+    dayName: "সোমবার",
+    mealType: "দুপুর ও রাত",
+    memberId: db.members?.[0]?.id || "M-101",
+    family: db.members?.[0]?.name ? `${db.members[0].name}-এর পরিবার` : "মুহাম্মদ আব্দুল্লাহর পরিবার",
+    phone: db.members?.[0]?.phone || "০১৭১১-২২৩৩৪৪",
+    notes: "নির্ধারিত সময়ে হুজরার দস্তরখানে খাবার পৌঁছে দেওয়া হবে",
+  });
+
+  // Transfer Application State
   const [showTransferForm, setShowTransferForm] = useState(false);
-  const [transferDate, setTransferDate] = useState("১৫ নভেম্বর ২০২৬");
+  const [transferTargetMeal, setTransferTargetMeal] = useState(null);
   const [transferReason, setTransferReason] = useState("");
-  const [replacementMember, setReplacementMember] = useState("M-106 (মো. কামরুল হাসান)");
-  const [alternativeDate, setAlternativeDate] = useState("২২ নভেম্বর ২০২৬");
+  const [replacementMember, setReplacementMember] = useState("");
 
   // Transfer Requests List
   const [transferRequests, setTransferRequests] = useState([
     {
       id: "TR-2026-004",
-      fromMember: "ডা. আরিফুল ইসলাম (M-105)",
-      toMember: "মো. কামরুল হাসান (M-106)",
+      fromMember: "ডা. আরিফুল ইসলাম",
+      toMember: "মো. কামরুল হাসান",
       scheduledDate: "১৭ নভেম্বর ২০২৬",
       reason: "পেশাগত জরুরি ডিউটি ও হাসপাতালে রাত্রিযাপন",
-      suggestedSwapDate: "২৪ নভেম্বর ২০২৬",
       status: "PENDING",
-      createdAt: "১৪ নভেম্বর ২০২৬, রাত ৯:৩০",
+      createdAt: "১৪ নভেম্বর ২০২৬",
     },
   ]);
 
-  // Handle "আজকের খাবার দিতে পারব না / হস্তান্তর আবেদন"
-  const handleSubmitTransfer = (e) => {
+  // When selected member changes in assign form, auto-fill family & phone
+  const handleMemberSelect = (memberId) => {
+    const mem = db.members.find((m) => m.id === memberId);
+    if (mem) {
+      setAssignForm((prev) => ({
+        ...prev,
+        memberId: mem.id,
+        family: `${mem.name}-এর পরিবার`,
+        phone: mem.phone,
+      }));
+    }
+  };
+
+  // Submit New Meal Host Assignment
+  const handleAssignMeal = (e) => {
+    e.preventDefault();
+    if (!assignForm.family.trim() || !assignForm.phone.trim()) {
+      toast.error("অনুগ্রহ করে পরিবারের নাম ও ফোন নম্বর লিখুন");
+      return;
+    }
+
+    const updatedDb = assignMealScheduleToDatabase(assignForm, "সভাপতি");
+    setDb(updatedDb);
+    setSchedule(updatedDb.mealRoster || []);
+    if (onDataUpdated) onDataUpdated(updatedDb);
+
+    toast.success(`${assignForm.displayDate}-এর ইমামের খানা '${assignForm.family}'-এর নামে সফলভাবে নির্দিষ্ট করা হয়েছে!`);
+    setActiveTab("roster");
+  };
+
+  // Handle Transfer / Swap
+  const handleTransferSubmit = (e) => {
     e.preventDefault();
     if (!transferReason.trim()) {
-      toast.error("খাবার আয়োজনে অপারগতার সুনির্দিষ্ট কারণ লিখুন");
+      toast.error("অনুগ্রহ করে অপারগতার কারণ লিখুন");
       return;
     }
 
     const newReq = {
-      id: `TR-2026-00${transferRequests.length + 5}`,
-      fromMember: `${currentUserName} (M-101)`,
-      toMember: replacementMember,
-      scheduledDate: transferDate,
-      reason: transferReason.trim(),
-      suggestedSwapDate: alternativeDate,
+      id: `TR-${Date.now().toString().slice(-4)}`,
+      fromMember: transferTargetMeal?.family || "সদস্য",
+      toMember: replacementMember || "সাধারণ বদলি",
+      scheduledDate: transferTargetMeal?.displayDate || "নির্ধারিত তারিখ",
+      reason: transferReason,
       status: "PENDING",
-      createdAt: "আজকের তারিখ ও সময়",
+      createdAt: "আজকের তারিখ",
     };
 
-    setTransferRequests([newReq, ...transferRequests]);
+    setTransferRequests((prev) => [newReq, ...prev]);
     setShowTransferForm(false);
     setTransferReason("");
-    toast.success("খাবার দায়িত্ব হস্তান্তরের আবেদন সফলভাবে দাখিল করা হয়েছে! সংশ্লিষ্ট সদস্য ও কমিটিকে নোটিফিকেশন পাঠানো হয়েছে।");
+    setTransferTargetMeal(null);
+    toast.success("খানা অদলবদল (Swap) আবেদন সফলভাবে জমা হয়েছে! ইমাম সাহেব ও বিকল্প ভাইকে জানানো হবে।");
+    setActiveTab("transfer-requests");
   };
 
-  // Handle Accept / Reject Transfer
-  const handleAcceptTransfer = (id) => {
+  // Approve Transfer
+  const handleApproveTransfer = (reqId) => {
     setTransferRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "APPROVED" } : r))
+      prev.map((r) => (r.id === reqId ? { ...r, status: "APPROVED" } : r))
     );
-    toast.success("দায়িত্ব হস্তান্তর গ্রহণ করা হয়েছে! রোস্টার তালিকায় স্বয়ংক্রিয়ভাবে আপডেট করা হয়েছে।");
-  };
-
-  const handleRejectTransfer = (id) => {
-    setTransferRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: "REJECTED" } : r))
-    );
-    toast.error("হস্তান্তরের আবেদনটি প্রত্যাখ্যান করা হয়েছে।");
+    toast.success("খানা অদলবদল আবেদন অনুমোদিত হয়েছে এবং রোস্টারে নতুন ভাইয়ের নাম আপডেট হয়েছে!");
   };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="w-full max-w-2xl bg-white dark:bg-[#0c1612] border border-emerald-200 dark:border-emerald-800/70 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-800 via-teal-900 to-[#07251c] text-white flex items-center justify-between shrink-0">
+        <div className="p-4 bg-gradient-to-r from-emerald-800 via-teal-900 to-[#07251c] text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center text-xl">
+            <div className="w-9 h-9 rounded-2xl bg-white/15 flex items-center justify-center text-lg">
               🍲
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-black tracking-wide">
-                ইমাম সাহেবের দৈনিক খানা ব্যবস্থাপনা রোস্টার
+              <h2 className="text-sm sm:text-base font-bold tracking-wide">
+                ইমাম ও মুয়াজ্জিন সাহেবের খানা রোস্টার ও দায়িত্ব বণ্টন
               </h2>
-              <p className="text-xs text-emerald-100">
-                {mosqueName} · পরিবারভিত্তিক রোটেশন ও স্বয়ংক্রিয় নোটিফিকেশন
+              <p className="text-[11px] text-emerald-100">
+                {mosqueName} · প্রতিদিনের খাবার নির্ধারণ, শিডিউল ও পারস্পরিক বদল
               </p>
             </div>
           </div>
@@ -198,342 +154,353 @@ export function ImamMealRosterModal({
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition cursor-pointer"
           >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Today's Imam Meal Reminder Alert Banner (Section 7.2) */}
-        <div className="p-3 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-950/40 dark:to-orange-950/30 border-b border-amber-200 dark:border-amber-900/60 flex items-center justify-between gap-3 text-xs shrink-0">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
-            <div>
-              <b className="text-amber-900 dark:text-amber-200">আজকের খাবারের দায়িত্ব:</b>
-              <span className="text-stone-700 dark:text-stone-300 ml-1">
-                হাজী রফিকুল ইসলামের পরিবার (০১৮১৯-১১২২৩৩)
-              </span>
-            </div>
-          </div>
-          <button
-            onClick={() => setShowTransferForm(true)}
-            className="px-3 py-1 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-[11px] whitespace-nowrap cursor-pointer shadow-xs"
-          >
-            আজকের খাবার দিতে অপারগ?
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* 4 Tabs Selector */}
-        <div className="p-2.5 bg-stone-50 dark:bg-[#07130e] border-b border-stone-200 dark:border-emerald-900/60 flex gap-1.5 shrink-0 text-xs">
+        <div className="p-2 bg-stone-50 dark:bg-[#07130e] border-b border-stone-200 dark:border-emerald-900/60 flex gap-1.5 shrink-0 text-xs">
           {[
-            { key: "roster", label: "📅 সাপ্তাহিক রোস্টার" },
-            { key: "my-turn", label: "👤 আমার দায়িত্ব" },
-            { key: "transfer-requests", label: `🔄 হস্তান্তর আবেদন (${transferRequests.filter((r) => r.status === "PENDING").length})` },
-            { key: "history", label: "📋 সম্পন্ন ইতিহাস" },
+            { key: "roster", label: "📅 খানা রোস্টার তালিকা", icon: Calendar },
+            { key: "assign", label: "➕ খানা নির্ধারণ করুন", icon: Plus },
+            { key: "transfer-requests", label: "🔄 অদলবদল আবেদন", icon: RotateCcw },
           ].map((tab) => {
             const isActive = activeTab === tab.key;
+            const Icon = tab.icon;
             return (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 py-1.5 rounded-xl font-bold transition cursor-pointer ${
+                className={`flex-1 py-1.5 px-2 rounded-xl font-bold flex items-center justify-center gap-1 transition cursor-pointer text-[11px] sm:text-xs ${
                   isActive
-                    ? "bg-emerald-600 text-white shadow-xs"
+                    ? "bg-[#0D7A5F] text-white shadow-xs"
                     : "bg-white dark:bg-emerald-950/40 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-emerald-800/40 hover:border-emerald-500"
                 }`}
               >
-                {tab.label}
+                <Icon className="w-3.5 h-3.5" />
+                <span>{tab.label}</span>
               </button>
             );
           })}
         </div>
 
         {/* Content Area */}
-        <div className="p-4 sm:p-5 overflow-y-auto space-y-3 flex-1">
-          {/* Transfer Application Modal Form (Section 7.3 & 7.4) */}
-          {showTransferForm && (
-            <form
-              onSubmit={handleSubmitTransfer}
-              className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-300 dark:border-amber-700 space-y-2.5 animate-in fade-in"
-            >
-              <div className="flex justify-between items-center pb-1 border-b border-amber-200 dark:border-amber-800">
-                <h4 className="text-xs font-black text-amber-900 dark:text-amber-200 flex items-center gap-1.5">
-                  <RotateCcw className="w-4 h-4 text-amber-600" />
-                  <span>"আজকের খাবার দিতে পারব না" — দায়িত্ব হস্তান্তর ফরম:</span>
-                </h4>
+        <div className="p-4 sm:p-5 overflow-y-auto space-y-3 flex-1 text-xs">
+          {/* TAB 1: ROSTER LIST */}
+          {activeTab === "roster" && (
+            <div className="space-y-3">
+              {/* Quick Status Bar */}
+              <div className="p-3 rounded-2xl bg-gradient-to-r from-emerald-50 to-teal-50 dark:from-emerald-950/40 dark:to-teal-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-7 h-7 rounded-xl bg-[#0D7A5F] text-white flex items-center justify-center font-bold text-xs">
+                    আজ
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-stone-900 dark:text-stone-100 text-xs">
+                      আজকের মেহমানদারি: {schedule[1]?.family || "হাজী রফিকুল ইসলামের পরিবার"}
+                    </h4>
+                    <p className="text-[10px] text-stone-500">ফোন: {schedule[1]?.phone || "০১৮১৯-১১২২৩৩"}</p>
+                  </div>
+                </div>
                 <button
-                  type="button"
-                  onClick={() => setShowTransferForm(false)}
-                  className="text-xs text-stone-400 hover:text-stone-600"
+                  onClick={() => setActiveTab("assign")}
+                  className="px-3 py-1.5 rounded-xl bg-[#0D7A5F] text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
                 >
-                  ✕
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>নতুন তারিখ নির্ধারণ</span>
                 </button>
               </div>
 
-              <div className="space-y-2 text-xs">
+              {/* Schedule Cards */}
+              <div className="space-y-2">
+                {schedule.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-3.5 rounded-2xl bg-white dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-900/60 space-y-2 shadow-2xs hover:border-[#0D7A5F] transition"
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-stone-900 dark:text-stone-100 text-xs sm:text-sm">
+                          {item.displayDate || item.date}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300">
+                          {item.dayName}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
+                          {item.mealType}
+                        </span>
+                      </div>
+                      <span
+                        className={`self-start sm:self-auto text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          item.status === "COMPLETED"
+                            ? "bg-stone-200 text-stone-700"
+                            : item.status === "PENDING_TRANSFER"
+                            ? "bg-amber-100 text-amber-900"
+                            : "bg-emerald-100 text-emerald-800"
+                        }`}
+                      >
+                        {item.status === "COMPLETED"
+                          ? "সম্পন্ন হয়েছে"
+                          : item.status === "PENDING_TRANSFER"
+                          ? "বদল আবেদন পেন্ডিং"
+                          : "নিশ্চিত (Confirmed)"}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-baseline pt-1 border-t border-stone-100 dark:border-emerald-950/60">
+                      <div>
+                        <div className="font-bold text-emerald-900 dark:text-emerald-300">
+                          {item.family}
+                        </div>
+                        <div className="text-[10px] text-stone-500 flex items-center gap-1 mt-0.5">
+                          <Phone className="w-3 h-3 text-stone-400" />
+                          <span>{item.phone}</span>
+                          {item.notes && <span className="text-stone-400">· {item.notes}</span>}
+                        </div>
+                      </div>
+
+                      <div className="flex gap-1.5">
+                        <button
+                          onClick={() => {
+                            setAssignForm({
+                              date: item.date,
+                              displayDate: item.displayDate || item.date,
+                              dayName: item.dayName,
+                              mealType: item.mealType,
+                              memberId: item.memberId || "",
+                              family: item.family,
+                              phone: item.phone,
+                              notes: item.notes || "",
+                            });
+                            setActiveTab("assign");
+                          }}
+                          className="px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                          title="এই তারিখের দায়িত্ব পরিবর্তন"
+                        >
+                          <Edit2 className="w-3 h-3" />
+                          <span>পরিবর্তন</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setTransferTargetMeal(item);
+                            setShowTransferForm(true);
+                          }}
+                          className="px-2.5 py-1 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 border border-amber-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                          title="আজকে অপারগ হলে অন্য ভাইয়ের সাথে বদল করুন"
+                        >
+                          <RotateCcw className="w-3 h-3" />
+                          <span>বদল আবেদন</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* TAB 2: ASSIGN MEAL SCHEDULE (নতুন খানা সিডিউল নির্ধারণ করার পূর্ণাঙ্গ ফর্ম) */}
+          {activeTab === "assign" && (
+            <form onSubmit={handleAssignMeal} className="space-y-3.5">
+              <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-2">
+                <Utensils className="w-4 h-4 text-[#0D7A5F] shrink-0" />
+                <span className="text-xs text-emerald-950 dark:text-emerald-200 font-medium">
+                  যেকোনো নির্দিষ্ট তারিখে ইমাম সাহেবকে খাবার দেওয়ার জন্য মুসল্লি বা পরিবারের নাম নির্ধারণ করুন।
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Date Selection */}
                 <div>
-                  <label className="block text-stone-600 dark:text-stone-400 font-bold mb-1">
-                    অপারগতার কারণ (বাধ্যতামূলক):
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    খাবার প্রদানের তারিখ *
                   </label>
                   <input
-                    type="text"
-                    placeholder="যেমন: জরুরি সফরে থাকায় / পারিবারিক অসুস্থতা..."
-                    value={transferReason}
-                    onChange={(e) => setTransferReason(e.target.value)}
-                    className="w-full p-2.5 rounded-xl border border-stone-200 dark:border-amber-700 bg-white dark:bg-[#0f1d17] text-stone-900 dark:text-stone-100"
+                    type="date"
+                    value={assignForm.date}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setAssignForm({
+                        ...assignForm,
+                        date: val,
+                        displayDate: `${val.split("-")[2]} নভেম্বর ২০২৬`,
+                      });
+                    }}
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-mono font-bold focus:border-[#0D7A5F]"
                     required
                   />
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <div>
-                    <label className="block text-stone-600 dark:text-stone-400 font-bold mb-1">
-                      প্রস্তাবিত বিকল্প সদস্য (কার কাছে হস্তান্তর করবেন):
-                    </label>
-                    <select
-                      value={replacementMember}
-                      onChange={(e) => setReplacementMember(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-stone-200 dark:border-amber-700 bg-white dark:bg-[#0f1d17] text-stone-900 dark:text-stone-100"
-                    >
-                      <option value="M-106 (মো. কামরুল হাসান)">M-106 (মো. কামরুল হাসান)</option>
-                      <option value="M-107 (ইঞ্জি. মোস্তাফিজুর রহমান)">M-107 (ইঞ্জি. মোস্তাফিজুর রহমান)</option>
-                      <option value="M-109 (আলহাজ্ব জয়নাল আবেদীন)">M-109 (আলহাজ্ব জয়নাল আবেদীন)</option>
-                      <option value="M-110 (মো. হাফিজুর রহমান)">M-110 (মো. হাফিজুর রহমান)</option>
-                    </select>
-                  </div>
+                {/* Day Name */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    দিনের নাম *
+                  </label>
+                  <select
+                    value={assignForm.dayName}
+                    onChange={(e) => setAssignForm({ ...assignForm, dayName: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-bold focus:border-[#0D7A5F]"
+                  >
+                    <option value="শনিবার">শনিবার</option>
+                    <option value="রবিবার">রবিবার</option>
+                    <option value="সোমবার">সোমবার</option>
+                    <option value="মঙ্গলবার">মঙ্গলবার</option>
+                    <option value="বুধবার">বুধবার</option>
+                    <option value="বৃহস্পতিবার">বৃহস্পতিবার</option>
+                    <option value="শুক্রবার (জুমাবার)">শুক্রবার (জুমাবার)</option>
+                  </select>
+                </div>
 
-                  <div>
-                    <label className="block text-stone-600 dark:text-stone-400 font-bold mb-1">
-                      বিকল্প তারিখ (আপনি কবে খাবার দিবেন):
-                    </label>
-                    <input
-                      type="text"
-                      value={alternativeDate}
-                      onChange={(e) => setAlternativeDate(e.target.value)}
-                      className="w-full p-2.5 rounded-xl border border-stone-200 dark:border-amber-700 bg-white dark:bg-[#0f1d17] text-stone-900 dark:text-stone-100"
-                      required
-                    />
-                  </div>
+                {/* Meal Type */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    কোন বেলার খানা? *
+                  </label>
+                  <select
+                    value={assignForm.mealType}
+                    onChange={(e) => setAssignForm({ ...assignForm, mealType: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-bold focus:border-[#0D7A5F]"
+                  >
+                    <option value="দুপুর ও রাত">দুপুর ও রাত (সারা দিন)</option>
+                    <option value="শুধু দুপুরের খাবার">শুধু দুপুরের খাবার</option>
+                    <option value="শুধু রাতের খাবার">শুধু রাতের খাবার</option>
+                    <option value="সকালের নাস্তা">সকালের নাস্তা</option>
+                  </select>
+                </div>
+
+                {/* Registered Member Quick Selector */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    নিবন্ধিত সদস্য থেকে নির্বাচন (ঐচ্ছিক)
+                  </label>
+                  <select
+                    value={assignForm.memberId}
+                    onChange={(e) => handleMemberSelect(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 focus:border-[#0D7A5F]"
+                  >
+                    <option value="">-- সদস্য তালিকা হতে নির্বাচন করুন --</option>
+                    {(db.members || []).map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} ({m.phone}) - {m.address}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Family / Host Name */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    পরিবারের নাম / দায়িত্বশীল ব্যক্তি *
+                  </label>
+                  <input
+                    type="text"
+                    value={assignForm.family}
+                    onChange={(e) => setAssignForm({ ...assignForm, family: e.target.value })}
+                    placeholder="উদা: হাজী মুহাম্মদ আব্দুল্লাহর পরিবার"
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-bold focus:border-[#0D7A5F]"
+                    required
+                  />
+                </div>
+
+                {/* Phone Number */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    যোগাযোগের মোবাইল নম্বর *
+                  </label>
+                  <input
+                    type="text"
+                    value={assignForm.phone}
+                    onChange={(e) => setAssignForm({ ...assignForm, phone: e.target.value })}
+                    placeholder="০১৭১১-XXXXXX"
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-mono focus:border-[#0D7A5F]"
+                    required
+                  />
+                </div>
+
+                {/* Notes */}
+                <div className="sm:col-span-2">
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    বিশেষ নির্দেশনা বা বিবরণ
+                  </label>
+                  <input
+                    type="text"
+                    value={assignForm.notes}
+                    onChange={(e) => setAssignForm({ ...assignForm, notes: e.target.value })}
+                    placeholder="হুজরায় পৌঁছে দেওয়া হবে বা বিশেষ কোনো ব্যবস্থা..."
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 focus:border-[#0D7A5F]"
+                  />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-1">
+              <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowTransferForm(false)}
-                  className="px-3 py-1.5 rounded-xl bg-stone-200 dark:bg-stone-800 text-xs font-bold"
+                  onClick={() => setActiveTab("roster")}
+                  className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold text-xs"
                 >
                   বাতিল
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold cursor-pointer shadow-xs"
+                  className="px-5 py-2.5 rounded-xl bg-[#0D7A5F] hover:bg-[#074f3d] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-md"
                 >
-                  আবেদন দাখিল করুন
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>সিডিউলে অন্তর্ভুক্ত ও নিশ্চিত করুন</span>
                 </button>
               </div>
             </form>
           )}
 
-          {/* TAB 1: MASTER SCHEDULE ROSTER */}
-          {activeTab === "roster" && (
-            <div className="space-y-2">
-              <div className="flex justify-between items-center text-xs text-stone-500 mb-1">
-                <span>চলতি সপ্তাহের দৈনিক তালিকা (১৪ - ২০ নভেম্বর ২০২৬):</span>
-                <span>মোট ৭ দিন</span>
-              </div>
-
-              {schedule.map((item) => (
-                <div
-                  key={item.id}
-                  className={`p-3.5 rounded-2xl border transition shadow-2xs space-y-1.5 ${
-                    item.date.includes("আজ")
-                      ? "bg-emerald-50/70 dark:bg-emerald-950/40 border-emerald-500 ring-1 ring-emerald-500/30"
-                      : "bg-white dark:bg-[#0f1d17] border-stone-200 dark:border-emerald-900/50"
-                  }`}
-                >
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      <span className="font-black text-stone-900 dark:text-stone-100">
-                        {item.date} ({item.dayName})
-                      </span>
-                      {item.date.includes("আজ") && (
-                        <span className="px-2 py-0.5 rounded-full bg-emerald-600 text-white font-bold text-[9px]">
-                          আজকের দিন
-                        </span>
-                      )}
-                    </div>
-                    <span
-                      className={`font-bold px-2.5 py-0.5 rounded-full text-[10px] ${
-                        item.status === "COMPLETED"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : item.status === "CONFIRMED"
-                          ? "bg-teal-100 text-teal-800"
-                          : "bg-amber-100 text-amber-800"
-                      }`}
-                    >
-                      {item.status === "COMPLETED"
-                        ? "সম্পন্ন হয়েছে"
-                        : item.status === "CONFIRMED"
-                        ? "নির্ধারিত"
-                        : "হস্তান্তর প্রক্রিয়াধীন"}
-                    </span>
-                  </div>
-
-                  <div className="flex justify-between items-baseline pt-1">
-                    <div>
-                      <h4 className="text-xs font-black text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
-                        <User className="w-3.5 h-3.5" />
-                        <span>{item.family}</span>
-                      </h4>
-                      <p className="text-[11px] text-stone-500 mt-0.5">
-                        খাবারের সময়: <b>{item.mealType}</b> · ফোন: {item.phone}
-                      </p>
-                    </div>
-
-                    <div className="flex gap-1.5">
-                      <a
-                        href={`tel:${item.phone}`}
-                        className="px-2.5 py-1 rounded-lg bg-stone-100 dark:bg-emerald-950/60 text-stone-700 dark:text-stone-300 font-bold text-[10px] flex items-center gap-1 hover:bg-emerald-100"
-                      >
-                        <Phone className="w-3 h-3" />
-                        <span>কল দিন</span>
-                      </a>
-                    </div>
-                  </div>
-
-                  {item.notes && (
-                    <div className="text-[10px] text-stone-400 italic pt-1 border-t border-stone-100 dark:border-emerald-950/60">
-                      নোট: {item.notes}
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* TAB 2: MY RESPONSIBILITY */}
-          {activeTab === "my-turn" && (
-            <div className="space-y-3 text-xs">
-              <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-900 to-teal-950 text-white space-y-2">
-                <span className="text-xs text-emerald-200">আপনার দায়িত্বের বিবরণ:</span>
-                <h3 className="text-base font-black">হাজী মুহাম্মদ আব্দুল্লাহর পরিবার (সদস্য আইডি: M-101)</h3>
-                <div className="grid grid-cols-2 gap-2 pt-2 border-t border-white/15 text-[11px]">
-                  <div>
-                    <span className="opacity-75">বিগত খাবার প্রদানের তারিখ:</span>
-                    <div className="font-bold text-amber-300">১৪ নভেম্বর ২০২৬ (সম্পন্ন)</div>
-                  </div>
-                  <div>
-                    <span className="opacity-75">পরবর্তী নির্ধারিত তারিখ:</span>
-                    <div className="font-bold text-emerald-300">২১ নভেম্বর ২০২৬ (শনিবার)</div>
-                  </div>
-                </div>
-              </div>
-
-              <div className="p-3 rounded-2xl bg-stone-50 dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-900/50 space-y-2">
-                <b className="text-stone-900 dark:text-stone-100">ইমাম সাহেবের মেহমানদারি সংক্রান্ত নির্দেশিকা:</b>
-                <ul className="list-disc list-inside space-y-1 text-stone-600 dark:text-stone-300 text-[11px]">
-                  <li>দুপুরের খাবার দুপুর ১:০০ ঘটিকার মধ্যে এবং রাতের খাবার রাত ৮:৩০ ঘটিকার মধ্যে হুজরায় পৌঁছানো কাম্য।</li>
-                  <li>খাবার বহনের জন্য পরিষ্কার পাত্র ব্যবহার করুন অথবা টিফিন ক্যারিয়ার মসজিদে প্রেরণ করুন।</li>
-                  <li>কোনো কারণে নিজে দিতে অপারগ হলে কমপক্ষে ২৪ ঘণ্টা পূর্বে হস্তান্তরের আবেদন করুন।</li>
-                </ul>
-              </div>
-
-              <button
-                onClick={() => setShowTransferForm(true)}
-                className="w-full p-3 rounded-2xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>পরবর্তী তারিখ অন্য ভাইয়ের সাথে অদলবদল (Swap) করুন</span>
-              </button>
-            </div>
-          )}
-
-          {/* TAB 3: TRANSFER REQUESTS WORKFLOW */}
+          {/* TAB 3: TRANSFER REQUESTS (অদলবদল আবেদন) */}
           {activeTab === "transfer-requests" && (
-            <div className="space-y-2.5 text-xs">
-              <div className="flex justify-between items-center text-stone-500 mb-1">
-                <span>সদস্যদের দায়িত্ব পরিবর্তনের আবেদন ও অনুমোদন:</span>
-                <span>{transferRequests.length}টি আবেদন</span>
+            <div className="space-y-3">
+              <div className="flex justify-between items-center pb-2 border-b border-stone-200 dark:border-emerald-900/50">
+                <span className="font-bold text-stone-800 dark:text-stone-200">
+                  খানা অদলবদল (Swap) আবেদনসমূহ
+                </span>
+                <span className="text-[10px] text-stone-400">
+                  {transferRequests.length}টি আবেদন
+                </span>
               </div>
 
-              {transferRequests.map((r) => (
+              {transferRequests.map((req) => (
                 <div
-                  key={r.id}
-                  className="p-3.5 rounded-2xl bg-white dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-900/60 shadow-2xs space-y-2"
+                  key={req.id}
+                  className="p-3.5 rounded-2xl bg-white dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-900/60 space-y-2 shadow-2xs"
                 >
                   <div className="flex items-center justify-between">
-                    <span className="font-mono font-bold text-stone-400">{r.id}</span>
+                    <div>
+                      <h4 className="font-bold text-stone-900 dark:text-stone-100">
+                        {req.fromMember} ➔ {req.toMember}
+                      </h4>
+                      <p className="text-[11px] text-stone-500">তারিখ: <b>{req.scheduledDate}</b></p>
+                    </div>
                     <span
-                      className={`font-bold px-2 py-0.5 rounded-full text-[10px] ${
-                        r.status === "PENDING"
-                          ? "bg-amber-100 text-amber-800"
-                          : r.status === "APPROVED"
+                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                        req.status === "APPROVED"
                           ? "bg-emerald-100 text-emerald-800"
-                          : "bg-rose-100 text-rose-800"
+                          : "bg-amber-100 text-amber-900"
                       }`}
                     >
-                      {r.status === "PENDING" ? "অনুমোদনের অপেক্ষায়" : r.status === "APPROVED" ? "গৃহীত ও অনুমোদিত" : "বাতিল"}
+                      {req.status === "APPROVED" ? "অনুমোদিত" : "অপেক্ষমান (Pending)"}
                     </span>
                   </div>
 
-                  <div>
-                    <h4 className="font-black text-stone-900 dark:text-stone-100">
-                      তারিখ: {r.scheduledDate}
-                    </h4>
-                    <p className="text-[11px] text-stone-500 mt-0.5">
-                      আবেদনকারী: <b>{r.fromMember}</b> ➔ প্রস্তাবিত বিকল্প: <b>{r.toMember}</b>
-                    </p>
-                    <p className="text-[11px] text-stone-600 dark:text-stone-300 mt-1 bg-stone-50 dark:bg-emerald-950/30 p-2 rounded-xl border border-stone-200 dark:border-emerald-900/40">
-                      কারণ: <i>"{r.reason}"</i> (বিকল্প তারিখ: {r.suggestedSwapDate})
-                    </p>
-                  </div>
+                  <p className="text-[11px] text-stone-600 dark:text-stone-300 bg-stone-50 dark:bg-[#07130e] p-2 rounded-xl">
+                    <b>কারণ:</b> {req.reason}
+                  </p>
 
-                  {r.status === "PENDING" && (
-                    <div className="flex items-center justify-end gap-2 pt-1 border-t border-stone-100 dark:border-emerald-950/60">
+                  {req.status === "PENDING" && (
+                    <div className="flex justify-end gap-2 pt-1 border-t border-stone-100 dark:border-emerald-950/60">
                       <button
-                        onClick={() => handleAcceptTransfer(r.id)}
-                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-xs"
+                        onClick={() => handleApproveTransfer(req.id)}
+                        className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
                       >
-                        অনুমোদন ও রোস্টার আপডেট
-                      </button>
-                      <button
-                        onClick={() => handleRejectTransfer(r.id)}
-                        className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 font-bold text-xs cursor-pointer"
-                      >
-                        প্রত্যাখ্যান
+                        <Check className="w-3.5 h-3.5" />
+                        <span>বদল অনুমোদন করুন</span>
                       </button>
                     </div>
                   )}
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* TAB 4: MEAL HISTORY */}
-          {activeTab === "history" && (
-            <div className="space-y-2 text-xs">
-              <h4 className="font-bold text-stone-800 dark:text-stone-200 mb-1">
-                নভেম্বর ২০২৬ — খাবার সম্পন্ন হওয়ার ইতিহাস:
-              </h4>
-              {[
-                { date: "১৪ নভেম্বর ২০২৬", family: "হাজী মুহাম্মদ আব্দুল্লাহর পরিবার", status: "যথাসময়ে সম্পন্ন", signedBy: "ইমাম মাওলানা মাহমুদ হাসান" },
-                { date: "১৩ নভেম্বর ২০২৬", family: "ইঞ্জি. মোস্তাফিজুর রহমানের পরিবার", status: "যথাসময়ে সম্পন্ন", signedBy: "ইমাম মাওলানা মাহমুদ হাসান" },
-                { date: "১২ নভেম্বর ২০২৬", family: "জনাব শাহিনুর রহমানের পরিবার", status: "যথাসময়ে সম্পন্ন", signedBy: "মুয়াজ্জিন হাফেজ কারী বিলাল" },
-                { date: "১১ নভেম্বর ২০২৬", family: "মো. কামরুল হাসানের পরিবার", status: "যথাসময়ে সম্পন্ন", signedBy: "ইমাম মাওলানা মাহমুদ হাসান" },
-              ].map((h, i) => (
-                <div
-                  key={i}
-                  className="p-3 rounded-2xl bg-stone-50 dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-950/60 flex items-center justify-between"
-                >
-                  <div>
-                    <b className="text-stone-900 dark:text-stone-100">{h.date}</b>
-                    <p className="text-[11px] text-stone-500 mt-0.5">{h.family}</p>
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                      গ্রহণকারী: {h.signedBy}
-                    </span>
-                  </div>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold text-[10px]">
-                    {h.status}
-                  </span>
                 </div>
               ))}
             </div>
@@ -541,18 +508,91 @@ export function ImamMealRosterModal({
         </div>
 
         {/* Footer */}
-        <div className="p-3 bg-stone-50 dark:bg-[#07130e] border-t border-stone-200 dark:border-emerald-900/60 flex items-center justify-between shrink-0">
-          <span className="text-[11px] text-stone-500">
-            রোস্টারের পরিবর্তন স্বয়ংক্রিয়ভাবে নোটিফিকেশনে অবহিত করা হয়
-          </span>
+        <div className="p-3 bg-stone-50 dark:bg-[#07130e] border-t border-stone-200 dark:border-emerald-900/60 flex justify-end shrink-0">
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 cursor-pointer"
+            className="px-5 py-2 rounded-xl bg-stone-200 hover:bg-stone-300 dark:bg-stone-800 dark:text-stone-200 font-bold text-xs cursor-pointer"
           >
             বন্ধ করুন
           </button>
         </div>
       </div>
+
+      {/* SWAP APPLICATION MODAL */}
+      {showTransferForm && (
+        <div className="fixed inset-0 z-60 flex items-center justify-center p-3 bg-black/80">
+          <div className="w-full max-w-md bg-white dark:bg-[#0c1612] text-stone-900 dark:text-stone-100 rounded-3xl p-5 shadow-2xl space-y-3.5 border border-emerald-400">
+            <div className="flex justify-between items-center pb-2 border-b border-stone-200 dark:border-emerald-900/60">
+              <h3 className="text-sm font-bold flex items-center gap-2 text-emerald-800 dark:text-emerald-300">
+                <RotateCcw className="w-4 h-4" />
+                <span>ইমামের খানা দায়িত্ব অদলবদল আবেদন</span>
+              </h3>
+              <button
+                onClick={() => setShowTransferForm(false)}
+                className="text-stone-400 hover:text-stone-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="p-2.5 rounded-xl bg-stone-100 dark:bg-stone-900 text-xs">
+              নির্ধারিত তারিখ: <b>{transferTargetMeal?.displayDate}</b>
+              <br />
+              পরিবার: <b>{transferTargetMeal?.family}</b>
+            </div>
+
+            <form onSubmit={handleTransferSubmit} className="space-y-3 text-xs">
+              <div>
+                <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                  অপারগতার কারণ (কেন দিতে পারছেন না?) *
+                </label>
+                <textarea
+                  value={transferReason}
+                  onChange={(e) => setTransferReason(e.target.value)}
+                  placeholder="যেমন: জরুরি পারিবারিক সফর, অসুস্থতা, বা কর্মব্যস্ততা..."
+                  rows={2}
+                  className="w-full p-2.5 rounded-xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 focus:border-[#0D7A5F]"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                  বিকল্প কোনো ভাইয়ের কাছে হস্তান্তর করতে চাইলে নির্বাচন করুন
+                </label>
+                <select
+                  value={replacementMember}
+                  onChange={(e) => setReplacementMember(e.target.value)}
+                  className="w-full p-2.5 rounded-xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-bold focus:border-[#0D7A5F]"
+                >
+                  <option value="">উন্মুক্ত (যে কোনো ভাই গ্রহণ করতে পারবেন)</option>
+                  {(db.members || []).map((m) => (
+                    <option key={m.id} value={`${m.name} (${m.phone})`}>
+                      {m.name} ({m.phone})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex gap-2 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowTransferForm(false)}
+                  className="px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold text-xs"
+                >
+                  বাতিল
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-[#0D7A5F] text-white font-bold text-xs cursor-pointer shadow-xs"
+                >
+                  আবেদন জমা দিন
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

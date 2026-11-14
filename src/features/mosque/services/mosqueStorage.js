@@ -34,6 +34,22 @@ export const DEFAULT_MEMBERS = [
   { id: "M-110", name: "মো. হাফিজুর রহমান", phone: "০১৮৩৩-৪৪৩৩২২", address: "উত্তর হাড়িনাল", role: "সাধারণ সদস্য", type: "GENERAL", status: "ACTIVE", pledge: 800, paid: 800, remaining: 0, loginId: "member10", joinedDate: "২০২৩-০৬-২২" },
 ];
 
+export const DEFAULT_EMPLOYEES = [
+  { id: "EMP-01", name: "মাওলানা মাহমুদ হাসান", role: "পেশ ইমাম ও খতীব", phone: "০১৯১১-৪৪৫৫৬৬", salary: 18000, joinedAt: "২০২৩-০১-০১", status: "ACTIVE" },
+  { id: "EMP-02", name: "হাফেজ ক্বারী বিলাল হোসেন", role: "মুয়াজ্জিন ও সহকারী শিক্ষক", phone: "০১৮২২-৩৩৪৪৫৫", salary: 12000, joinedAt: "২০২৩-০৩-১৫", status: "ACTIVE" },
+  { id: "EMP-03", name: "মো. হাফিজুর রহমান", role: "মসজিদ খাদেম ও পরিচ্ছন্নতাকর্মী", phone: "০১৭৩৩-৬৬৭৭৮৮", salary: 8000, joinedAt: "২০২৪-০৭-০১", status: "ACTIVE" },
+];
+
+export const DEFAULT_MEAL_ROSTER = [
+  { id: "meal-1", date: "২০২৬-১১-১৪", displayDate: "১৪ নভেম্বর ২০২৬", dayName: "শনিবার", mealType: "দুপুর ও রাত", family: "হাজী মুহাম্মদ আব্দুল্লাহর পরিবার", memberId: "M-101", phone: "০১৭১১-২২৩৩৪৪", status: "COMPLETED", notes: "খাবার যথাসময়ে প্রদান করা হয়েছে।" },
+  { id: "meal-2", date: "২০২৬-১১-১৫", displayDate: "১৫ নভেম্বর ২০২৬ (আজ)", dayName: "রবিবার", mealType: "দুপুর ও রাত", family: "হাজী রফিকুল ইসলামের পরিবার", memberId: "M-102", phone: "০১৮১৯-১১২২৩৩", status: "CONFIRMED", notes: "নির্ধারিত সময়ে হুজরার দস্তরখানে খাবার পৌঁছানো হবে।" },
+  { id: "meal-3", date: "২০২৬-১১-১৬", displayDate: "১৬ নভেম্বর ২০২৬ (আগামীকাল)", dayName: "সোমবার", mealType: "দুপুর ও রাত", family: "জনাব শাহিনুর রহমানের পরিবার", memberId: "M-104", phone: "০১৭২১-৯৯৮৮৭৭", status: "CONFIRMED", notes: "সম্মতি প্রদান করেছেন।" },
+  { id: "meal-4", date: "২০২৬-১১-১৭", displayDate: "১৭ নভেম্বর ২০২৬", dayName: "মঙ্গলবার", mealType: "দুপুর ও রাত", family: "ডা. আরিফুল ইসলামের পরিবার", memberId: "M-105", phone: "০১৫২১-৩৩৪৪৫৫", status: "PENDING_TRANSFER", notes: "জরুরি পারিবারিক সফরে থাকায় বদল আবেদন করেছেন।" },
+  { id: "meal-5", date: "২০২৬-১১-১৮", displayDate: "১৮ নভেম্বর ২০২৬", dayName: "বুধবার", mealType: "দুপুর ও রাত", family: "মো. কামরুল হাসানের পরিবার", memberId: "M-106", phone: "০১৮১২-৫৬৭৮৯০", status: "CONFIRMED", notes: "সম্মতি জ্ঞাপন করেছেন।" },
+  { id: "meal-6", date: "২০২৬-১১-১৯", displayDate: "১৯ নভেম্বর ২০২৬", dayName: "বৃহস্পতিবার", mealType: "দুপুর ও রাত", family: "ইঞ্জি. মোস্তাফিজুর রহমানের পরিবার", memberId: "M-107", phone: "০১৭৩৩-১১২২৪৪", status: "CONFIRMED", notes: "নির্ধারিত।" },
+  { id: "meal-7", date: "২০২৬-১১-২০", displayDate: "২০ নভেম্বর ২০২৬", dayName: "শুক্রবার", mealType: "দুপুর ও রাত", family: "ফারুক আহমেদের পরিবার", memberId: "M-108", phone: "০১৯২২-৮৮৯৯০০", status: "CONFIRMED", notes: "জুমার দিনের খানা।" },
+];
+
 export const DEFAULT_INFLOWS = [
   { id: "INF-001", receiptNo: "RCPT-2026-081", donorId: "M-101", donorName: "মুহাম্মদ আব্দুল্লাহ", phone: "০১৭১১-২২৩৩৪৪", fundId: "f1", fundName: "সাধারণ পরিচালন ফান্ড", amount: 2000, category: "মাসিক সদস্য চাঁদা", date: "২০২৬-১১-০১", method: "নগদ (Cash)", status: "VERIFIED", notes: "নভেম্বর ২০২৬ মাসিক চাঁদা" },
   { id: "INF-002", receiptNo: "RCPT-2026-082", donorId: "M-102", donorName: "হাজী রফিকুল ইসলাম", phone: "০১৮১৯-১১২২৩৩", fundId: "f1", fundName: "সাধারণ পরিচালন ফান্ড", amount: 1500, category: "মাসিক সদস্য চাঁদা", date: "২০২৬-১১-০২", method: "বিকাশ (bKash)", status: "VERIFIED", notes: "নভেম্বর ২০২৬ মাসিক চাঁদা" },
@@ -168,6 +184,8 @@ function createInitialDatabase() {
     currentMemberId: "M-101",
     funds: DEFAULT_FUNDS,
     members: DEFAULT_MEMBERS,
+    employees: DEFAULT_EMPLOYEES,
+    mealRoster: DEFAULT_MEAL_ROSTER,
     inflows: DEFAULT_INFLOWS,
     expenses: DEFAULT_EXPENSES,
     auditLogs: DEFAULT_AUDIT_LOGS,
@@ -263,6 +281,8 @@ export function recalculateDatabase(db) {
     ...db,
     funds: updatedFunds,
     members: updatedMembers,
+    employees: db.employees && db.employees.length > 0 ? db.employees : DEFAULT_EMPLOYEES,
+    mealRoster: db.mealRoster && db.mealRoster.length > 0 ? db.mealRoster : DEFAULT_MEAL_ROSTER,
   };
 }
 
@@ -471,6 +491,187 @@ export function rejectExpenseInDatabase(voucherNo, rejector = "মুহাম�
 
   return saveMosqueDatabase(db);
 }
+
+
+/**
+ * PAY SALARY / DISBURSE HADIA TO IMAM OR STAFF
+ * Automatically records an official expense voucher in Fund f3 (ইমাম-মুয়াজ্জিন ফান্ড),
+ * deducts the balance, generates voucher number, and registers audit trail.
+ */
+export function paySalaryInDatabase(paymentData, actor = "জনাব শাহিনুর রহমান (কোষাধ্যক্ষ)") {
+  const db = getMosqueDatabase();
+  const nextNum = (db.expenses || []).length + 95;
+  const voucherNo = "VCH-SAL-" + String(nextNum).padStart(3, "0");
+  const totalAmount = Number(paymentData.amount || 0) + Number(paymentData.bonus || 0);
+
+  const salaryExpense = {
+    id: voucherNo,
+    voucherNo: voucherNo,
+    title: paymentData.employeeName + " (" + paymentData.role + ") - " + paymentData.month + " সম্মানী হাদিয়া",
+    category: "ইমাম-কর্মচারী সম্মানী",
+    fundId: "f3",
+    fundName: "ইমাম-মুয়াজ্জিন সম্মানী ফান্ড",
+    amount: totalAmount,
+    submittedBy: actor,
+    spentAt: formatCurrentTimeBangla().split(" ")[0],
+    status: "PAID",
+    paymentMethod: paymentData.method || "নগদ (Cash)",
+    notes: "মাস: " + paymentData.month + " · মূল হাদিয়া: ৳" + paymentData.amount + " · অতিরিক্ত/বোনাস: ৳" + (paymentData.bonus || 0) + " · মাধ্যম: " + (paymentData.method || "নগদ"),
+    signatures: {
+      applicant: actor,
+      receiver: paymentData.employeeName,
+      treasurer: actor,
+      president: "মুহাম্মদ আব্দুল্লাহ (অনুমোদিত)",
+    },
+    empId: paymentData.empId,
+    month: paymentData.month,
+  };
+
+  db.expenses = [salaryExpense, ...(db.expenses || [])];
+
+  const newLog = {
+    id: "LOG-" + Date.now().toString().slice(-4),
+    timestamp: formatCurrentTimeBangla(),
+    actor: actor,
+    role: "TREASURER",
+    action: "SALARY_PAID",
+    targetType: "SALARY",
+    targetId: voucherNo,
+    details: paymentData.employeeName + "-এর " + paymentData.month + "-এর সম্মানী ৳" + totalAmount + " পরিশোধ সম্পন্ন",
+  };
+  db.auditLogs = [newLog, ...(db.auditLogs || [])];
+
+  return saveMosqueDatabase(db);
+}
+
+/**
+ * ADD NEW STAFF / IMAM PROFILE
+ */
+export function addEmployeeToDatabase(empData, actor = "মুহাম্মদ আব্দুল্লাহ (সভাপতি)") {
+  const db = getMosqueDatabase();
+  const nextId = "EMP-0" + ((db.employees || []).length + 1);
+  const newEmp = {
+    id: nextId,
+    name: empData.name.trim(),
+    role: empData.role.trim() || "সহকারী ইমাম",
+    phone: empData.phone.trim() || "০১৭XX-XXXXXX",
+    salary: Number(empData.salary || 10000),
+    joinedAt: empData.joinedAt || formatCurrentTimeBangla().split(" ")[0],
+    status: "ACTIVE",
+  };
+
+  db.employees = [...(db.employees || []), newEmp];
+
+  const newLog = {
+    id: "LOG-" + Date.now().toString().slice(-4),
+    timestamp: formatCurrentTimeBangla(),
+    actor: actor,
+    role: "ADMIN",
+    action: "EMPLOYEE_ADDED",
+    targetType: "STAFF",
+    targetId: newEmp.id,
+    details: "নতুন স্টাফ যুক্ত: " + newEmp.name + " (" + newEmp.role + ", মাসিক সম্মানী: ৳" + newEmp.salary + ")",
+  };
+  db.auditLogs = [newLog, ...(db.auditLogs || [])];
+
+  return saveMosqueDatabase(db);
+}
+
+/**
+ * UPDATE EMPLOYEE DESIGNATED SALARY
+ */
+export function updateEmployeeSalaryInDatabase(empId, newSalary, actor = "মুহাম্মদ আব্দুল্লাহ (সভাপতি)") {
+  const db = getMosqueDatabase();
+  const emp = (db.employees || []).find((e) => e.id === empId);
+  if (!emp) return db;
+
+  const oldSalary = emp.salary;
+  emp.salary = Number(newSalary);
+
+  const newLog = {
+    id: "LOG-" + Date.now().toString().slice(-4),
+    timestamp: formatCurrentTimeBangla(),
+    actor: actor,
+    role: "ADMIN",
+    action: "SALARY_UPDATED",
+    targetType: "STAFF",
+    targetId: empId,
+    details: emp.name + "-এর মাসিক সম্মানী ৳" + oldSalary + " হতে ৳" + emp.salary + " নির্ধারণ করা হয়েছে",
+  };
+  db.auditLogs = [newLog, ...(db.auditLogs || [])];
+
+  return saveMosqueDatabase(db);
+}
+
+/**
+ * ASSIGN / SCHEDULE IMAM MEAL HOST
+ */
+export function assignMealScheduleToDatabase(scheduleData, actor = "মুহাম্মদ আব্দুল্লাহ (সভাপতি)") {
+  const db = getMosqueDatabase();
+  const nextId = "meal-" + Date.now().toString().slice(-5);
+  const newEntry = {
+    id: nextId,
+    date: scheduleData.date,
+    displayDate: scheduleData.displayDate || scheduleData.date,
+    dayName: scheduleData.dayName || "নির্ধারিত দিন",
+    mealType: scheduleData.mealType || "দুপুর ও রাত",
+    family: scheduleData.family.trim(),
+    memberId: scheduleData.memberId || null,
+    phone: scheduleData.phone.trim(),
+    status: "CONFIRMED",
+    notes: scheduleData.notes || "খানা সিডিউল নির্ধারিত",
+  };
+
+  const roster = [...(db.mealRoster || DEFAULT_MEAL_ROSTER)];
+  const existingIdx = roster.findIndex((m) => m.date === scheduleData.date);
+  if (existingIdx >= 0) {
+    roster[existingIdx] = { ...roster[existingIdx], ...newEntry };
+  } else {
+    roster.unshift(newEntry);
+  }
+  db.mealRoster = roster;
+
+  const newLog = {
+    id: "LOG-" + Date.now().toString().slice(-4),
+    timestamp: formatCurrentTimeBangla(),
+    actor: actor,
+    role: "ADMIN",
+    action: "MEAL_ASSIGNED",
+    targetType: "MEAL",
+    targetId: newEntry.id,
+    details: "ইমামের খানা সিডিউল: " + newEntry.displayDate + " - " + newEntry.family + " (" + newEntry.mealType + ")",
+  };
+  db.auditLogs = [newLog, ...(db.auditLogs || [])];
+
+  return saveMosqueDatabase(db);
+}
+
+/**
+ * UPDATE MEMBER PLEDGE / COMMITMENT
+ */
+export function updateMemberPledgeInDatabase(memberId, newPledge, actor = "মুহাম্মদ আব্দুল্লাহ (সভাপতি)") {
+  const db = getMosqueDatabase();
+  const mem = (db.members || []).find((m) => m.id === memberId);
+  if (!mem) return db;
+
+  const oldPledge = mem.pledge;
+  mem.pledge = Number(newPledge);
+
+  const newLog = {
+    id: "LOG-" + Date.now().toString().slice(-4),
+    timestamp: formatCurrentTimeBangla(),
+    actor: actor,
+    role: "ADMIN",
+    action: "PLEDGE_UPDATED",
+    targetType: "MEMBER",
+    targetId: memberId,
+    details: mem.name + "-এর মাসিক অঙ্গীকার ৳" + oldPledge + " হতে ৳" + mem.pledge + " আপডেট করা হয়েছে",
+  };
+  db.auditLogs = [newLog, ...(db.auditLogs || [])];
+
+  return saveMosqueDatabase(db);
+}
+
 
 /**
  * GET MEMBER'S PRIVATE STATEMENT

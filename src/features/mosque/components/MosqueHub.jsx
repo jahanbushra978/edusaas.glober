@@ -57,6 +57,8 @@ import {
   Wallet,
   Boxes,
   HeartHandshake,
+  UserPlus,
+  Edit2,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -66,6 +68,7 @@ import {
   saveMosqueDatabase,
   recalculateDatabase,
   addMemberToDatabase,
+  updateMemberPledgeInDatabase,
   recordDonationInDatabase,
   submitExpenseToDatabase,
   approveExpenseInDatabase,
@@ -232,6 +235,19 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
     setNewMemberModalOpen(false);
     setNewMemberForm({ name: "", phone: "", address: "", role: "সাধারণ সদস্য", pledge: 1000, type: "GENERAL" });
     toast.success("মাশাআল্লাহ! নতুন সদস্য সফলভাবে ডাটাবেসে সংরক্ষিত হয়েছে।");
+  };
+
+  const handleUpdatePledge = (memberId, currentPledge) => {
+    const newPledgeStr = window.prompt("এই সদস্যের নতুন মাসিক চাঁদা / অঙ্গীকার লিখুন (৳):", currentPledge);
+    if (!newPledgeStr) return;
+    const newPledge = Number(newPledgeStr);
+    if (isNaN(newPledge) || newPledge <= 0) {
+      toast.error("সঠিক টাকার অংক লিখুন");
+      return;
+    }
+    const updated = updateMemberPledgeInDatabase(memberId, newPledge, `${currentUserRole} কর্তৃক`);
+    setDb(updated);
+    toast.success("মাসিক অঙ্গীকার সফলভাবে পরিবর্তন করা হয়েছে!");
   };
 
   const handleRecordDonation = (e) => {
@@ -648,21 +664,14 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
         )}
 
         {/* ── 5.2 MAIN CONTENT AREA ── */}
-        <main className="flex-1 p-3 sm:p-6 overflow-y-auto space-y-4">
-          {/* Canonical How-To-Use Page Header Banner (Dismissible & 4-Pillar Tutorial Aware) */}
-          <PageTutorialBanner
-            activeRouteKey={`mosque-${activeTab}`}
-            onOpenTutorial={() => setIsTutorialModalOpen(true)}
-            isGlobalEnabled={true}
-          />
-
+        <main className="flex-1 p-3 sm:p-5 overflow-y-auto space-y-3.5">
           {/* ══════════════════════════════════════════════════════════════
               VIEW 1: ড্যাশবোর্ড (DASHBOARD)
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "dashboard" && (
-            <div className="space-y-4 animate-in fade-in duration-200">
+            <div className="space-y-3.5 animate-in fade-in duration-200">
               {/* Top Hero Balance Card */}
-              <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-[#064E3B] via-[#0D7A5F] to-[#0f6850] text-white shadow-xl relative overflow-hidden space-y-3">
+              <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-[#064E3B] via-[#0D7A5F] to-[#0f6850] text-white shadow-lg relative overflow-hidden space-y-3">
                 <div className="absolute right-0 top-0 w-44 h-44 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
 
                 <div className="flex items-center justify-between text-xs text-emerald-200">
@@ -678,10 +687,10 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 {/* Dynamically Computed Total Fund Balance */}
                 <div
                   onClick={() => setActiveTab("funds")}
-                  className="cursor-pointer group flex items-baseline gap-3 my-1"
+                  className="cursor-pointer group flex items-baseline gap-2.5 my-0.5"
                   title="তহবিলের বিস্তারিত দেখতে ক্লিক করুন"
                 >
-                  <span className="text-3xl sm:text-5xl font-black font-mono tracking-tight group-hover:text-amber-200 transition">
+                  <span className="text-2xl sm:text-4xl font-bold font-mono tracking-tight group-hover:text-amber-200 transition">
                     ৳{totalFundsBalance.toLocaleString("bn-BD")}
                   </span>
                   <span className="text-xs text-emerald-200 opacity-80 group-hover:opacity-100 flex items-center gap-1">
@@ -690,81 +699,111 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 </div>
 
                 {/* Key Metrics Summary Bar */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-3 border-t border-white/20 text-xs">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2.5 border-t border-white/20 text-xs">
                   <div>
                     <span className="text-emerald-200 text-[11px]">চলতি মাসে মোট জমা:</span>
-                    <p className="font-mono font-bold text-sm text-emerald-100 mt-0.5">
+                    <p className="font-mono font-bold text-xs sm:text-sm text-emerald-100 mt-0.5">
                       +৳{totalVerifiedInflow.toLocaleString("bn-BD")}
                     </p>
                   </div>
                   <div>
                     <span className="text-emerald-200 text-[11px]">অনুমোদিত মোট ব্যয়:</span>
-                    <p className="font-mono font-bold text-sm text-rose-200 mt-0.5">
+                    <p className="font-mono font-bold text-xs sm:text-sm text-rose-200 mt-0.5">
                       -৳{totalPaidOutflow.toLocaleString("bn-BD")}
                     </p>
                   </div>
                   <div>
                     <span className="text-emerald-200 text-[11px]">বকেয়া চাঁদা / অঙ্গীকার:</span>
-                    <p className="font-mono font-bold text-sm text-amber-200 mt-0.5">
+                    <p className="font-mono font-bold text-xs sm:text-sm text-amber-200 mt-0.5">
                       ৳{totalRemainingDues.toLocaleString("bn-BD")}
                     </p>
                   </div>
                   <div>
                     <span className="text-emerald-200 text-[11px]">অনুমোদনের অপেক্ষায় বিল:</span>
-                    <p className="font-mono font-bold text-sm text-orange-200 mt-0.5">
+                    <p className="font-mono font-bold text-xs sm:text-sm text-orange-200 mt-0.5">
                       ৳{totalPendingBills.toLocaleString("bn-BD")}
                     </p>
                   </div>
                 </div>
 
-                {/* Quick Action Header Buttons */}
-                <div className="flex flex-wrap gap-2 pt-2">
+                {/* Quick Action Header Buttons (সম্পূর্ণ ডায়নামিক ও বাস্তবসম্মত) */}
+                <div className="flex flex-wrap items-center gap-2 pt-2">
+                  <button
+                    onClick={() => setNewMemberModalOpen(true)}
+                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-emerald-50 text-emerald-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition transform active:scale-95"
+                    title="নতুন মুসল্লি বা সদস্য যোগ করুন"
+                  >
+                    <UserPlus className="w-3.5 h-3.5 text-[#0D7A5F]" />
+                    <span>+ নতুন সদস্য</span>
+                  </button>
                   <button
                     onClick={() => setNewDonationModalOpen(true)}
-                    className="px-4 py-2 rounded-xl bg-[#D4AF37] hover:bg-[#c49f2e] text-stone-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    className="px-3 py-1.5 rounded-xl bg-[#D4AF37] hover:bg-[#c49f2e] text-stone-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition transform active:scale-95"
                   >
                     <Plus className="w-3.5 h-3.5" />
-                    <span>অনুদানের টাকা জমা করুন</span>
+                    <span>অনুদান জমা</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveModal("employee-salary")}
+                    className="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition transform active:scale-95"
+                    title="ইমাম-মুয়াজ্জিন ও কর্মচারীদের বেতন ও সম্মানী প্রদান"
+                  >
+                    <Wallet className="w-3.5 h-3.5 text-amber-300" />
+                    <span>ইমামের বেতন দিন</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveModal("imam-meal")}
+                    className="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer transition transform active:scale-95"
+                    title="ইমাম সাহেবের খানা সিডিউল নির্ধারণ করুন"
+                  >
+                    <Utensils className="w-3.5 h-3.5 text-emerald-200" />
+                    <span>খানা সিডিউল</span>
                   </button>
                   <button
                     onClick={() => setActiveModal("purchase-procurement")}
-                    className="px-4 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
+                    className="px-3 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer"
                   >
                     <Receipt className="w-3.5 h-3.5" />
-                    <span>নতুন ব্যয় রিকুইজিশন</span>
+                    <span>ব্যয় রিকুইজিশন</span>
                   </button>
                   <button
                     onClick={() => setActiveTab("member-portal")}
-                    className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer ml-auto"
+                    className="px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer ml-auto"
                   >
                     <User className="w-3.5 h-3.5" />
-                    <span>আমার ব্যক্তিগত হিসাব</span>
+                    <span>আমার হিসাব</span>
                   </button>
                 </div>
               </div>
 
-              {/* Imam Meal Roster Reminder Banner */}
-              <div
-                onClick={() => setActiveModal("imam-meal")}
-                className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 flex items-center justify-between shadow-2xs cursor-pointer hover:border-[#0D7A5F] transition"
-              >
-                <div className="flex items-center gap-2.5">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-[#0D7A5F] dark:text-emerald-300 flex items-center justify-center shrink-0">
-                    <Utensils className="w-5 h-5" />
+              {/* Dynamic Imam Meal Roster Reminder Banner */}
+              {(() => {
+                const todayMeal = (db.mealRoster || []).find((m) => m.displayDate?.includes("আজ") || m.date === new Date().toISOString().split("T")[0]) || db.mealRoster?.[1] || db.mealRoster?.[0];
+                const tomorrowMeal = (db.mealRoster || []).find((m) => m.displayDate?.includes("আগামীকাল")) || db.mealRoster?.[2];
+                return (
+                  <div
+                    onClick={() => setActiveModal("imam-meal")}
+                    className="p-3 rounded-2xl bg-emerald-50/90 dark:bg-emerald-950/40 border border-emerald-300/80 dark:border-emerald-800 flex items-center justify-between shadow-2xs cursor-pointer hover:border-[#0D7A5F] transition"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-[#0D7A5F] dark:text-emerald-300 flex items-center justify-center shrink-0">
+                        <Utensils className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <h4 className="text-xs font-bold text-emerald-950 dark:text-emerald-200">
+                          ইমামের আজকের খানা: <span className="text-[#0D7A5F] dark:text-emerald-300 font-extrabold">{todayMeal?.family || "হাজী রফিকুল ইসলামের পরিবার"}</span> ({todayMeal?.phone || "০১৮১৯-১১২২৩৩"})
+                        </h4>
+                        <p className="text-[11px] text-emerald-700 dark:text-emerald-400 mt-0.5">
+                          আগামীকাল: {tomorrowMeal?.family || "জনাব শাহিনুর রহমানের পরিবার"} · <b>ক্লিক করে খানা নির্ধারণ বা বদল করুন</b>
+                        </p>
+                      </div>
+                    </div>
+                    <span className="text-[10px] px-2.5 py-1 rounded-xl bg-[#0D7A5F] text-white font-bold shrink-0">
+                      খানা সিডিউল ও বদল ➔
+                    </span>
                   </div>
-                  <div>
-                    <h4 className="text-xs font-black text-emerald-900 dark:text-emerald-200">
-                      ইমাম সাহেবের আজকের খাবার দায়িত্ব
-                    </h4>
-                    <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
-                      আজ: <b>হাজী রফিকুল ইসলামের পরিবার</b> · আগামীকালের দায়িত্ব ও বদলি দেখুন
-                    </p>
-                  </div>
-                </div>
-                <span className="text-[10px] px-2.5 py-1 rounded-xl bg-[#0D7A5F] text-white font-bold shrink-0">
-                  রোস্টার ➔
-                </span>
-              </div>
+                );
+              })()}
 
               {/* ── REDESIGNED PREMIUM MODULE CENTER (7 Categories & Search) ── */}
               <MosqueModuleCenter
@@ -864,24 +903,26 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                         .filter((m) => m.name.toLowerCase().includes(memberSearch.toLowerCase()) || m.phone.includes(memberSearch))
                         .map((m) => (
                           <tr key={m.id} className="hover:bg-stone-50/50 dark:hover:bg-[#07130e]/50">
-                            <td className="py-3.5 px-3 font-mono font-bold text-[#0D7A5F]">{m.id}</td>
-                            <td className="py-3.5 px-3">
-                              <b className="block text-stone-900 dark:text-stone-100 text-sm sm:text-base">
+                            <td className="py-2.5 px-3 font-mono font-bold text-[#0D7A5F]">{m.id}</td>
+                            <td className="py-2.5 px-3">
+                              <b className="block text-stone-900 dark:text-stone-100 text-xs sm:text-sm">
                                 {showContributors || currentUserRole !== "MEMBER" ? m.name : `${m.name.slice(0, 4)}*** (${m.id})`}
                               </b>
-                              <span className="text-xs font-mono text-stone-400">
+                              <span className="text-[11px] font-mono text-stone-400">
                                 {showContributors || currentUserRole !== "MEMBER" ? m.phone : "০১৭১১-***"}
                               </span>
                             </td>
-                            <td className="py-3.5 px-3">
-                              <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-[#0D7A5F] dark:bg-emerald-950 dark:text-emerald-300 font-bold">
+                            <td className="py-2.5 px-3">
+                              <span className="text-[11px] px-2 py-0.5 rounded-full bg-emerald-50 text-[#0D7A5F] dark:bg-emerald-950 dark:text-emerald-300 font-bold">
                                 {m.role}
                               </span>
                             </td>
-                            <td className="py-3.5 px-3 font-mono font-bold text-stone-800 dark:text-stone-200">৳{m.pledge}</td>
-                            <td className="py-3.5 px-3 font-mono text-emerald-600 font-bold">৳{m.paid}</td>
-                            <td className="py-3.5 px-3 font-mono text-amber-600 font-bold">৳{m.remaining}</td>
-                            <td className="py-3.5 px-3 text-right">
+                            <td className="py-2.5 px-3 font-mono font-bold text-stone-800 dark:text-stone-200 text-xs">
+                              ৳{m.pledge}
+                            </td>
+                            <td className="py-2.5 px-3 font-mono text-emerald-600 font-bold text-xs">৳{m.paid}</td>
+                            <td className="py-2.5 px-3 font-mono text-amber-600 font-bold text-xs">৳{m.remaining}</td>
+                            <td className="py-2.5 px-3 text-right">
                               <div className="flex items-center justify-end gap-1.5">
                                 <button
                                   type="button"
@@ -891,16 +932,24 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                                       phone: m.phone,
                                       fundId: "f1",
                                       amount: m.remaining > 0 ? m.remaining : m.pledge,
-                                      category: "সদস্য চাঁদা",
+                                      category: "মাসিক সদস্য চাঁদা",
                                       method: "নগদ (Cash)",
                                       notes: `সদস্য আইডি: ${m.id}`,
                                     });
                                     setNewDonationModalOpen(true);
                                   }}
-                                  className="px-2.5 py-1 rounded-lg bg-[#0D7A5F] hover:bg-[#064E3B] text-white font-bold text-xs cursor-pointer shadow-2xs"
+                                  className="px-2.5 py-1 rounded-lg bg-[#0D7A5F] hover:bg-[#064E3B] text-white font-bold text-xs cursor-pointer shadow-2xs transition transform active:scale-95"
                                   title="এই সদস্যের নিকট হতে চাঁদা জমা নিন"
                                 >
                                   চাঁদা নিন
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleUpdatePledge(m.id, m.pledge)}
+                                  className="p-1 rounded-lg bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 text-stone-600 dark:text-stone-300 transition"
+                                  title="মাসিক অঙ্গীকারের পরিমাণ পরিবর্তন করুন"
+                                >
+                                  <Edit2 className="w-3.5 h-3.5 text-stone-600 dark:text-stone-300" />
                                 </button>
                                 <button
                                   type="button"
@@ -1730,6 +1779,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
         <ImamMealRosterModal
           onClose={() => setActiveModal(null)}
           mosqueName={currentMosque.name}
+          onDataUpdated={(updated) => setDb(updated)}
         />
       )}
 
@@ -1745,6 +1795,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
         <EmployeeSalaryModal
           onClose={() => setActiveModal(null)}
           mosqueName={currentMosque.name}
+          onDataUpdated={(updated) => setDb(updated)}
         />
       )}
 

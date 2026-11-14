@@ -13,120 +13,156 @@ import {
   Plus,
   ShieldCheck,
   Building,
+  Edit2,
+  Wallet,
+  Briefcase,
+  AlertCircle,
+  Clock,
 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  getMosqueDatabase,
+  paySalaryInDatabase,
+  addEmployeeToDatabase,
+  updateEmployeeSalaryInDatabase,
+} from "../../services/mosqueStorage";
 
 export function EmployeeSalaryModal({
   onClose,
   mosqueName = "বাইতুন নূর জামে মসজিদ ও কমপ্লেক্স",
+  onDataUpdated,
 }) {
-  const [activeTab, setActiveTab] = useState("salaries"); // "salaries" | "employees" | "leaves"
+  const [db, setDb] = useState(() => getMosqueDatabase());
+  const [activeTab, setActiveTab] = useState("disburse"); // "disburse" | "records" | "employees" | "leaves"
   const [selectedPayslip, setSelectedPayslip] = useState(null);
 
-  // Employees List
-  const [employees, setEmployees] = useState([
-    {
-      id: "EMP-01",
-      name: "মাওলানা মাহমুদ হাসান",
-      role: "পেশ ইমাম ও খতীব",
-      phone: "০১৯১১-৪৪৫৫৬৬",
-      salary: 18000,
-      joinedAt: "০১ জানুয়ারি ২০২৩",
-      status: "ACTIVE",
-    },
-    {
-      id: "EMP-02",
-      name: "হাফেজ ক্বারী বিলাল হোসেন",
-      role: "মুয়াজ্জিন ও সহকারী শিক্ষক",
-      phone: "০১৮২২-৩৩৪৪৫৫",
-      salary: 12000,
-      joinedAt: "১৫ মার্চ ২০২৩",
-      status: "ACTIVE",
-    },
-    {
-      id: "EMP-03",
-      name: "মো. হাফিজুর রহমান",
-      role: "মসজিদ খাদেম ও পরিচ্ছন্নতাকর্মী",
-      phone: "০১৭৩৩-৬৬৭৭৮৮",
-      salary: 8000,
-      joinedAt: "০১ জুলাই ২০২৪",
-      status: "ACTIVE",
-    },
-  ]);
+  // Form State for Paying Salary
+  const [salaryForm, setSalaryForm] = useState({
+    empId: db.employees?.[0]?.id || "EMP-01",
+    month: "নভেম্বর ২০২৬",
+    amount: db.employees?.[0]?.salary || 18000,
+    bonus: 0,
+    method: "নগদ (Cash)",
+    notes: "মাসিক হাদিয়া পরিশোধ",
+  });
 
-  // Current Month Salary Payment Records (November 2026)
-  const [salaryRecords, setSalaryRecords] = useState([
-    {
-      id: "SAL-2026-1101",
-      empId: "EMP-01",
-      name: "মাওলানা মাহমুদ হাসান",
-      role: "পেশ ইমাম ও খতীব",
-      month: "নভেম্বর ২০২৬",
-      amount: 18000,
-      paidAt: "০১ নভে ২০২৬",
-      method: "ব্যাংক ট্রান্সফার (আল-আরাফাহ)",
-      voucherNo: "VCH-SAL-01",
-      status: "PAID",
-    },
-    {
-      id: "SAL-2026-1102",
-      empId: "EMP-02",
-      name: "হাফেজ ক্বারী বিলাল হোসেন",
-      role: "মুয়াজ্জিন ও সহকারী শিক্ষক",
-      month: "নভেম্বর ২০২৬",
-      amount: 12000,
-      paidAt: "০২ নভে ২০২৬",
-      method: "নগদ ক্যাশ",
-      voucherNo: "VCH-SAL-02",
-      status: "PAID",
-    },
-    {
-      id: "SAL-2026-1103",
-      empId: "EMP-03",
-      name: "মো. হাফিজুর রহমান",
-      role: "মসজিদ খাদেম",
-      month: "নভেম্বর ২০২৬",
-      amount: 8000,
-      paidAt: "-",
-      method: "-",
-      voucherNo: "-",
-      status: "UNPAID",
-    },
-  ]);
+  // Form State for Adding New Employee
+  const [showAddEmpModal, setShowAddEmpModal] = useState(false);
+  const [newEmpForm, setNewEmpForm] = useState({
+    name: "",
+    role: "পেশ ইমাম ও খতীব",
+    phone: "",
+    salary: 15000,
+    joinedAt: "০১ নভেম্বর ২০২৬",
+  });
 
-  // Pay Salary Handler
-  const handlePaySalary = (recordId) => {
-    setSalaryRecords((prev) =>
-      prev.map((r) =>
-        r.id === recordId
-          ? {
-              ...r,
-              status: "PAID",
-              paidAt: "আজকের তারিখ",
-              method: "নগদ ক্যাশ (কোষাধ্যক্ষ)",
-              voucherNo: `VCH-SAL-0${salaryRecords.filter((x) => x.status === "PAID").length + 1}`,
-            }
-          : r
-      )
-    );
-    toast.success("ইমাম-মুয়াজ্জিন ফান্ড থেকে সম্মানী সফলভাবে পরিশোধ করা হয়েছে এবং পে-স্লিপ প্রস্তুত!");
+  // State for Editing Employee Salary
+  const [editingEmpId, setEditingEmpId] = useState(null);
+  const [editSalaryValue, setEditSalaryValue] = useState(0);
+
+  // When selected employee changes in salary form, auto-fill designated salary
+  const handleEmpChange = (empId) => {
+    const emp = db.employees.find((e) => e.id === empId);
+    setSalaryForm((prev) => ({
+      ...prev,
+      empId,
+      amount: emp ? emp.salary : 10000,
+    }));
   };
+
+  // Disburse Salary Handler
+  const handleDisburseSalary = (e) => {
+    e.preventDefault();
+    const emp = db.employees.find((e) => e.id === salaryForm.empId);
+    if (!emp) {
+      toast.error("অনুগ্রহ করে একজন কর্মচারী বা ইমাম নির্বাচন করুন");
+      return;
+    }
+
+    const paymentData = {
+      empId: emp.id,
+      employeeName: emp.name,
+      role: emp.role,
+      month: salaryForm.month,
+      amount: Number(salaryForm.amount),
+      bonus: Number(salaryForm.bonus || 0),
+      method: salaryForm.method,
+      notes: salaryForm.notes,
+    };
+
+    const updatedDb = paySalaryInDatabase(paymentData, "কোষাধ্যক্ষ");
+    setDb(updatedDb);
+    if (onDataUpdated) onDataUpdated(updatedDb);
+
+    // Auto-open payslip preview
+    const total = Number(paymentData.amount) + Number(paymentData.bonus || 0);
+    setSelectedPayslip({
+      voucherNo: `VCH-SAL-${Date.now().toString().slice(-4)}`,
+      name: emp.name,
+      role: emp.role,
+      month: salaryForm.month,
+      amount: total,
+      method: salaryForm.method,
+      paidAt: "আজকের তারিখ",
+    });
+
+    toast.success(`${emp.name}-এর ${salaryForm.month} হাদিয়া ৳${total} পরিশোধ করা হয়েছে! ফান্ডের টাকা স্বয়ংক্রিয়ভাবে কমেছে।`);
+    setActiveTab("records");
+  };
+
+  // Add Employee Handler
+  const handleAddEmployee = (e) => {
+    e.preventDefault();
+    if (!newEmpForm.name.trim()) {
+      toast.error("অনুগ্রহ করে নাম লিখুন");
+      return;
+    }
+
+    const updatedDb = addEmployeeToDatabase(newEmpForm, "সভাপতি");
+    setDb(updatedDb);
+    if (onDataUpdated) onDataUpdated(updatedDb);
+
+    toast.success(`নতুন স্টাফ '${newEmpForm.name}' (${newEmpForm.role}) সফলভাবে যুক্ত হয়েছেন!`);
+    setShowAddEmpModal(false);
+    setNewEmpForm({ name: "", role: "পেশ ইমাম", phone: "", salary: 12000, joinedAt: "" });
+    setActiveTab("employees");
+  };
+
+  // Save Salary Edit
+  const handleSaveSalaryEdit = (empId) => {
+    if (!editSalaryValue || editSalaryValue <= 0) {
+      toast.error("সঠিক টাকার পরিমাণ লিখুন");
+      return;
+    }
+    const updatedDb = updateEmployeeSalaryInDatabase(empId, editSalaryValue, "সভাপতি");
+    setDb(updatedDb);
+    if (onDataUpdated) onDataUpdated(updatedDb);
+    setEditingEmpId(null);
+    toast.success("মাসিক সম্মানী হাদিয়া সফলভাবে আপডেট করা হয়েছে!");
+  };
+
+  // Salary expense records from DB
+  const salaryExpenses = (db.expenses || []).filter(
+    (e) => e.fundId === "f3" || e.category === "ইমাম-কর্মচারী সম্মানী" || e.voucherNo?.startsWith("VCH-SAL")
+  );
+
+  const imamFund = db.funds.find((f) => f.id === "f3") || { currentBalance: 25000 };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
       <div className="w-full max-w-2xl bg-white dark:bg-[#0c1612] border border-emerald-200 dark:border-emerald-800/70 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[92vh]">
         {/* Header */}
-        <div className="p-4 sm:p-5 bg-gradient-to-r from-emerald-800 via-teal-900 to-[#07251c] text-white flex items-center justify-between shrink-0">
+        <div className="p-4 bg-gradient-to-r from-emerald-800 via-teal-900 to-[#07251c] text-white flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-white/15 flex items-center justify-center text-xl">
+            <div className="w-9 h-9 rounded-2xl bg-white/15 flex items-center justify-center text-lg">
               👳‍♂️
             </div>
             <div>
-              <h2 className="text-base sm:text-lg font-black tracking-wide">
-                ইমাম, খতীব, মুয়াজ্জিন ও কর্মচারী সম্মানী ব্যবস্থাপনা
+              <h2 className="text-sm sm:text-base font-bold tracking-wide">
+                ইমাম, খতীব ও কর্মচারী সম্মানী ব্যবস্থাপনা
               </h2>
-              <p className="text-xs text-emerald-100">
-                {mosqueName} · মাসিক হাদিয়া পরিশোধ, পে-স্লিপ ও ছুটি ব্যবস্থাপনা
+              <p className="text-[11px] text-emerald-100">
+                ইমাম ফান্ড স্থিতি: <b>৳{imamFund.currentBalance.toLocaleString("bn-BD")}</b> · ডাবল-এন্ট্রি পে-স্লিপ
               </p>
             </div>
           </div>
@@ -134,29 +170,33 @@ export function EmployeeSalaryModal({
             onClick={onClose}
             className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition cursor-pointer"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
-        {/* 3 Tabs Selector */}
-        <div className="p-2.5 bg-stone-50 dark:bg-[#07130e] border-b border-stone-200 dark:border-emerald-900/60 flex gap-1.5 shrink-0 text-xs">
+        {/* 4 Tabs Selector */}
+        <div className="p-2 bg-stone-50 dark:bg-[#07130e] border-b border-stone-200 dark:border-emerald-900/60 flex gap-1.5 shrink-0 text-xs">
           {[
-            { key: "salaries", label: "💵 চলতি মাসের সম্মানী খাতা" },
-            { key: "employees", label: "👥 কর্মকর্তা ও কর্মচারী প্রোফাইল" },
-            { key: "leaves", label: "📝 ছুটি ও বিকল্প দায়িত্ব" },
+            { key: "disburse", label: "➕ নতুন বেতন প্রদান", icon: Wallet },
+            { key: "records", label: "📋 পরিশোধের খতিয়ান", icon: FileText },
+            { key: "employees", label: "👥 স্টাফ ও ইমাম তালিকা", icon: User },
+            { key: "leaves", label: "📝 ছুটি ও বিকল্প দায়িত্ব", icon: Calendar },
           ].map((tab) => {
             const isActive = activeTab === tab.key;
+            const Icon = tab.icon;
             return (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 py-1.5 rounded-xl font-bold transition cursor-pointer ${
+                className={`flex-1 py-1.5 px-2 rounded-xl font-bold flex items-center justify-center gap-1 transition cursor-pointer text-[11px] sm:text-xs ${
                   isActive
-                    ? "bg-emerald-600 text-white shadow-xs"
+                    ? "bg-[#0D7A5F] text-white shadow-xs"
                     : "bg-white dark:bg-emerald-950/40 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-emerald-800/40 hover:border-emerald-500"
                 }`}
               >
-                {tab.label}
+                <Icon className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                <span className="sm:hidden">{tab.label.split(" ")[1]}</span>
               </button>
             );
           })}
@@ -164,110 +204,371 @@ export function EmployeeSalaryModal({
 
         {/* Content Area */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-3 flex-1 text-xs">
-          {activeTab === "salaries" && (
-            <div className="space-y-3">
-              <div className="p-3.5 rounded-2xl bg-gradient-to-br from-emerald-900 to-teal-950 text-white flex justify-between items-center">
-                <div>
-                  <span className="text-[11px] text-emerald-200">চলতি মাসের মোট সম্মানী বাজেট:</span>
-                  <div className="text-2xl font-black font-mono">৳৩৮,০০০</div>
+          {/* TAB 1: DISBURSE SALARY / PAY SALARY (দাবি অনুযায়ী নতুন বেতন দেওয়ার পূর্ণাঙ্গ ফর্ম) */}
+          {activeTab === "disburse" && (
+            <form onSubmit={handleDisburseSalary} className="space-y-3.5">
+              <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between text-xs">
+                <div className="flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-[#0D7A5F]" />
+                  <span>ইমাম-মুয়াজ্জিন ফান্ড ব্যালেন্স:</span>
                 </div>
-                <div className="text-right">
-                  <span className="text-[11px] text-emerald-200">পরিশোধিত: ৳৩০,০০০</span>
-                  <div className="font-bold text-amber-300 font-mono">বকেয়া: ৳৮,০০০</div>
+                <span className="font-mono font-bold text-emerald-800 dark:text-emerald-300 text-sm">
+                  ৳{imamFund.currentBalance.toLocaleString("bn-BD")}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {/* Select Employee */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    কার বেতন/সম্মানী পরিশোধ করবেন? *
+                  </label>
+                  <select
+                    value={salaryForm.empId}
+                    onChange={(e) => handleEmpChange(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-bold focus:border-[#0D7A5F]"
+                  >
+                    {(db.employees || []).map((emp) => (
+                      <option key={emp.id} value={emp.id}>
+                        {emp.name} — {emp.role} (নির্ধারিত: ৳{emp.salary})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Month Picker */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    কোন মাসের সম্মানী? *
+                  </label>
+                  <select
+                    value={salaryForm.month}
+                    onChange={(e) => setSalaryForm({ ...salaryForm, month: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-bold focus:border-[#0D7A5F]"
+                  >
+                    <option value="নভেম্বর ২০২৬">নভেম্বর ২০২৬</option>
+                    <option value="ডিসেম্বর ২০২৬">ডিসেম্বর ২০২৬</option>
+                    <option value="জানুয়ারি ২০২৭">জানুয়ারি ২০২৭</option>
+                    <option value="অক্টোবর ২০২৬">অক্টোবর ২০২৬ (বকেয়া)</option>
+                    <option value="ঈদ-উল-ফিতর হাদিয়া ২০২৭">ঈদ-উল-ফিতর বিশেষ হাদিয়া</option>
+                  </select>
+                </div>
+
+                {/* Base Salary Amount */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    মূল সম্মানী/হাদিয়া (৳) *
+                  </label>
+                  <input
+                    type="number"
+                    value={salaryForm.amount}
+                    onChange={(e) => setSalaryForm({ ...salaryForm, amount: Number(e.target.value) })}
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-mono font-bold focus:border-[#0D7A5F]"
+                    min="500"
+                    required
+                  />
+                </div>
+
+                {/* Additional Hadiya / Bonus */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    অতিরিক্ত বোনাস / বিশেষ হাদিয়া (ঐচ্ছিক)
+                  </label>
+                  <input
+                    type="number"
+                    value={salaryForm.bonus}
+                    onChange={(e) => setSalaryForm({ ...salaryForm, bonus: Number(e.target.value) })}
+                    placeholder="০"
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-mono focus:border-[#0D7A5F]"
+                    min="0"
+                  />
+                </div>
+
+                {/* Payment Method */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    পরিশোধের মাধ্যম *
+                  </label>
+                  <select
+                    value={salaryForm.method}
+                    onChange={(e) => setSalaryForm({ ...salaryForm, method: e.target.value })}
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-bold focus:border-[#0D7A5F]"
+                  >
+                    <option value="নগদ (Cash)">নগদ ক্যাশ (কোষাধ্যক্ষ সরাসরি)</option>
+                    <option value="ব্যাংক ট্রান্সফার (আল-আরাফাহ)">ব্যাংক ট্রান্সফার (আল-আরাফাহ ইসলামী ব্যাংক)</option>
+                    <option value="ব্যাংক ট্রান্সফার (ইসলামী ব্যাংক)">ব্যাংক ট্রান্সফার (ইসলামী ব্যাংক বাংলাদেশ)</option>
+                    <option value="বিকাশ (bKash)">বিকাশ পার্সোনাল</option>
+                    <option value="নগদ (Nagad)">নগদ ওয়ালেট</option>
+                  </select>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                    মন্তব্য / রেফারেন্স
+                  </label>
+                  <input
+                    type="text"
+                    value={salaryForm.notes}
+                    onChange={(e) => setSalaryForm({ ...salaryForm, notes: e.target.value })}
+                    placeholder="হাদিয়া পরিশোধ বিবরণ..."
+                    className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 focus:border-[#0D7A5F]"
+                  />
                 </div>
               </div>
 
-              {salaryRecords.map((r) => (
-                <div
-                  key={r.id}
-                  className="p-3.5 rounded-2xl bg-white dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-900/60 shadow-2xs space-y-2"
+              {/* Summary Calculation */}
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-900 via-teal-950 to-stone-900 text-white flex items-center justify-between">
+                <div>
+                  <span className="text-[11px] text-emerald-200">মোট পরিশোধযোগ্য অংক:</span>
+                  <div className="text-xl font-bold font-mono text-amber-300">
+                    ৳{(Number(salaryForm.amount) + Number(salaryForm.bonus || 0)).toLocaleString("bn-BD")}
+                  </div>
+                </div>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-[#D4AF37] hover:bg-[#c49f2e] text-stone-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-md transition transform active:scale-95"
                 >
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-black text-stone-900 dark:text-stone-100">{r.name}</h4>
-                      <p className="text-[11px] text-stone-500">{r.role} · {r.month}</p>
-                    </div>
-                    <span
-                      className={`font-bold px-2.5 py-0.5 rounded-full text-[10px] ${
-                        r.status === "PAID"
-                          ? "bg-emerald-100 text-emerald-800"
-                          : "bg-rose-100 text-rose-800"
-                      }`}
-                    >
-                      {r.status === "PAID" ? "পরিশোধিত" : "পরিশোধ বাকি"}
-                    </span>
-                  </div>
+                  <CheckCircle2 className="w-4 h-4" />
+                  <span>সম্মানী হাদিয়া পরিশোধ সম্পন্ন করুন</span>
+                </button>
+              </div>
+            </form>
+          )}
 
-                  <div className="flex justify-between items-baseline pt-1 border-t border-stone-100 dark:border-emerald-950/60">
-                    <div className="text-stone-500 text-[11px]">
-                      {r.status === "PAID" ? (
-                        <>তারিখ: <b>{r.paidAt}</b> · মাধ্যম: {r.method}</>
-                      ) : (
-                        <span className="text-rose-600 font-bold">কোষাধ্যক্ষের অনুমোদন সাপেক্ষে পরিশোধ আবশ্যক</span>
-                      )}
-                    </div>
-                    <div className="text-base font-black font-mono text-emerald-700 dark:text-emerald-400">
-                      ৳{r.amount.toLocaleString("bn-BD")}
-                    </div>
-                  </div>
+          {/* TAB 2: SALARY RECORDS LIST */}
+          {activeTab === "records" && (
+            <div className="space-y-2.5">
+              <div className="flex justify-between items-center pb-2 border-b border-stone-200 dark:border-emerald-900/50">
+                <span className="font-bold text-stone-800 dark:text-stone-200">
+                  পরিশোধিত সম্মানী ভাউচার তালিকা ({salaryExpenses.length}টি)
+                </span>
+                <button
+                  onClick={() => setActiveTab("disburse")}
+                  className="px-3 py-1 rounded-xl bg-[#0D7A5F] text-white font-bold text-[11px] flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>নতুন বেতন দিন</span>
+                </button>
+              </div>
 
-                  <div className="flex items-center justify-end gap-2 pt-1 border-t border-stone-100 dark:border-emerald-950/60">
-                    {r.status === "PAID" ? (
+              {salaryExpenses.length === 0 ? (
+                <div className="text-center py-8 text-stone-400">
+                  এখনো কোনো বেতন ভাউচার এন্ট্রি নেই।
+                </div>
+              ) : (
+                salaryExpenses.map((r) => (
+                  <div
+                    key={r.id || r.voucherNo}
+                    className="p-3.5 rounded-2xl bg-white dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-900/60 shadow-2xs space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h4 className="font-bold text-stone-900 dark:text-stone-100">{r.title}</h4>
+                        <p className="text-[11px] text-stone-500 font-mono">ভাউচার: {r.voucherNo} · তারিখ: {r.spentAt}</p>
+                      </div>
+                      <span className="font-bold px-2.5 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-900/60 dark:text-emerald-300">
+                        পরিশোধিত (PAID)
+                      </span>
+                    </div>
+
+                    <div className="flex justify-between items-baseline pt-1 border-t border-stone-100 dark:border-emerald-950/60">
+                      <span className="text-[11px] text-stone-500">{r.notes}</span>
+                      <span className="text-base font-bold font-mono text-emerald-700 dark:text-emerald-400">
+                        ৳{Number(r.amount).toLocaleString("bn-BD")}
+                      </span>
+                    </div>
+
+                    <div className="flex justify-end pt-1">
                       <button
-                        onClick={() => setSelectedPayslip(r)}
+                        onClick={() =>
+                          setSelectedPayslip({
+                            voucherNo: r.voucherNo,
+                            name: r.title.split("-")[0] || "ইমাম/স্টাফ",
+                            role: "সম্মানী পরিশোধ",
+                            month: r.month || "চলতি মাস",
+                            amount: r.amount,
+                            method: r.paymentMethod || "নগদ",
+                            paidAt: r.spentAt,
+                          })
+                        }
                         className="px-3 py-1 rounded-xl bg-stone-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold text-xs flex items-center gap-1 cursor-pointer border border-emerald-300 dark:border-emerald-800"
                       >
                         <Printer className="w-3.5 h-3.5" />
-                        <span>অফিসিয়াল পে-স্লিপ প্রিন্ট করুন</span>
+                        <span>পে-স্লিপ প্রিন্ট করুন</span>
                       </button>
-                    ) : (
-                      <button
-                        onClick={() => handlePaySalary(r.id)}
-                        className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-xs"
-                      >
-                        সম্মানী পরিশোধ করুন
-                      </button>
-                    )}
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           )}
 
+          {/* TAB 3: EMPLOYEES & SALARY PROFILE MANAGEMENT (নতুন ইমাম যুক্ত ও বেতন পরিবর্তন) */}
           {activeTab === "employees" && (
-            <div className="space-y-2.5">
-              {employees.map((emp) => (
+            <div className="space-y-3">
+              <div className="flex justify-between items-center pb-2 border-b border-stone-200 dark:border-emerald-900/50">
+                <span className="font-bold text-stone-800 dark:text-stone-200">
+                  কর্মকর্তা ও কর্মচারী তালিকা ({db.employees?.length || 0} জন)
+                </span>
+                <button
+                  onClick={() => setShowAddEmpModal(true)}
+                  className="px-3 py-1.5 rounded-xl bg-[#0D7A5F] hover:bg-[#095945] text-white font-bold text-xs flex items-center gap-1 cursor-pointer"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>নতুন ইমাম / স্টাফ যুক্ত করুন</span>
+                </button>
+              </div>
+
+              {/* Add Employee Form Drawer */}
+              {showAddEmpModal && (
+                <form
+                  onSubmit={handleAddEmployee}
+                  className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-[#071a13] border-2 border-emerald-300 dark:border-emerald-800 space-y-2.5 animate-in fade-in"
+                >
+                  <h4 className="font-bold text-emerald-950 dark:text-emerald-200 text-xs flex items-center gap-1.5">
+                    <User className="w-3.5 h-3.5 text-[#0D7A5F]" />
+                    <span>নতুন কর্মকর্তা বা ইমামের তথ্য দিন</span>
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                    <input
+                      type="text"
+                      placeholder="ইমাম বা কর্মচারীর পূর্ণ নাম *"
+                      value={newEmpForm.name}
+                      onChange={(e) => setNewEmpForm({ ...newEmpForm, name: e.target.value })}
+                      className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#0c1612] border border-stone-200 text-stone-900 dark:text-stone-100"
+                      required
+                    />
+                    <select
+                      value={newEmpForm.role}
+                      onChange={(e) => setNewEmpForm({ ...newEmpForm, role: e.target.value })}
+                      className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#0c1612] border border-stone-200 text-stone-900 dark:text-stone-100 font-bold"
+                    >
+                      <option value="পেশ ইমাম ও খতীব">পেশ ইমাম ও খতীব</option>
+                      <option value="মুয়াজ্জিন ও সহকারী শিক্ষক">মুয়াজ্জিন ও সহকারী শিক্ষক</option>
+                      <option value="মসজিদ খাদেম ও পরিচ্ছন্নতাকর্মী">মসজিদ খাদেম ও পরিচ্ছন্নতাকর্মী</option>
+                      <option value="সহকারী ইমাম">সহকারী ইমাম</option>
+                      <option value="নূরানী মক্তব শিক্ষক">নূরানী মক্তব শিক্ষক</option>
+                    </select>
+                    <input
+                      type="text"
+                      placeholder="মোবাইল নম্বর"
+                      value={newEmpForm.phone}
+                      onChange={(e) => setNewEmpForm({ ...newEmpForm, phone: e.target.value })}
+                      className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#0c1612] border border-stone-200 text-stone-900 dark:text-stone-100"
+                    />
+                    <input
+                      type="number"
+                      placeholder="মাসিক নির্ধারিত হাদিয়া ৳ *"
+                      value={newEmpForm.salary}
+                      onChange={(e) => setNewEmpForm({ ...newEmpForm, salary: Number(e.target.value) })}
+                      className="px-3 py-1.5 rounded-xl bg-white dark:bg-[#0c1612] border border-stone-200 text-stone-900 dark:text-stone-100 font-mono font-bold"
+                      required
+                    />
+                  </div>
+                  <div className="flex gap-2 justify-end pt-1">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddEmpModal(false)}
+                      className="px-3 py-1 rounded-xl bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold text-xs"
+                    >
+                      বাতিল
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-4 py-1 rounded-xl bg-[#0D7A5F] text-white font-bold text-xs cursor-pointer"
+                    >
+                      সংরক্ষণ করুন
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Employees List */}
+              {(db.employees || []).map((emp) => (
                 <div
                   key={emp.id}
-                  className="p-3.5 rounded-2xl bg-white dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-900/60 flex items-center justify-between"
+                  className="p-3.5 rounded-2xl bg-white dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-900/60 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
                 >
                   <div className="flex items-center gap-2.5">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold flex items-center justify-center text-sm">
-                      {emp.name.split(" ")[0][0]}
+                    <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold flex items-center justify-center text-xs">
+                      {emp.name.split(" ")[0][0] || "ই"}
                     </div>
                     <div>
                       <h4 className="font-bold text-stone-900 dark:text-stone-100">{emp.name}</h4>
                       <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-semibold">{emp.role}</p>
-                      <p className="text-[10px] text-stone-400">যোগদান: {emp.joinedAt} · ফোন: {emp.phone}</p>
+                      <p className="text-[10px] text-stone-400">ফোন: {emp.phone}</p>
                     </div>
                   </div>
 
-                  <div className="text-right">
-                    <span className="text-[10px] text-stone-400">মাসিক হাদিয়া:</span>
-                    <div className="font-black font-mono text-emerald-700 dark:text-emerald-400 text-sm">
-                      ৳{emp.salary.toLocaleString("bn-BD")}
+                  <div className="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-t-0 border-stone-100 dark:border-emerald-950/60">
+                    <div className="text-left sm:text-right">
+                      <span className="text-[10px] text-stone-400 block">মাসিক হাদিয়া:</span>
+                      {editingEmpId === emp.id ? (
+                        <div className="flex items-center gap-1 mt-0.5">
+                          <input
+                            type="number"
+                            value={editSalaryValue}
+                            onChange={(e) => setEditSalaryValue(Number(e.target.value))}
+                            className="w-20 px-2 py-0.5 rounded-lg border border-emerald-500 font-mono text-xs text-stone-900 dark:text-white"
+                          />
+                          <button
+                            onClick={() => handleSaveSalaryEdit(emp.id)}
+                            className="px-2 py-0.5 rounded-lg bg-emerald-600 text-white font-bold text-[10px]"
+                          >
+                            সেভ
+                          </button>
+                          <button
+                            onClick={() => setEditingEmpId(null)}
+                            className="px-1.5 py-0.5 rounded-lg bg-stone-200 text-stone-700 text-[10px]"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5">
+                          <span className="font-bold font-mono text-emerald-700 dark:text-emerald-400 text-sm">
+                            ৳{emp.salary.toLocaleString("bn-BD")}
+                          </span>
+                          <button
+                            onClick={() => {
+                              setEditingEmpId(emp.id);
+                              setEditSalaryValue(emp.salary);
+                            }}
+                            className="p-1 rounded-md text-stone-400 hover:text-emerald-600"
+                            title="হাদিয়া পরিবর্তন করুন"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
                     </div>
+
+                    <button
+                      onClick={() => {
+                        setSalaryForm({
+                          empId: emp.id,
+                          month: "নভেম্বর ২০২৬",
+                          amount: emp.salary,
+                          bonus: 0,
+                          method: "নগদ (Cash)",
+                          notes: `${emp.name}-এর হাদিয়া`,
+                        });
+                        setActiveTab("disburse");
+                      }}
+                      className="px-3 py-1.5 rounded-xl bg-[#0D7A5F] hover:bg-[#074f3d] text-white font-bold text-xs cursor-pointer shadow-xs"
+                    >
+                      হাদিয়া দিন
+                    </button>
                   </div>
                 </div>
               ))}
             </div>
           )}
 
+          {/* TAB 4: LEAVES */}
           {activeTab === "leaves" && (
             <div className="space-y-2.5">
-              <div className="p-3 rounded-2xl bg-stone-50 dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-950/60 text-[11px] text-stone-600 dark:text-stone-300">
-                ইমাম ও মুয়াজ্জিন সাহেবের ছুটি ও বিকল্প ইমামতের দায়িত্ব বণ্টন:
-              </div>
               <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-900/60 space-y-1.5">
                 <div className="flex justify-between items-center font-bold">
                   <span>মাওলানা মাহমুদ হাসান (খতীব)</span>
@@ -288,7 +589,7 @@ export function EmployeeSalaryModal({
         <div className="p-3 bg-stone-50 dark:bg-[#07130e] border-t border-stone-200 dark:border-emerald-900/60 flex justify-end shrink-0">
           <button
             onClick={onClose}
-            className="px-5 py-2 rounded-xl bg-emerald-600 text-white font-bold text-xs hover:bg-emerald-700 cursor-pointer"
+            className="px-5 py-2 rounded-xl bg-stone-200 hover:bg-stone-300 dark:bg-stone-800 dark:text-stone-200 font-bold text-xs cursor-pointer"
           >
             বন্ধ করুন
           </button>
