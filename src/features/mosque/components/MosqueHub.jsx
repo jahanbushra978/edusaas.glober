@@ -137,6 +137,62 @@ const BANGLADESH_DISTRICTS = [
   "খুলনা", "বরিশাল", "রংপুর", "ময়মনসিংহ",
 ];
 
+// 📌 প্রতিটি পেজের মূল কাজ ও কীভাবে ব্যবহার করবেন তার স্পষ্ট ও বড় ফন্টের নির্দেশিকা বক্স
+function TabFeatureExplainer({ title, purpose, howTo, icon: Icon, badge, actionLabel, onAction }) {
+  return (
+    <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-amber-50/50 dark:from-emerald-950/40 dark:via-[#0c1a14] dark:to-amber-950/20 border-2 border-emerald-200/80 dark:border-emerald-800/60 shadow-xs space-y-2.5">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/60 dark:border-emerald-800/40 pb-2.5">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-[#0D7A5F] text-white flex items-center justify-center shrink-0 shadow-xs">
+            {Icon ? <Icon className="w-5 h-5" /> : <Landmark className="w-5 h-5" />}
+          </div>
+          <div>
+            <div className="flex items-center gap-2">
+              <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100">
+                {title}
+              </h3>
+              {badge && (
+                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#0D7A5F] dark:bg-emerald-900 dark:text-emerald-300">
+                  {badge}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {actionLabel && onAction && (
+          <button
+            type="button"
+            onClick={onAction}
+            className="self-start sm:self-auto px-4 py-2 rounded-xl bg-[#0D7A5F] hover:bg-[#064E3B] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
+          >
+            <span>{actionLabel}</span>
+            <span>➔</span>
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm leading-relaxed">
+        <div className="p-3 rounded-2xl bg-white/90 dark:bg-[#07130e]/90 border border-emerald-200/60 dark:border-emerald-900/40 space-y-1">
+          <span className="font-black text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5 text-xs sm:text-sm">
+            <span>📌</span>
+            <span>মূল কাজ কী:</span>
+          </span>
+          <p className="text-stone-700 dark:text-stone-300 font-medium pl-6 leading-relaxed">{purpose}</p>
+        </div>
+
+        <div className="p-3 rounded-2xl bg-white/90 dark:bg-[#07130e]/90 border border-emerald-200/60 dark:border-emerald-900/40 space-y-1">
+          <span className="font-black text-amber-900 dark:text-amber-300 flex items-center gap-1.5 text-xs sm:text-sm">
+            <span>💡</span>
+            <span>কীভাবে ব্যবহার করবেন:</span>
+          </span>
+          <p className="text-stone-700 dark:text-stone-300 font-medium pl-6 leading-relaxed">{howTo}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBack }) {
   // ── 1. REAL PERSISTENT DATABASE ENGINE ──
   const [db, setDb] = useState(() => getMosqueDatabase());
@@ -152,6 +208,12 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
   const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, members, committee, staff, income, funds, vouchers, bill-approvals, ledger, reports, prayer, roster, maktab, events, welfare, assets, notices, audit, backup, member-portal, settings, months
   const [activeModal, setActiveModal] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.innerWidth >= 1024) {
+      setIsSidebarOpen(true);
+    }
+  }, []);
 
   // Quick Action Forms state
   const [newMemberModalOpen, setNewMemberModalOpen] = useState(false);
@@ -326,10 +388,17 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
           <div className="flex items-center gap-2.5 min-w-0">
             <button
               onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-              className="p-2 rounded-xl border border-stone-200 dark:border-emerald-900/60 bg-stone-50 dark:bg-[#07130e] text-stone-700 dark:text-stone-300 hover:border-[#0D7A5F] transition cursor-pointer"
-              title="সাইডবার মেনু"
+              className={`px-3 py-1.5 rounded-xl border text-xs sm:text-sm font-bold flex items-center gap-1.5 transition cursor-pointer shadow-2xs ${
+                isSidebarOpen
+                  ? "border-[#0D7A5F] bg-[#0D7A5F] text-white"
+                  : "border-stone-200 dark:border-emerald-900/60 bg-stone-50 dark:bg-[#07130e] text-stone-700 dark:text-stone-200 hover:border-[#0D7A5F]"
+              }`}
+              title={isSidebarOpen ? "মেনুবার হাইড করুন" : "মেনুবার খুলুন"}
             >
-              <Menu className="w-4 h-4" />
+              <Menu className="w-4 h-4 shrink-0" />
+              <span>
+                {isSidebarOpen ? "মেনু হাইড" : "মেনু খুলুন"}
+              </span>
             </button>
 
             <div className="flex items-center gap-2 min-w-0">
@@ -337,10 +406,10 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 {currentMosque?.logoLetter || "বা"}
               </div>
               <div className="min-w-0">
-                <h1 className="text-xs sm:text-sm font-black text-stone-900 dark:text-stone-100 truncate">
+                <h1 className="text-sm sm:text-base font-black text-stone-900 dark:text-stone-100 truncate">
                   {currentMosque?.name}
                 </h1>
-                <p className="text-[10px] text-stone-400 truncate hidden sm:block">
+                <p className="text-xs text-stone-400 truncate hidden sm:block">
                   Masjid Management ERP · {currentMosque?.address}
                 </p>
               </div>
@@ -402,10 +471,20 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
 
       {/* ── MAIN WORKSPACE WITH SIDEBAR ── */}
       <div className="flex-1 max-w-7xl w-full mx-auto flex relative">
-        {/* ── 5.1 STRUCTURED ADMIN SIDEBAR MENU (As Requested in Section 5) ── */}
+        {/* Backdrop for Mobile Drawer */}
+        {isSidebarOpen && (
+          <div
+            onClick={() => setIsSidebarOpen(false)}
+            className="lg:hidden fixed inset-0 bg-black/60 backdrop-blur-xs z-40 transition-opacity cursor-pointer"
+          />
+        )}
+
+        {/* ── 5.1 STRUCTURED ADMIN SIDEBAR MENU (Fully Collapsible on Mobile & Desktop) ── */}
         <aside
-          className={`fixed inset-y-0 left-0 z-50 w-72 bg-white dark:bg-[#0c1612] border-r border-stone-200 dark:border-emerald-900/60 p-4 transform transition-transform duration-200 ease-in-out overflow-y-auto flex flex-col justify-between ${
-            isSidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full lg:translate-x-0 lg:static lg:z-10 lg:shadow-none"
+          className={`transition-all duration-300 ease-in-out z-50 bg-white dark:bg-[#0c1612] border-r border-stone-200 dark:border-emerald-900/60 overflow-y-auto flex flex-col justify-between shrink-0 ${
+            isSidebarOpen
+              ? "fixed lg:static inset-y-0 left-0 w-72 sm:w-80 p-4 shadow-2xl lg:shadow-none translate-x-0"
+              : "fixed -translate-x-full lg:translate-x-0 lg:w-0 lg:p-0 lg:border-none lg:overflow-hidden pointer-events-none"
           }`}
         >
           <div className="space-y-4">
@@ -413,21 +492,23 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
             <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-emerald-950/80">
               <div className="flex items-center gap-2">
                 <Landmark className="w-5 h-5 text-[#0D7A5F]" />
-                <span className="text-xs font-black text-stone-900 dark:text-stone-100 uppercase tracking-wider">
-                  MASJID MANAGEMENT ERP
+                <span className="text-xs sm:text-sm font-black text-stone-900 dark:text-stone-100 uppercase tracking-wider">
+                  MASJID ERP
                 </span>
               </div>
               <button
                 onClick={() => setIsSidebarOpen(false)}
-                className="lg:hidden p-1.5 rounded-xl hover:bg-stone-100 text-stone-400"
+                className="px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-600 dark:text-stone-300 text-xs font-bold flex items-center gap-1 transition cursor-pointer"
+                title="মেনুবার হাইড করুন"
               >
-                <X className="w-4 h-4" />
+                <X className="w-3.5 h-3.5" />
+                <span>হাইড</span>
               </button>
             </div>
 
             {/* Group 1: মূল পরিচালনা */}
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-2">
+              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider px-2 pt-1 block">
                 মূল পরিচালনা
               </span>
               {[
@@ -443,27 +524,29 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                   <button
                     key={item.id}
                     onClick={() => {
-                      setIsSidebarOpen(false);
+                      if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                        setIsSidebarOpen(false);
+                      }
                       if (item.modal) {
                         setActiveModal(item.modal);
                       } else {
                         setActiveTab(item.id);
                       }
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
                       isActive
                         ? "bg-[#0D7A5F] text-white shadow-xs"
                         : item.highlight
                         ? "bg-emerald-50 dark:bg-emerald-950/60 text-[#0D7A5F] dark:text-emerald-300 hover:bg-emerald-100"
-                        : "text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#07130e]"
+                        : "text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#07130e]"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-4 h-4 shrink-0" />
                       <span>{item.label}</span>
                     </div>
                     {item.badge && (
-                      <span className={`text-[10px] px-1.5 py-0.2 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-stone-200 dark:bg-stone-800 text-stone-600"}`}>
+                      <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300"}`}>
                         {item.badge}
                       </span>
                     )}
@@ -474,7 +557,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
 
             {/* Group 2: আর্থিক ব্যবস্থাপনা */}
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-2">
+              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider px-2 pt-1 block">
                 আর্থিক ব্যবস্থাপনা
               </span>
               {[
@@ -491,25 +574,27 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                   <button
                     key={item.id}
                     onClick={() => {
-                      setIsSidebarOpen(false);
+                      if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                        setIsSidebarOpen(false);
+                      }
                       if (item.modal) {
                         setActiveModal(item.modal);
                       } else {
                         setActiveTab(item.id);
                       }
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
                       isActive
                         ? "bg-[#0D7A5F] text-white shadow-xs"
-                        : "text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#07130e]"
+                        : "text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#07130e]"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-4 h-4 shrink-0" />
                       <span>{item.label}</span>
                     </div>
                     {item.badge && (
-                      <span className={`text-[9.5px] px-1.5 py-0.2 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"}`}>
+                      <span className={`text-[10px] sm:text-xs font-bold px-2 py-0.5 rounded-full ${isActive ? "bg-white/20 text-white" : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"}`}>
                         {item.badge}
                       </span>
                     )}
@@ -520,7 +605,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
 
             {/* Group 3: দৈনন্দিন পরিচালনা */}
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-2">
+              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider px-2 pt-1 block">
                 দৈনন্দিন পরিচালনা
               </span>
               {[
@@ -536,21 +621,23 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                   <button
                     key={item.id}
                     onClick={() => {
-                      setIsSidebarOpen(false);
+                      if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                        setIsSidebarOpen(false);
+                      }
                       if (item.modal) {
                         setActiveModal(item.modal);
                       } else {
                         setActiveTab(item.id);
                       }
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
                       isActive
                         ? "bg-[#0D7A5F] text-white shadow-xs"
-                        : "text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#07130e]"
+                        : "text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#07130e]"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-4 h-4 shrink-0" />
                       <span>{item.label}</span>
                     </div>
                   </button>
@@ -560,7 +647,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
 
             {/* Group 4: যোগাযোগ ও নিয়ন্ত্রণ */}
             <div className="space-y-1">
-              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider px-2">
+              <span className="text-xs font-bold text-stone-500 uppercase tracking-wider px-2 pt-1 block">
                 যোগাযোগ ও নিয়ন্ত্রণ
               </span>
               {[
@@ -575,17 +662,19 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                   <button
                     key={item.id}
                     onClick={() => {
+                      if (typeof window !== "undefined" && window.innerWidth < 1024) {
+                        setIsSidebarOpen(false);
+                      }
                       setActiveTab(item.id);
-                      setIsSidebarOpen(false);
                     }}
-                    className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
+                    className={`w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition cursor-pointer ${
                       isActive
                         ? "bg-[#0D7A5F] text-white shadow-xs"
-                        : "text-stone-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#07130e]"
+                        : "text-stone-700 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-[#07130e]"
                     }`}
                   >
                     <div className="flex items-center gap-2.5">
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-4 h-4 shrink-0" />
                       <span>{item.label}</span>
                     </div>
                   </button>
@@ -812,119 +901,155 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               VIEW 2: সদস্য ও মুসল্লি ব্যবস্থাপনা (MEMBERS)
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "members" && (
-            <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4 animate-in fade-in duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                    <Users className="w-5 h-5 text-[#0D7A5F]" />
-                    <span>মুসল্লি ও সদস্য তালিকা ({db.members.length} জন)</span>
-                  </h3>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                    সদস্যদের প্রোফাইল, মাসিক অঙ্গীকার এবং ব্যক্তিগত হিসাবরক্ষণ
-                  </p>
-                </div>
-                <button
-                  onClick={() => setNewMemberModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-[#0D7A5F] hover:bg-[#0b654e] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>নতুন সদস্য যুক্ত করুন</span>
-                </button>
-              </div>
+            <div className="space-y-4 animate-in fade-in duration-200">
+              {/* Feature Explainer Banner */}
+              <TabFeatureExplainer
+                title="মুসল্লি ও সদস্য ব্যবস্থাপনা"
+                badge={`${db.members.length} জন সদস্য`}
+                purpose="মসজিদের সাধারণ ও আজীবন সদস্যদের নাম, ফোন নম্বর, রক্তের গ্রুপ এবং কে প্রতি মাসে কত টাকা চাঁদা দেবেন (Monthly Pledge) তা ডিজিটালভাবে সংরক্ষণ করা।"
+                howTo="১. 'নতুন সদস্য যুক্ত করুন' দিয়ে মেম্বার যোগ করুন। ২. নামের পাশে 'চাঁদা জমা নিন' দিয়ে টাকা আদায় করুন। ৩. 'স্টেটমেন্ট' দিয়ে ব্যক্তিগত রসিদ দেখুন। ৪. 'গোপনীয়তা সুইচে' চাপ দিয়ে নাম গোপন বা উন্মুক্ত রাখুন।"
+                icon={Users}
+                actionLabel="নতুন সদস্য যোগ"
+                onAction={() => setNewMemberModalOpen(true)}
+              />
 
-              {/* Contributor Privacy Toggle (kara kara tk diyese ta sokolke chaile dekhano jabe ba hide kora jabe) */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 text-xs">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-4 h-4 text-[#0D7A5F]" />
+              <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
                   <div>
-                    <span className="font-bold text-stone-900 dark:text-stone-100">চাঁদাদাতাদের নাম প্রকাশ / গোপনীয়তা নিয়ন্ত্রণ:</span>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400">
-                      {showContributors
-                        ? "বর্তমান অবস্থা: উন্মুক্ত — সাধারণ সদস্যদের নাম ও অনুদান দৃশ্যমান।"
-                        : "বর্তমান অবস্থা: গোপন (Anonymous) — সাধারণের কাছে নাম গোপন রাখা হয়েছে।"}
+                    <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-[#0D7A5F]" />
+                      <span>মুসল্লি ও সদস্য তালিকা ({db.members.length} জন)</span>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
+                      সদস্যদের প্রোফাইল, মাসিক অঙ্গীকার এবং ব্যক্তিগত হিসাবরক্ষণ
                     </p>
                   </div>
+                  <button
+                    onClick={() => setNewMemberModalOpen(true)}
+                    className="px-4 py-2.5 rounded-xl bg-[#0D7A5F] hover:bg-[#0b654e] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>নতুন সদস্য যুক্ত করুন</span>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const next = !showContributors;
-                    setShowContributors(next);
-                    toast.info(next ? "চাঁদাদাতাদের তালিকা উন্মুক্ত করা হয়েছে" : "চাঁদাদাতাদের নাম গোপন করা হয়েছে");
-                  }}
-                  className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer self-start sm:self-auto ${
-                    showContributors
-                      ? "bg-[#0D7A5F] text-white shadow-xs"
-                      : "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
-                  }`}
-                >
-                  {showContributors ? "প্রকাশিত (Visible)" : "গোপন রাখুন (Hidden)"}
-                </button>
-              </div>
 
-              {/* Search Bar */}
-              <div className="relative">
-                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
-                <input
-                  type="text"
-                  value={memberSearch}
-                  onChange={(e) => setMemberSearch(e.target.value)}
-                  placeholder="নাম বা মোবাইল নম্বর দিয়ে খুঁজুন..."
-                  className="w-full pl-10 pr-4 py-2 rounded-xl text-xs sm:text-sm bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100"
-                />
-              </div>
+                {/* Contributor Privacy Toggle */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3.5 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 text-xs sm:text-sm">
+                  <div className="flex items-center gap-2.5">
+                    <ShieldCheck className="w-5 h-5 text-[#0D7A5F] shrink-0" />
+                    <div>
+                      <span className="font-bold text-stone-900 dark:text-stone-100">চাঁদাদাতাদের নাম প্রকাশ / গোপনীয়তা নিয়ন্ত্রণ:</span>
+                      <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
+                        {showContributors
+                          ? "বর্তমান অবস্থা: উন্মুক্ত — সাধারণ সদস্যদের নাম ও অনুদান দৃশ্যমান।"
+                          : "বর্তমান অবস্থা: গোপন (Anonymous) — সাধারণের কাছে নাম গোপন রাখা হয়েছে।"}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const next = !showContributors;
+                      setShowContributors(next);
+                      toast.info(next ? "চাঁদাদাতাদের তালিকা উন্মুক্ত করা হয়েছে" : "চাঁদাদাতাদের নাম গোপন করা হয়েছে");
+                    }}
+                    className={`px-4 py-2 rounded-xl font-bold text-xs sm:text-sm transition cursor-pointer self-start sm:self-auto ${
+                      showContributors
+                        ? "bg-[#0D7A5F] text-white shadow-xs"
+                        : "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
+                    }`}
+                  >
+                    {showContributors ? "প্রকাশিত (Visible)" : "গোপন রাখুন (Hidden)"}
+                  </button>
+                </div>
 
-              {/* Members Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-stone-50 dark:bg-[#07130e] text-stone-500 uppercase text-[10px]">
-                    <tr>
-                      <th className="py-2.5 px-3 rounded-l-xl">আইডি</th>
-                      <th className="py-2.5 px-3">নাম ও মোবাইল</th>
-                      <th className="py-2.5 px-3">পদবী / টাইপ</th>
-                      <th className="py-2.5 px-3">মাসিক অঙ্গীকার</th>
-                      <th className="py-2.5 px-3">পরিশোধ</th>
-                      <th className="py-2.5 px-3">বকেয়া</th>
-                      <th className="py-2.5 px-3 text-right rounded-r-xl">অ্যাকশন</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100 dark:divide-emerald-950/80">
-                    {db.members
-                      .filter((m) => m.name.toLowerCase().includes(memberSearch.toLowerCase()) || m.phone.includes(memberSearch))
-                      .map((m) => (
-                        <tr key={m.id} className="hover:bg-stone-50/50 dark:hover:bg-[#07130e]/50">
-                          <td className="py-3 px-3 font-mono font-bold text-[#0D7A5F]">{m.id}</td>
-                          <td className="py-3 px-3">
-                            <b className="block text-stone-900 dark:text-stone-100">
-                              {showContributors || currentUserRole !== "MEMBER" ? m.name : `${m.name.slice(0, 4)}*** (${m.id})`}
-                            </b>
-                            <span className="text-[11px] font-mono text-stone-400">
-                              {showContributors || currentUserRole !== "MEMBER" ? m.phone : "০১৭১১-***"}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3">
-                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-[#0D7A5F] dark:bg-emerald-950 dark:text-emerald-300 font-bold">
-                              {m.role}
-                            </span>
-                          </td>
-                          <td className="py-3 px-3 font-mono font-bold">৳{m.pledge}</td>
-                          <td className="py-3 px-3 font-mono text-emerald-600 font-bold">৳{m.paid}</td>
-                          <td className="py-3 px-3 font-mono text-amber-600 font-bold">৳{m.remaining}</td>
-                          <td className="py-3 px-3 text-right">
-                            <button
-                              onClick={() => {
-                                setCurrentMemberId(m.id);
-                                setActiveTab("member-portal");
-                              }}
-                              className="text-[#0D7A5F] hover:underline font-bold"
-                            >
-                              হিসাব দেখুন ➔
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
+                {/* Search Bar */}
+                <div className="relative">
+                  <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
+                  <input
+                    type="text"
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="নাম বা মোবাইল নম্বর দিয়ে সদস্য খুঁজুন..."
+                    className="w-full pl-10 pr-4 py-2.5 rounded-xl text-xs sm:text-sm bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 focus:outline-hidden focus:border-[#0D7A5F]"
+                  />
+                </div>
+
+                {/* Members Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs sm:text-sm text-left">
+                    <thead className="bg-stone-50 dark:bg-[#07130e] text-stone-600 dark:text-stone-300 uppercase text-xs font-bold border-b border-stone-200 dark:border-emerald-950">
+                      <tr>
+                        <th className="py-3 px-3 rounded-l-xl">আইডি</th>
+                        <th className="py-3 px-3">নাম ও মোবাইল</th>
+                        <th className="py-3 px-3">পদবী / টাইপ</th>
+                        <th className="py-3 px-3">মাসিক অঙ্গীকার</th>
+                        <th className="py-3 px-3">পরিশোধ</th>
+                        <th className="py-3 px-3">বকেয়া</th>
+                        <th className="py-3 px-3 text-right rounded-r-xl">অ্যাকশন</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 dark:divide-emerald-950/80">
+                      {db.members
+                        .filter((m) => m.name.toLowerCase().includes(memberSearch.toLowerCase()) || m.phone.includes(memberSearch))
+                        .map((m) => (
+                          <tr key={m.id} className="hover:bg-stone-50/50 dark:hover:bg-[#07130e]/50">
+                            <td className="py-3.5 px-3 font-mono font-bold text-[#0D7A5F]">{m.id}</td>
+                            <td className="py-3.5 px-3">
+                              <b className="block text-stone-900 dark:text-stone-100 text-sm sm:text-base">
+                                {showContributors || currentUserRole !== "MEMBER" ? m.name : `${m.name.slice(0, 4)}*** (${m.id})`}
+                              </b>
+                              <span className="text-xs font-mono text-stone-400">
+                                {showContributors || currentUserRole !== "MEMBER" ? m.phone : "০১৭১১-***"}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-3">
+                              <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-50 text-[#0D7A5F] dark:bg-emerald-950 dark:text-emerald-300 font-bold">
+                                {m.role}
+                              </span>
+                            </td>
+                            <td className="py-3.5 px-3 font-mono font-bold text-stone-800 dark:text-stone-200">৳{m.pledge}</td>
+                            <td className="py-3.5 px-3 font-mono text-emerald-600 font-bold">৳{m.paid}</td>
+                            <td className="py-3.5 px-3 font-mono text-amber-600 font-bold">৳{m.remaining}</td>
+                            <td className="py-3.5 px-3 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setNewDonationForm({
+                                      donorName: m.name,
+                                      phone: m.phone,
+                                      fundId: "f1",
+                                      amount: m.remaining > 0 ? m.remaining : m.pledge,
+                                      category: "সদস্য চাঁদা",
+                                      method: "নগদ (Cash)",
+                                      notes: `সদস্য আইডি: ${m.id}`,
+                                    });
+                                    setNewDonationModalOpen(true);
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-[#0D7A5F] hover:bg-[#064E3B] text-white font-bold text-xs cursor-pointer shadow-2xs"
+                                  title="এই সদস্যের নিকট হতে চাঁদা জমা নিন"
+                                >
+                                  চাঁদা নিন
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setCurrentMemberId(m.id);
+                                    setActiveTab("member-portal");
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-700 dark:text-stone-300 font-bold text-xs cursor-pointer"
+                                  title="ব্যক্তিগত স্টেটমেন্ট দেখুন"
+                                >
+                                  স্টেটমেন্ট
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -933,60 +1058,117 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               VIEW 3: ১০টি সংরক্ষিত তহবিল ব্যবস্থাপনা (FUNDS)
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "funds" && (
-            <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-emerald-950/80">
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                    <Landmark className="w-5 h-5 text-[#0D7A5F]" />
-                    <span>১০টি সংরক্ষিত মসজিদ তহবিল (Segregated Funds)</span>
-                  </h3>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                    কুরআন ও শরিয়াহ নির্দেশিকা অনুযায়ী প্রতিটি ফান্ডের অর্থ строго আলাদাভাবে হিসাবভুক্ত
-                  </p>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] text-stone-400">সর্বমোট তহবিল:</span>
-                  <p className="text-base font-black text-[#0D7A5F] font-mono">
-                    ৳{totalFundsBalance.toLocaleString("bn-BD")}
-                  </p>
-                </div>
-              </div>
+            <div className="space-y-4 animate-in fade-in duration-200">
+              {/* Feature Explainer Banner */}
+              <TabFeatureExplainer
+                title="১০টি সংরক্ষিত মসজিদ তহবিল ব্যবস্থাপনা (Segregated Funds)"
+                badge="শরিয়াহ সম্মত পৃথক হিসাব"
+                purpose="কুরআন ও শরিয়াহর বিধান অনুযায়ী ইমামের সম্মানী, যাকাত, ফিতরা, ওয়াকফ, মক্তব, বিদ্যুৎ বিল ও মেরামতের টাকা কঠোরভাবে পৃথক সংরক্ষণ করা।"
+                howTo="নিচের যেকোনো ফান্ডের 'অনুদান জমা দিন' বাটনে ক্লিক করে সরাসরি ওই নির্দিষ্ট তহবিলে টাকা যুক্ত করুন অথবা 'হিসাবের বিবরণ' বাটনে চাপ দিয়ে বিস্তারিত দেখুন।"
+                icon={Landmark}
+                actionLabel="নতুন অনুদান রেকর্ড"
+                onAction={() => setNewDonationModalOpen(true)}
+              />
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {db.funds.map((fund) => (
-                  <div
-                    key={fund.id}
-                    className="p-4 rounded-2xl bg-stone-50/80 dark:bg-[#07130e]/80 border border-stone-200 dark:border-emerald-900/40 space-y-2 hover:border-[#0D7A5F] transition"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h4 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">{fund.name}</h4>
-                          {fund.restricted && (
-                            <span className="text-[9.5px] px-1.5 py-0.2 rounded-md bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300 font-bold border border-amber-200 dark:border-amber-800">
-                              সংরক্ষিত
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-0.5">{fund.purpose}</p>
-                      </div>
-                      <span className="text-base font-black text-[#0D7A5F] font-mono shrink-0">
-                        ৳{fund.currentBalance.toLocaleString("bn-BD")}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-stone-200/60 dark:border-emerald-950/60 text-[11px]">
-                      <div>
-                        <span className="text-stone-400">মোট জমা:</span>
-                        <p className="font-mono font-bold text-emerald-600">+৳{fund.inflowTotal || 0}</p>
-                      </div>
-                      <div>
-                        <span className="text-stone-400">অনুমোদিত খরচ:</span>
-                        <p className="font-mono font-bold text-rose-500">-৳{fund.outflowTotal || 0}</p>
-                      </div>
-                    </div>
+              <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                      <Landmark className="w-5 h-5 text-[#0D7A5F]" />
+                      <span>সকল সংরক্ষিত ফান্ডের তালিকা ও ব্যালেন্স</span>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
+                      প্রতিটি ফান্ডের টাকা স্বয়ংক্রিয়ভাবে আলাদা থাকবে এবং ক্রস-ফান্ডে মিশ্রিত হবে না
+                    </p>
                   </div>
-                ))}
+                  <div className="text-left sm:text-right">
+                    <span className="text-xs text-stone-400 font-bold">১০টি ফান্ডের সর্বমোট স্থিতি:</span>
+                    <p className="text-xl sm:text-2xl font-black text-[#0D7A5F] font-mono">
+                      ৳{totalFundsBalance.toLocaleString("bn-BD")}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {db.funds.map((fund) => (
+                    <div
+                      key={fund.id}
+                      className="p-4 sm:p-5 rounded-2xl bg-stone-50/90 dark:bg-[#07130e]/90 border-2 border-stone-200 dark:border-emerald-900/40 space-y-3 hover:border-[#0D7A5F] transition shadow-xs"
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <h4 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100">
+                              {fund.name}
+                            </h4>
+                            {fund.restricted && (
+                              <span className="text-xs px-2 py-0.5 rounded-md bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-200 font-bold border border-amber-300 dark:border-amber-800">
+                                সংরক্ষিত
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-300 font-medium leading-relaxed">
+                            {fund.purpose}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <span className="text-lg sm:text-2xl font-black text-[#0D7A5F] font-mono block">
+                            ৳{fund.currentBalance.toLocaleString("bn-BD")}
+                          </span>
+                          <span className="text-[10px] text-stone-400 font-bold">বর্তমান ব্যালেন্স</span>
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-2.5 border-t border-stone-200/70 dark:border-emerald-950/70 text-xs sm:text-sm">
+                        <div className="p-2 rounded-xl bg-white dark:bg-[#0c1612] border border-stone-200/60 dark:border-emerald-900/30">
+                          <span className="text-stone-500 font-bold text-xs block">মোট জমা:</span>
+                          <p className="font-mono font-bold text-emerald-600 text-sm sm:text-base mt-0.5">
+                            +৳{(fund.inflowTotal || 0).toLocaleString("bn-BD")}
+                          </p>
+                        </div>
+                        <div className="p-2 rounded-xl bg-white dark:bg-[#0c1612] border border-stone-200/60 dark:border-emerald-900/30">
+                          <span className="text-stone-500 font-bold text-xs block">অনুমোদিত খরচ:</span>
+                          <p className="font-mono font-bold text-rose-500 text-sm sm:text-base mt-0.5">
+                            -৳{(fund.outflowTotal || 0).toLocaleString("bn-BD")}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* 100% Real Interactive Action Buttons */}
+                      <div className="flex items-center gap-2 pt-1">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNewDonationForm({
+                              donorName: "",
+                              phone: "",
+                              fundId: fund.id,
+                              amount: 1000,
+                              category: fund.name,
+                              method: "নগদ (Cash)",
+                              notes: "",
+                            });
+                            setNewDonationModalOpen(true);
+                          }}
+                          className="flex-1 py-2 px-3 rounded-xl bg-[#0D7A5F] hover:bg-[#064E3B] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition cursor-pointer shadow-xs active:scale-98"
+                          title={`${fund.name}-এ অনুদান জমা দিন`}
+                        >
+                          <Plus className="w-4 h-4" />
+                          <span>এই ফান্ডে অনুদান দিন</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setActiveModal("funds")}
+                          className="py-2 px-3.5 rounded-xl bg-stone-200/80 hover:bg-stone-300 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 font-bold text-xs sm:text-sm flex items-center justify-center gap-1 transition cursor-pointer"
+                          title="ফান্ডের পূর্ণাঙ্গ লেজার ও ভাউচার হিসেব দেখুন"
+                        >
+                          <FileText className="w-4 h-4 text-[#0D7A5F]" />
+                          <span>হিসাবের বিবরণ</span>
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -995,63 +1177,85 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               VIEW 4: আয় ও অনুদান রেজিস্টার (INCOME)
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "income" && (
-            <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4 animate-in fade-in duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                    <Coins className="w-5 h-5 text-[#D4AF37]" />
-                    <span>আয় ও অনুদান রেজিস্টার ({db.inflows.length}টি এন্ট্রি)</span>
-                  </h3>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                    সাধারণ অনুদান, সদস্য চাঁদা, জুমা কালেকশন ও অনলাইন দানের সম্পূর্ণ হিসাব
-                  </p>
-                </div>
-                <button
-                  onClick={() => setNewDonationModalOpen(true)}
-                  className="px-4 py-2 rounded-xl bg-[#D4AF37] hover:bg-[#c49f2e] text-stone-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>নতুন অনুদান রেকর্ড করুন</span>
-                </button>
-              </div>
+            <div className="space-y-4 animate-in fade-in duration-200">
+              {/* Feature Explainer Banner */}
+              <TabFeatureExplainer
+                title="আয় ও অনুদান রেজিস্টার (Income Register)"
+                badge={`${db.inflows.length}টি এন্ট্রি`}
+                purpose="সাধারণ অনুদান, জুমার বাক্সের কালেকশন, মেম্বারদের চাঁদা ও অনলাইন দানের প্রতিটি টাকার স্বচ্ছ ডিজিটাল খতিয়ান ও রসিদ রাখা।"
+                howTo="'নতুন অনুদান রেকর্ড করুন' বাটনে চাপ দিয়ে দাতার নাম, পরিমাণ ও ফান্ড সিলেক্ট করে জমা দিলে স্বয়ংক্রিয়ভাবে ডিজিটাল মানি রিসিট তৈরি হবে এবং ফান্ডে টাকা যুক্ত হবে।"
+                icon={Coins}
+                actionLabel="নতুন অনুদান গ্রহণ"
+                onAction={() => setNewDonationModalOpen(true)}
+              />
 
-              {/* Inflows Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-xs text-left">
-                  <thead className="bg-stone-50 dark:bg-[#07130e] text-stone-500 uppercase text-[10px]">
-                    <tr>
-                      <th className="py-2.5 px-3 rounded-l-xl">রসিদ নং</th>
-                      <th className="py-2.5 px-3">দাতার নাম ও মোবাইল</th>
-                      <th className="py-2.5 px-3">ফান্ড</th>
-                      <th className="py-2.5 px-3">ক্যাটাগরি</th>
-                      <th className="py-2.5 px-3">পরিমাণ</th>
-                      <th className="py-2.5 px-3">তারিখ ও মাধ্যম</th>
-                      <th className="py-2.5 px-3 text-right rounded-r-xl">স্ট্যাটাস</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-stone-100 dark:divide-emerald-950/80">
-                    {db.inflows.map((inf) => (
-                      <tr key={inf.id} className="hover:bg-stone-50/50 dark:hover:bg-[#07130e]/50">
-                        <td className="py-3 px-3 font-mono font-bold text-[#0D7A5F]">{inf.receiptNo}</td>
-                        <td className="py-3 px-3">
-                          <b className="block text-stone-900 dark:text-stone-100">{inf.donorName}</b>
-                          <span className="text-[11px] font-mono text-stone-400">{inf.phone}</span>
-                        </td>
-                        <td className="py-3 px-3 font-semibold">{inf.fundName}</td>
-                        <td className="py-3 px-3 text-stone-500">{inf.category}</td>
-                        <td className="py-3 px-3 font-mono font-black text-emerald-600">+৳{inf.amount}</td>
-                        <td className="py-3 px-3 font-mono text-[11px] text-stone-500">
-                          {inf.date} · {inf.method}
-                        </td>
-                        <td className="py-3 px-3 text-right">
-                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-bold">
-                            {inf.status === "VERIFIED" ? "যাচাইকৃত" : "অপেক্ষমাণ"}
-                          </span>
-                        </td>
+              <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                      <Coins className="w-5 h-5 text-[#D4AF37]" />
+                      <span>আয় ও অনুদান রেজিস্টার ({db.inflows.length}টি এন্ট্রি)</span>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
+                      সাধারণ অনুদান, সদস্য চাঁদা, জুমা কালেকশন ও অনলাইন দানের সম্পূর্ণ হিসাব
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => setNewDonationModalOpen(true)}
+                    className="px-4 py-2.5 rounded-xl bg-[#D4AF37] hover:bg-[#c49f2e] text-stone-950 font-black text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>নতুন অনুদান রেকর্ড করুন</span>
+                  </button>
+                </div>
+
+                {/* Inflows Table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs sm:text-sm text-left">
+                    <thead className="bg-stone-50 dark:bg-[#07130e] text-stone-600 dark:text-stone-300 uppercase text-xs font-bold border-b border-stone-200 dark:border-emerald-950">
+                      <tr>
+                        <th className="py-3 px-3 rounded-l-xl">রসিদ নং</th>
+                        <th className="py-3 px-3">দাতার নাম ও মোবাইল</th>
+                        <th className="py-3 px-3">ফান্ড</th>
+                        <th className="py-3 px-3">ক্যাটাগরি</th>
+                        <th className="py-3 px-3">পরিমাণ</th>
+                        <th className="py-3 px-3">তারিখ ও মাধ্যম</th>
+                        <th className="py-3 px-3 text-right rounded-r-xl">অ্যাকশন</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody className="divide-y divide-stone-100 dark:divide-emerald-950/80">
+                      {db.inflows.map((inf) => (
+                        <tr key={inf.id} className="hover:bg-stone-50/50 dark:hover:bg-[#07130e]/50">
+                          <td className="py-3.5 px-3 font-mono font-bold text-[#0D7A5F]">{inf.receiptNo}</td>
+                          <td className="py-3.5 px-3">
+                            <b className="block text-stone-900 dark:text-stone-100 text-sm sm:text-base">{inf.donorName}</b>
+                            <span className="text-xs font-mono text-stone-400">{inf.phone}</span>
+                          </td>
+                          <td className="py-3.5 px-3 font-semibold text-stone-800 dark:text-stone-200">{inf.fundName}</td>
+                          <td className="py-3.5 px-3 text-stone-600 dark:text-stone-300">{inf.category}</td>
+                          <td className="py-3.5 px-3 font-mono font-black text-emerald-600 text-sm sm:text-base">+৳{inf.amount}</td>
+                          <td className="py-3.5 px-3 font-mono text-xs text-stone-500">
+                            {inf.date} · {inf.method}
+                          </td>
+                          <td className="py-3.5 px-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                toast.success(`রসিদ #${inf.receiptNo} তৈরি হচ্ছে...`);
+                                window.print();
+                              }}
+                              className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#0D7A5F] font-bold text-xs cursor-pointer inline-flex items-center gap-1"
+                              title="মানি রিসিট প্রিন্ট করুন"
+                            >
+                              <Printer className="w-3.5 h-3.5" />
+                              <span>রসিদ</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
@@ -1060,118 +1264,145 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               VIEW 5: বিল ও ভাউচার অনুমোদন (BILL APPROVALS & VOUCHERS)
              ══════════════════════════════════════════════════════════════ */}
           {(activeTab === "bill-approvals" || activeTab === "vouchers") && (
-            <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4 animate-in fade-in duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                    <FileCheck className="w-5 h-5 text-[#0D7A5F]" />
-                    <span>বিল ও ভাউচার অনুমোদন ব্যবস্থাপনা ({db.expenses.length}টি ভাউচার)</span>
-                  </h3>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                    সভাপতি অনুমোদন করবেন এবং কোষাধ্যক্ষ পরিশোধের পর ফান্ড হতে অর্থ কর্তন হবে
-                  </p>
-                </div>
-                <button
-                  onClick={() => setActiveModal("purchase-procurement")}
-                  className="px-4 py-2 rounded-xl bg-[#0D7A5F] hover:bg-[#0b654e] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>নতুন প্রকিউরমেন্ট রিকুইজিশন</span>
-                </button>
-              </div>
+            <div className="space-y-4 animate-in fade-in duration-200">
+              {/* Feature Explainer Banner */}
+              <TabFeatureExplainer
+                title="বিল ও ৪-স্বাক্ষরের ভাউচার অনুমোদন ব্যবস্থাপনা"
+                badge={`${db.expenses.length}টি ভাউচার`}
+                purpose="মসজিদের যে কোনো মালামাল ক্রয়, মেরামত ও খরচের পূর্বে প্রকিউরমেন্ট রিকুইজিশন তৈরি ও ৪ জনের স্বাক্ষরে চূড়ান্ত পেমেন্ট রিলিজ নিশ্চিত করা।"
+                howTo="১. 'নতুন প্রকিউরমেন্ট রিকুইজিশন' দিন। ২. সভাপতি 'অনুমোদন' করবেন। ৩. কোষাধ্যক্ষ 'বিল পরিশোধ' করবেন। ৪. পরিশোধের পর ৪ জনের স্বাক্ষরযুক্ত অফিসিয়াল ভাউচার প্রিন্ট নেওয়া যাবে।"
+                icon={FileCheck}
+                actionLabel="নতুন প্রকিউরমেন্ট"
+                onAction={() => setActiveModal("purchase-procurement")}
+              />
 
-              {/* Expenses List */}
-              <div className="space-y-3">
-                {db.expenses.map((exp) => (
-                  <div
-                    key={exp.id}
-                    className="p-4 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 space-y-2.5"
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div className="space-y-0.5">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono font-bold text-[#0D7A5F] text-xs">{exp.voucherNo}</span>
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                            exp.status === "PAID"
-                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
-                              : exp.status === "APPROVED"
-                              ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
-                              : exp.status === "REJECTED"
-                              ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
-                              : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
-                          }`}>
-                            {exp.status === "PAID" ? "পরিশোধিত" : exp.status === "APPROVED" ? "অনুমোদিত (পেমেন্ট বাকি)" : exp.status === "REJECTED" ? "বাতিল" : "অনুমোদনের অপেক্ষায়"}
-                          </span>
-                        </div>
-                        <h4 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">{exp.title}</h4>
-                        <p className="text-[11px] text-stone-500">ফান্ড: <b>{exp.fundName}</b> · আবেদনকারী: {exp.submittedBy}</p>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="text-base font-black text-rose-500 font-mono">
-                          ৳{exp.amount.toLocaleString("bn-BD")}
-                        </span>
-                        <p className="text-[10px] text-stone-400">{exp.spentAt}</p>
-                      </div>
-                    </div>
-
-                    {/* Signatures status */}
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 border-t border-stone-200/60 dark:border-emerald-950/60 text-[10px]">
-                      <div>
-                        <span className="text-stone-400">আবেদনকারী:</span>
-                        <p className="font-bold">{exp.signatures?.applicant || "—"}</p>
-                      </div>
-                      <div>
-                        <span className="text-stone-400">মাল গ্রহণকারী:</span>
-                        <p className="font-bold">{exp.signatures?.receiver || "—"}</p>
-                      </div>
-                      <div>
-                        <span className="text-stone-400">সভাপতি অনুমোদন:</span>
-                        <p className="font-bold text-[#0D7A5F]">{exp.signatures?.president || "অপেক্ষমাণ"}</p>
-                      </div>
-                      <div>
-                        <span className="text-stone-400">কোষাধ্যক্ষ পেমেন্ট:</span>
-                        <p className="font-bold text-[#0D7A5F]">{exp.signatures?.treasurer || "অপেক্ষমাণ"}</p>
-                      </div>
-                    </div>
-
-                    {/* Action buttons based on Role */}
-                    <div className="flex gap-2 pt-1 border-t border-stone-200/40 dark:border-emerald-950/40 justify-end">
-                      {exp.status === "PENDING_APPROVAL" && (
-                        <>
-                          <button
-                            onClick={() => handleApproveExpense(exp.voucherNo)}
-                            className="px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-2xs"
-                          >
-                            অনুমোদন করুন (সভাপতি)
-                          </button>
-                          <button
-                            onClick={() => handleOpenReject(exp.voucherNo)}
-                            className="px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-bold text-xs cursor-pointer"
-                          >
-                            প্রত্যাখ্যান
-                          </button>
-                        </>
-                      )}
-
-                      {exp.status === "APPROVED" && (
-                        <button
-                          onClick={() => handlePayExpense(exp.voucherNo)}
-                          className="px-3 py-1.5 rounded-xl bg-[#0D7A5F] hover:bg-[#0b654e] text-white font-bold text-xs cursor-pointer shadow-2xs"
-                        >
-                          বিল পরিশোধ করুন (কোষাধ্যক্ষ)
-                        </button>
-                      )}
-
-                      {exp.status === "PAID" && (
-                        <span className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
-                          <Check className="w-3.5 h-3.5" />
-                          <span>ফান্ড হতে কর্তন সম্পন্ন</span>
-                        </span>
-                      )}
-                    </div>
+              <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                      <FileCheck className="w-5 h-5 text-[#0D7A5F]" />
+                      <span>বিল ও ভাউচার অনুমোদন ব্যবস্থাপনা ({db.expenses.length}টি ভাউচার)</span>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
+                      সভাপতি অনুমোদন করবেন এবং কোষাধ্যক্ষ পরিশোধের পর ফান্ড হতে অর্থ কর্তন হবে
+                    </p>
                   </div>
-                ))}
+                  <button
+                    onClick={() => setActiveModal("purchase-procurement")}
+                    className="px-4 py-2.5 rounded-xl bg-[#0D7A5F] hover:bg-[#0b654e] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>নতুন প্রকিউরমেন্ট রিকুইজিশন</span>
+                  </button>
+                </div>
+
+                {/* Expenses List */}
+                <div className="space-y-3.5">
+                  {db.expenses.map((exp) => (
+                    <div
+                      key={exp.id}
+                      className="p-4 sm:p-5 rounded-2xl bg-stone-50 dark:bg-[#07130e] border-2 border-stone-200 dark:border-emerald-900/40 space-y-3 shadow-xs"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono font-bold text-[#0D7A5F] text-xs sm:text-sm">{exp.voucherNo}</span>
+                            <span className={`text-xs px-2.5 py-0.5 rounded-full font-bold ${
+                              exp.status === "PAID"
+                                ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                                : exp.status === "APPROVED"
+                                ? "bg-blue-100 text-blue-800 dark:bg-blue-950 dark:text-blue-300"
+                                : exp.status === "REJECTED"
+                                ? "bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300"
+                                : "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300"
+                            }`}>
+                              {exp.status === "PAID" ? "পরিশোধিত" : exp.status === "APPROVED" ? "অনুমোদিত (পেমেন্ট বাকি)" : exp.status === "REJECTED" ? "বাতিল" : "অনুমোদনের অপেক্ষায়"}
+                            </span>
+                          </div>
+                          <h4 className="text-sm sm:text-base font-black text-stone-900 dark:text-stone-100">{exp.title}</h4>
+                          <p className="text-xs sm:text-sm text-stone-600 dark:text-stone-400">
+                            ফান্ড: <b>{exp.fundName}</b> · আবেদনকারী: <b>{exp.submittedBy}</b>
+                          </p>
+                        </div>
+
+                        <div className="text-left sm:text-right shrink-0">
+                          <span className="text-lg sm:text-2xl font-black text-rose-500 font-mono block">
+                            ৳{exp.amount.toLocaleString("bn-BD")}
+                          </span>
+                          <p className="text-xs text-stone-400 font-mono">{exp.spentAt}</p>
+                        </div>
+                      </div>
+
+                      {/* Signatures status */}
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2.5 border-t border-stone-200/70 dark:border-emerald-950/70 text-xs">
+                        <div className="p-2 rounded-xl bg-white dark:bg-[#0c1612] border border-stone-200/50">
+                          <span className="text-stone-400 text-[11px] block">আবেদনকারী:</span>
+                          <p className="font-bold text-stone-800 dark:text-stone-200">{exp.signatures?.applicant || "—"}</p>
+                        </div>
+                        <div className="p-2 rounded-xl bg-white dark:bg-[#0c1612] border border-stone-200/50">
+                          <span className="text-stone-400 text-[11px] block">মাল গ্রহণকারী:</span>
+                          <p className="font-bold text-stone-800 dark:text-stone-200">{exp.signatures?.receiver || "—"}</p>
+                        </div>
+                        <div className="p-2 rounded-xl bg-white dark:bg-[#0c1612] border border-stone-200/50">
+                          <span className="text-stone-400 text-[11px] block">সভাপতি অনুমোদন:</span>
+                          <p className="font-bold text-[#0D7A5F]">{exp.signatures?.president || "অপেক্ষমাণ"}</p>
+                        </div>
+                        <div className="p-2 rounded-xl bg-white dark:bg-[#0c1612] border border-stone-200/50">
+                          <span className="text-stone-400 text-[11px] block">কোষাধ্যক্ষ পেমেন্ট:</span>
+                          <p className="font-bold text-[#0D7A5F]">{exp.signatures?.treasurer || "অপেক্ষমাণ"}</p>
+                        </div>
+                      </div>
+
+                      {/* Action buttons */}
+                      <div className="flex flex-wrap gap-2 pt-2 border-t border-stone-200/50 dark:border-emerald-950/50 justify-between items-center">
+                        <button
+                          type="button"
+                          onClick={() => setActiveModal("purchase-procurement")}
+                          className="px-3 py-1.5 rounded-xl border border-stone-200 dark:border-emerald-900/60 bg-white dark:bg-[#0c1612] hover:bg-stone-100 text-stone-700 dark:text-stone-300 font-bold text-xs flex items-center gap-1.5 transition cursor-pointer"
+                          title="৪ জনের স্বাক্ষরযুক্ত অফিসিয়াল ভাউচার দেখুন বা প্রিন্ট করুন"
+                        >
+                          <Receipt className="w-3.5 h-3.5 text-[#0D7A5F]" />
+                          <span>৪-স্বাক্ষর ভাউচার দেখুন / প্রিন্ট</span>
+                        </button>
+
+                        <div className="flex items-center gap-2">
+                          {exp.status === "PENDING_APPROVAL" && (
+                            <>
+                              <button
+                                onClick={() => handleApproveExpense(exp.voucherNo)}
+                                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs sm:text-sm cursor-pointer shadow-2xs"
+                              >
+                                অনুমোদন করুন (সভাপতি)
+                              </button>
+                              <button
+                                onClick={() => handleOpenReject(exp.voucherNo)}
+                                className="px-3 py-1.5 rounded-xl bg-rose-100 hover:bg-rose-200 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-bold text-xs sm:text-sm cursor-pointer"
+                              >
+                                প্রত্যাখ্যান
+                              </button>
+                            </>
+                          )}
+
+                          {exp.status === "APPROVED" && (
+                            <button
+                              onClick={() => handlePayExpense(exp.voucherNo)}
+                              className="px-3.5 py-1.5 rounded-xl bg-[#0D7A5F] hover:bg-[#0b654e] text-white font-bold text-xs sm:text-sm cursor-pointer shadow-2xs"
+                            >
+                              বিল পরিশোধ করুন (কোষাধ্যক্ষ)
+                            </button>
+                          )}
+
+                          {exp.status === "PAID" && (
+                            <span className="text-xs sm:text-sm text-emerald-600 font-bold flex items-center gap-1">
+                              <Check className="w-4 h-4" />
+                              <span>ফান্ড হতে কর্তন সম্পন্ন</span>
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -1180,113 +1411,151 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               VIEW 6: সদস্যদের নিজস্ব পোর্টাল (MEMBER PORTAL — STRICT PRIVACY)
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "member-portal" && (
-            <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4 animate-in fade-in duration-200">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                    <User className="w-5 h-5 text-[#0D7A5F]" />
-                    <span>সদস্যের নিজস্ব পোর্টাল ও ব্যক্তিগত হিসাব</span>
-                  </h3>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                    কঠোর গোপনীয়তা: আপনি শুধুমাত্র আপনার নিজস্ব অঙ্গীকার ও রসিদ দেখতে পাচ্ছেন
-                  </p>
-                </div>
+            <div className="space-y-4 animate-in fade-in duration-200">
+              {/* Feature Explainer Banner */}
+              <TabFeatureExplainer
+                title="সদস্যদের নিজস্ব পোর্টাল (প্রাইভেট ভিউ)"
+                badge="ব্যক্তিগত গোপনীয় পেজ"
+                purpose="একজন সাধারণ সদস্যের সম্পূর্ণ ব্যক্তিগত ড্যাশবোর্ড—যেখানে তিনি কেবল নিজের মাসিক অঙ্গীকার, আদায়কৃত চাঁদা, ব্যক্তিগত ডিজিটাল রসিদ এবং ইমাম সাহেবের আজকের খাবার দায়িত্ব দেখতে পাবেন।"
+                howTo="আপনার অবশিষ্ট বকেয়া পরিশোধ করতে 'অনলাইন চাঁদা পরিশোধ' বাটনে চাপুন অথবা নির্ধারিত দিনে খানা দিতে সমস্যা হলে 'খানা বদল আবেদন' বাটনে চাপ দিন।"
+                icon={User}
+                actionLabel="অনলাইন চাঁদা পরিশোধ"
+                onAction={() => {
+                  if (currentMemberStatement) {
+                    setNewDonationForm({
+                      donorName: currentMemberStatement.member.name,
+                      phone: currentMemberStatement.member.phone,
+                      fundId: "f1",
+                      amount: currentMemberStatement.remaining > 0 ? currentMemberStatement.remaining : 1000,
+                      category: "সদস্য চাঁদা",
+                      method: "বিকাশ (bKash)",
+                      notes: `সদস্য আইডি: ${currentMemberStatement.member.id}`,
+                    });
+                  }
+                  setNewDonationModalOpen(true);
+                }}
+              />
 
-                {/* Member Switcher (for testing/committee view) */}
-                <div className="flex items-center gap-1.5 text-xs">
-                  <span className="text-stone-400">সদস্য নির্বাচন:</span>
-                  <select
-                    value={currentMemberId}
-                    onChange={(e) => setCurrentMemberId(e.target.value)}
-                    className="px-2.5 py-1.5 rounded-xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 text-xs font-bold"
-                  >
-                    {db.members.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.name} ({m.role})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {currentMemberStatement && (
-                <div className="space-y-4">
-                  {/* Member Profile Summary */}
-                  <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-[#0D7A5F]/30 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
-                    <div>
-                      <span className="text-stone-500 dark:text-stone-400">সদস্যের নাম:</span>
-                      <p className="font-bold text-stone-900 dark:text-stone-100 text-sm mt-0.5">{currentMemberStatement.member.name}</p>
-                    </div>
-                    <div>
-                      <span className="text-stone-500 dark:text-stone-400">মাসিক অঙ্গীকার:</span>
-                      <p className="font-mono font-bold text-stone-900 dark:text-stone-100 text-sm mt-0.5">৳{currentMemberStatement.totalPledge}</p>
-                    </div>
-                    <div>
-                      <span className="text-stone-500 dark:text-stone-400">চলতি মাসে আদায়:</span>
-                      <p className="font-mono font-bold text-emerald-600 text-sm mt-0.5">৳{currentMemberStatement.totalPaid}</p>
-                    </div>
-                    <div>
-                      <span className="text-stone-500 dark:text-stone-400">অবশিষ্ট বকেয়া:</span>
-                      <p className="font-mono font-bold text-amber-600 text-sm mt-0.5">৳{currentMemberStatement.remaining}</p>
-                    </div>
+              <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                      <User className="w-5 h-5 text-[#0D7A5F]" />
+                      <span>সদস্যের নিজস্ব পোর্টাল ও ব্যক্তিগত হিসাব</span>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
+                      কঠোর গোপনীয়তা: আপনি শুধুমাত্র আপনার নিজস্ব অঙ্গীকার ও রসিদ দেখতে পাচ্ছেন
+                    </p>
                   </div>
 
-                  {/* Personal Receipts Table */}
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-stone-800 dark:text-stone-200">
-                      আপনার নিজস্ব অনুদানের রসিদসমূহ:
-                    </h4>
-                    {currentMemberStatement.inflows.length === 0 ? (
-                      <div className="p-4 text-center text-xs text-stone-400 bg-stone-50 dark:bg-[#07130e] rounded-xl">
-                        চলতি মাসে এখনও কোনো জমার রসিদ পাওয়া যায়নি।
+                  {/* Member Switcher (for testing/committee view) */}
+                  <div className="flex items-center gap-2 text-xs sm:text-sm">
+                    <span className="text-stone-500 font-bold">সদস্য নির্বাচন:</span>
+                    <select
+                      value={currentMemberId}
+                      onChange={(e) => setCurrentMemberId(e.target.value)}
+                      className="px-3 py-1.5 rounded-xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 text-xs sm:text-sm font-bold cursor-pointer"
+                    >
+                      {db.members.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name} ({m.role})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {currentMemberStatement && (
+                  <div className="space-y-4">
+                    {/* Member Profile Summary */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border-2 border-[#0D7A5F]/30 grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs sm:text-sm">
+                      <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0c1612]/80 border border-emerald-200/50">
+                        <span className="text-stone-500 font-bold text-xs block">সদস্যের নাম:</span>
+                        <p className="font-black text-stone-900 dark:text-stone-100 text-sm sm:text-base mt-0.5">
+                          {currentMemberStatement.member.name}
+                        </p>
                       </div>
-                    ) : (
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-xs text-left">
-                          <thead className="bg-stone-50 dark:bg-[#07130e] text-stone-500 text-[10px]">
-                            <tr>
-                              <th className="py-2 px-3">রসিদ নং</th>
-                              <th className="py-2 px-3">ফান্ড</th>
-                              <th className="py-2 px-3">পরিমাণ</th>
-                              <th className="py-2 px-3">তারিখ ও মাধ্যম</th>
-                              <th className="py-2 px-3 text-right">রসিদ</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-stone-100 dark:divide-emerald-950/80">
-                            {currentMemberStatement.inflows.map((inf) => (
-                              <tr key={inf.id}>
-                                <td className="py-2.5 px-3 font-mono font-bold text-[#0D7A5F]">{inf.receiptNo}</td>
-                                <td className="py-2.5 px-3">{inf.fundName}</td>
-                                <td className="py-2.5 px-3 font-mono font-bold text-emerald-600">৳{inf.amount}</td>
-                                <td className="py-2.5 px-3 text-stone-500">{inf.date} ({inf.method})</td>
-                                <td className="py-2.5 px-3 text-right">
-                                  <button
-                                    onClick={() => window.print()}
-                                    className="text-xs text-[#0D7A5F] hover:underline font-bold"
-                                  >
-                                    প্রিন্ট রসিদ
-                                  </button>
-                                </td>
+                      <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0c1612]/80 border border-emerald-200/50">
+                        <span className="text-stone-500 font-bold text-xs block">মাসিক অঙ্গীকার:</span>
+                        <p className="font-mono font-bold text-stone-900 dark:text-stone-100 text-sm sm:text-base mt-0.5">
+                          ৳{currentMemberStatement.totalPledge}
+                        </p>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0c1612]/80 border border-emerald-200/50">
+                        <span className="text-stone-500 font-bold text-xs block">চলতি মাসে আদায়:</span>
+                        <p className="font-mono font-bold text-emerald-600 text-sm sm:text-base mt-0.5">
+                          ৳{currentMemberStatement.totalPaid}
+                        </p>
+                      </div>
+                      <div className="p-2.5 rounded-xl bg-white/80 dark:bg-[#0c1612]/80 border border-emerald-200/50">
+                        <span className="text-stone-500 font-bold text-xs block">অবশিষ্ট বকেয়া:</span>
+                        <p className="font-mono font-bold text-amber-600 text-sm sm:text-base mt-0.5">
+                          ৳{currentMemberStatement.remaining}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Personal Receipts Table */}
+                    <div className="space-y-2.5">
+                      <h4 className="text-sm sm:text-base font-black text-stone-900 dark:text-stone-100">
+                        আপনার নিজস্ব অনুদানের রসিদসমূহ:
+                      </h4>
+                      {currentMemberStatement.inflows.length === 0 ? (
+                        <div className="p-5 text-center text-xs sm:text-sm text-stone-500 bg-stone-50 dark:bg-[#07130e] rounded-2xl border border-stone-200">
+                          চলতি মাসে এখনও কোনো জমার রসিদ পাওয়া যায়নি।
+                        </div>
+                      ) : (
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-xs sm:text-sm text-left">
+                            <thead className="bg-stone-50 dark:bg-[#07130e] text-stone-600 uppercase text-xs font-bold border-b border-stone-200">
+                              <tr>
+                                <th className="py-2.5 px-3">রসিদ নং</th>
+                                <th className="py-2.5 px-3">ফান্ড</th>
+                                <th className="py-2.5 px-3">পরিমাণ</th>
+                                <th className="py-2.5 px-3">তারিখ ও মাধ্যম</th>
+                                <th className="py-2.5 px-3 text-right">রসিদ</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Public Mosque Summary accessible to member */}
-                  <div className="p-4 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 flex items-center justify-between text-xs">
-                    <div>
-                      <span className="font-bold text-stone-800 dark:text-stone-200">মসজিদের সামগ্রিক উন্মুক্ত তহবিল স্থিতি:</span>
-                      <p className="text-[11px] text-stone-500">সকল মুসল্লিদের জ্ঞাতার্থে উন্মুক্ত আর্থিক স্বচ্ছতা</p>
+                            </thead>
+                            <tbody className="divide-y divide-stone-100 dark:divide-emerald-950/80">
+                              {currentMemberStatement.inflows.map((inf) => (
+                                <tr key={inf.id}>
+                                  <td className="py-3 px-3 font-mono font-bold text-[#0D7A5F]">{inf.receiptNo}</td>
+                                  <td className="py-3 px-3 font-semibold">{inf.fundName}</td>
+                                  <td className="py-3 px-3 font-mono font-black text-emerald-600">৳{inf.amount}</td>
+                                  <td className="py-3 px-3 text-stone-500">{inf.date} ({inf.method})</td>
+                                  <td className="py-3 px-3 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => window.print()}
+                                      className="px-2.5 py-1 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-[#0D7A5F] font-bold text-xs cursor-pointer inline-flex items-center gap-1"
+                                    >
+                                      <Printer className="w-3.5 h-3.5" />
+                                      <span>প্রিন্ট রসিদ</span>
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
                     </div>
-                    <span className="text-base font-black text-[#0D7A5F] font-mono">
-                      ৳{currentMemberStatement.publicMosqueSummary.totalFundsAvailable.toLocaleString("bn-BD")}
-                    </span>
+
+                    {/* Public Mosque Summary accessible to member */}
+                    <div className="p-4 sm:p-5 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs sm:text-sm">
+                      <div>
+                        <span className="font-bold text-stone-900 dark:text-stone-100 text-sm sm:text-base block">
+                          মসজিদের সামগ্রিক উন্মুক্ত তহবিল স্থিতি:
+                        </span>
+                        <p className="text-xs text-stone-500">সকল মুসল্লিদের জ্ঞাতার্থে উন্মুক্ত আর্থিক স্বচ্ছতা</p>
+                      </div>
+                      <span className="text-lg sm:text-2xl font-black text-[#0D7A5F] font-mono">
+                        ৳{currentMemberStatement.publicMosqueSummary.totalFundsAvailable.toLocaleString("bn-BD")}
+                      </span>
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
+              </div>
             </div>
           )}
 
@@ -1294,41 +1563,54 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               VIEW 7: অডিট ট্রেইল ও নিরাপত্তা লগ (AUDIT & SECURITY)
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "audit" && (
-            <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-emerald-950/80">
-                <div>
-                  <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100 flex items-center gap-2">
-                    <ShieldCheck className="w-5 h-5 text-[#0D7A5F]" />
-                    <span>অপরিবর্তনীয় অডিট ট্রেইল ও লেনদেন নিরাপত্তা লগ</span>
-                  </h3>
-                  <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">
-                    কে কখন কোন এন্ট্রি দাখিল, অনুমোদন বা সংশোধন করেছেন তার সম্পূর্ণ ইতিহাস
-                  </p>
-                </div>
-                <span className="text-xs font-mono font-bold text-[#0D7A5F] bg-emerald-50 dark:bg-emerald-950 px-2.5 py-1 rounded-xl">
-                  {db.auditLogs.length}টি লগ রেকর্ড
-                </span>
-              </div>
+            <div className="space-y-4 animate-in fade-in duration-200">
+              {/* Feature Explainer Banner */}
+              <TabFeatureExplainer
+                title="অডিট ট্রেইল ও নিরাপত্তা লগ (Security Audit)"
+                badge="অপরিবর্তনীয় লগ"
+                purpose="প্ল্যাটফর্মে কে কখন কোন অনুদান তুলল, কে কোন ভাউচার অনুমোদন দিল বা সেটিংস পরিবর্তন করল তার সময় ও ইউজার আইডিসহ অপরিবর্তনীয় প্রমাণ রাখা।"
+                howTo="নিচের টেবিলে প্রতিটি কাজের তারিখ, ব্যবহারকারী, অ্যাকশন এবং বিবরণ দেখে আর্থিক ও প্রশাসনিক স্বচ্ছতা নিশ্চিত করুন।"
+                icon={ShieldCheck}
+              />
 
-              <div className="space-y-2">
-                {db.auditLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="p-3 rounded-xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 text-xs flex items-center justify-between gap-3"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-[10px] text-stone-400">{log.timestamp}</span>
-                        <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold">
-                          {log.role}
-                        </span>
-                      </div>
-                      <p className="text-stone-900 dark:text-stone-100 font-bold mt-0.5">{log.details}</p>
-                      <span className="text-[10px] text-stone-500">কর্তা: {log.actor} · আইডি: {log.targetId}</span>
-                    </div>
-                    <span className="font-mono text-[10px] text-emerald-600 font-bold">{log.action}</span>
+              <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-emerald-950/80">
+                  <div>
+                    <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                      <ShieldCheck className="w-5 h-5 text-[#0D7A5F]" />
+                      <span>অপরিবর্তনীয় অডিট ট্রেইল ও লেনদেন নিরাপত্তা লগ</span>
+                    </h3>
+                    <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
+                      কে কখন কোন এন্ট্রি দাখিল, অনুমোদন বা সংশোধন করেছেন তার সম্পূর্ণ ইতিহাস
+                    </p>
                   </div>
-                ))}
+                  <span className="text-xs font-mono font-bold text-[#0D7A5F] bg-emerald-50 dark:bg-emerald-950 px-3 py-1 rounded-xl">
+                    {db.auditLogs.length}টি লগ রেকর্ড
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  {db.auditLogs.map((log) => (
+                    <div
+                      key={log.id}
+                      className="p-3.5 sm:p-4 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 text-xs sm:text-sm flex flex-col sm:flex-row sm:items-center justify-between gap-2.5"
+                    >
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-stone-400">{log.timestamp}</span>
+                          <span className="text-xs px-2 py-0.5 rounded-md bg-stone-200 dark:bg-stone-800 text-stone-800 dark:text-stone-200 font-bold">
+                            {log.role}
+                          </span>
+                        </div>
+                        <p className="text-stone-900 dark:text-stone-100 font-bold">{log.details}</p>
+                        <span className="text-xs text-stone-500">কর্তা: {log.actor} · আইডি: {log.targetId}</span>
+                      </div>
+                      <span className="font-mono text-xs font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-xl self-start sm:self-auto">
+                        {log.action}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -1337,60 +1619,73 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               VIEW 8: ব্যাকআপ ও ডেটা পুনরুদ্ধার (BACKUP & RESTORE)
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "backup" && (
-            <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4 animate-in fade-in duration-200">
-              <div className="flex items-center gap-2 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
-                <Database className="w-5 h-5 text-[#0D7A5F]" />
-                <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100">
-                  মসজিদ ERP ডাটাবেস ব্যাকআপ ও পুনরুদ্ধার (JSON Format)
-                </h3>
-              </div>
+            <div className="space-y-4 animate-in fade-in duration-200">
+              {/* Feature Explainer Banner */}
+              <TabFeatureExplainer
+                title="ডেটাবেস ব্যাকআপ ও ডেটা পুনরুদ্ধার (Backup & Restore)"
+                badge="১০০% ক্লাউড ও লোকাল নিরাপত্তা"
+                purpose="সম্পূর্ণ মসজিদের সকল সদস্য, ফান্ড ব্যালেন্স, ভাউচার ও খানা রোস্টার নিরাপদ JSON ফাইল আকারে সংরক্ষণ করা এবং যেকোনো ডিভাইসে ১ ক্লিকে রিস্টোর করা।"
+                howTo="'সম্পূর্ণ ডাটাবেস ব্যাকআপ ডাউনলোড করুন' বাটনে চাপ দিয়ে ফাইল সেভ রাখুন। নতুন মোবাইল বা ডিভাইসে 'ব্যাকআপ ফাইল আপলোড ও রিস্টোর' বাটনে চাপ দিয়ে যেকোনো সময় তথ্য ফিরিয়ে আনুন।"
+                icon={Database}
+                actionLabel="ব্যাকআপ ডাউনলোড"
+                onAction={handleExportBackup}
+              />
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Export Backup Card */}
-                <div className="p-5 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-[#0D7A5F] flex items-center justify-center">
-                    <Download className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
-                      সম্পূর্ণ ডাটাবেস ব্যাকআপ ডাউনলোড
-                    </h4>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
-                      ১০টি ফান্ড, সদস্য তালিকা, সকল ভাউচার এবং অডিট লগসহ সম্পূর্ণ ডাটাবেস এক্সপোর্ট করুন।
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleExportBackup}
-                    className="w-full py-2.5 rounded-xl bg-[#0D7A5F] hover:bg-[#0b654e] text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-                  >
-                    <Download className="w-4 h-4" />
-                    <span>ব্যাকআপ ফাইল ডাউনলোড করুন (JSON)</span>
-                  </button>
+              <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
+                <div className="flex items-center gap-2 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
+                  <Database className="w-5 h-5 text-[#0D7A5F]" />
+                  <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100">
+                    মসজিদ ERP ডাটাবেস ব্যাকআপ ও পুনরুদ্ধার (JSON Format)
+                  </h3>
                 </div>
 
-                {/* Import / Restore Card */}
-                <div className="p-5 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 space-y-3">
-                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-700 flex items-center justify-center">
-                    <Upload className="w-5 h-5" />
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Export Backup Card */}
+                  <div className="p-5 sm:p-6 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 space-y-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/60 text-[#0D7A5F] flex items-center justify-center">
+                      <Download className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100">
+                        সম্পূর্ণ ডাটাবেস ব্যাকআপ ডাউনলোড
+                      </h4>
+                      <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
+                        ১০টি ফান্ড, সদস্য তালিকা, সকল ভাউচার এবং অডিট লগসহ সম্পূর্ণ ডাটাবেস এক্সপোর্ট করুন।
+                      </p>
+                    </div>
+                    <button
+                      onClick={handleExportBackup}
+                      className="w-full py-3 rounded-xl bg-[#0D7A5F] hover:bg-[#064E3B] text-white font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs"
+                    >
+                      <Download className="w-4 h-4" />
+                      <span>ব্যাকআপ ফাইল ডাউনলোড করুন (JSON)</span>
+                    </button>
                   </div>
-                  <div>
-                    <h4 className="text-xs sm:text-sm font-bold text-stone-900 dark:text-stone-100">
-                      পূর্ববর্তী ব্যাকআপ ফাইল পুনরুদ্ধার (Restore)
-                    </h4>
-                    <p className="text-xs text-stone-500 dark:text-stone-400 mt-1">
-                      পূর্বে সেভ করা `.json` ব্যাকআপ ফাইল সিলেক্ট করে ডাটা রিকভার করুন।
-                    </p>
+
+                  {/* Import / Restore Card */}
+                  <div className="p-5 sm:p-6 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 space-y-3.5">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-950 text-amber-700 flex items-center justify-center">
+                      <Upload className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100">
+                        পূর্ববর্তী ব্যাকআপ ফাইল পুনরুদ্ধার (Restore)
+                      </h4>
+                      <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
+                        পূর্বে সেভ করা `.json` ব্যাকআপ ফাইল সিলেক্ট করে যেকোনো সময় তথ্য পুনরুদ্ধার করুন।
+                      </p>
+                    </div>
+                    <label className="w-full py-3 rounded-xl bg-stone-200 hover:bg-stone-300 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-900 dark:text-stone-100 font-bold text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs">
+                      <Upload className="w-4 h-4" />
+                      <span>ব্যাকআপ ফাইল আপলোড ও রিস্টোর</span>
+                      <input
+                        type="file"
+                        accept=".json"
+                        onChange={handleImportBackup}
+                        className="hidden"
+                      />
+                    </label>
                   </div>
-                  <label className="w-full py-2.5 rounded-xl bg-stone-200 hover:bg-stone-300 dark:bg-stone-800 dark:hover:bg-stone-700 text-stone-900 dark:text-stone-100 font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-xs">
-                    <Upload className="w-4 h-4" />
-                    <span>ব্যাকআপ ফাইল আপলোড করুন</span>
-                    <input
-                      type="file"
-                      accept=".json"
-                      onChange={handleImportBackup}
-                      className="hidden"
-                    />
-                  </label>
                 </div>
               </div>
             </div>
@@ -1400,30 +1695,43 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               VIEW 9: সেটিংস ও কাস্টম ডোমেইন (SETTINGS)
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "settings" && (
-            <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4 animate-in fade-in duration-200">
-              <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-emerald-950/80">
-                <div className="flex items-center gap-2">
-                  <Settings className="w-5 h-5 text-[#0D7A5F]" />
-                  <h3 className="text-sm sm:text-base font-bold text-stone-900 dark:text-stone-100">
-                    মসজিদ সেটিংস ও কনফিগারেশন
-                  </h3>
-                </div>
-                <button
-                  onClick={() => setActiveModal("custom-domain")}
-                  className="px-3.5 py-1.5 rounded-xl bg-[#0D7A5F] hover:bg-[#0b654e] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
-                >
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>কাস্টম ডোমেইন ম্যানেজ</span>
-                </button>
-              </div>
+            <div className="space-y-4 animate-in fade-in duration-200">
+              {/* Feature Explainer Banner */}
+              <TabFeatureExplainer
+                title="মসজিদ সেটিংস ও কাস্টম ডোমেইন সংযোগ"
+                badge="মাল্টি-টেন্যান্ট কনফিগ"
+                purpose="মসজিদের নাম, লোগো, ঠিকানা, ব্যাংক তথ্য এবং নিজস্ব কাস্টম ডোমেন (যেমন: baitulamanmasjid.org) সংযোগ ও পরিচালনা করা।"
+                howTo="আপনার তথ্য পরিবর্তন করে সংরক্ষণ করুন অথবা 'কাস্টম ডোমেইন সেটিংস' বাটনে ক্লিক করে ক্লাউডফ্লেয়ার বা সিএনএএম (CNAME) পয়েন্ট করে নিজস্ব ডোমেন যুক্ত করুন।"
+                icon={Settings}
+                actionLabel="কাস্টম ডোমেইন সেটআপ"
+                onAction={() => setActiveModal("custom-domain")}
+              />
 
-              <div className="space-y-3 text-xs">
-                <div className="p-4 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 space-y-2">
-                  <span className="font-bold text-stone-900 dark:text-stone-100">মসজিদ পরিচিতি:</span>
-                  <p>নাম: <b>{currentMosque.name}</b></p>
-                  <p>ঠিকানা: {currentMosque.address}</p>
-                  <p>স্লাগ: <code className="font-mono text-[#0D7A5F]">{currentMosque.slug}</code></p>
-                  <p>কাস্টম ডোমেইন: <code className="font-mono text-[#0D7A5F]">{currentMosque.customDomain}</code></p>
+              <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
+                <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-emerald-950/80">
+                  <div className="flex items-center gap-2">
+                    <Settings className="w-5 h-5 text-[#0D7A5F]" />
+                    <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100">
+                      মসজিদ সেটিংস ও কনফিগারেশন
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setActiveModal("custom-domain")}
+                    className="px-4 py-2 rounded-xl bg-[#0D7A5F] hover:bg-[#064E3B] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 cursor-pointer shadow-xs"
+                  >
+                    <Globe className="w-4 h-4" />
+                    <span>কাস্টম ডোমেইন ম্যানেজ</span>
+                  </button>
+                </div>
+
+                <div className="space-y-3 text-xs sm:text-sm">
+                  <div className="p-4 sm:p-5 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 space-y-2.5">
+                    <span className="font-black text-stone-900 dark:text-stone-100 text-sm sm:text-base block">মসজিদ পরিচিতি:</span>
+                    <p>নাম: <b>{currentMosque.name}</b></p>
+                    <p>ঠিকানা: <b>{currentMosque.address}</b></p>
+                    <p>স্লাগ: <code className="font-mono text-[#0D7A5F] bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded">{currentMosque.slug}</code></p>
+                    <p>কাস্টম ডোমেইন: <code className="font-mono text-[#0D7A5F] bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded">{currentMosque.customDomain}</code></p>
+                  </div>
                 </div>
               </div>
             </div>
