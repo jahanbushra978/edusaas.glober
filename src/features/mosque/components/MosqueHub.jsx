@@ -164,6 +164,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
 
   const [memberSearch, setMemberSearch] = useState("");
   const [selectedMonth, setSelectedMonth] = useState("নভেম্বর ২০২৬");
+  const [showContributors, setShowContributors] = useState(false); // Contributor privacy toggle
 
   // Multi-Tenant Active Mosque Context
   const currentMosque = db.mosque;
@@ -420,8 +421,8 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               {[
                 { id: "dashboard", label: "ড্যাশবোর্ড", icon: Landmark },
                 { id: "members", label: "সদস্য ও মুসল্লি", icon: Users, badge: `${db.members.length}` },
-                { id: "committee", label: "কমিটি ও দায়িত্ব", icon: ShieldCheck },
-                { id: "staff", label: "ইমাম ও কর্মচারী", icon: Briefcase },
+                { id: "committee", label: "কমিটি ও দায়িত্ব", icon: ShieldCheck, modal: "admin" },
+                { id: "staff", label: "ইমাম ও কর্মচারী", icon: Briefcase, modal: "employee-salary" },
                 { id: "member-portal", label: "সদস্যদের নিজস্ব পোর্টাল", icon: User, highlight: true },
               ].map((item) => {
                 const Icon = item.icon;
@@ -430,8 +431,12 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                   <button
                     key={item.id}
                     onClick={() => {
-                      setActiveTab(item.id);
                       setIsSidebarOpen(false);
+                      if (item.modal) {
+                        setActiveModal(item.modal);
+                      } else {
+                        setActiveTab(item.id);
+                      }
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                       isActive
@@ -465,8 +470,8 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 { id: "funds", label: "১০টি ফান্ড ব্যবস্থাপনা", icon: Landmark, badge: "১০টি" },
                 { id: "vouchers", label: "রসিদ ও ভাউচার", icon: Receipt },
                 { id: "bill-approvals", label: "বিল ও ব্যয় অনুমোদন", icon: FileCheck, badge: `${db.expenses.filter(e => e.status === "PENDING_APPROVAL").length}টি বাকি` },
-                { id: "ledger", label: "হিসাবের খাতা ও লেজার", icon: FileSpreadsheet },
-                { id: "reports", label: "আর্থিক রিপোর্ট ও অডিট", icon: FileText },
+                { id: "ledger", label: "হিসাবের খাতা ও লেজার", icon: FileSpreadsheet, modal: "master-dues" },
+                { id: "reports", label: "আর্থিক রিপোর্ট ও অডিট", icon: FileText, modal: "master-dues" },
               ].map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
@@ -474,8 +479,12 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                   <button
                     key={item.id}
                     onClick={() => {
-                      setActiveTab(item.id);
                       setIsSidebarOpen(false);
+                      if (item.modal) {
+                        setActiveModal(item.modal);
+                      } else {
+                        setActiveTab(item.id);
+                      }
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                       isActive
@@ -503,11 +512,11 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 দৈনন্দিন পরিচালনা
               </span>
               {[
-                { id: "prayer", label: "নামাজ ও জামাতের সময়", icon: Clock },
-                { id: "roster", label: "ইমামের খানা রোস্টার", icon: Utensils },
-                { id: "maktab", label: "মক্তব ও কুরআন শিক্ষা", icon: GraduationCap },
-                { id: "welfare", label: "যাকাত ও মানবসেবা", icon: HeartHandshake },
-                { id: "assets", label: "সম্পদ ও মালামাল", icon: Boxes },
+                { id: "prayer", label: "নামাজ ও জামাতের সময়", icon: Clock, modal: "prayer-edit" },
+                { id: "roster", label: "ইমামের খানা রোস্টার", icon: Utensils, modal: "imam-meal" },
+                { id: "maktab", label: "মক্তব ও কুরআন শিক্ষা", icon: GraduationCap, modal: "maktab" },
+                { id: "welfare", label: "যাকাত ও মানবসেবা", icon: HeartHandshake, modal: "community-welfare" },
+                { id: "assets", label: "সম্পদ ও মালামাল", icon: Boxes, modal: "asset-inventory" },
               ].map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;
@@ -515,8 +524,12 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                   <button
                     key={item.id}
                     onClick={() => {
-                      setActiveTab(item.id);
                       setIsSidebarOpen(false);
+                      if (item.modal) {
+                        setActiveModal(item.modal);
+                      } else {
+                        setActiveTab(item.id);
+                      }
                     }}
                     className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-bold transition cursor-pointer ${
                       isActive
@@ -732,6 +745,36 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 </button>
               </div>
 
+              {/* Contributor Privacy Toggle (kara kara tk diyese ta sokolke chaile dekhano jabe ba hide kora jabe) */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 text-xs">
+                <div className="flex items-center gap-2">
+                  <ShieldCheck className="w-4 h-4 text-[#0D7A5F]" />
+                  <div>
+                    <span className="font-bold text-stone-900 dark:text-stone-100">চাঁদাদাতাদের নাম প্রকাশ / গোপনীয়তা নিয়ন্ত্রণ:</span>
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400">
+                      {showContributors
+                        ? "বর্তমান অবস্থা: উন্মুক্ত — সাধারণ সদস্যদের নাম ও অনুদান দৃশ্যমান।"
+                        : "বর্তমান অবস্থা: গোপন (Anonymous) — সাধারণের কাছে নাম গোপন রাখা হয়েছে।"}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const next = !showContributors;
+                    setShowContributors(next);
+                    toast.info(next ? "চাঁদাদাতাদের তালিকা উন্মুক্ত করা হয়েছে" : "চাঁদাদাতাদের নাম গোপন করা হয়েছে");
+                  }}
+                  className={`px-3.5 py-1.5 rounded-xl font-bold text-xs transition cursor-pointer self-start sm:self-auto ${
+                    showContributors
+                      ? "bg-[#0D7A5F] text-white shadow-xs"
+                      : "bg-stone-200 text-stone-700 dark:bg-stone-800 dark:text-stone-300"
+                  }`}
+                >
+                  {showContributors ? "প্রকাশিত (Visible)" : "গোপন রাখুন (Hidden)"}
+                </button>
+              </div>
+
               {/* Search Bar */}
               <div className="relative">
                 <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-stone-400" />
@@ -765,8 +808,12 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                         <tr key={m.id} className="hover:bg-stone-50/50 dark:hover:bg-[#07130e]/50">
                           <td className="py-3 px-3 font-mono font-bold text-[#0D7A5F]">{m.id}</td>
                           <td className="py-3 px-3">
-                            <b className="block text-stone-900 dark:text-stone-100">{m.name}</b>
-                            <span className="text-[11px] font-mono text-stone-400">{m.phone}</span>
+                            <b className="block text-stone-900 dark:text-stone-100">
+                              {showContributors || currentUserRole !== "MEMBER" ? m.name : `${m.name.slice(0, 4)}*** (${m.id})`}
+                            </b>
+                            <span className="text-[11px] font-mono text-stone-400">
+                              {showContributors || currentUserRole !== "MEMBER" ? m.phone : "০১৭১১-***"}
+                            </span>
                           </td>
                           <td className="py-3 px-3">
                             <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 text-[#0D7A5F] dark:bg-emerald-950 dark:text-emerald-300 font-bold">
