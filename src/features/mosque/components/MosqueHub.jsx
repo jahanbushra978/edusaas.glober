@@ -38,6 +38,10 @@ import {
   Filter,
   Printer,
   Lock,
+  Globe,
+  LogIn,
+  ShoppingBag,
+  Wrench,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -82,6 +86,15 @@ import {
 import { SuperAppModal } from "./modals/SuperAppModal";
 import { Admin360Modal } from "./modals/Admin360Modal";
 import { SuperAdminModal } from "./modals/SuperAdminModal";
+import { ImamMealRosterModal } from "./modals/ImamMealRosterModal";
+import { PurchaseProcurementModal } from "./modals/PurchaseProcurementModal";
+import { EmployeeSalaryModal } from "./modals/EmployeeSalaryModal";
+import { AssetInventoryModal } from "./modals/AssetInventoryModal";
+import { CommunityWelfareModal } from "./modals/CommunityWelfareModal";
+import { CustomDomainModal } from "./modals/CustomDomainModal";
+import { MosqueDiscoveryModal } from "./modals/MosqueDiscoveryModal";
+import { MosqueRegistrationModal } from "./modals/MosqueRegistrationModal";
+import { PublicMosqueWebsite } from "./PublicMosqueWebsite";
 
 const BANGLADESH_DISTRICTS = [
   "গাজীপুর",
@@ -111,17 +124,27 @@ const DEFAULT_SCHEDULE = [
 ];
 
 export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBack }) {
+  // Operating View Mode: "erp" (Admin & Member portal) vs "public" (Public website without login)
+  const [viewMode, setViewMode] = useState("erp");
+
+  // Multi-Tenant Active Mosque Context
+  const [currentMosque, setCurrentMosque] = useState({
+    id: "MAS-2026-0001",
+    name: "বাইতুন নূর জামে মসজিদ ও কমপ্লেক্স",
+    slug: "baitun-noor",
+    district: "গাজীপুর",
+    address: "হাড়িনাল, গাজীপুর সিটি কর্পোরেশন",
+    established: "১৯৯৮",
+    membersCount: 25,
+    logoLetter: "বা",
+    customDomain: "baitunnoormasjid.org",
+  });
+
   // 5 Canonical Tabs from mosque/AGENT.md
   // "dashboard" | "months" | "expenses" | "members" | "settings"
   const [activeTab, setActiveTab] = useState("dashboard");
   const [activeModal, setActiveModal] = useState(null);
   const [selectedMonth, setSelectedMonth] = useState("নভেম্বর ২০২৬");
-
-  // Mosque identity & settings
-  const [mosqueName, setMosqueName] = useState("বাইতুন নূর জামে মসজিদ ও কমপ্লেক্স");
-  const [district, setDistrict] = useState("গাজীপুর");
-  const [isEditingName, setIsEditingName] = useState(false);
-  const [nameInput, setNameInput] = useState(mosqueName);
 
   // Settings state (from mosque/AGENT.md Section 6)
   const [showContributors, setShowContributors] = useState(false); // privacy toggle
@@ -140,7 +163,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
   // Members Management state
   const [membersTab, setMembersTab] = useState("all"); // "all" | "me"
   const [memberSearch, setMemberSearch] = useState("");
-  const [selectedMemberProfile, setSelectedMemberProfile] = useState(null);
   const [membersList, setMembersList] = useState([
     { id: "M-101", name: "মুহাম্মদ আব্দুল্লাহ", phone: "০১৭১১-২২৩৩৪৪", role: "সভাপতি", status: "ACTIVE", pledge: 2000, paid: 2000, remaining: 0, loginId: "member01" },
     { id: "M-102", name: "হাজী রফিকুল ইসলাম", phone: "০১৮১৯-১১২২৩৩", role: "সহ-সভাপতি", status: "ACTIVE", pledge: 1500, paid: 1500, remaining: 0, loginId: "member02" },
@@ -211,13 +233,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
     },
   ]);
 
-  // New expense form modal state
-  const [showNewExpenseModal, setShowNewExpenseModal] = useState(false);
-  const [newExpenseTitle, setNewExpenseTitle] = useState("");
-  const [newExpenseCategory, setNewExpenseCategory] = useState("সাধারণ পরিচালন");
-  const [newExpenseAmount, setNewExpenseAmount] = useState("");
-  const [newExpenseFund, setNewExpenseFund] = useState("সাধারণ পরিচালন ফান্ড");
-
   // Dynamic roles state (from mosque/AGENT.md Section 4)
   const [rolesList, setRolesList] = useState([
     { id: "role-1", name: "সভাপতি (President)", isSystem: true, permissions: ["roles.manage", "members.manage", "finance.view_all", "expenses.approve"] },
@@ -230,12 +245,13 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
   useEffect(() => {
     try {
       const savedDist = localStorage.getItem("mosque_district");
-      if (savedDist) setDistrict(savedDist);
+      if (savedDist) {
+        setCurrentMosque((prev) => ({ ...prev, district: savedDist }));
+      }
 
       const savedName = localStorage.getItem("mosque_custom_name");
       if (savedName) {
-        setMosqueName(savedName);
-        setNameInput(savedName);
+        setCurrentMosque((prev) => ({ ...prev, name: savedName }));
       }
 
       const savedSched = localStorage.getItem("mosque_prayer_schedule");
@@ -274,25 +290,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
     return () => clearInterval(interval);
   }, [schedule]);
 
-  const handleSaveMosqueName = () => {
-    if (nameInput.trim()) {
-      setMosqueName(nameInput.trim());
-      try {
-        localStorage.setItem("mosque_custom_name", nameInput.trim());
-      } catch {}
-      setIsEditingName(false);
-      toast.success("মসজিদের নাম সফলভাবে হালনাগাদ হয়েছে");
-    }
-  };
-
-  const handleDistrictChange = (d) => {
-    setDistrict(d);
-    try {
-      localStorage.setItem("mosque_district", d);
-    } catch {}
-    toast.info(`অবস্থান: ${d} নির্বাচন করা হয়েছে`);
-  };
-
   const handleToggleContributors = (val) => {
     setShowContributors(val);
     try {
@@ -321,79 +318,57 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
     { period: "ডিসেম্বর ২০২৬", short: "ডিসে", expected: 78500, collected: 0, remaining: 78500, paidCount: 0, totalMembers: 25 },
   ];
 
-  // Feature Actions Grid (11 buttons matching mosque/src/app/(app)/dashboard/page.tsx)
+  // Feature Actions Grid (14 High-Value Modules connecting the full ERP & Super App)
   const FEATURE_BUTTONS = [
     { id: "admin-360", icon: "👑", label: "মূল অ্যাডমিন ৩৬০", highlight: true, action: () => setActiveModal("admin-360") },
     { id: "super-app", icon: "📱", label: "ইসলামিক সুপার অ্যাপ", highlight: true, action: () => setActiveModal("super-app") },
-    { id: "master", icon: "📊", label: "মাস্টার হিসাব", highlight: true, action: () => setActiveModal("master-dues") },
-    { id: "admin", icon: "⚙️", label: "কুইক প্যানেল", action: () => setActiveModal("admin") },
-    { id: "quran", icon: "📖", label: "কুরআন শরীফ", action: () => (onOpenQuranReader ? onOpenQuranReader() : setActiveModal("kitab")) },
+    { id: "imam-meal", icon: "🍲", label: "ইমাম খানা রোস্টার", highlight: true, action: () => setActiveModal("imam-meal") },
+    { id: "purchase-procurement", icon: "🧾", label: "ক্রয় ও ভাউচার", highlight: true, action: () => setActiveModal("purchase-procurement") },
+    { id: "employee-salary", icon: "👳‍♂️", label: "সম্মানী ও কর্মচারী", action: () => setActiveModal("employee-salary") },
+    { id: "asset-inventory", icon: "🏢", label: "স্থায়ী সম্পদ ও মালামাল", action: () => setActiveModal("asset-inventory") },
+    { id: "community-welfare", icon: "🤝", label: "যাকাত ও কল্যাণ ফান্ড", action: () => setActiveModal("community-welfare") },
+    { id: "master", icon: "📊", label: "মাস্টার হিসাব", action: () => setActiveModal("master-dues") },
     { id: "maktab", icon: "🏫", label: "নূরানী মক্তব", action: () => setActiveModal("maktab") },
-    { id: "roster", icon: "🍲", label: "খাবার রোস্টার", action: () => setActiveModal("meal-roster") },
-    { id: "tasbeeh", icon: "📿", label: "ডিজিটাল তাসবীহ", action: () => setActiveModal("tasbeeh") },
-    { id: "zakat", icon: "💰", label: "যাকাত ফিতরা", action: () => setActiveModal("zakat") },
-    { id: "super-admin", icon: "🌐", label: "SaaS সুপার অ্যাডমিন", highlight: true, action: () => setActiveModal("super-admin") },
+    { id: "custom-domain", icon: "🌐", label: "কাস্টম ডোমেইন", action: () => setActiveModal("custom-domain") },
+    { id: "discovery", icon: "🔍", label: "মসজিদ খুঁজুন", action: () => setActiveModal("mosque-discovery") },
+    { id: "register", icon: "➕", label: "মসজিদ যুক্ত করুন", action: () => setActiveModal("register-mosque") },
+    { id: "super-admin", icon: "🌐", label: "SaaS প্ল্যাটফর্ম", action: () => setActiveModal("super-admin") },
     { id: "ai", icon: "🤖", label: "BYOK AI সহকারী", action: () => (onOpenTutor ? onOpenTutor() : setActiveModal("support")) },
   ];
 
-  // Handle expense approval workflow
-  const handleApproveExpense = (id) => {
-    setExpensesList((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: "APPROVED", overdue: false } : e))
+  // 10 Segregated Funds (Section 6.6)
+  const TEN_FUNDS = [
+    { id: "f1", name: "সাধারণ পরিচালন ফান্ড", balance: "৳৮৫,০০০", restricted: false, purpose: "বিদ্যুৎ বিল, গ্যাস, ওয়াশরুম ক্লিনার ও নিয়মিত রক্ষণাবেক্ষণ" },
+    { id: "f2", name: "নির্মাণ ও সংস্কার ফান্ড", balance: "৳৭৫,০০০", restricted: true, purpose: "দ্বিতীয় তলার ছাদ ঢালাই ও মসজিদ সম্প্রসারণ কাজ" },
+    { id: "f3", name: "ইমাম-মুয়াজ্জিন সম্মানী ফান্ড", balance: "৳২৫,০০০", restricted: false, purpose: "খতীব, ইমাম ও মুয়াজ্জিন সাহেবের মাসিক হাদিয়া" },
+    { id: "f4", name: "যাকাত ফান্ড", balance: "৳১৩,৬০০", restricted: true, purpose: "কুরআনে নির্ধারিত ৮টি খাতে বাধ্যতামূলক যাকাত বিতরণ" },
+    { id: "f5", name: "ফিতরা ফান্ড", balance: "৳৮,৫০০", restricted: true, purpose: "ঈদুল ফিতরের পূর্বে প্রকৃত হকদারদের মাঝে খাদ্য/অর্থ বিতরণ" },
+    { id: "f6", name: "সদকা ও লিল্লাহ ফান্ড", balance: "৳১২,২০০", restricted: false, purpose: "অসহায় মুসল্লিদের তাৎক্ষণিক খাবার ও বস্ত্র সহায়তা" },
+    { id: "f7", name: "ওয়াকফ ফান্ড", balance: "৳৫০,০০০", restricted: true, purpose: "ওয়াকফকৃত জমি ও সম্পদ হতে অর্জিত রাজস্বের মূল ফান্ড" },
+    { id: "f8", name: "রমজান ও ইফতার ফান্ড", balance: "৳১৮,০০০", restricted: false, purpose: "প্রতিদিন মুসল্লি ও পথচারীদের জন্য উন্মুক্ত ইফতার আয়োজন" },
+    { id: "f9", name: "মক্তব ও শিক্ষা ফান্ড", balance: "৳১৪,৪০০", restricted: false, purpose: "নূরানী কায়দা, কুরআন ক্লাসের শিক্ষক ভাতা ও কিতাব প্রদান" },
+    { id: "f10", name: "জরুরি দুর্যোগ ও সমাজকল্যাণ", balance: "৳১০,০০০", restricted: true, purpose: "বন্যা, অগ্নিকাণ্ড ও আকস্মিক দুর্ঘটনায় চিকিৎসা ও কাফন-দাফন" },
+  ];
+
+  // If in Public Website Mode (Without Login), render the Public Website!
+  if (viewMode === "public") {
+    return (
+      <PublicMosqueWebsite
+        mosque={currentMosque}
+        schedule={schedule}
+        currentPrayer={currentPrayer}
+        countdown={countdown}
+        nextJamaatText={nextJamaatText}
+        onOpenLogin={() => setViewMode("erp")}
+        onOpenDiscovery={() => setActiveModal("mosque-discovery")}
+        onOpenCustomDomain={() => setActiveModal("custom-domain")}
+        onOpenDonate={() => setActiveTab("months")}
+        onOpenMaktab={() => setActiveModal("maktab")}
+      />
     );
-    toast.success("বিলটি সফলভাবে অনুমোদিত হয়েছে! কোষাধ্যক্ষ এখন অর্থ প্রদান করতে পারবেন।");
-  };
+  }
 
-  const handleRejectExpense = (id) => {
-    const reason = prompt("প্রত্যাখ্যানের সুনির্দিষ্ট কারণ উল্লেখ করুন (বাধ্যতামূলক):");
-    if (!reason || !reason.trim()) {
-      toast.error("প্রত্যাখ্যানের কারণ লেখা বাধ্যতামূলক");
-      return;
-    }
-    setExpensesList((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: "REJECTED", notes: `প্রত্যাখ্যাত: ${reason.trim()}` } : e))
-    );
-    toast.error("বিলটি প্রত্যাখ্যান করা হয়েছে।");
-  };
-
-  const handleMarkExpensePaid = (id) => {
-    setExpensesList((prev) =>
-      prev.map((e) => (e.id === id ? { ...e, status: "PAID" } : e))
-    );
-    toast.success("খরচ পরিশোধ সম্পন্ন হয়েছে এবং ভাউচার ক্যাশ বুকে নথিভুক্ত হয়েছে।");
-  };
-
-  const handleCreateNewExpense = (e) => {
-    e.preventDefault();
-    if (!newExpenseTitle.trim() || !newExpenseAmount) {
-      toast.error("শিরোনাম ও টাকার পরিমাণ দিন");
-      return;
-    }
-    const amt = Number(newExpenseAmount);
-    if (isNaN(amt) || amt <= 0) {
-      toast.error("সঠিক টাকার পরিমাণ দিন");
-      return;
-    }
-    const newVch = {
-      id: `VCH-2026-0${90 + expensesList.length}`,
-      voucherNo: `#VCH-0${90 + expensesList.length}`,
-      category: newExpenseCategory,
-      title: newExpenseTitle.trim(),
-      fund: newExpenseFund,
-      amount: amt,
-      submittedBy: "মুহাম্মদ আব্দুল্লাহ (সভাপতি)",
-      spentAt: "আজকের তারিখ",
-      status: "PENDING_APPROVAL",
-      overdue: false,
-      notes: "অনুমোদনের জন্য দাখিল করা হয়েছে।",
-    };
-    setExpensesList([newVch, ...expensesList]);
-    setShowNewExpenseModal(false);
-    setNewExpenseTitle("");
-    setNewExpenseAmount("");
-    toast.success("নতুন ব্যয় সফলভাবে দাখিল করা হয়েছে!");
-  };
-
+  // Otherwise, render the FULL AUTHENTICATED MOSQUE ERP
   return (
     <div className="min-h-screen bg-stone-100 dark:bg-[#07130e] text-stone-900 dark:text-stone-100 transition-colors duration-200">
       {/* Mobile-first centered app shell (max-w-xl) */}
@@ -405,23 +380,19 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
             <div className="flex items-center gap-2.5 min-w-0">
               <div
                 onClick={() => setActiveModal("my-account")}
-                className="w-10 h-10 rounded-full bg-gradient-to-br from-emerald-600 to-teal-800 text-white font-black text-sm flex items-center justify-center shadow-xs shrink-0 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition"
+                className="w-10 h-10 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white font-black text-sm flex items-center justify-center shadow-xs shrink-0 cursor-pointer hover:ring-2 hover:ring-emerald-400 transition"
                 title="আমার অ্যাকাউন্ট ও স্টেটমেন্ট দেখতে ক্লিক করুন"
               >
-                মু
+                {currentMosque.logoLetter}
               </div>
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h1 className="text-xs sm:text-sm font-black text-stone-900 dark:text-stone-100 truncate">
-                    {mosqueName}
+                    {currentMosque.name}
                   </h1>
-                  <button
-                    onClick={() => setIsEditingName(true)}
-                    className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold hover:underline shrink-0 cursor-pointer"
-                    title="মসজিদের নাম পরিবর্তন"
-                  >
-                    ✏️
-                  </button>
+                  <span className="text-[9px] font-mono px-1.5 py-0.2 rounded bg-stone-100 dark:bg-emerald-950/70 text-stone-500 font-bold shrink-0">
+                    {currentMosque.id}
+                  </span>
                 </div>
                 <div className="text-[11px] text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
                   <span className="font-semibold text-emerald-700 dark:text-emerald-400">মুহাম্মদ আব্দুল্লাহ</span>
@@ -433,22 +404,33 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               </div>
             </div>
 
-            {/* District & Notifications */}
+            {/* Quick Actions in Header */}
             <div className="flex items-center gap-1.5 shrink-0">
-              <select
-                value={district}
-                onChange={(e) => handleDistrictChange(e.target.value)}
-                className="text-[11px] font-bold px-2.5 py-1.5 rounded-full border border-stone-200 dark:border-emerald-800/60 bg-stone-50 dark:bg-[#07130e] text-stone-700 dark:text-stone-200 focus:outline-none cursor-pointer"
-              >
-                {BANGLADESH_DISTRICTS.map((d) => (
-                  <option key={d} value={d} className="bg-white text-slate-900">
-                    {d}
-                  </option>
-                ))}
-              </select>
-
+              {/* Switch to Public Website View Toggle */}
               <button
-                onClick={() => toast.info("আপনার ৩টি অপঠিত নোটিফিকেশন রয়েছে: চলতি মাসের চাঁদা, খাবার স্পন্সর ও জুমার বয়ান")}
+                onClick={() => {
+                  setViewMode("public");
+                  toast.info("পাবলিক ওয়েবসাইট ভিউতে পরিবর্তিত হয়েছে (লগইন ছাড়া কেমন দেখাবে)");
+                }}
+                className="px-2.5 py-1.5 rounded-full border border-stone-200 dark:border-emerald-800/60 bg-stone-50 dark:bg-[#07130e] text-stone-700 dark:text-stone-200 font-bold text-[11px] flex items-center gap-1 hover:border-emerald-500 transition cursor-pointer"
+                title="পাবলিক ওয়েবসাইট প্রিভিউ দেখুন"
+              >
+                <Globe className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="hidden sm:inline">পাবলিক সাইট</span>
+              </button>
+
+              {/* Mosque Discovery / Switcher */}
+              <button
+                onClick={() => setActiveModal("mosque-discovery")}
+                className="w-8 h-8 rounded-full border border-stone-200 dark:border-emerald-800/60 bg-stone-50 dark:bg-[#07130e] flex items-center justify-center text-stone-600 dark:text-stone-300 hover:border-emerald-500 transition cursor-pointer"
+                title="মসজিদ পরিবর্তন বা নতুন মসজিদ খুঁজুন"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+
+              {/* Notifications Bell */}
+              <button
+                onClick={() => toast.info("আপনার ৩টি অপঠিত নোটিফিকেশন: আগামীকাল ইমাম সাহেবের খাবার রোস্টার, মাইক বিল অনুমোদন ও জুমার খুতবা")}
                 className="w-8 h-8 rounded-full border border-stone-200 dark:border-emerald-800/60 bg-stone-50 dark:bg-[#07130e] flex items-center justify-center relative cursor-pointer hover:border-emerald-500 transition"
                 title="নোটিফিকেশন"
               >
@@ -457,31 +439,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               </button>
             </div>
           </div>
-
-          {/* Edit Mosque Name Inline Modal */}
-          {isEditingName && (
-            <div className="p-2.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center gap-2 animate-in fade-in">
-              <input
-                type="text"
-                value={nameInput}
-                onChange={(e) => setNameInput(e.target.value)}
-                className="flex-1 text-xs font-bold px-3 py-1.5 rounded-xl border border-stone-300 dark:border-emerald-700 bg-white dark:bg-[#07130e] text-stone-900 dark:text-stone-100 focus:outline-none"
-                placeholder="মসজিদের নাম লিখুন..."
-              />
-              <button
-                onClick={handleSaveMosqueName}
-                className="px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-xs cursor-pointer hover:bg-emerald-700"
-              >
-                সংরক্ষণ
-              </button>
-              <button
-                onClick={() => setIsEditingName(false)}
-                className="px-2 py-1.5 text-xs text-stone-500 hover:text-stone-700"
-              >
-                বাতিল
-              </button>
-            </div>
-          )}
         </header>
 
         {/* ── 2. HIJRI & BANGLA SEASONAL BANNER ── */}
@@ -495,7 +452,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
           </div>
         </div>
 
-        {/* ── 3. PRAYER ARC & WAQT WIDGET (Always visible or compact) ── */}
+        {/* ── 3. PRAYER ARC & WAQT WIDGET ── */}
         <div className="p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-xs mb-3 space-y-3">
           <div className="p-2.5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-transparent border border-dashed border-emerald-300 dark:border-emerald-800/60 flex items-center justify-between text-xs font-semibold">
             <div className="flex items-center gap-1.5">
@@ -586,16 +543,16 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
            ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "dashboard" && (
           <div className="space-y-3 animate-in fade-in duration-200">
-            {/* Feature Action Buttons Grid (11 Buttons matching APK & dashboard/page.tsx) */}
+            {/* Feature Action Buttons Grid (Full 14 ERP Modules) */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-1.5">
                   <span className="w-1.5 h-4 bg-emerald-600 rounded-full inline-block"></span>
                   <span className="text-xs font-bold text-stone-800 dark:text-stone-200">
-                    স্মার্ট ইসলামিক ও মসজিদ সেবা (১১টি বোতাম)
+                    পূর্ণাঙ্গ মসজিদ ERP ও সেবা মডিউলসমূহ
                   </span>
                 </div>
-                <span className="text-[10px] text-stone-400">ক্লিকে সার্ভিস ওপেন</span>
+                <span className="text-[10px] text-stone-400">১৪টি কার্যকরী মডিউল</span>
               </div>
 
               <div className="grid grid-cols-4 gap-2">
@@ -623,7 +580,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-5 rounded-full bg-emerald-600"></div>
                 <h2 className="text-xs sm:text-sm font-black text-stone-900 dark:text-stone-100">
-                  {mosqueName} — ফিন্যান্স ড্যাশবোর্ড ও স্থিতি
+                  {currentMosque.name} — ফিন্যান্স ড্যাশবোর্ড ও স্থিতি
                 </h2>
               </div>
               <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400 font-mono">
@@ -655,7 +612,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                   ৳১,৯৮,৬০০
                 </span>
                 <span className="text-xs text-emerald-200 opacity-80 group-hover:opacity-100">
-                  (তহবিল বিস্তারিত ➔)
+                  (১০টি তহবিল বিস্তারিত ➔)
                 </span>
               </div>
 
@@ -677,7 +634,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 </div>
 
                 <div
-                  onClick={() => setActiveModal("expense-approval")}
+                  onClick={() => setActiveModal("purchase-procurement")}
                   className="p-2.5 rounded-2xl bg-white/15 hover:bg-white/25 transition cursor-pointer"
                   title="খরচের বিবরণী দেখুন"
                 >
@@ -724,7 +681,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               </div>
             </div>
 
-            {/* 3. THIS MONTH COLLECTION CARD (Clickable drill-down to /months/[period]) */}
+            {/* 3. THIS MONTH COLLECTION CARD */}
             <div
               onClick={() => {
                 setSelectedMonth("নভেম্বর ২০২৬");
@@ -765,11 +722,32 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               </div>
             </div>
 
-            {/* 4. MOSQUE FUNDS SECTION */}
+            {/* 4. IMAM MEAL ROSTER REMINDER BANNER */}
+            <div
+              onClick={() => setActiveModal("imam-meal")}
+              className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 flex items-center justify-between shadow-2xs cursor-pointer hover:border-emerald-500 transition"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-2xl">🍲</span>
+                <div>
+                  <h4 className="text-xs font-black text-emerald-900 dark:text-emerald-200">
+                    ইমাম সাহেবের আজকের খাবার দায়িত্ব
+                  </h4>
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-300 mt-0.5">
+                    আজ: <b>হাজী রফিকুল ইসলামের পরিবার</b> · আগামীকালের দায়িত্ব দেখুন
+                  </p>
+                </div>
+              </div>
+              <span className="text-[10px] px-2.5 py-1 rounded-xl bg-emerald-600 text-white font-bold shrink-0">
+                রোস্টার ➔
+              </span>
+            </div>
+
+            {/* 5. MOSQUE FUNDS SECTION (10 Segregated Funds) */}
             <div className="space-y-2">
               <div className="flex items-center justify-between px-1">
                 <h3 className="text-xs font-bold text-stone-700 dark:text-stone-300">
-                  মসজিদ তহবিলসমূহ (৪টি স্বতন্ত্র ফান্ড)
+                  মসজিদ তহবিলসমূহ (১০টি আলাদা ফান্ড)
                 </h3>
                 <button
                   onClick={() => setActiveModal("funds")}
@@ -780,14 +758,9 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               </div>
 
               <div className="grid grid-cols-2 gap-2">
-                {[
-                  { name: "সাধারণ পরিচালন ফান্ড", balance: "৳৮৫,০০০", restricted: false },
-                  { name: "নির্মাণ ও সংস্কার ফান্ড", balance: "৳৭৫,০০০", restricted: true },
-                  { name: "ইমাম-মুয়াজ্জিন হাদিয়া", balance: "৳২৫,০০০", restricted: false },
-                  { name: "যাকাত ও সাহায্য ফান্ড", balance: "৳১৩,৬০০", restricted: true },
-                ].map((f, i) => (
+                {TEN_FUNDS.slice(0, 4).map((f) => (
                   <div
-                    key={i}
+                    key={f.id}
                     onClick={() => setActiveModal("funds")}
                     className="p-3 rounded-2xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-900/50 shadow-2xs hover:border-emerald-500 transition cursor-pointer"
                   >
@@ -809,11 +782,11 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               </div>
             </div>
 
-            {/* 5. PENDING BILL APPROVAL ALERT */}
+            {/* 6. PENDING PURCHASE & BILL APPROVAL ALERT */}
             <div
-              onClick={() => setActiveModal("expense-approval")}
+              onClick={() => setActiveModal("purchase-procurement")}
               className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-300 dark:border-amber-800/60 flex items-center justify-between shadow-2xs cursor-pointer hover:border-amber-500 transition"
-              title="অপেক্ষমাণ বিলটি অনুমোদন করতে ক্লিক করুন"
+              title="অপেক্ষমাণ ক্রয় আবেদনটি অনুমোদন করতে ক্লিক করুন"
             >
               <div className="flex items-center gap-2.5">
                 <div className="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold text-sm shrink-0">
@@ -821,24 +794,21 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 </div>
                 <div>
                   <h4 className="text-xs font-black text-amber-900 dark:text-amber-200">
-                    বিল অনুমোদনের অপেক্ষায় রয়েছে
+                    ক্রয় আবেদন ও বিল অনুমোদনের অপেক্ষায়
                   </h4>
                   <p className="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">
-                    মাইক ও আইপিএস ব্যাটারি মেরামত (৳১২,৫০০)
+                    ২টি সিলিং ফ্যান ক্রয় (৳৮,০০০) · মাইক মেরামত (৳১২,৫০০)
                   </p>
                 </div>
               </div>
               <div className="text-right shrink-0">
-                <span className="text-xs font-black font-mono text-amber-900 dark:text-amber-200">
-                  ৳১২,৫০০
-                </span>
                 <span className="block text-[10px] text-amber-700 dark:text-amber-400 font-bold">
                   অনুমোদন ➔
                 </span>
               </div>
             </div>
 
-            {/* 6. 12-MONTH TRENDS BAR CHART */}
+            {/* 7. 12-MONTH TRENDS BAR CHART */}
             <div className="p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-bold text-stone-700 dark:text-stone-300 flex items-center gap-1.5">
@@ -884,7 +854,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
            ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "months" && (
           <div className="space-y-3 animate-in fade-in duration-200">
-            {/* Year Switcher Header */}
             <div className="p-3 sm:p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-xs flex items-center justify-between">
               <div>
                 <h2 className="text-sm sm:text-base font-black text-stone-900 dark:text-stone-100">
@@ -914,7 +883,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               </div>
             </div>
 
-            {/* 12 Months Stack Cards */}
             <div className="space-y-2.5">
               {ALL_MONTHS_OVERVIEW.map((m, idx) => (
                 <div
@@ -945,7 +913,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                     </span>
                   </div>
 
-                  {/* Progress Bar */}
                   <div className="h-2 rounded-full bg-stone-100 dark:bg-[#07130e] overflow-hidden mb-2 border border-stone-200 dark:border-emerald-950">
                     <div
                       className="h-full bg-emerald-600 rounded-full"
@@ -981,7 +948,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
            ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "expenses" && (
           <div className="space-y-3 animate-in fade-in duration-200">
-            {/* Top Bar with Add Expense Button */}
             <div className="p-3 sm:p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-xs flex items-center justify-between">
               <div>
                 <h2 className="text-sm sm:text-base font-black text-stone-900 dark:text-stone-100">
@@ -993,22 +959,20 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               </div>
 
               <button
-                onClick={() => setShowNewExpenseModal(true)}
+                onClick={() => setActiveModal("purchase-procurement")}
                 className="px-3 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1 cursor-pointer whitespace-nowrap shadow-xs"
               >
                 <Plus className="w-4 h-4" />
-                <span>+ নতুন ব্যয়</span>
+                <span>+ কেনাকাটা আবেদন</span>
               </button>
             </div>
 
-            {/* Filter Chips */}
             <div className="flex gap-1.5 overflow-x-auto scrollbar-none pb-1">
               {[
                 { id: "ALL", label: `সকল খরচ (${expensesList.length})` },
                 { id: "PENDING", label: `অনুমোদনের অপেক্ষায় (${expensesList.filter((e) => e.status === "PENDING_APPROVAL").length})` },
                 { id: "APPROVED", label: "অনুমোদিত" },
                 { id: "PAID", label: "পরিশোধিত" },
-                { id: "REJECTED", label: "প্রত্যাখ্যাত" },
               ].map((chip) => (
                 <button
                   key={chip.id}
@@ -1024,7 +988,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               ))}
             </div>
 
-            {/* Expenses Vouchers List */}
             <div className="space-y-2.5">
               {expensesList
                 .filter((e) => {
@@ -1032,7 +995,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                   if (expenseFilter === "PENDING") return e.status === "PENDING_APPROVAL";
                   if (expenseFilter === "APPROVED") return e.status === "APPROVED";
                   if (expenseFilter === "PAID") return e.status === "PAID";
-                  if (expenseFilter === "REJECTED") return e.status === "REJECTED";
                   return true;
                 })
                 .map((e) => (
@@ -1047,7 +1009,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                           {e.category}
                         </span>
                         {e.overdue && (
-                          <span className="px-2 py-0.5 rounded-md bg-rose-100 dark:bg-rose-950/80 text-rose-800 dark:text-rose-300 font-bold text-[9px] animate-pulse">
+                          <span className="px-2 py-0.5 rounded-md bg-rose-100 text-rose-800 font-bold text-[9px] animate-pulse">
                             Overdue (&gt;৪৮ঘণ্টা)
                           </span>
                         )}
@@ -1058,18 +1020,14 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                             ? "bg-amber-100 text-amber-800"
                             : e.status === "APPROVED"
                             ? "bg-teal-100 text-teal-800"
-                            : e.status === "PAID"
-                            ? "bg-emerald-100 text-emerald-800"
-                            : "bg-rose-100 text-rose-800"
+                            : "bg-emerald-100 text-emerald-800"
                         }`}
                       >
                         {e.status === "PENDING_APPROVAL"
                           ? "অনুমোদনের অপেক্ষায়"
                           : e.status === "APPROVED"
                           ? "অনুমোদিত (পরিশোধ বাকি)"
-                          : e.status === "PAID"
-                          ? "পরিশোধিত"
-                          : "প্রত্যাখ্যাত"}
+                          : "পরিশোধিত"}
                       </span>
                     </div>
 
@@ -1085,147 +1043,19 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                     <div className="text-[11px] text-stone-500 dark:text-stone-400 space-y-0.5">
                       <div>ফান্ড: <b className="text-stone-700 dark:text-stone-300">{e.fund}</b></div>
                       <div>জমাদাতা: {e.submittedBy} · তারিখ: {e.spentAt}</div>
-                      <div className="italic text-stone-400">{e.notes}</div>
                     </div>
 
-                    {/* Committee Actions */}
-                    <div className="pt-2 border-t border-stone-100 dark:border-emerald-950/60 flex items-center justify-end gap-2">
-                      {e.status === "PENDING_APPROVAL" && (
-                        <>
-                          <button
-                            onClick={() => handleApproveExpense(e.id)}
-                            className="px-4 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-xs"
-                          >
-                            অনুমোদন করুন
-                          </button>
-                          <button
-                            onClick={() => handleRejectExpense(e.id)}
-                            className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100 font-bold text-xs cursor-pointer"
-                          >
-                            প্রত্যাখ্যান
-                          </button>
-                        </>
-                      )}
-                      {e.status === "APPROVED" && (
-                        <button
-                          onClick={() => handleMarkExpensePaid(e.id)}
-                          className="px-4 py-1.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs cursor-pointer shadow-xs"
-                        >
-                          পরিশোধ সম্পন্ন করুন (Mark Paid)
-                        </button>
-                      )}
-                      {e.status === "PAID" && (
-                        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                          <span>ভাউচার পরিশোধিত ও সম্পূর্ণ</span>
-                        </span>
-                      )}
+                    <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100 dark:border-emerald-950/60">
+                      <button
+                        onClick={() => setActiveModal("purchase-procurement")}
+                        className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-xs"
+                      >
+                        প্রকিউরমেন্ট ও অনুমোদন বিবরণী ➔
+                      </button>
                     </div>
                   </div>
                 ))}
             </div>
-
-            {/* New Expense Modal Popup */}
-            {showNewExpenseModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-3 bg-black/75 backdrop-blur-xs">
-                <form
-                  onSubmit={handleCreateNewExpense}
-                  className="w-full max-w-md bg-white dark:bg-[#0c1612] border border-emerald-300 dark:border-emerald-700 rounded-3xl p-5 shadow-2xl space-y-3"
-                >
-                  <div className="flex justify-between items-center pb-2 border-b border-stone-200 dark:border-emerald-800">
-                    <h3 className="text-sm font-black text-stone-900 dark:text-stone-100">
-                      নতুন ব্যয় ও বিল দাখিল করুন
-                    </h3>
-                    <button
-                      type="button"
-                      onClick={() => setShowNewExpenseModal(false)}
-                      className="text-stone-400 hover:text-stone-600"
-                    >
-                      ✕
-                    </button>
-                  </div>
-
-                  <div className="space-y-2 text-xs">
-                    <div>
-                      <label className="block text-stone-600 dark:text-stone-400 font-bold mb-1">
-                        ব্যয়ের খাত / ক্যাটাগরি:
-                      </label>
-                      <select
-                        value={newExpenseCategory}
-                        onChange={(e) => setNewExpenseCategory(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-stone-200 dark:border-emerald-700 bg-stone-50 dark:bg-[#0f1d17]"
-                      >
-                        <option value="সাধারণ পরিচালন">সাধারণ পরিচালন (বিদ্যুৎ, গ্যাস, ক্লিনার)</option>
-                        <option value="সাউন্ড সিস্টেম ও মেরামত">সাউন্ড সিস্টেম ও মেরামত</option>
-                        <option value="উন্নয়ন ও নির্মাণ কাজ">উন্নয়ন ও নির্মাণ কাজ</option>
-                        <option value="ইমাম-মুয়াজ্জিন হাদিয়া">ইমাম-মুয়াজ্জিন হাদিয়া ও সম্মানী</option>
-                        <option value="মেহমানদারি ও আপ্যায়ন">মেহমানদারি ও আপ্যায়ন</option>
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-stone-600 dark:text-stone-400 font-bold mb-1">
-                        ব্যয়ের বিবরণ / শিরোনাম:
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="যেমন: মাইক ও আইপিএস ব্যাটারি মেরামত"
-                        value={newExpenseTitle}
-                        onChange={(e) => setNewExpenseTitle(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-stone-200 dark:border-emerald-700 bg-stone-50 dark:bg-[#0f1d17]"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-stone-600 dark:text-stone-400 font-bold mb-1">
-                        টাকার পরিমাণ (৳):
-                      </label>
-                      <input
-                        type="number"
-                        placeholder="টাকার অঙ্ক লিখুন"
-                        value={newExpenseAmount}
-                        onChange={(e) => setNewExpenseAmount(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-stone-200 dark:border-emerald-700 bg-stone-50 dark:bg-[#0f1d17] font-mono text-sm font-bold"
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-stone-600 dark:text-stone-400 font-bold mb-1">
-                        তহবিল নির্বাচন (ফান্ড ব্যালেন্সের বেশি হওয়া যাবে না):
-                      </label>
-                      <select
-                        value={newExpenseFund}
-                        onChange={(e) => setNewExpenseFund(e.target.value)}
-                        className="w-full p-2.5 rounded-xl border border-stone-200 dark:border-emerald-700 bg-stone-50 dark:bg-[#0f1d17]"
-                      >
-                        <option value="সাধারণ পরিচালন ফান্ড">সাধারণ পরিচালন ফান্ড (স্থিতি: ৳৮৫,০০০)</option>
-                        <option value="নির্মাণ ও সংস্কার ফান্ড">নির্মাণ ও সংস্কার ফান্ড (স্থিতি: ৳৭৫,০০০)</option>
-                        <option value="ইমাম-মুয়াজ্জিন হাদিয়া">ইমাম-মুয়াজ্জিন হাদিয়া (স্থিতি: ৳২৫,০০০)</option>
-                        <option value="যাকাত ও সাহায্য ফান্ড">যাকাত ও সাহায্য ফান্ড (স্থিতি: ৳১৩,৬০০)</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end gap-2 pt-2 border-t border-stone-200 dark:border-emerald-800">
-                    <button
-                      type="button"
-                      onClick={() => setShowNewExpenseModal(false)}
-                      className="px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 text-xs font-bold"
-                    >
-                      বাতিল
-                    </button>
-                    <button
-                      type="submit"
-                      className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs cursor-pointer shadow-xs"
-                    >
-                      দাখিল করুন
-                    </button>
-                  </div>
-                </form>
-              </div>
-            )}
           </div>
         )}
 
@@ -1234,7 +1064,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
            ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "members" && (
           <div className="space-y-3 animate-in fade-in duration-200">
-            {/* Top Bar with Sub Tabs (All Members vs /members/me) */}
             <div className="p-3 sm:p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-xs space-y-2.5">
               <div className="flex items-center justify-between">
                 <div>
@@ -1254,7 +1083,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 </button>
               </div>
 
-              {/* Sub Tab Switcher: "সকল সদস্য" vs "আমার হিসাব (/members/me)" */}
               <div className="flex gap-2 p-1 bg-stone-50 dark:bg-[#07130e] rounded-2xl border border-stone-200 dark:border-emerald-950">
                 <button
                   onClick={() => setMembersTab("all")}
@@ -1281,7 +1109,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
 
             {membersTab === "all" ? (
               <>
-                {/* Search Box */}
                 <div className="relative">
                   <Search className="w-4 h-4 text-stone-400 absolute left-3 top-2.5" />
                   <input
@@ -1293,7 +1120,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                   />
                 </div>
 
-                {/* Privacy Warning if showContributors is false */}
                 {!showContributors && (
                   <div className="p-2.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900/40 text-[11px] text-amber-800 dark:text-amber-300 flex items-center justify-between">
                     <span>🔒 দাতার গোপনীয়তা সক্রিয়: সাধারণ সদস্যরা কেবল নিজের হিসাব দেখে।</span>
@@ -1306,7 +1132,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                   </div>
                 )}
 
-                {/* Members List */}
                 <div className="space-y-2">
                   {membersList
                     .filter((m) =>
@@ -1368,7 +1193,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 </div>
               </>
             ) : (
-              /* MY ACCOUNT VIEW (/members/me) */
               <div className="p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-xs space-y-4">
                 <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-900 to-teal-950 text-white space-y-3">
                   <div className="flex justify-between items-center text-xs">
@@ -1429,24 +1253,44 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
            ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "settings" && (
           <div className="space-y-3 animate-in fade-in duration-200">
-            {/* Header */}
             <div className="p-3 sm:p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-xs">
               <h2 className="text-sm sm:text-base font-black text-stone-900 dark:text-stone-100">
-                মসজিদ সেটিংস, রোল ও তহবিল ব্যবস্থাপনা
+                মসজিদ সেটিংস, কাস্টম ডোমেইন ও নীতিমালা
               </h2>
               <p className="text-[11px] text-stone-500 dark:text-stone-400">
-                দাতার গোপনীয়তা, ডায়নামিক রোল-পারমিশন ও ফান্ডের নীতিমালা (mosque/AGENT.md)
+                দাতার গোপনীয়তা, ডায়নামিক রোল-পারমিশন ও ১০টি স্বতন্ত্র ফান্ড
               </p>
             </div>
 
-            {/* 1. General Mosque Settings (Privacy & Verification) */}
+            {/* Custom Domain Card */}
+            <div className="p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-xs space-y-2">
+              <div className="flex justify-between items-center">
+                <h3 className="text-xs font-black text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                  <Globe className="w-4 h-4 text-emerald-600" />
+                  <span>কাস্টম ডোমেইন সংযোগ (Custom Domain)</span>
+                </h3>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-bold">
+                  {currentMosque.customDomain ? "সংযুক্ত" : "ফ্রি সাবডোমেইন"}
+                </span>
+              </div>
+              <p className="text-[11px] text-stone-500">
+                আপনার মসজিদের নিজস্ব ডোমেইন (যেমন: {currentMosque.customDomain || "mymosque.org"}) ব্র্যান্ডিং হিসেবে যুক্ত করুন।
+              </p>
+              <button
+                onClick={() => setActiveModal("custom-domain")}
+                className="w-full py-2 rounded-xl bg-emerald-50 dark:bg-emerald-950/50 hover:bg-emerald-100 text-emerald-800 dark:text-emerald-300 font-bold text-xs border border-emerald-300 dark:border-emerald-800 cursor-pointer"
+              >
+                ডোমেইন সেটিংস ও CNAME কনফিগারেশন ➔
+              </button>
+            </div>
+
+            {/* General Mosque Settings */}
             <div className="p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-xs space-y-3">
               <h3 className="text-xs font-black text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
                 <ShieldCheck className="w-4 h-4 text-emerald-600" />
                 <span>সাধারণ সেটিংস ও গোপনীয়তা নীতিমালা</span>
               </h3>
 
-              {/* Contributor Privacy Toggle (AGENT.md Section 6) */}
               <div className="p-3 rounded-2xl bg-stone-50 dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-950/60 flex items-center justify-between gap-3">
                 <div className="flex-1">
                   <b className="text-xs text-stone-900 dark:text-stone-100">দাতার তালিকার গোপনীয়তা (showContributors)</b>
@@ -1462,7 +1306,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 />
               </div>
 
-              {/* Require Verification Toggle (AGENT.md Section 5) */}
               <div className="p-3 rounded-2xl bg-stone-50 dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-950/60 flex items-center justify-between gap-3">
                 <div className="flex-1">
                   <b className="text-xs text-stone-900 dark:text-stone-100">সদস্য যাচাইকরণ বাধ্যতামূলক (requireVerification)</b>
@@ -1479,7 +1322,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               </div>
             </div>
 
-            {/* 2. Dynamic Roles & Permissions (AGENT.md Section 4) */}
+            {/* Dynamic Roles & Permissions */}
             <div className="p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-black text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
@@ -1520,29 +1363,49 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               </div>
             </div>
 
-            {/* 3. Funds Management */}
+            {/* 10 Segregated Funds Management */}
             <div className="p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="text-xs font-black text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
                   <Coins className="w-4 h-4 text-emerald-600" />
-                  <span>মসজিদ তহবিল ও ফান্ডের নিয়মাবলী</span>
+                  <span>১০টি আলাদা মসজিদ তহবিল ও ব্যালেন্স</span>
                 </h3>
                 <button
                   onClick={() => setActiveModal("funds")}
                   className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
                 >
-                  বিস্তারিত খাতা ➔
+                  সব তহবিল ➔
                 </button>
               </div>
 
-              <p className="text-[11px] text-stone-500 dark:text-stone-400">
-                সোনালি নিয়ম: একটি ফান্ডের টাকা অন্য ফান্ডে খরচ নিষিদ্ধ। খরচের অঙ্ক ফান্ডের বর্তমান স্থিতির বেশি হতে পারবে না।
-              </p>
+              <div className="space-y-1.5 text-xs">
+                {TEN_FUNDS.map((f) => (
+                  <div
+                    key={f.id}
+                    className="p-2.5 rounded-xl bg-stone-50 dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-950/50 flex justify-between items-center"
+                  >
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <b className="text-stone-900 dark:text-stone-100">{f.name}</b>
+                        {f.restricted && (
+                          <span className="text-[8px] px-1.5 py-0.2 rounded bg-amber-100 text-amber-800 font-bold">
+                            সংরক্ষিত
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[10px] text-stone-400 line-clamp-1">{f.purpose}</p>
+                    </div>
+                    <span className="font-black font-mono text-emerald-700 dark:text-emerald-400">
+                      {f.balance}
+                    </span>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* ── 6. FLOATING BOTTOM NAVIGATION DOCK (5 Canonical Tabs from mosque/AGENT.md & Shell.tsx) ── */}
+        {/* ── 6. FLOATING BOTTOM NAVIGATION DOCK (5 Canonical Tabs) ── */}
         <nav className="fixed left-1/2 -translate-x-1/2 bottom-3 w-[calc(100%-24px)] max-w-md bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/80 rounded-full p-1.5 shadow-2xl flex items-center justify-between gap-1 z-40 backdrop-blur-md">
           {[
             { key: "dashboard", icon: "🏠", label: "হোম" },
@@ -1569,7 +1432,79 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
           })}
         </nav>
 
-        {/* ── 7. ALL MODALS RENDERING ── */}
+        {/* ── 7. ALL INTERACTIVE MODALS RENDERING ── */}
+        {/* Imam Meal Roster Modal (Section 7) */}
+        {activeModal === "imam-meal" && (
+          <ImamMealRosterModal
+            onClose={() => setActiveModal(null)}
+            mosqueName={currentMosque.name}
+          />
+        )}
+
+        {/* Purchase Procurement Modal (Section 8 with 4 Signatures) */}
+        {activeModal === "purchase-procurement" && (
+          <PurchaseProcurementModal
+            onClose={() => setActiveModal(null)}
+            mosqueName={currentMosque.name}
+          />
+        )}
+
+        {/* Employee & Salary Modal (Section 9) */}
+        {activeModal === "employee-salary" && (
+          <EmployeeSalaryModal
+            onClose={() => setActiveModal(null)}
+            mosqueName={currentMosque.name}
+          />
+        )}
+
+        {/* Asset & Inventory Modal (Section 11) */}
+        {activeModal === "asset-inventory" && (
+          <AssetInventoryModal
+            onClose={() => setActiveModal(null)}
+            mosqueName={currentMosque.name}
+          />
+        )}
+
+        {/* Community Welfare & Zakat Modal (Section 12) */}
+        {activeModal === "community-welfare" && (
+          <CommunityWelfareModal
+            onClose={() => setActiveModal(null)}
+            mosqueName={currentMosque.name}
+          />
+        )}
+
+        {/* Custom Domain Modal (Section 4 Method B) */}
+        {activeModal === "custom-domain" && (
+          <CustomDomainModal
+            onClose={() => setActiveModal(null)}
+            mosqueName={currentMosque.name}
+            currentSlug={currentMosque.slug}
+          />
+        )}
+
+        {/* Mosque Discovery Modal (Section 4 Method C) */}
+        {activeModal === "mosque-discovery" && (
+          <MosqueDiscoveryModal
+            onClose={() => setActiveModal(null)}
+            onSelectMosque={(m, mode) => {
+              setCurrentMosque(m);
+              setViewMode(mode);
+            }}
+            onOpenRegisterMosque={() => setActiveModal("register-mosque")}
+          />
+        )}
+
+        {/* Mosque Registration Modal (Section 3) */}
+        {activeModal === "register-mosque" && (
+          <MosqueRegistrationModal
+            onClose={() => setActiveModal(null)}
+            onMosqueRegistered={(newM) => {
+              setCurrentMosque(newM);
+              setViewMode("erp");
+            }}
+          />
+        )}
+
         {/* Islamic Super App Modal (32 Services) */}
         {activeModal === "super-app" && (
           <SuperAppModal
@@ -1577,7 +1512,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
             onOpenModal={(m) => setActiveModal(m)}
             onOpenQuranReader={onOpenQuranReader}
             onOpenTutor={onOpenTutor}
-            mosqueName={mosqueName}
+            mosqueName={currentMosque.name}
           />
         )}
 
@@ -1587,8 +1522,8 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
             onClose={() => setActiveModal(null)}
             onOpenMasterDues={() => setActiveModal("master-dues")}
             onOpenFunds={() => setActiveModal("funds")}
-            onOpenExpenseApproval={() => setActiveModal("expense-approval")}
-            mosqueName={mosqueName}
+            onOpenExpenseApproval={() => setActiveModal("purchase-procurement")}
+            mosqueName={currentMosque.name}
           />
         )}
 
@@ -1620,7 +1555,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
         {activeModal === "my-account" && (
           <MyAccountStatementModal
             onClose={() => setActiveModal(null)}
-            mosqueName={mosqueName}
+            mosqueName={currentMosque.name}
           />
         )}
 
