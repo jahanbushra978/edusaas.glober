@@ -820,6 +820,14 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
 
           <div className="flex items-center gap-2">
             <button
+              onClick={() => handleLaunchBubbleGame(cls.items?.[0] || "ب")}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-xl font-black text-[11px] sm:text-xs bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 hover:from-amber-500 text-amber-950 shadow-xs border border-amber-300 transition-all cursor-pointer active:scale-95"
+              title="এই পাঠের হরফ দিয়ে মজার বুদ্বুদ ও বেলুনের খেলা খেলুন"
+            >
+              <span>🎈</span>
+              <span>হরফ গেম</span>
+            </button>
+            <button
               onClick={() => setAudioSpeed((s) => (s === 1.0 ? 0.75 : 1.0))}
               className="px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-xl bg-white border border-slate-200 text-slate-700 font-bold hover:bg-slate-100 text-[10px] sm:text-[11px]"
             >
@@ -921,19 +929,6 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                         <div className="text-xs sm:text-sm font-black text-slate-800 font-hind-siliguri">
                           {item.nameBn}
                         </div>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleLaunchBubbleGame(item);
-                          }}
-                          className="mt-1 w-full py-1 px-1 rounded-xl bg-gradient-to-r from-amber-400 to-orange-400 hover:from-amber-500 text-amber-950 font-black text-[9px] sm:text-[10px] flex items-center justify-center gap-0.5 shadow-2xs active:scale-95 transition"
-                          title="এই হরফ দিয়ে বুদ্বুদ খেলা খেলুন"
-                        >
-                          <span>🎮</span>
-                          <span>গেমে যাও</span>
-                          <span>🎈</span>
-                        </button>
                       </div>
                     </div>
                   );
@@ -1068,21 +1063,6 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                           👆 ট্যাপ করে ক্বারীর আওয়াজে পড়ো
                         </div>
                       )}
-
-                      {/* 🎮 "গেমে যাও" বাটন - সরাসরি এই হরফের বুদ্বুদ খেলায় নিয়ে যাবে */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleLaunchBubbleGame(item);
-                        }}
-                        className="w-full mt-1 py-1.5 px-2 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 hover:from-amber-500 hover:to-orange-500 text-amber-950 font-black text-[11px] sm:text-xs flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all cursor-pointer border border-amber-300"
-                        title="এই হরফ দিয়ে মজার বুদ্বুদ ও বেলুনের খেলা খেলুন"
-                      >
-                        <span>🎮</span>
-                        <span>গেমে যাও</span>
-                        <span>🎈</span>
-                      </button>
                     </div>
                   </div>
                 );
@@ -1090,8 +1070,8 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
             </div>
           )}
 
-          {/* Exercise Box */}
-          <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50/70 border-2 border-emerald-300 space-y-1.5">
+          {/* Exercise Box & Game Invitation Banner */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-emerald-50/70 border-2 border-emerald-300 space-y-2.5">
             <div className="flex items-center gap-1.5 text-emerald-950 font-black text-xs sm:text-sm font-hind-siliguri">
               <span>✏️</span>
               <span>অনুশীলনী</span>
@@ -1099,6 +1079,21 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
             <p className="text-xs text-emerald-900 leading-relaxed font-hind-siliguri font-medium">
               ডান থেকে বামে আঙুল রেখে দেখে দেখে পড়ো এবং প্রতিটি হরফে ক্লিক করে ক্বারীর খাঁটি আওয়াজের সাথে মিলিয়ে নাও।
             </p>
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-between gap-2 border-t border-emerald-200/80">
+              <span className="text-xs text-emerald-950 font-bold font-hind-siliguri flex items-center gap-1.5">
+                <span>🎈</span>
+                <span>এই পাঠের হরফগুলো রঙিন বুদ্বুদ ও বেলুনে ফাটিয়ে খেলার ছলে শিখতে চাও?</span>
+              </span>
+              <button
+                type="button"
+                onClick={() => handleLaunchBubbleGame(cls.items?.[0] || "ب")}
+                className="px-3.5 py-1.5 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 hover:from-amber-500 text-amber-950 font-black text-xs flex items-center gap-1.5 shadow-xs transition active:scale-95 cursor-pointer shrink-0 border border-amber-300"
+              >
+                <span>🎮</span>
+                <span>মজার খেলা শুরু করো</span>
+                <span>🎈</span>
+              </button>
+            </div>
           </div>
 
           {/* Star Claim & Teacher Box */}

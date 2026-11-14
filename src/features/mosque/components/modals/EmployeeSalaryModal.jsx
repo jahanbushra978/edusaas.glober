@@ -18,6 +18,8 @@ import {
   Briefcase,
   AlertCircle,
   Clock,
+  Check,
+  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -25,6 +27,9 @@ import {
   paySalaryInDatabase,
   addEmployeeToDatabase,
   updateEmployeeSalaryInDatabase,
+  applyLeaveInDatabase,
+  approveLeaveInDatabase,
+  rejectLeaveInDatabase,
 } from "../../services/mosqueStorage";
 
 export function EmployeeSalaryModal({
@@ -59,6 +64,21 @@ export function EmployeeSalaryModal({
   // State for Editing Employee Salary
   const [editingEmpId, setEditingEmpId] = useState(null);
   const [editSalaryValue, setEditSalaryValue] = useState(0);
+
+  // State for Leave Application Form (ইমাম ও কর্মচারীদের বাস্তব ছুটির আবেদন সিস্টেম)
+  const [showApplyLeaveModal, setShowApplyLeaveModal] = useState(false);
+  const [leaveForm, setLeaveForm] = useState({
+    empId: db.employees?.[0]?.id || "EMP-01",
+    applicantName: db.employees?.[0]?.name || "মাওলানা মাহমুদ হাসান",
+    role: db.employees?.[0]?.role || "পেশ ইমাম ও খতীব",
+    phone: db.employees?.[0]?.phone || "০১৯১১-৪৪৫৫৬৬",
+    leaveType: "ধর্মীয় সম্মেলন ও মাহফিল",
+    startDate: "২০২৬-১১-২১",
+    endDate: "২০২৬-১১-২২",
+    durationDays: 2,
+    reason: "জাতীয় উলামা সম্মেলনে অংশগ্রহণ ও ওয়াজ মাহফিল",
+    replacementName: "হাফেজ ক্বারী বিলাল হোসেন (মুয়াজ্জিন)",
+  });
 
   // When selected employee changes in salary form, auto-fill designated salary
   const handleEmpChange = (empId) => {
@@ -141,12 +161,66 @@ export function EmployeeSalaryModal({
     toast.success("মাসিক সম্মানী হাদিয়া সফলভাবে আপডেট করা হয়েছে!");
   };
 
+  // When employee is picked in leave form, auto-fill their info & find replacement
+  const handleEmployeeSelectForLeave = (empId) => {
+    const emp = db.employees.find((e) => e.id === empId);
+    if (emp) {
+      const otherStaff = db.employees.find((e) => e.id !== empId);
+      setLeaveForm((prev) => ({
+        ...prev,
+        empId,
+        applicantName: emp.name,
+        role: emp.role,
+        phone: emp.phone,
+        replacementName: otherStaff ? `${otherStaff.name} (${otherStaff.role})` : "বিকল্প দায়িত্বশীল",
+      }));
+    }
+  };
+
+  // Submit Leave Application (ইমাম বা যে কোনো স্টাফের ছুটির আবেদন দাখিল)
+  const handleApplyLeaveSubmit = (e) => {
+    e.preventDefault();
+    if (!leaveForm.reason.trim()) {
+      toast.error("অনুগ্রহ করে ছুটির সুনির্দিষ্ট কারণ লিখুন");
+      return;
+    }
+
+    const updatedDb = applyLeaveInDatabase(leaveForm, leaveForm.applicantName);
+    setDb(updatedDb);
+    if (onDataUpdated) onDataUpdated(updatedDb);
+
+    toast.success(`মাশাআল্লাহ! ${leaveForm.applicantName}-এর ছুটির আবেদন সফলভাবে দাখিল হয়েছে। কমিটির অনুমোদনের অপেক্ষায় রয়েছে।`);
+    setShowApplyLeaveModal(false);
+  };
+
+  // Approve Leave Handler
+  const handleApproveLeave = (leaveId) => {
+    const updatedDb = approveLeaveInDatabase(leaveId, "মুহাম্মদ আব্দুল্লাহ (সভাপতি)");
+    setDb(updatedDb);
+    if (onDataUpdated) onDataUpdated(updatedDb);
+    toast.success("ছুটির আবেদন অনুমোদিত হয়েছে এবং বিকল্প দায়িত্বশীলকে দায়িত্ব অর্পণ করা হয়েছে!");
+  };
+
+  // Reject Leave Handler
+  const handleRejectLeave = (leaveId) => {
+    const reason = window.prompt("ছুটি নামঞ্জুর করার কারণ লিখুন:", "মসজিদে জরুরি বিশেষ কর্মসূচি রয়েছে");
+    if (!reason) return;
+    const updatedDb = rejectLeaveInDatabase(leaveId, reason, "মুহাম্মদ আব্দুল্লাহ (সভাপতি)");
+    setDb(updatedDb);
+    if (onDataUpdated) onDataUpdated(updatedDb);
+    toast.info("ছুটির আবেদন নামঞ্জুর করা হয়েছে।");
+  };
+
   // Salary expense records from DB
   const salaryExpenses = (db.expenses || []).filter(
     (e) => e.fundId === "f3" || e.category === "ইমাম-কর্মচারী সম্মানী" || e.voucherNo?.startsWith("VCH-SAL")
   );
 
   const imamFund = db.funds.find((f) => f.id === "f3") || { currentBalance: 25000 };
+
+  const allLeaves = db.leaves || [];
+  const approvedLeaves = allLeaves.filter((l) => l.status === "APPROVED");
+  const pendingLeaves = allLeaves.filter((l) => l.status === "PENDING");
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/75 backdrop-blur-xs animate-in fade-in duration-200">
@@ -159,10 +233,10 @@ export function EmployeeSalaryModal({
             </div>
             <div>
               <h2 className="text-sm sm:text-base font-bold tracking-wide">
-                ইমাম, খতীব ও কর্মচারী সম্মানী ব্যবস্থাপনা
+                ইমাম, খতীব ও কর্মচারী সম্মানী ও ছুটি ব্যবস্থাপনা
               </h2>
               <p className="text-[11px] text-emerald-100">
-                ইমাম ফান্ড স্থিতি: <b>৳{imamFund.currentBalance.toLocaleString("bn-BD")}</b> · ডাবল-এন্ট্রি পে-স্লিপ
+                ইমাম ফান্ড স্থিতি: <b>৳{imamFund.currentBalance.toLocaleString("bn-BD")}</b> · ছুটির আবেদন ও বিকল্প দায়িত্ব
               </p>
             </div>
           </div>
@@ -180,7 +254,7 @@ export function EmployeeSalaryModal({
             { key: "disburse", label: "➕ নতুন বেতন প্রদান", icon: Wallet },
             { key: "records", label: "📋 পরিশোধের খতিয়ান", icon: FileText },
             { key: "employees", label: "👥 স্টাফ ও ইমাম তালিকা", icon: User },
-            { key: "leaves", label: "📝 ছুটি ও বিকল্প দায়িত্ব", icon: Calendar },
+            { key: "leaves", label: "📝 ছুটি ও বিকল্প দায়িত্ব", icon: Calendar, badge: pendingLeaves.length > 0 ? `${pendingLeaves.length}` : null },
           ].map((tab) => {
             const isActive = activeTab === tab.key;
             const Icon = tab.icon;
@@ -188,7 +262,7 @@ export function EmployeeSalaryModal({
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 py-1.5 px-2 rounded-xl font-bold flex items-center justify-center gap-1 transition cursor-pointer text-[11px] sm:text-xs ${
+                className={`flex-1 py-1.5 px-2 rounded-xl font-bold flex items-center justify-center gap-1 transition cursor-pointer text-[11px] sm:text-xs relative ${
                   isActive
                     ? "bg-[#0D7A5F] text-white shadow-xs"
                     : "bg-white dark:bg-emerald-950/40 text-stone-700 dark:text-stone-300 border border-stone-200 dark:border-emerald-800/40 hover:border-emerald-500"
@@ -197,6 +271,11 @@ export function EmployeeSalaryModal({
                 <Icon className="w-3.5 h-3.5" />
                 <span className="hidden sm:inline">{tab.label}</span>
                 <span className="sm:hidden">{tab.label.split(" ")[1]}</span>
+                {tab.badge && (
+                  <span className="w-4 h-4 rounded-full bg-amber-500 text-stone-950 text-[10px] font-black flex items-center justify-center ml-1">
+                    {tab.badge}
+                  </span>
+                )}
               </button>
             );
           })}
@@ -204,7 +283,7 @@ export function EmployeeSalaryModal({
 
         {/* Content Area */}
         <div className="p-4 sm:p-5 overflow-y-auto space-y-3 flex-1 text-xs">
-          {/* TAB 1: DISBURSE SALARY / PAY SALARY (দাবি অনুযায়ী নতুন বেতন দেওয়ার পূর্ণাঙ্গ ফর্ম) */}
+          {/* TAB 1: DISBURSE SALARY / PAY SALARY */}
           {activeTab === "disburse" && (
             <form onSubmit={handleDisburseSalary} className="space-y-3.5">
               <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-center justify-between text-xs">
@@ -404,7 +483,7 @@ export function EmployeeSalaryModal({
             </div>
           )}
 
-          {/* TAB 3: EMPLOYEES & SALARY PROFILE MANAGEMENT (নতুন ইমাম যুক্ত ও বেতন পরিবর্তন) */}
+          {/* TAB 3: EMPLOYEES & SALARY PROFILE MANAGEMENT */}
           {activeTab === "employees" && (
             <div className="space-y-3">
               <div className="flex justify-between items-center pb-2 border-b border-stone-200 dark:border-emerald-900/50">
@@ -566,20 +645,285 @@ export function EmployeeSalaryModal({
             </div>
           )}
 
-          {/* TAB 4: LEAVES */}
+          {/* TAB 4: LEAVES & REPLACEMENT IMAM ENGINE (ইমাম ও কর্মচারীদের ছুটি ও বদলি দায়িত্বের পূর্ণাঙ্গ সিস্টেম) */}
           {activeTab === "leaves" && (
-            <div className="space-y-2.5">
-              <div className="p-3.5 rounded-2xl bg-white dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-900/60 space-y-1.5">
-                <div className="flex justify-between items-center font-bold">
-                  <span>মাওলানা মাহমুদ হাসান (খতীব)</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800 font-bold">অনুমোদিত ছুটি</span>
+            <div className="space-y-3">
+              {/* Summary Bar & Apply Button */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60">
+                <div className="flex items-center gap-2">
+                  <Calendar className="w-4 h-4 text-[#0D7A5F] shrink-0" />
+                  <div>
+                    <h4 className="font-bold text-emerald-950 dark:text-emerald-200 text-xs">
+                      মোট ছুটির আবেদন: {allLeaves.length}টি (অনুমোদিত: {approvedLeaves.length}টি, অপেক্ষমান: {pendingLeaves.length}টি)
+                    </h4>
+                    <p className="text-[10px] text-emerald-700 dark:text-emerald-400">
+                      ইমাম, খতীব বা মুয়াজ্জিন সাহেব ছুটির আবেদন দাখিল করবেন এবং সভাপতি অনুমোদন করবেন
+                    </p>
+                  </div>
                 </div>
-                <p className="text-[11px] text-stone-500">
-                  ছুটির সময়: ২১ - ২২ নভেম্বর ২০২৬ · কারণ: উলামা সম্মেলনে অংশগ্রহণ
-                </p>
-                <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-semibold pt-1 border-t border-stone-100 dark:border-emerald-950">
-                  বিকল্প দায়িত্বপ্রাপ্ত: হাফেজ কারী বিলাল হোসেন (মুয়াজ্জিন)
-                </div>
+                <button
+                  onClick={() => setShowApplyLeaveModal(!showApplyLeaveModal)}
+                  className="px-3.5 py-1.5 rounded-xl bg-[#0D7A5F] hover:bg-[#074f3d] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs self-start sm:self-auto"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>{showApplyLeaveModal ? "ফর্ম বন্ধ করুন" : "ছুটির আবেদন করুন"}</span>
+                </button>
+              </div>
+
+              {/* LEAVE APPLICATION FORM (ইমাম/মুয়াজ্জিনের ছুটির আবেদন দাখিল ফর্ম) */}
+              {showApplyLeaveModal && (
+                <form
+                  onSubmit={handleApplyLeaveSubmit}
+                  className="p-4 rounded-2xl bg-white dark:bg-[#071610] border-2 border-[#0D7A5F] shadow-md space-y-3 animate-in fade-in"
+                >
+                  <div className="flex items-center justify-between border-b border-stone-200 dark:border-emerald-900/60 pb-2">
+                    <h4 className="font-bold text-stone-900 dark:text-stone-100 text-xs sm:text-sm flex items-center gap-2">
+                      <Calendar className="w-4 h-4 text-[#0D7A5F]" />
+                      <span>ইমাম / মুয়াজ্জিন / খাদেমের ছুটির আবেদনপত্র</span>
+                    </h4>
+                    <span className="text-[10px] text-stone-400">কমিটির অনুমোদনের জন্য দাখিল হবে</span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                    {/* Select Applicant Employee */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                        ছুটির আবেদনকারী স্টাফ / ইমাম *
+                      </label>
+                      <select
+                        value={leaveForm.empId}
+                        onChange={(e) => handleEmployeeSelectForLeave(e.target.value)}
+                        className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-bold focus:border-[#0D7A5F]"
+                      >
+                        {(db.employees || []).map((emp) => (
+                          <option key={emp.id} value={emp.id}>
+                            {emp.name} — {emp.role}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Leave Type */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                        ছুটির ধরন *
+                      </label>
+                      <select
+                        value={leaveForm.leaveType}
+                        onChange={(e) => setLeaveForm({ ...leaveForm, leaveType: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-bold focus:border-[#0D7A5F]"
+                      >
+                        <option value="ধর্মীয় সম্মেলন ও মাহফিল">ধর্মীয় সম্মেলন ও মাহফিল</option>
+                        <option value="জরুরি পারিবারিক ছুটি">জরুরি পারিবারিক ছুটি</option>
+                        <option value="অসুস্থতাজনিত ছুটি">অসুস্থতাজনিত ছুটি (Medical Leave)</option>
+                        <option value="নৈমিত্তিক ছুটি">নৈমিত্তিক ছুটি (Casual Leave)</option>
+                        <option value="হজ্ব বা উমরাহ ছুটি">পবিত্র হজ্ব বা উমরাহ পালন</option>
+                      </select>
+                    </div>
+
+                    {/* Start Date */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                        ছুটি শুরুর তারিখ *
+                      </label>
+                      <input
+                        type="date"
+                        value={leaveForm.startDate}
+                        onChange={(e) => setLeaveForm({ ...leaveForm, startDate: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-mono font-bold focus:border-[#0D7A5F]"
+                        required
+                      />
+                    </div>
+
+                    {/* End Date */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                        ছুটি সমাপ্তির তারিখ *
+                      </label>
+                      <input
+                        type="date"
+                        value={leaveForm.endDate}
+                        onChange={(e) => setLeaveForm({ ...leaveForm, endDate: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-mono font-bold focus:border-[#0D7A5F]"
+                        required
+                      />
+                    </div>
+
+                    {/* Duration in Days */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                        মোট ছুটি (দিন সংখ্যা) *
+                      </label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={leaveForm.durationDays}
+                        onChange={(e) => setLeaveForm({ ...leaveForm, durationDays: Number(e.target.value) })}
+                        className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-mono font-bold focus:border-[#0D7A5F]"
+                        required
+                      />
+                    </div>
+
+                    {/* Replacement Imam / Staff */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                        বিকল্প দায়িত্বপ্রাপ্ত (কে নামাজ পড়াবেন / দায়িত্ব পালন করবেন?) *
+                      </label>
+                      <input
+                        type="text"
+                        value={leaveForm.replacementName}
+                        onChange={(e) => setLeaveForm({ ...leaveForm, replacementName: e.target.value })}
+                        placeholder="যেমন: হাফেজ ক্বারী বিলাল হোসেন (মুয়াজ্জিন)"
+                        className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-bold focus:border-[#0D7A5F]"
+                        required
+                      />
+                    </div>
+
+                    {/* Contact Phone during Leave */}
+                    <div>
+                      <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                        ছুটিকালীন সময়ে যোগাযোগের মোবাইল নম্বর *
+                      </label>
+                      <input
+                        type="tel"
+                        value={leaveForm.phone}
+                        onChange={(e) => setLeaveForm({ ...leaveForm, phone: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl text-xs bg-stone-50 dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 font-mono focus:border-[#0D7A5F]"
+                        required
+                      />
+                    </div>
+
+                    {/* Specific Reason */}
+                    <div className="sm:col-span-2">
+                      <label className="block text-[11px] font-bold text-stone-700 dark:text-stone-300 mb-1">
+                        ছুটির সুনির্দিষ্ট কারণ উল্লেখ করুন *
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={leaveForm.reason}
+                        onChange={(e) => setLeaveForm({ ...leaveForm, reason: e.target.value })}
+                        placeholder="যেমন: উলামা সম্মেলনে অংশগ্রহণ, গ্রামের বাড়িতে জরুরি পারিবারিক অনুষ্ঠান বা অসুস্থতাজনিত চিকিৎসা..."
+                        className="w-full p-2.5 rounded-xl bg-stone-50 dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-900/50 text-stone-900 dark:text-stone-100 focus:border-[#0D7A5F]"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 justify-end pt-2 border-t border-stone-100 dark:border-emerald-950">
+                    <button
+                      type="button"
+                      onClick={() => setShowApplyLeaveModal(false)}
+                      className="px-4 py-2 rounded-xl bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-300 font-bold text-xs"
+                    >
+                      বাতিল
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-5 py-2 rounded-xl bg-[#0D7A5F] hover:bg-[#064E3B] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs"
+                    >
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>ছুটির আবেদন দাখিল করুন</span>
+                    </button>
+                  </div>
+                </form>
+              )}
+
+              {/* Leave Applications List */}
+              <div className="space-y-2.5">
+                {allLeaves.length === 0 ? (
+                  <div className="text-center py-8 text-stone-400">
+                    কোনো ছুটির আবেদন দাখিল করা হয়নি।
+                  </div>
+                ) : (
+                  allLeaves.map((l) => (
+                    <div
+                      key={l.id}
+                      className="p-3.5 rounded-2xl bg-white dark:bg-[#0f1d17] border border-stone-200 dark:border-emerald-900/60 space-y-2 shadow-2xs hover:border-[#0D7A5F] transition"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                        <div className="flex items-center gap-2">
+                          <span className="font-black text-stone-900 dark:text-stone-100 text-xs sm:text-sm">
+                            {l.applicantName}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 text-[#0D7A5F] font-bold">
+                            {l.role}
+                          </span>
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300">
+                            {l.leaveType}
+                          </span>
+                        </div>
+                        <span
+                          className={`self-start sm:self-auto text-[10px] font-bold px-2.5 py-0.5 rounded-full ${
+                            l.status === "APPROVED"
+                              ? "bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300"
+                              : l.status === "REJECTED"
+                              ? "bg-rose-100 text-rose-800"
+                              : "bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300"
+                          }`}
+                        >
+                          {l.status === "APPROVED"
+                            ? "অনুমোদিত ছুটি"
+                            : l.status === "REJECTED"
+                            ? "নামঞ্জুর"
+                            : "অনুমোদনের অপেক্ষায় (Pending)"}
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-stone-600 dark:text-stone-300 bg-stone-50 dark:bg-[#07130e] p-2.5 rounded-xl space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-3.5 h-3.5 text-[#0D7A5F] shrink-0" />
+                          <span>
+                            ছুটির সময়: <b>{l.startDate} হতে {l.endDate}</b> ({l.durationDays} দিন)
+                          </span>
+                        </div>
+                        <div className="flex items-start gap-2">
+                          <span className="font-bold shrink-0">কারণ:</span>
+                          <span>{l.reason}</span>
+                        </div>
+                        <div className="flex items-center gap-2 pt-1 border-t border-stone-200/60 dark:border-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-semibold text-[11px]">
+                          <ShieldCheck className="w-3.5 h-3.5 shrink-0" />
+                          <span>বিকল্প দায়িত্বপ্রাপ্ত: <b>{l.replacementName}</b></span>
+                        </div>
+                        {l.phone && (
+                          <div className="text-[10px] text-stone-400">
+                            ছুটিকালীন ফোন: {l.phone}
+                          </div>
+                        )}
+                        {l.status === "APPROVED" && l.approvedBy && (
+                          <div className="text-[10px] text-emerald-700 font-medium">
+                            অনুমোদনকারী: {l.approvedBy}
+                          </div>
+                        )}
+                        {l.status === "REJECTED" && l.rejectionReason && (
+                          <div className="text-[10px] text-rose-600 font-medium">
+                            নামঞ্জুরের কারণ: {l.rejectionReason}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Approval Actions for Committee / President */}
+                      {l.status === "PENDING" && (
+                        <div className="flex items-center justify-end gap-2 pt-1 border-t border-stone-100 dark:border-emerald-950/60">
+                          <button
+                            type="button"
+                            onClick={() => handleRejectLeave(l.id)}
+                            className="px-3 py-1 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 font-bold text-[11px] cursor-pointer"
+                          >
+                            নামঞ্জুর
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleApproveLeave(l.id)}
+                            className="px-4 py-1.5 rounded-xl bg-[#0D7A5F] hover:bg-[#064E3B] text-white font-bold text-xs flex items-center gap-1 cursor-pointer shadow-xs"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                            <span>ছুটি অনুমোদন করুন</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           )}

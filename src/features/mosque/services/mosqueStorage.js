@@ -50,6 +50,42 @@ export const DEFAULT_MEAL_ROSTER = [
   { id: "meal-7", date: "২০২৬-১১-২০", displayDate: "২০ নভেম্বর ২০২৬", dayName: "শুক্রবার", mealType: "দুপুর ও রাত", family: "ফারুক আহমেদের পরিবার", memberId: "M-108", phone: "০১৯২২-৮৮৯৯০০", status: "CONFIRMED", notes: "জুমার দিনের খানা।" },
 ];
 
+export const DEFAULT_LEAVES = [
+  {
+    id: "LV-2026-001",
+    empId: "EMP-01",
+    applicantName: "মাওলানা মাহমুদ হাসান",
+    role: "পেশ ইমাম ও খতীব",
+    phone: "০১৯১১-৪৪৫৫৬৬",
+    leaveType: "ধর্মীয় সম্মেলন ও মাহফিল",
+    startDate: "২০২৬-১১-২১",
+    endDate: "২০২৬-১১-২২",
+    durationDays: 2,
+    reason: "জাতীয় উলামা সম্মেলনে অংশগ্রহণ",
+    replacementName: "হাফেজ ক্বারী বিলাল হোসেন (মুয়াজ্জিন)",
+    status: "APPROVED",
+    appliedAt: "১০ নভেম্বর ২০২৬",
+    approvedBy: "মুহাম্মদ আব্দুল্লাহ (সভাপতি)",
+  },
+  {
+    id: "LV-2026-002",
+    empId: "EMP-02",
+    applicantName: "হাফেজ ক্বারী বিলাল হোসেন",
+    role: "মুয়াজ্জিন ও সহকারী শিক্ষক",
+    phone: "০১৮২২-৩৩৪৪৫৫",
+    leaveType: "জরুরি পারিবারিক ছুটি",
+    startDate: "২০২৬-১১-২৮",
+    endDate: "২০২৬-১১-২৯",
+    durationDays: 2,
+    reason: "গ্রামের বাড়িতে জরুরি পারিবারিক কাজ",
+    replacementName: "মাওলানা মাহমুদ হাসান (খতীব)",
+    status: "PENDING",
+    appliedAt: "১৪ নভেম্বর ২০২৬",
+    approvedBy: null,
+  },
+];
+
+
 export const DEFAULT_INFLOWS = [
   { id: "INF-001", receiptNo: "RCPT-2026-081", donorId: "M-101", donorName: "মুহাম্মদ আব্দুল্লাহ", phone: "০১৭১১-২২৩৩৪৪", fundId: "f1", fundName: "সাধারণ পরিচালন ফান্ড", amount: 2000, category: "মাসিক সদস্য চাঁদা", date: "২০২৬-১১-০১", method: "নগদ (Cash)", status: "VERIFIED", notes: "নভেম্বর ২০২৬ মাসিক চাঁদা" },
   { id: "INF-002", receiptNo: "RCPT-2026-082", donorId: "M-102", donorName: "হাজী রফিকুল ইসলাম", phone: "০১৮১৯-১১২২৩৩", fundId: "f1", fundName: "সাধারণ পরিচালন ফান্ড", amount: 1500, category: "মাসিক সদস্য চাঁদা", date: "২০২৬-১১-০২", method: "বিকাশ (bKash)", status: "VERIFIED", notes: "নভেম্বর ২০২৬ মাসিক চাঁদা" },
@@ -57,6 +93,13 @@ export const DEFAULT_INFLOWS = [
   { id: "INF-004", receiptNo: "RCPT-2026-084", donorId: null, donorName: "জুমার সাধারণ মুসল্লিবৃন্দ", phone: "N/A", fundId: "f1", fundName: "সাধারণ পরিচালন ফান্ড", amount: 18400, category: "জুমার দিনের দান বাক্স", date: "২০২৬-১১-০৭", method: "দান বাক্স (Box)", status: "VERIFIED", notes: "০৭ নভেম্বর জুমা কালেকশন" },
   { id: "INF-005", receiptNo: "RCPT-2026-085", donorId: "M-109", donorName: "আলহাজ্ব জয়নাল আবেদীন", phone: "০১৭৮৮-৩৩৪৪৫৫", fundId: "f4", fundName: "যাকাত ফান্ড", amount: 25000, category: "যাকাত অনুদান", date: "২০২৬-১১-০৯", method: "নগদ (Cash)", status: "VERIFIED", notes: "বার্ষিক ব্যবসায়িক যাকাত" },
   { id: "INF-006", receiptNo: "RCPT-2026-086", donorId: null, donorName: "প্রবাসী ভাই (অনলাইন)", phone: "০১৭XX-XXXXXX", fundId: "f2", fundName: "নির্মাণ ও সংস্কার ফান্ড", amount: 10000, category: "অনলাইন দান", date: "২০২৬-১১-১০", method: "অনলাইন পেমেন্ট গেটওয়ে", status: "VERIFIED", notes: "ওয়েবসাইট থেকে সরাসরি দান" },
+  { id: "INF-007", receiptNo: "RCPT-2026-087", donorId: "M-102", donorName: "হাজী রফিকুল ইসলাম ও মুসল্লিবৃন্দ", phone: "০১৮১৯-১১২২৩৩", fundId: "f3", fundName: "ইমাম-মুয়াজ্জিন সম্মানী ফান্ড", amount: 25000, category: "ইমাম-মুয়াজ্জিন সম্মানী হাদিয়া", date: "২০২৬-১১-০৪", method: "নগদ (Cash)", status: "VERIFIED", notes: "ইমাম ও মুয়াজ্জিন সাহেবের সম্মানী ফান্ড দান" },
+  { id: "INF-008", receiptNo: "RCPT-2026-088", donorId: "M-101", donorName: "মুহাম্মদ আব্দুল্লাহ", phone: "০১৭১১-২২৩৩৪৪", fundId: "f5", fundName: "ফিতরা ফান্ড", amount: 8500, category: "ফিতরা আদায়", date: "২০২৬-১১-০৫", method: "নগদ (Cash)", status: "VERIFIED", notes: "অগ্রিম ফিতরা সংগৃহীত" },
+  { id: "INF-009", receiptNo: "RCPT-2026-089", donorId: null, donorName: "নাম প্রকাশে অনিচ্ছুক মুসল্লি", phone: "N/A", fundId: "f6", fundName: "সদকা ও লিল্লাহ ফান্ড", amount: 12200, category: "সদকা ও লিল্লাহ অনুদান", date: "২০২৬-১১-০৬", method: "দান বাক্স (Box)", status: "VERIFIED", notes: "অসহায়দের জন্য সদকা বাক্স" },
+  { id: "INF-010", receiptNo: "RCPT-2026-090", donorId: null, donorName: "মসজিদ মার্কেট দোকান ভাড়া কালেকশন", phone: "০১৭২১-৯৯৮৮৭৭", fundId: "f7", fundName: "ওয়াকফ ফান্ড", amount: 50000, category: "ওয়াকফ রাজস্ব", date: "২০২৬-১১-০১", method: "ব্যাংক ডিপোজিট (Bank)", status: "VERIFIED", notes: "নভেম্বর মাসের দোকান ভাড়া রাজস্ব জমা" },
+  { id: "INF-011", receiptNo: "RCPT-2026-091", donorId: null, donorName: "হাড়িনাল যুব সমাজ কল্যাণ পরিষদ", phone: "০১৮১২-৫৬৭৮৯০", fundId: "f8", fundName: "রমজান ও ইফতার ফান্ড", amount: 18000, category: "ইফতার আয়োজন অনুদান", date: "২০২৬-১১-০২", method: "নগদ (Cash)", status: "VERIFIED", notes: "উন্মুক্ত ইফতার তহবিল সংগ্রহ" },
+  { id: "INF-012", receiptNo: "RCPT-2026-092", donorId: null, donorName: "মক্তব অভিভাবক সমিতি ও শুভানুধ্যায়ী", phone: "০১৯১১-৪৪৫৫৬৬", fundId: "f9", fundName: "মক্তব ও শিক্ষা ফান্ড", amount: 14400, category: "মক্তব শিক্ষা অনুদান", date: "২০২৬-১১-০৮", method: "নগদ (Cash)", status: "VERIFIED", notes: "নূরানী কায়দা ও কুরআন শিক্ষা অনুদান" },
+  { id: "INF-013", receiptNo: "RCPT-2026-093", donorId: "M-105", donorName: "ডা. আরিফুল ইসলাম", phone: "০১৫২১-৩৩৪৪৫৫", fundId: "f10", fundName: "জরুরি দুর্যোগ ও সমাজকল্যাণ", amount: 10000, category: "দুর্যোগ ও চিকিৎসা সহায়তা", date: "২০২৬-১১-০৩", method: "বিকাশ (bKash)", status: "VERIFIED", notes: "অসুস্থ দিনমজুর ও দুর্যোগ সহায়তা তহবিল" },
 ];
 
 export const DEFAULT_EXPENSES = [
@@ -116,6 +159,62 @@ export const DEFAULT_EXPENSES = [
     notes: "অনুমোদিত, কোষাধ্যক্ষ পরিশোধের অপেক্ষায়।",
     signatures: { applicant: "মুহাম্মদ আব্দুল্লাহ", receiver: "পল্লী বিদ্যুৎ সমিতি", treasurer: null, president: "মুহাম্মদ আব্দুল্লাহ" },
   },
+  {
+    id: "VCH-2026-085",
+    voucherNo: "VCH-2026-085",
+    title: "খতীব, পেশ ইমাম ও মুয়াজ্জিন সাহেবের সম্মানী হাদিয়া বিতরণ",
+    category: "বেতন ও সম্মানী",
+    fundId: "f3",
+    fundName: "ইমাম-মুয়াজ্জিন সম্মানী ফান্ড",
+    amount: 25000,
+    submittedBy: "জনাব শাহিনুর রহমান (কোষাধ্যক্ষ)",
+    spentAt: "০২ নভেম্বর ২০২৬",
+    status: "PAID",
+    notes: "অক্টোবর মাসের বেতন ও সম্মানী সম্পন্ন।",
+    signatures: { applicant: "শাহিনুর রহমান", receiver: "মাওলানা মাহমুদ হাসান", treasurer: "শাহিনুর রহমান", president: "মুহাম্মদ আব্দুল্লাহ" },
+  },
+  {
+    id: "VCH-2026-084",
+    voucherNo: "VCH-2026-084",
+    title: "অসহায় পথচারী ও এতিম শিক্ষার্থীদের খাদ্য ও চিকিৎসা সহায়তা",
+    category: "লিল্লাহ সহায়তা",
+    fundId: "f6",
+    fundName: "সদকা ও লিল্লাহ ফান্ড",
+    amount: 4500,
+    submittedBy: "হাফেজ ক্বারী বিলাল হোসেন",
+    spentAt: "০৬ নভেম্বর ২০২৬",
+    status: "PAID",
+    notes: "যথাযথ ভাউচার সাপেক্ষে জরুরি সহায়তা প্রদান।",
+    signatures: { applicant: "বিলাল হোসেন", receiver: "মাস্টার ফার্মেসি", treasurer: "শাহিনুর রহমান", president: "মুহাম্মদ আব্দুল্লাহ" },
+  },
+  {
+    id: "VCH-2026-083",
+    voucherNo: "VCH-2026-083",
+    title: "নূরানী কায়দা, আমপারা ও শিক্ষা উপকরণ ক্রয়",
+    category: "শিক্ষা উপকরণ",
+    fundId: "f9",
+    fundName: "মক্তব ও শিক্ষা ফান্ড",
+    amount: 3800,
+    submittedBy: "হাফেজ ক্বারী বিলাল হোসেন (সহকারী শিক্ষক)",
+    spentAt: "০৭ নভেম্বর ২০২৬",
+    status: "PAID",
+    notes: "৫০ জন মক্তব ছাত্রের মাঝে বিনামূল্যে কিতাব বিতরণ।",
+    signatures: { applicant: "বিলাল হোসেন", receiver: "ইসলামিয়া বুক ডিপো", treasurer: "শাহিনুর রহমান", president: "মুহাম্মদ আব্দুল্লাহ" },
+  },
+  {
+    id: "VCH-2026-082",
+    voucherNo: "VCH-2026-082",
+    title: "অসুস্থ দিনমজুর মুসল্লির জরুরি চিকিৎসা সহায়তা ও ঔষধ",
+    category: "জরুরি সমাজকল্যাণ",
+    fundId: "f10",
+    fundName: "জরুরি দুর্যোগ ও সমাজকল্যাণ",
+    amount: 3000,
+    submittedBy: "মুহাম্মদ আব্দুল্লাহ (সভাপতি)",
+    spentAt: "০৯ নভেম্বর ২০২৬",
+    status: "PAID",
+    notes: "কমিটি কর্তৃক অনুমোদিত এককালীন চিকিৎসা অনুদান।",
+    signatures: { applicant: "মুহাম্মদ আব্দুল্লাহ", receiver: "হাসপাতাল ফার্মেসি", treasurer: "শাহিনুর রহমান", president: "মুহাম্মদ আব্দুল্লাহ" },
+  },
 ];
 
 export const DEFAULT_AUDIT_LOGS = [
@@ -142,6 +241,22 @@ export function getMosqueDatabase() {
       return initial;
     }
     const parsed = JSON.parse(raw);
+
+    // Auto-migrate: populate leaves or newly added fund inflows/expenses if missing in existing local session
+    if (!parsed.leaves || parsed.leaves.length === 0) {
+      parsed.leaves = DEFAULT_LEAVES;
+    }
+    if (!parsed.inflows || parsed.inflows.length < DEFAULT_INFLOWS.length) {
+      const existingInflowIds = new Set((parsed.inflows || []).map((i) => i.id));
+      const missingInflows = DEFAULT_INFLOWS.filter((i) => !existingInflowIds.has(i.id));
+      parsed.inflows = [...(parsed.inflows || []), ...missingInflows];
+    }
+    if (!parsed.expenses || parsed.expenses.length < DEFAULT_EXPENSES.length) {
+      const existingExpIds = new Set((parsed.expenses || []).map((e) => e.id));
+      const missingExpenses = DEFAULT_EXPENSES.filter((e) => !existingExpIds.has(e.id));
+      parsed.expenses = [...(parsed.expenses || []), ...missingExpenses];
+    }
+
     return recalculateDatabase(parsed);
   } catch (err) {
     console.error("Failed to read mosque database from storage:", err);
@@ -186,6 +301,7 @@ function createInitialDatabase() {
     members: DEFAULT_MEMBERS,
     employees: DEFAULT_EMPLOYEES,
     mealRoster: DEFAULT_MEAL_ROSTER,
+    leaves: DEFAULT_LEAVES,
     inflows: DEFAULT_INFLOWS,
     expenses: DEFAULT_EXPENSES,
     auditLogs: DEFAULT_AUDIT_LOGS,
@@ -283,6 +399,7 @@ export function recalculateDatabase(db) {
     members: updatedMembers,
     employees: db.employees && db.employees.length > 0 ? db.employees : DEFAULT_EMPLOYEES,
     mealRoster: db.mealRoster && db.mealRoster.length > 0 ? db.mealRoster : DEFAULT_MEAL_ROSTER,
+    leaves: db.leaves && db.leaves.length > 0 ? db.leaves : DEFAULT_LEAVES,
   };
 }
 
@@ -666,6 +783,103 @@ export function updateMemberPledgeInDatabase(memberId, newPledge, actor = "ম�
     targetType: "MEMBER",
     targetId: memberId,
     details: mem.name + "-এর মাসিক অঙ্গীকার ৳" + oldPledge + " হতে ৳" + mem.pledge + " আপডেট করা হয়েছে",
+  };
+  db.auditLogs = [newLog, ...(db.auditLogs || [])];
+
+  return saveMosqueDatabase(db);
+}
+
+
+
+/**
+ * APPLY FOR LEAVE (By Imam, Muazzin, or Staff)
+ */
+export function applyLeaveInDatabase(leaveData, actor = "ইমাম/স্টাফ") {
+  const db = getMosqueDatabase();
+  const nextNum = (db.leaves || []).length + 1;
+  const leaveId = "LV-2026-" + String(nextNum).padStart(3, "0");
+
+  const newLeave = {
+    id: leaveId,
+    empId: leaveData.empId || "EMP-01",
+    applicantName: leaveData.applicantName.trim(),
+    role: leaveData.role || "পেশ ইমাম ও খতীব",
+    phone: leaveData.phone.trim() || "০১৭XX-XXXXXX",
+    leaveType: leaveData.leaveType || "নৈমিত্তিক ছুটি",
+    startDate: leaveData.startDate,
+    endDate: leaveData.endDate || leaveData.startDate,
+    durationDays: Number(leaveData.durationDays || 1),
+    reason: leaveData.reason.trim(),
+    replacementName: leaveData.replacementName.trim() || "বিকল্প দায়িত্বশীল নির্ধারিত নেই",
+    status: "PENDING",
+    appliedAt: formatCurrentTimeBangla().split(" ")[0],
+    approvedBy: null,
+  };
+
+  db.leaves = [newLeave, ...(db.leaves || [])];
+
+  const newLog = {
+    id: "LOG-" + Date.now().toString().slice(-4),
+    timestamp: formatCurrentTimeBangla(),
+    actor: actor,
+    role: "STAFF",
+    action: "LEAVE_APPLIED",
+    targetType: "LEAVE",
+    targetId: leaveId,
+    details: leaveData.applicantName + " ছুটির আবেদন দাখিল করেছেন (" + newLeave.leaveType + ", " + newLeave.durationDays + " দিন)",
+  };
+  db.auditLogs = [newLog, ...(db.auditLogs || [])];
+
+  return saveMosqueDatabase(db);
+}
+
+/**
+ * APPROVE LEAVE (By President / Committee)
+ */
+export function approveLeaveInDatabase(leaveId, approver = "মুহাম্মদ আব্দুল্লাহ (সভাপতি)") {
+  const db = getMosqueDatabase();
+  const leave = (db.leaves || []).find((l) => l.id === leaveId);
+  if (!leave) return db;
+
+  leave.status = "APPROVED";
+  leave.approvedBy = approver;
+
+  const newLog = {
+    id: "LOG-" + Date.now().toString().slice(-4),
+    timestamp: formatCurrentTimeBangla(),
+    actor: approver,
+    role: "PRESIDENT",
+    action: "LEAVE_APPROVED",
+    targetType: "LEAVE",
+    targetId: leaveId,
+    details: leave.applicantName + "-এর ছুটির আবেদন (" + leave.durationDays + " দিন) অনুমোদন করা হয়েছে",
+  };
+  db.auditLogs = [newLog, ...(db.auditLogs || [])];
+
+  return saveMosqueDatabase(db);
+}
+
+/**
+ * REJECT LEAVE (By President / Committee)
+ */
+export function rejectLeaveInDatabase(leaveId, reason = "জরুরি প্রয়োজন", rejector = "মুহাম্মদ আব্দুল্লাহ (সভাপতি)") {
+  const db = getMosqueDatabase();
+  const leave = (db.leaves || []).find((l) => l.id === leaveId);
+  if (!leave) return db;
+
+  leave.status = "REJECTED";
+  leave.rejectionReason = reason;
+  leave.approvedBy = rejector;
+
+  const newLog = {
+    id: "LOG-" + Date.now().toString().slice(-4),
+    timestamp: formatCurrentTimeBangla(),
+    actor: rejector,
+    role: "PRESIDENT",
+    action: "LEAVE_REJECTED",
+    targetType: "LEAVE",
+    targetId: leaveId,
+    details: leave.applicantName + "-এর ছুটির আবেদন নামঞ্জুর (কারণ: " + reason + ")",
   };
   db.auditLogs = [newLog, ...(db.auditLogs || [])];
 
