@@ -1,7 +1,30 @@
 "use client";
 import React, { useState } from "react";
-import { BookOpen, Scroll, FileText, Mic, X, Search, Check, Copy, Share2, Volume2, ChevronRight } from "lucide-react";
+import { BookOpen, Scroll, FileText, Mic, X, Search, Check, Copy, Share2, Volume2, ChevronRight, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
+
+async function copyText(text, msg = "উদ্ধৃতি কপি করা হয়েছে") {
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      toast.success(msg);
+      return;
+    }
+  } catch {}
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    toast.success(msg);
+  } catch {
+    toast.error("কপি করা সম্ভব হয়নি");
+  }
+}
 
 // ── 1. KITAB MODAL ──
 export function KitabModal({ onClose }) {
@@ -120,10 +143,7 @@ export function KitabModal({ onClose }) {
             <div className="flex items-center justify-between">
               <span className="text-xs font-black text-amber-700 dark:text-amber-400">📖 গুরুত্বপূর্ণ উদ্ধৃতি:</span>
               <button
-                onClick={() => {
-                  navigator.clipboard.writeText(`${current.featuredTopic.arabic}\n\n${current.featuredTopic.bangla}`);
-                  toast.success("উদ্ধৃতি কপি করা হয়েছে");
-                }}
+                onClick={() => copyText(`${current.featuredTopic.arabic}\n\n${current.featuredTopic.bangla}`)}
                 className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 hover:underline cursor-pointer"
               >
                 <Copy className="w-3 h-3" />
@@ -559,6 +579,20 @@ export function BayanModal({ onClose }) {
                 <span>{h}</span>
               </div>
             ))}
+          </div>
+
+          <div className="pt-1">
+            <a
+              href={`https://www.youtube.com/results?search_query=${encodeURIComponent(
+                `${current.speaker} ${current.title}`
+              )}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-sm transition"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+              <span>ইউটিউবে সম্পূর্ণ বয়ানটি শুনুন</span>
+            </a>
           </div>
         </div>
 

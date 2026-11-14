@@ -8,7 +8,6 @@ import {
   Volume2,
   Copy,
   Calendar,
-  Sparkles,
   Award,
   ChevronRight,
   MapPin,
@@ -19,6 +18,29 @@ import {
   Flame,
 } from "lucide-react";
 import { toast } from "sonner";
+
+async function copyText(text, msg = "দো'আটি কপি করা হয়েছে") {
+  try {
+    if (navigator?.clipboard?.writeText) {
+      await navigator.clipboard.writeText(text);
+      toast.success(msg);
+      return;
+    }
+  } catch {}
+  try {
+    const ta = document.createElement("textarea");
+    ta.value = text;
+    ta.style.position = "fixed";
+    ta.style.opacity = "0";
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand("copy");
+    document.body.removeChild(ta);
+    toast.success(msg);
+  } catch {
+    toast.error("কপি করা সম্ভব হয়নি");
+  }
+}
 
 // ── 1. DUA MODAL ──
 export function DuaModal({ onClose }) {
@@ -134,10 +156,7 @@ export function DuaModal({ onClose }) {
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-300">{item.title}</h3>
                 <button
-                  onClick={() => {
-                    navigator.clipboard.writeText(`${item.arabic}\n\n${item.pronunciation}\n\nঅর্থ: ${item.meaning}`);
-                    toast.success("দো'আটি কপি করা হয়েছে");
-                  }}
+                  onClick={() => copyText(`${item.arabic}\n\n${item.pronunciation}\n\nঅর্থ: ${item.meaning}`)}
                   className="text-stone-400 hover:text-emerald-600 dark:hover:text-emerald-400 p-1 cursor-pointer"
                   title="কপি করুন"
                 >

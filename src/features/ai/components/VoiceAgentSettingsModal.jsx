@@ -254,29 +254,27 @@ export default function VoiceAgentSettingsModal({
               })}
             </div>
 
-            {banglaEngine !== "engine-1" && (
-              <div className="pt-1 space-y-1.5">
-                <span className="text-[11px] font-semibold text-slate-300 block">
-                  স্টুডিও কণ্ঠস্বর নির্বাচন (ElevenLabs v3):
-                </span>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {Object.values(ELEVENLABS_STUDIO_VOICES).map((v) => (
-                    <button
-                      key={v.id}
-                      type="button"
-                      onClick={() => setElVoice(v.id)}
-                      className={`p-2 rounded-xl border text-xs font-semibold text-center transition-all cursor-pointer ${
-                        elVoice === v.id
-                          ? "bg-emerald-950 border-emerald-500 text-emerald-200 shadow-sm"
-                          : "bg-slate-950/50 border-slate-800 text-slate-400 hover:text-white"
-                      }`}
-                    >
-                      {v.shortName}
-                    </button>
-                  ))}
-                </div>
+            <div className="pt-1 space-y-1.5">
+              <span className="text-[11px] font-semibold text-slate-300 block">
+                স্টুডিও কণ্ঠস্বর নির্বাচন (ElevenLabs v3 / Multilingual):
+              </span>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {Object.values(ELEVENLABS_STUDIO_VOICES).map((v) => (
+                  <button
+                    key={v.id}
+                    type="button"
+                    onClick={() => setElVoice(v.id)}
+                    className={`p-2 rounded-xl border text-xs font-semibold text-center transition-all cursor-pointer ${
+                      (elVoice || (banglaEngine === "engine-1" ? "bill" : "brian")) === v.id
+                        ? "bg-emerald-950 border-emerald-500 text-emerald-200 shadow-sm"
+                        : "bg-slate-950/50 border-slate-800 text-slate-400 hover:text-white"
+                    }`}
+                  >
+                    {v.shortName}
+                  </button>
+                ))}
               </div>
-            )}
+            </div>
           </div>
 
           {/* Section 2: Emotion & Expression */}

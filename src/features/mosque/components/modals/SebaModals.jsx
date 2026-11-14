@@ -135,22 +135,32 @@ export function ZakatModal({ onClose }) {
 }
 
 // ── 2. MAKTAB MODAL ──
+const DEFAULT_STUDENTS = [
+  { id: "1", name: "আব্দুল্লাহ আল-আমিন", roll: "০১", batch: "সকাল (নূরানী)", progress: "কায়দা মাশক", present: true },
+  { id: "2", name: "ফাতিমা বিনতে তাহের", roll: "০২", batch: "সকাল (নূরানী)", progress: "আমপারা তিলাওয়াত", present: true },
+  { id: "3", name: "মুহাম্মদ হাসান", roll: "০৩", batch: "বিকাল (হিফজ)", progress: "নাজেরা শেষ পর্ব", present: false },
+  { id: "4", name: "উমর ফারুক", roll: "০৪", batch: "সকাল (নূরানী)", progress: "হরকত ও তানভীন", present: true },
+];
+
 export function MaktabModal({ onClose }) {
-  const [students, setStudents] = useState([
-    { id: "1", name: "আব্দুল্লাহ আল-আমিন", roll: "০১", batch: "সকাল (নূরানী)", progress: "কায়দা মাশক", present: true },
-    { id: "2", name: "ফাতিমা বিনতে তাহের", roll: "০২", batch: "সকাল (নূরানী)", progress: "আমপারা তিলাওয়াত", present: true },
-    { id: "3", name: "মুহাম্মদ হাসান", roll: "০৩", batch: "বিকাল (হিফজ)", progress: "নাজেরা শেষ পর্ব", present: false },
-    { id: "4", name: "উমর ফারুক", roll: "০৪", batch: "সকাল (নূরানী)", progress: "হরকত ও তানভীন", present: true },
-  ]);
+  const [students, setStudents] = useState(() => {
+    try {
+      const saved = localStorage.getItem("mosque_maktab_students");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEFAULT_STUDENTS;
+  });
 
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newBatch, setNewBatch] = useState("সকাল (নূরানী)");
 
   const handleToggleAttendance = (id) => {
-    setStudents((prev) =>
-      prev.map((s) => (s.id === id ? { ...s, present: !s.present } : s))
-    );
+    const updated = students.map((s) => (s.id === id ? { ...s, present: !s.present } : s));
+    setStudents(updated);
+    try {
+      localStorage.setItem("mosque_maktab_students", JSON.stringify(updated));
+    } catch {}
     toast.info("হাজিরা আপডেট করা হয়েছে");
   };
 
@@ -165,7 +175,11 @@ export function MaktabModal({ onClose }) {
       progress: "নূরানী কায়দা ১ম পাঠ",
       present: true,
     };
-    setStudents([...students, newStudent]);
+    const updated = [...students, newStudent];
+    setStudents(updated);
+    try {
+      localStorage.setItem("mosque_maktab_students", JSON.stringify(updated));
+    } catch {}
     setNewName("");
     setShowAdd(false);
     toast.success("নতুন শিক্ষার্থী সফলভাবে ভর্তি করা হয়েছে!");
@@ -271,13 +285,21 @@ export function MaktabModal({ onClose }) {
 }
 
 // ── 3. MEAL ROSTER MODAL ──
+const DEFAULT_ROSTERS = [
+  { id: "1", date: "১৫ নভেম্বর", donor: "হাজী রফিকুল ইসলাম", meal: "দুপুর ও রাত", students: 15, status: "নিশ্চিত" },
+  { id: "2", date: "১৬ নভেম্বর", donor: "জনাব আব্দুল করিম", meal: "দুপুর", students: 15, status: "নিশ্চিত" },
+  { id: "3", date: "১৭ নভেম্বর", donor: "উম্মে আয়মান", meal: "রাত", students: 15, status: "নিশ্চিত" },
+  { id: "4", date: "১৮ নভেম্বর", donor: "বুকিং উন্মুক্ত", meal: "উভয় বেলা", students: 15, status: "উন্মুক্ত" },
+];
+
 export function MealRosterModal({ onClose }) {
-  const [roster, setRoster] = useState([
-    { id: "1", date: "১৫ নভেম্বর", donor: "হাজী রফিকুল ইসলাম", meal: "দুপুর ও রাত", students: 15, status: "নিশ্চিত" },
-    { id: "2", date: "১৬ নভেম্বর", donor: "জনাব আব্দুল করিম", meal: "দুপুর", students: 15, status: "নিশ্চিত" },
-    { id: "3", date: "১৭ নভেম্বর", donor: "উম্মে আয়মান", meal: "রাত", students: 15, status: "নিশ্চিত" },
-    { id: "4", date: "১৮ নভেম্বর", donor: "বুকিং উন্মুক্ত", meal: "উভয় বেলা", students: 15, status: "উন্মুক্ত" },
-  ]);
+  const [roster, setRoster] = useState(() => {
+    try {
+      const saved = localStorage.getItem("mosque_meal_roster");
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return DEFAULT_ROSTERS;
+  });
 
   const [donorName, setDonorName] = useState("");
   const [pledgeDate, setPledgeDate] = useState("১৮ নভেম্বর");
@@ -285,11 +307,13 @@ export function MealRosterModal({ onClose }) {
   const handleBook = (e) => {
     e.preventDefault();
     if (!donorName.trim()) return;
-    setRoster(
-      roster.map((r) =>
-        r.date === pledgeDate ? { ...r, donor: donorName.trim(), status: "নিশ্চিত" } : r
-      )
+    const updated = roster.map((r) =>
+      r.date === pledgeDate ? { ...r, donor: donorName.trim(), status: "নিশ্চিত" } : r
     );
+    setRoster(updated);
+    try {
+      localStorage.setItem("mosque_meal_roster", JSON.stringify(updated));
+    } catch {}
     setDonorName("");
     toast.success("তালিবুল ইলমদের খাবার স্পন্সর সফলভাবে বুকিং হয়েছে!");
   };
@@ -414,6 +438,34 @@ export function IslamicQuizModal({ onClose }) {
       options: ["সূরা বাক্বারা (২৮২ নং)", "সূরা আলে ইমরান", "সূরা নিসা", "সূরা মায়িদাহ"],
       correct: 0,
       explanation: "সূরা আল-বাক্বারার ২৮২ নম্বর আয়াত (আয়াতুদ দাইয়ন / ঋণের আয়াত) কুরআনের সর্ববৃহৎ আয়াত।"
+    },
+    {
+      id: 5,
+      question: "ইসলামের প্রথম মুয়াযযিন কে ছিলেন?",
+      options: ["হযরত বিলাল ইবনে রাবাহ (রা.)", "হযরত আবু বকর (রা.)", "হযরত যায়েদ ইবনে হারেসা (রা.)", "হযরত আবু হুরায়রা (রা.)"],
+      correct: 0,
+      explanation: "রাসূলুল্লাহ (সা.) হযরত বিলাল (রা.)-কে ইসলামের প্রথম মুয়াযযিন নিযুক্ত করেন।"
+    },
+    {
+      id: 6,
+      question: "পবিত্র কুরআনের কোন সূরায় 'বিসমিল্লাহির রহমানির রাহীম' দুইবার এসেছে?",
+      options: ["সূরা আত-তাওবাহ", "সূরা আন-নামল", "সূরা আল-ফাতিহা", "সূরা আর-রহমান"],
+      correct: 1,
+      explanation: "সূরা আন-নামলে শুরুতে এবং ৩০ নম্বর আয়াতে সোলায়মান (আ.)-এর চিঠির বিবরণে বিসমিল্লাহ এসেছে।"
+    },
+    {
+      id: 7,
+      question: "ইসলামের ইতিহাসের প্রথম সম্মুখ যুদ্ধ কোনটি ছিল?",
+      options: ["উহুদের যুদ্ধ", "খন্দকের যুদ্ধ", "বদরের যুদ্ধ", "হুনাইনের যুদ্ধ"],
+      correct: 2,
+      explanation: "১৭ রমজান ২য় হিজরিতে ঐতিহাসিক বদরের যুদ্ধ সংঘটিত হয় এবং মুসলিমরা বিজয় লাভ করে।"
+    },
+    {
+      id: 8,
+      question: "আসমাউল হুসনা অনুযায়ী আল্লাহ তাআলার কয়টি বিশেষ গুণবাচক নাম হাদীসে বর্ণিত হয়েছে?",
+      options: ["৬৬টি", "৭৭টি", "৮৮টি", "৯৯টি"],
+      correct: 3,
+      explanation: "রাসূলুল্লাহ (সা.) বলেছেন: 'নিশ্চয়ই আল্লাহর ৯৯টি নাম রয়েছে; যে ব্যক্তি এগুলো গণনা/মুখস্থ করবে সে জান্নাতে প্রবেশ করবে' (বুখারী ও মুসলিম)।"
     }
   ];
 

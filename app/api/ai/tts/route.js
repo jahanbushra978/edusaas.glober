@@ -106,7 +106,7 @@ async function fetchElevenLabsTts(text, elVoice = null) {
 function getDiskCachePath(chunk, lang, gender, voice, rate = "def", pitch = "def", engine = "engine-2", elVoice = "def") {
   const hash = crypto
     .createHash("sha256")
-    .update(`v18:${engine}:${elVoice || "def"}:${lang}:${gender}:${voice || "def"}:${rate}:${pitch}:${chunk}`)
+    .update(`v19:${engine}:${elVoice || "def"}:${lang}:${gender}:${voice || "def"}:${rate}:${pitch}:${chunk}`)
     .digest("hex");
   return path.join(DISK_CACHE_DIR, `${hash}.bin`);
 }
@@ -551,8 +551,11 @@ async function synthesizeChunk(chunk, lang = "bn", voice = null, rate = null, ge
   const useElevenLabsFirst = Boolean(
     lang.startsWith("bn") && process.env.ELEVENLABS_API_KEY && (gender !== "female" || elVoice)
   );
-  const resolvedElVoice = useElevenLabsFirst ? resolveElevenLabsVoiceId(elVoice || (engine === "engine-1" ? "bill" : "brian")) : "def";
-  const memKey = `v18:${engine}:${resolvedElVoice}:${lang}:${gender}:${voice || "def"}:${rate || "def"}:${pitch || "def"}:${chunk}`;
+  const defaultVoiceForEngine = engine === "engine-1" ? "bill" : "brian";
+  const resolvedElVoice = useElevenLabsFirst
+    ? resolveElevenLabsVoiceId(elVoice && elVoice !== "def" ? elVoice : defaultVoiceForEngine)
+    : "def";
+  const memKey = `v19:${engine}:${resolvedElVoice}:${lang}:${gender}:${voice || "def"}:${rate || "def"}:${pitch || "def"}:${chunk}`;
   if (ttsCache.has(memKey)) {
     return ttsCache.get(memKey);
   }

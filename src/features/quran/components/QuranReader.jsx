@@ -811,10 +811,11 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
               <select
                 value={activeBanglaEngine || "engine-2"}
                 onChange={(e) => {
-                  setActiveBanglaEngine(e.target.value);
+                  const newEng = e.target.value;
+                  setActiveBanglaEngine(newEng);
                   toast.success(
-                    e.target.value === "engine-2"
-                      ? "ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ (স্বাভাবিক ও হৃদয়স্পর্শী) সক্রিয়"
+                    newEng === "engine-2"
+                      ? "ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ (সুললিত ও হৃদয়স্পর্শী) সক্রিয়"
                       : "ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ (অভিজ্ঞ ও শান্ত) সক্রিয়"
                   );
                 }}
@@ -828,9 +829,9 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                 <option value="engine-2">🎙️ ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ [ডিফল্ট]</option>
                 <option value="engine-1">🎙️ ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ</option>
               </select>
-              {(activeBanglaEngine || "engine-2") !== "engine-1" && elVoices && (
+              {elVoices && (
                 <select
-                  value={activeElVoice || "brian"}
+                  value={activeElVoice || (activeBanglaEngine === "engine-1" ? "bill" : "brian")}
                   onChange={(e) => {
                     setActiveElVoice(e.target.value);
                     toast.success(`${elVoices[e.target.value]?.shortName || "নতুন"} স্টুডিও কণ্ঠ সক্রিয়`);
@@ -956,9 +957,10 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
           <select
             value={activeBanglaEngine || "engine-2"}
             onChange={(e) => {
-              setActiveBanglaEngine(e.target.value);
+              const newEng = e.target.value;
+              setActiveBanglaEngine(newEng);
               toast.success(
-                e.target.value === "engine-2"
+                newEng === "engine-2"
                   ? "ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ সক্রিয়"
                   : "ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ সক্রিয়"
               );
@@ -974,9 +976,9 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
             <option value="engine-1">ইঞ্জিন ১ (উস্তাদ)</option>
           </select>
 
-          {(activeBanglaEngine || "engine-2") !== "engine-1" && elVoices && (
+          {elVoices && (
             <select
-              value={activeElVoice || "brian"}
+              value={activeElVoice || (activeBanglaEngine === "engine-1" ? "bill" : "brian")}
               onChange={(e) => {
                 setActiveElVoice(e.target.value);
                 toast.success(`${elVoices[e.target.value]?.shortName || "নতুন"} স্টুডিও কণ্ঠ`);
@@ -1778,7 +1780,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                   <option value="engine-1" className="bg-white text-slate-900">ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ</option>
                 </select>
               </div>
-              {(activeBanglaEngine || "engine-2") !== "engine-1" && elVoices && (
+              {elVoices && (
                 <div className="grid grid-cols-2 gap-1.5">
                   {Object.values(elVoices).map((v) => (
                     <button
@@ -1789,7 +1791,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                         toast.success(`${v.shortName} কণ্ঠ নির্বাচন করা হয়েছে`);
                       }}
                       className={`px-2 py-1 rounded-xl text-[10px] font-bold border transition cursor-pointer ${
-                        (activeElVoice || "brian") === v.id
+                        (activeElVoice || (activeBanglaEngine === "engine-1" ? "bill" : "brian")) === v.id
                           ? "bg-emerald-600 text-white border-emerald-500 shadow-xs"
                           : isDay
                           ? "bg-white text-stone-700 border-stone-200"

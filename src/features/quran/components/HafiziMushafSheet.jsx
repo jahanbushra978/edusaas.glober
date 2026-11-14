@@ -604,14 +604,14 @@ export default function HafiziMushafSheet({
                       );
                     })}
                   </div>
-                  {(activeBanglaEngine || "engine-2") !== "engine-1" && elVoices && (
+                  {elVoices && (
                     <div className="mt-2 pt-2 border-t border-amber-500/20">
                       <div className="text-[10px] font-bold text-amber-500 dark:text-amber-300 mb-1.5">
                         স্টুডিও কণ্ঠস্বর বাছাই (ElevenLabs v3):
                       </div>
                       <div className="grid grid-cols-2 gap-1">
                         {Object.values(elVoices).map((v) => {
-                          const isVActive = (activeElVoice || "brian") === v.id;
+                          const isVActive = (activeElVoice || (activeBanglaEngine === "engine-1" ? "bill" : "brian")) === v.id;
                           return (
                             <button
                               key={v.id}

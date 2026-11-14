@@ -14,15 +14,73 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+const DEFAULT_MEMBERS = [
+  { id: "M-101", name: "মুহাম্মদ আব্দুল্লাহ", phone: "০১৭১১-২২৩৩৪৪", role: "মুতাওয়াল্লী", pledge: 2000, paid: 2000, status: "PAID", lastDate: "০১ নভে ২০২৬" },
+  { id: "M-102", name: "হাজী রফিকুল ইসলাম", phone: "০১৮১৯-১১২২৩৩", role: "সহ-সভাপতি", pledge: 1500, paid: 1500, status: "PAID", lastDate: "০২ নভে ২০২৬" },
+  { id: "M-103", name: "মাওলানা মাহমুদ হাসান", phone: "০১৯১১-৪৪৫৫৬৬", role: "খতীব ও ইমাম", pledge: 1000, paid: 1000, status: "PAID", lastDate: "০১ নভে ২০২৬" },
+  { id: "M-104", name: "জনাব শাহিনুর রহমান", phone: "০১৭২১-৯৯৮৮৭৭", role: "কোষাধ্যক্ষ", pledge: 1000, paid: 500, status: "PARTIAL", lastDate: "০৫ নভে ২০২৬" },
+  { id: "M-105", name: "ডা. আরিফুল ইসলাম", phone: "০১৫২১-৩৩৪৪৫৫", role: "সাধারণ সদস্য", pledge: 2000, paid: 0, status: "UNPAID", lastDate: "-" },
+  { id: "M-106", name: "মো. কামরুল হাসান", phone: "০১৮১২-৫৬৭৮৯০", role: "সাধারণ সদস্য", pledge: 1000, paid: 1000, status: "PAID", lastDate: "০৩ নভে ২০২৬" },
+  { id: "M-107", name: "ইঞ্জি. মোস্তাফিজুর রহমান", phone: "০১৭৩৩-১১২২৪৪", role: "উপদেষ্টা", pledge: 3000, paid: 3000, status: "PAID", lastDate: "০৪ নভে ২০২৬" },
+  { id: "M-108", name: "ফারুক আহমেদ", phone: "০১৯২২-৮৮৯৯০০", role: "সাধারণ সদস্য", pledge: 500, paid: 0, status: "UNPAID", lastDate: "-" },
+];
+
+const DEFAULT_FUNDS = [
+  { id: "general", name: "সাধারণ পরিচালন ফান্ড", balance: 284500 },
+  { id: "construction", name: "নির্মাণ ও সংস্কার ফান্ড", balance: 650000 },
+  { id: "salary", name: "ইমাম-মুয়াজ্জিন হাদিয়া ফান্ড", balance: 145000 },
+  { id: "zakat", name: "যাকাত ও সমাজকল্যাণ ফান্ড", balance: 88000 },
+];
+
 export function MasterDuesModal({
-  members,
-  onUpdateMembers,
-  funds,
-  onUpdateFunds,
-  mosqueName,
-  mosqueAddress,
+  members: propMembers,
+  onUpdateMembers: propOnUpdateMembers,
+  funds: propFunds,
+  onUpdateFunds: propOnUpdateFunds,
+  mosqueName = "বাইতুন নূর জামে মসজিদ ও কমপ্লেক্স",
+  mosqueAddress = "হাড়িনাল, গাজীপুর সিটি, ঢাকা",
   onClose,
 }) {
+  const [internalMembers, setInternalMembers] = useState(() => {
+    try {
+      const saved = localStorage.getItem("mosque_master_members");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_MEMBERS;
+  });
+
+  const [internalFunds, setInternalFunds] = useState(() => {
+    try {
+      const saved = localStorage.getItem("mosque_master_funds");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      }
+    } catch {}
+    return DEFAULT_FUNDS;
+  });
+
+  const members = propMembers || internalMembers;
+  const funds = propFunds || internalFunds;
+
+  const onUpdateMembers = (updated) => {
+    if (propOnUpdateMembers) propOnUpdateMembers(updated);
+    setInternalMembers(updated);
+    try {
+      localStorage.setItem("mosque_master_members", JSON.stringify(updated));
+    } catch {}
+  };
+
+  const onUpdateFunds = (updated) => {
+    if (propOnUpdateFunds) propOnUpdateFunds(updated);
+    setInternalFunds(updated);
+    try {
+      localStorage.setItem("mosque_master_funds", JSON.stringify(updated));
+    } catch {}
+  };
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("ALL"); // ALL | PAID | PARTIAL | UNPAID
   const [selectedMember, setSelectedMember] = useState(null);
