@@ -128,7 +128,7 @@ export const NOOR_QAIDA_PARVAS = [
     startClass: 63,
     endClass: 65,
     classesCount: 3,
-    emoji: "✨",
+    emoji: "📖",
     color: "from-sky-600 to-blue-800",
     summaryBn: "সূরা ফীল থেকে সূরা নাস পর্যন্ত ১০টি ছোট সূরার শব্দ ভেঙে ভেঙে মাশক ও বিশুদ্ধ তিলাওয়াত।"
   },

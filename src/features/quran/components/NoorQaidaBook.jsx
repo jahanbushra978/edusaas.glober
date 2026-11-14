@@ -60,6 +60,57 @@ const PAGE_SEQUENCE = [
   ...Array.from({ length: 78 }, (_, i) => i + 1), // ক্লাস ১ থেকে ৭৮ (পৃষ্ঠা ৮ থেকে ১০১)
 ];
 
+// 🎈 ঝিলিক বাতির মতো ছোট ছোট রঙিন বল ও বেলুন অ্যানিমেশন (কোনো তারার আইকন ছাড়া শতভাগ শিশু-বান্ধব)
+function JhilikBalloonBurst() {
+  const balls = [
+    { angle: 0, distance: 54, bg: "bg-emerald-400", shadow: "shadow-[0_0_12px_#34d399]", size: "w-3 h-3" },
+    { angle: 36, distance: 48, bg: "bg-amber-400", shadow: "shadow-[0_0_12px_#fbbf24]", size: "w-2.5 h-2.5" },
+    { angle: 72, distance: 56, bg: "bg-cyan-400", shadow: "shadow-[0_0_12px_#22d3ee]", size: "w-3 h-3" },
+    { angle: 108, distance: 46, bg: "bg-rose-400", shadow: "shadow-[0_0_12px_#fb7185]", size: "w-2.5 h-2.5" },
+    { angle: 144, distance: 54, bg: "bg-purple-400", shadow: "shadow-[0_0_12px_#c084fc]", size: "w-3 h-3" },
+    { angle: 180, distance: 50, bg: "bg-orange-400", shadow: "shadow-[0_0_12px_#fb923c]", size: "w-2.5 h-2.5" },
+    { angle: 216, distance: 58, bg: "bg-lime-400", shadow: "shadow-[0_0_12px_#a3e635]", size: "w-3 h-3" },
+    { angle: 252, distance: 45, bg: "bg-sky-400", shadow: "shadow-[0_0_12px_#38bdf8]", size: "w-2.5 h-2.5" },
+    { angle: 288, distance: 54, bg: "bg-fuchsia-400", shadow: "shadow-[0_0_12px_#e879f9]", size: "w-3 h-3" },
+    { angle: 324, distance: 48, bg: "bg-yellow-300", shadow: "shadow-[0_0_12px_#fde047]", size: "w-2.5 h-2.5" },
+  ];
+
+  return (
+    <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-visible z-30">
+      {/* 🎈 প্রধান উৎসবের বেলুন যা নিচ থেকে ওপরে ভেসে উঠবে */}
+      <div className="absolute left-1/2 top-1/2 animate-balloon-rise pointer-events-none select-none z-20 flex items-center justify-center">
+        <span className="text-3xl sm:text-4xl filter drop-shadow-md">🎈</span>
+      </div>
+
+      {/* 🎈 সহকারী ছোট রঙিন বেলুন ডানে মৃদুভাবে ভেসে উঠবে */}
+      <div
+        className="absolute left-[62%] top-1/2 animate-balloon-rise pointer-events-none select-none z-20"
+        style={{ animationDelay: "70ms" }}
+      >
+        <span className="text-xl sm:text-2xl filter drop-shadow-sm">🎈</span>
+      </div>
+
+      {/* 💡 ঝিলিক বাতির মতো ১০টি রঙিন আলো-বল যা ভেতর থেকে চারদিকে সুন্দরভাবে ছিটবে */}
+      {balls.map((b, idx) => {
+        const rad = (b.angle * Math.PI) / 180;
+        const tx = Math.round(Math.cos(rad) * b.distance);
+        const ty = Math.round(Math.sin(rad) * b.distance);
+        return (
+          <span
+            key={idx}
+            className={`absolute left-1/2 top-1/2 rounded-full ${b.size} ${b.bg} ${b.shadow} animate-jhilik-ball`}
+            style={{
+              "--tx": `${tx}px`,
+              "--ty": `${ty}px`,
+              animationDelay: `${idx * 20}ms`,
+            }}
+          />
+        );
+      })}
+    </div>
+  );
+}
+
 export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }) {
   // Navigation State
   const [currentPage, setCurrentPage] = useState(initialClass); // 'cover' | 'rules' | 'color-code' | 1..78
@@ -848,14 +899,8 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                           : "bg-[#FBFDFB] border-emerald-200 hover:border-emerald-500 hover:bg-white hover:shadow-md hover:-translate-y-1 active:translate-y-0.5"
                       }`}
                     >
-                      {/* Visual Pop Sparkles Burst */}
-                      {isPopping && (
-                        <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-20">
-                          <span className="text-2xl animate-ping opacity-90">✨</span>
-                          <span className="absolute top-1 right-1 text-base animate-bounce">🎈</span>
-                          <span className="absolute bottom-1 left-1 text-base animate-bounce">🫧</span>
-                        </div>
-                      )}
+                      {/* 🎈 ঝিলিক বাতির রঙিন বল ও বেলুন অ্যানিমেশন (কোনো তারার আইকন ছাড়া) */}
+                      {isPopping && <JhilikBalloonBurst />}
 
                       <div className="w-full flex items-center justify-between text-[10px] text-slate-400">
                         <span className="w-5 h-5 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center font-bold text-[10px]">
@@ -921,33 +966,46 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               </div>
 
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-2.5 sm:gap-3" dir="rtl">
-                {cls.items.map((it, idx) => (
-                  <div
-                    key={it.id || idx}
-                    onClick={() => playItemSound(it)}
-                    className="p-3 sm:p-4 rounded-3xl bg-white border-2 border-teal-200 hover:border-teal-500 hover:shadow-md cursor-pointer text-center flex flex-col items-center justify-between min-h-[120px] group transition hover:-translate-y-1"
-                  >
-                    <div className="w-full flex items-center justify-between text-[10px] text-teal-600">
-                      <span className="w-5 h-5 rounded-full bg-teal-50 text-teal-800 font-bold flex items-center justify-center text-[10px]">
-                        {idx + 1}
-                      </span>
-                      <span className="text-[9px] font-bold bg-teal-50 px-1.5 py-0.5 rounded-full border border-teal-200">
-                        👆 ক্বলক্বলা ⚽
-                      </span>
-                    </div>
-                    <div className="font-arabic text-3xl sm:text-4xl font-bold text-slate-900 group-hover:text-teal-700 my-1">
-                      {it.ar}
-                    </div>
-                    <div className="w-full text-center" dir="ltr">
-                      <div className="text-xs font-black text-teal-950 font-hind-siliguri">
-                        {it.nameBn}
+                {cls.items.map((it, idx) => {
+                  const isItemActive = activeItemId === (it.id || it.ar);
+                  const isPopping = poppingCardId === (it.id || it.ar);
+                  return (
+                    <div
+                      key={it.id || idx}
+                      onClick={() => playItemSound(it)}
+                      className={`group relative p-3 sm:p-4 rounded-3xl border-2 transition-all duration-200 cursor-pointer text-center flex flex-col items-center justify-between min-h-[120px] select-none ${
+                        isPopping
+                          ? "animate-card-pop border-amber-500 ring-4 ring-amber-300 shadow-2xl scale-105 bg-amber-50/60"
+                          : isItemActive
+                          ? "border-teal-500 ring-4 ring-teal-300 bg-teal-50/50 scale-105"
+                          : "border-teal-200 bg-white hover:border-teal-500 hover:shadow-md hover:-translate-y-1 active:translate-y-0.5"
+                      }`}
+                    >
+                      {/* 🎈 ঝিলিক বাতির রঙিন বল ও বেলুন অ্যানিমেশন */}
+                      {isPopping && <JhilikBalloonBurst />}
+
+                      <div className="w-full flex items-center justify-between text-[10px] text-teal-600">
+                        <span className="w-5 h-5 rounded-full bg-teal-50 text-teal-800 font-bold flex items-center justify-center text-[10px]">
+                          {idx + 1}
+                        </span>
+                        <span className="text-[9px] font-bold bg-teal-50 px-1.5 py-0.5 rounded-full border border-teal-200">
+                          👆 ক্বলক্বলা ⚽
+                        </span>
                       </div>
-                      <div className="text-[10px] text-teal-800 font-bold font-hind-siliguri mt-0.5">
-                        প্রতিধ্বনি দিয়ে পড়ো
+                      <div className="font-arabic text-3xl sm:text-4xl font-bold text-slate-900 group-hover:text-teal-700 my-1">
+                        {it.ar}
+                      </div>
+                      <div className="w-full text-center" dir="ltr">
+                        <div className="text-xs font-black text-teal-950 font-hind-siliguri">
+                          {it.nameBn}
+                        </div>
+                        <div className="text-[10px] text-teal-800 font-bold font-hind-siliguri mt-0.5">
+                          প্রতিধ্বনি দিয়ে পড়ো
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ) : (
@@ -970,15 +1028,8 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                         : "border-slate-200 hover:border-emerald-400 hover:shadow-md hover:-translate-y-1 active:translate-y-0.5"
                     }`}
                   >
-                    {/* Visual Pop Burst Animation when clicked */}
-                    {isPopping && (
-                      <div className="absolute inset-0 pointer-events-none flex items-center justify-center overflow-hidden z-20">
-                        <span className="text-3xl animate-ping opacity-95">✨</span>
-                        <span className="absolute top-2 right-2 text-lg animate-bounce">🎈</span>
-                        <span className="absolute bottom-2 left-2 text-lg animate-bounce">🫧</span>
-                        <span className="absolute top-2 left-2 text-lg animate-ping">🌟</span>
-                      </div>
-                    )}
+                    {/* 🎈 ঝিলিক বাতির রঙিন বল ও বেলুন অ্যানিমেশন (কোনো তারার আইকন ছাড়া) */}
+                    {isPopping && <JhilikBalloonBurst />}
 
                     {/* Top row: badge + action button */}
                     <div className="w-full flex items-center justify-between text-xs text-slate-400">

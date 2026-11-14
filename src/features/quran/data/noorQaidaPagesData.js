@@ -92,7 +92,7 @@ export const PARVA_THEMES = {
     badgeBg: "bg-red-100 text-red-950 border-red-300",
     pillBorder: "border-red-400",
     accent: "text-red-700",
-    emoji: "✨",
+    emoji: "📖",
     pageRange: "৭৩–৮৮",
   },
   10: {
