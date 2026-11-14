@@ -31,6 +31,10 @@ import {
   Plus,
   X,
   ExternalLink,
+  ArrowRight,
+  TrendingUp,
+  AlertCircle,
+  Check,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -67,6 +71,11 @@ import {
   AdminPanelModal,
   FundsModal,
 } from "./modals/CommunityModals";
+import {
+  MonthDetailModal,
+  MyAccountStatementModal,
+  ExpenseApprovalModal,
+} from "./modals/FinanceModals";
 
 const BANGLADESH_DISTRICTS = [
   "গাজীপুর",
@@ -96,8 +105,9 @@ const DEFAULT_SCHEDULE = [
 ];
 
 export default function MosqueHub({ onOpenQuranReader, onOpenTutor }) {
-  const [activeTab, setActiveTab] = useState("ilm"); // "ilm" | "amal" | "seba" | "bibidh"
+  const [activeTab, setActiveTab] = useState("dashboard"); // "dashboard" | "ilm" | "amal" | "seba" | "bibidh"
   const [activeModal, setActiveModal] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState("নভেম্বর ২০২৬");
 
   // Mosque identity
   const [mosqueName, setMosqueName] = useState("বাইতুন নূর জামে মসজিদ ও কমপ্লেক্স");
@@ -178,7 +188,23 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor }) {
     toast.info(`অবস্থান: ${d} নির্বাচন করা হয়েছে`);
   };
 
-  // 4 Canonical Tab Item Definitions (8 actions per tab = 32 actions)
+  // 12-Month Trends Data (from mosque/AGENT.md specification)
+  const MONTH_TRENDS = [
+    { period: "জানু", full: "জানুয়ারি ২০২৬", amount: 58000, height: "65%" },
+    { period: "ফেব", full: "ফেব্রুয়ারি ২০২৬", amount: 62000, height: "70%" },
+    { period: "মার্চ", full: "মার্চ ২০২৬ (রমজান)", amount: 88000, height: "98%" },
+    { period: "এপ্রিল", full: "এপ্রিল ২০২৬", amount: 68000, height: "77%" },
+    { period: "মে", full: "মে ২০২৬", amount: 60000, height: "68%" },
+    { period: "জুন", full: "জুন ২০২৬", amount: 64000, height: "72%" },
+    { period: "জুলাই", full: "জুলাই ২০২৬", amount: 61000, height: "69%" },
+    { period: "আগস্ট", full: "আগস্ট ২০২৬", amount: 63000, height: "71%" },
+    { period: "সেপ্টে", full: "সেপ্টেম্বর ২০২৬", amount: 66000, height: "75%" },
+    { period: "অক্টো", full: "অক্টোবর ২০২৬", amount: 70000, height: "79%" },
+    { period: "নভে", full: "নভেম্বর ২০২৬", amount: 65000, height: "74%" },
+    { period: "ডিসে", full: "ডিসেম্বর ২০২৬", amount: 59000, height: "66%" },
+  ];
+
+  // 4 Canonical Tab Item Definitions (8 actions per tab = 32 actions from IslamicSuperApp.tsx)
   const ILM_ITEMS = [
     { id: "quran", icon: "📖", label: "কুরআন", action: () => (onOpenQuranReader ? onOpenQuranReader() : setActiveModal("kitab")) },
     { id: "kitab", icon: "📚", label: "কিতাব", action: () => setActiveModal("kitab") },
@@ -204,7 +230,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor }) {
   const SEBA_ITEMS = [
     { id: "zakat", icon: "💰", label: "যাকাত ফিতরা", action: () => setActiveModal("zakat") },
     { id: "donation", icon: "🎁", label: "ইনফাক ও চাঁদা", action: () => setActiveModal("master-dues") },
-    { id: "voucher", icon: "🧾", label: "ডিজিটাল ভাউচার", action: () => setActiveModal("funds") },
+    { id: "voucher", icon: "🧾", label: "ডিজিটাল ভাউচার", action: () => setActiveModal("expense-approval") },
     { id: "qa", icon: "📞", label: "দ্বীনি জিজ্ঞাসা", action: () => (onOpenTutor ? onOpenTutor() : setActiveModal("support")) },
     { id: "quiz", icon: "💡", label: "তালীমে কুইজ", action: () => setActiveModal("quiz") },
     { id: "nikah", icon: "💍", label: "বিবাহ", action: () => setActiveModal("nikah") },
@@ -215,7 +241,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor }) {
   const BIBIDH_ITEMS = [
     { id: "mosque", icon: "🕌", label: "আমার মসজিদ", action: () => setActiveModal("admin") },
     { id: "master", icon: "📊", label: "মাসিক হিসাব", action: () => setActiveModal("master-dues") },
-    { id: "admin", icon: "⚙️", label: "অ্যাডমিন প্যানেল", action: () => setActiveModal("admin") },
+    { id: "admin", icon: "⚙️", label: "অ্যাডমিন ৩৬০", action: () => setActiveModal("admin") },
     { id: "funds", icon: "💰", label: "মসজিদ তহবিল", action: () => setActiveModal("funds") },
     { id: "names", icon: "🎖️", label: "আসমাউল হুসনা", action: () => setActiveModal("names") },
     { id: "live", icon: "🕋", label: "লাইভ হারামাইন", action: () => setActiveModal("live") },
@@ -258,15 +284,17 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor }) {
                     ✏️
                   </button>
                 </div>
-                <div className="flex items-center gap-2 text-[10px] text-stone-500 dark:text-stone-400">
-                  <span>মুসাল্লি / সাধারণ সদস্য</span>
-                  <span>•</span>
-                  <span className="text-emerald-700 dark:text-emerald-400 font-bold">সক্রিয়</span>
+                <div className="text-[11px] text-stone-500 dark:text-stone-400 flex items-center gap-1.5">
+                  <span className="font-semibold text-emerald-700 dark:text-emerald-400">মুহাম্মদ আব্দুল্লাহ</span>
+                  <span>·</span>
+                  <span className="px-1.5 py-0.2 rounded bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 font-bold text-[9px]">
+                    সভাপতি
+                  </span>
                 </div>
               </div>
             </div>
 
-            {/* Right Controls: District Selector & Notification */}
+            {/* District & Notifications */}
             <div className="flex items-center gap-1.5 shrink-0">
               <select
                 value={district}
@@ -283,6 +311,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor }) {
               <button
                 onClick={() => toast.info("আপনার ৩টি অপঠিত নোটিফিকেশন রয়েছে: চলতি মাসের চাঁদা, খাবার স্পন্সর ও জুমার বয়ান")}
                 className="w-8 h-8 rounded-full border border-stone-200 dark:border-emerald-800/60 bg-stone-50 dark:bg-[#07130e] flex items-center justify-center relative cursor-pointer hover:border-emerald-500 transition"
+                title="নোটিফিকেশন"
               >
                 <Bell className="w-4 h-4 text-stone-600 dark:text-stone-300" />
                 <span className="w-2 h-2 rounded-full bg-emerald-600 absolute top-1.5 right-1.5 ring-2 ring-white dark:ring-[#0c1612]"></span>
@@ -348,51 +377,42 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor }) {
           <div className="flex items-baseline justify-between">
             <div>
               <span className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100">
-                {currentPrayer.name} জামাত
+                {currentPrayer.name} সালাত
               </span>
-              <p className="text-xs text-stone-500 dark:text-stone-400">
-                শুরু: {currentPrayer.start} – জামাত: <b className="text-emerald-700 dark:text-emerald-400 font-mono">{currentPrayer.jamaat}</b>
-              </p>
+              <p className="text-xs text-stone-500 dark:text-stone-400 mt-0.5">{nextJamaatText}</p>
             </div>
-            <button
-              onClick={() => setActiveModal("prayer-edit")}
-              className="px-2.5 py-1 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60 text-xs font-bold hover:bg-emerald-100 transition cursor-pointer flex items-center gap-1"
-            >
-              <span>✏️</span>
-              <span>জামাত পরিবর্তন</span>
-            </button>
-          </div>
-
-          {/* Live Pulsing Footer */}
-          <div className="flex items-center justify-between text-xs pt-1 border-t border-stone-100 dark:border-emerald-950/80">
-            <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse"></span>
-              <span>চলমান ওয়াক্ত</span>
-            </div>
-            <div className="text-stone-600 dark:text-stone-300 font-bold text-[11px]">
-              পরবর্তী ওয়াক্ত: {countdown} ({nextJamaatText})
+            <div className="text-right">
+              <span className="text-xs font-bold text-amber-600 dark:text-amber-400 font-mono">
+                {countdown}
+              </span>
+              <p className="text-[10px] text-stone-400">পরবর্তী জামা'আত</p>
             </div>
           </div>
 
-          {/* 5-Waqt Grid */}
-          <div className="pt-2 border-t border-stone-100 dark:border-emerald-950/80">
+          {/* Arc Prayer Waqt Grid */}
+          <div className="pt-2 border-t border-stone-100 dark:border-emerald-950/60">
             <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-bold text-stone-800 dark:text-stone-200 flex items-center gap-1">
-                <span>🕌</span>
-                <span>৫ ওয়াক্তের সময়সূচি ও জামাত:</span>
-              </span>
-              <button
-                onClick={() => setShowFullSchedule(!showFullSchedule)}
-                className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
-              >
-                {showFullSchedule ? "সংক্ষেপ ▴" : "বিস্তারিত ▾"}
-              </button>
+              <span className="text-xs font-bold text-stone-700 dark:text-stone-300">ওয়াক্ত ও জামা'আত সময়সূচি</span>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowFullSchedule(!showFullSchedule)}
+                  className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold hover:underline cursor-pointer"
+                >
+                  {showFullSchedule ? "সংক্ষেপ" : "বিস্তারিত"}
+                </button>
+                <button
+                  onClick={() => setActiveModal("prayer-edit")}
+                  className="text-[11px] text-amber-600 dark:text-amber-400 font-bold hover:underline cursor-pointer"
+                >
+                  সময় পরিবর্তন
+                </button>
+              </div>
             </div>
 
             {showFullSchedule && (
-              <div className="grid grid-cols-5 gap-1.5 sm:gap-2">
+              <div className="grid grid-cols-5 gap-1 sm:gap-1.5">
                 {schedule.map((p) => {
-                  const isActive = p.id === currentPrayer.id;
+                  const isActive = currentPrayer.id === p.id;
                   return (
                     <div
                       key={p.id}
@@ -425,96 +445,339 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor }) {
           </div>
         </div>
 
-        {/* ── 4. DONATION / INFAQ CAMPAIGN BANNER ── */}
-        <div className="p-3.5 sm:p-4 rounded-3xl bg-gradient-to-r from-emerald-800 to-teal-900 text-white shadow-md mb-3 flex items-center justify-between gap-3">
-          <div className="space-y-0.5">
-            <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1">
-              <span>🤲</span>
-              <span>সাদাকায়ে জারিয়া ও ইনফাক ফান্ড</span>
-            </span>
-            <h3 className="text-xs sm:text-sm font-black tracking-wide">
-              মসজিদ সম্প্রসারণ ও দ্বিতীয় তলার ছাদ ঢালাই ফান্ড
-            </h3>
-            <p className="text-[11px] text-emerald-100">
-              আপনার মাসিক চাঁদা ও দান সরাসরি জমা দিন
-            </p>
-          </div>
-          <button
-            onClick={() => setActiveModal("master-dues")}
-            className="px-3.5 py-2 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-black text-xs shadow-md shrink-0 transition active:scale-95 cursor-pointer"
-          >
-            অনুদান দিন
-          </button>
-        </div>
-
-        {/* ── 5. FAST ERP QUICK ACCESS BAR ── */}
-        <div className="grid grid-cols-4 gap-2 mb-3">
-          <button
-            onClick={() => setActiveModal("master-dues")}
-            className="p-2.5 rounded-2xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-2xs flex flex-col items-center justify-center text-center hover:border-emerald-500 transition cursor-pointer"
-          >
-            <span className="text-xl mb-1">📊</span>
-            <span className="text-[11px] font-bold text-stone-800 dark:text-stone-200 leading-tight">মাসিক হিসাব</span>
-          </button>
-
-          <button
-            onClick={() => setActiveModal("funds")}
-            className="p-2.5 rounded-2xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-2xs flex flex-col items-center justify-center text-center hover:border-emerald-500 transition cursor-pointer"
-          >
-            <span className="text-xl mb-1">💰</span>
-            <span className="text-[11px] font-bold text-stone-800 dark:text-stone-200 leading-tight">মসজিদ তহবিল</span>
-          </button>
-
-          <button
-            onClick={() => setActiveModal("maktab")}
-            className="p-2.5 rounded-2xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-2xs flex flex-col items-center justify-center text-center hover:border-emerald-500 transition cursor-pointer"
-          >
-            <span className="text-xl mb-1">🏫</span>
-            <span className="text-[11px] font-bold text-stone-800 dark:text-stone-200 leading-tight">নূরানী মক্তব</span>
-          </button>
-
-          <button
-            onClick={() => setActiveModal("meal-roster")}
-            className="p-2.5 rounded-2xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-2xs flex flex-col items-center justify-center text-center hover:border-emerald-500 transition cursor-pointer"
-          >
-            <span className="text-xl mb-1">🍲</span>
-            <span className="text-[11px] font-bold text-stone-800 dark:text-stone-200 leading-tight">খাবার রোস্টার</span>
-          </button>
-        </div>
-
-        {/* ── 6. SECTION HEADER WITH GREEN LINE ── */}
-        <div className="flex items-center justify-between gap-2 mb-2.5 px-1">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-5 rounded-full bg-emerald-600"></div>
-            <h2 className="text-xs sm:text-sm font-black text-stone-900 dark:text-stone-100">{sectionTitle}</h2>
-          </div>
-          <button
-            onClick={() => setActiveModal(activeTab === "bibidh" ? "admin" : "kitab")}
-            className="w-7 h-7 rounded-full bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 flex items-center justify-center text-xs text-stone-500 hover:text-emerald-600 cursor-pointer"
-          >
-            <Search className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        {/* ── 7. 4-COLUMN ACTION CARDS GRID (8 cards per tab) ── */}
-        <div className="grid grid-cols-4 gap-2 sm:gap-2.5 mb-4">
-          {currentItems.map((item) => (
-            <div
-              key={item.id}
-              onClick={item.action}
-              className="p-3 rounded-2xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 flex flex-col items-center justify-center text-center shadow-2xs hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-sm active:scale-95 transition cursor-pointer min-h-[88px]"
-            >
-              <span className="text-2xl mb-1.5 leading-none">{item.icon}</span>
-              <span className="text-xs font-bold text-stone-800 dark:text-stone-200 leading-tight">
-                {item.label}
+        {/* ── 4. COMPLETE MOSQUE SAAS FINANCE DASHBOARD (Active when tab === "dashboard") ── */}
+        {activeTab === "dashboard" ? (
+          <div className="space-y-3 animate-in fade-in duration-200">
+            {/* Section Header */}
+            <div className="flex items-center justify-between px-1">
+              <div className="flex items-center gap-2">
+                <div className="w-1.5 h-5 rounded-full bg-emerald-600"></div>
+                <h2 className="text-xs sm:text-sm font-black text-stone-900 dark:text-stone-100">
+                  {mosqueName} — ফিন্যান্স ড্যাশবোর্ড ও মাসিক চাঁদা
+                </h2>
+              </div>
+              <span className="text-[11px] font-bold text-stone-500 dark:text-stone-400">
+                নভেম্বর ২০২৬
               </span>
             </div>
-          ))}
-        </div>
 
-        {/* ── 8. FLOATING BOTTOM NAVIGATION DOCK ── */}
+            {/* 1. HERO CARD: TOTAL AVAILABLE BALANCE & INFLOW/OUTFLOW */}
+            <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-[#094838] via-[#0f6850] to-[#128a6a] text-white shadow-xl relative overflow-hidden">
+              <div className="absolute right-0 top-0 w-44 h-44 bg-white/5 rounded-full blur-2xl pointer-events-none"></div>
+              
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-semibold text-emerald-100 flex items-center gap-1.5">
+                  <span>🏛️</span>
+                  <span>আসসালামু আলাইকুম · মোট তহবিল স্থিতি</span>
+                </span>
+                <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-bold font-mono">
+                  BDT (৳)
+                </span>
+              </div>
+
+              {/* Total Balance Number (Clickable drill-down to funds) */}
+              <div
+                onClick={() => setActiveModal("funds")}
+                className="cursor-pointer group flex items-baseline gap-2 my-2"
+                title="তহবিলের বিস্তারিত বিবরণী দেখতে ক্লিক করুন"
+              >
+                <span className="text-3xl sm:text-4xl font-black font-mono tracking-tight group-hover:text-amber-200 transition">
+                  ৳১,৯৮,৬০০
+                </span>
+                <span className="text-xs text-emerald-200 opacity-80 group-hover:opacity-100">
+                  (তহবিল বিস্তারিত ➔)
+                </span>
+              </div>
+
+              {/* Inflow vs Outflow Split Row */}
+              <div className="grid grid-cols-2 gap-2.5 pt-3 border-t border-white/20">
+                <div
+                  onClick={() => {
+                    setSelectedMonth("নভেম্বর ২০২৬");
+                    setActiveModal("month-detail");
+                  }}
+                  className="p-2.5 rounded-2xl bg-white/15 hover:bg-white/25 transition cursor-pointer"
+                  title="এই মাসের আদায় খাতা দেখুন"
+                >
+                  <div className="text-[11px] text-emerald-100 font-semibold flex items-center justify-between">
+                    <span>চলতি মাসে আদায়:</span>
+                    <span>➔</span>
+                  </div>
+                  <div className="text-base sm:text-lg font-black font-mono mt-0.5 text-white">
+                    ৳৬৫,০০০
+                  </div>
+                </div>
+
+                <div
+                  onClick={() => setActiveModal("expense-approval")}
+                  className="p-2.5 rounded-2xl bg-white/15 hover:bg-white/25 transition cursor-pointer"
+                  title="খরচের বিল ও ভাউচার দেখুন"
+                >
+                  <div className="text-[11px] text-emerald-100 font-semibold flex items-center justify-between">
+                    <span>অনুমোদিত ব্যয়:</span>
+                    <span>➔</span>
+                  </div>
+                  <div className="text-base sm:text-lg font-black font-mono mt-0.5 text-amber-200">
+                    ৳১৬,৫০০
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 2. MY ACCOUNT (আমার হিসাব — AGENT.md §1 & §5) */}
+            <div
+              onClick={() => setActiveModal("my-account")}
+              className="p-3.5 sm:p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-2xs hover:border-emerald-500 transition cursor-pointer"
+            >
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300 flex items-center justify-center font-bold text-xs">
+                    👤
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black text-stone-900 dark:text-stone-100">আমার ব্যক্তিগত হিসাব</h3>
+                    <p className="text-[10px] text-stone-400">আইডি: member01 · মাসিক অঙ্গীকার: ৳১,৫০০</p>
+                  </div>
+                </div>
+                <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                  <span>রসিদ ও ইতিহাস</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-2 border-t border-stone-100 dark:border-emerald-950/60">
+                <div className="p-2 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/30">
+                  <span className="text-[10px] text-stone-500 dark:text-stone-400">আপনি পরিশোধ করেছেন</span>
+                  <div className="text-sm sm:text-base font-black text-emerald-700 dark:text-emerald-300 font-mono">
+                    ৳১,৫০০
+                  </div>
+                </div>
+                <div className="p-2 rounded-xl bg-stone-50 dark:bg-[#0f1d17]">
+                  <span className="text-[10px] text-stone-500 dark:text-stone-400">আপনার বকেয়া রয়েছে</span>
+                  <div className="text-sm sm:text-base font-black text-emerald-700 dark:text-emerald-400 font-mono">
+                    ৳০ (পরিশোধিত)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. THIS MONTH COLLECTION PROGRESS OVERVIEW */}
+            <div
+              onClick={() => {
+                setSelectedMonth("নভেম্বর ২০২৬");
+                setActiveModal("month-detail");
+              }}
+              className="p-3.5 sm:p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-2xs hover:border-emerald-500 transition cursor-pointer"
+            >
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-black text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                  <span>📅</span>
+                  <span>এই মাসের চাঁদা আদায় · নভেম্বর ২০২৬</span>
+                </span>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/70 text-emerald-800 dark:text-emerald-300">
+                  ৮৩% সম্পন্ন
+                </span>
+              </div>
+
+              <div className="flex items-baseline justify-between my-1">
+                <div className="text-base sm:text-lg font-black text-emerald-800 dark:text-emerald-300 font-mono">
+                  ৳৬৫,০০০{" "}
+                  <span className="text-xs font-normal text-stone-400 font-sans">
+                    / প্রত্যাশিত ৳৭৮,৫০০
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-stone-500 dark:text-stone-400">
+                  ১৮ / ২৫ জন সদস্য দিয়েছেন
+                </span>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="w-full h-2 rounded-full bg-stone-100 dark:bg-emerald-950/80 overflow-hidden my-2">
+                <div
+                  className="h-full bg-gradient-to-r from-emerald-500 to-teal-600 rounded-full transition-all duration-500"
+                  style={{ width: "83%" }}
+                ></div>
+              </div>
+
+              <div className="text-[11px] text-emerald-700 dark:text-emerald-400 font-bold flex items-center justify-between pt-1">
+                <span>৭ জন সদস্যের চাঁদা বকেয়া রয়েছে</span>
+                <span>কে দিয়েছে / কে বাকি (খাতা দেখুন ➔)</span>
+              </div>
+            </div>
+
+            {/* 4. MOSQUE SEGREGATED FUNDS (AGENT.md §3 Invariant 6) */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-1">
+                <span className="text-xs font-black text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                  <span>💰</span>
+                  <span>মসজিদ তহবিলসমূহ (Segregated Funds)</span>
+                </span>
+                <button
+                  onClick={() => setActiveModal("funds")}
+                  className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                >
+                  সব তহবিল ➔
+                </button>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { name: "সাধারণ পরিচালন ফান্ড", balance: 112000, color: "text-emerald-700 dark:text-emerald-300" },
+                  { name: "নির্মাণ ও সংস্কার ফান্ড", balance: 64000, restricted: true, color: "text-amber-700 dark:text-amber-400" },
+                  { name: "ইমাম-মুয়াজ্জিন হাদিয়া", balance: 15000, color: "text-teal-700 dark:text-teal-300" },
+                  { name: "যাকাত ও সমাজকল্যাণ", balance: 7600, color: "text-purple-700 dark:text-purple-300" },
+                ].map((f, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setActiveModal("funds")}
+                    className="p-3 rounded-2xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-2xs hover:border-emerald-500 transition cursor-pointer"
+                  >
+                    <div className="text-[11px] font-bold text-stone-600 dark:text-stone-300 truncate">
+                      {f.name}
+                    </div>
+                    <div className={`text-sm sm:text-base font-black font-mono mt-1 ${f.color}`}>
+                      ৳{f.balance.toLocaleString("bn-BD")}
+                    </div>
+                    {f.restricted && (
+                      <span className="inline-block text-[9px] font-bold px-1.5 py-0.2 rounded bg-amber-100 dark:bg-amber-950/80 text-amber-800 dark:text-amber-300 mt-1">
+                        সংরক্ষিত
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 5. PENDING EXPENSE BILL APPROVAL ALERT */}
+            <div
+              onClick={() => setActiveModal("expense-approval")}
+              className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border-l-4 border-amber-500 dark:border-amber-600 shadow-2xs flex items-center justify-between gap-3 cursor-pointer hover:bg-amber-100/50 transition"
+            >
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-amber-200 dark:bg-amber-900/60 text-amber-900 dark:text-amber-200 flex items-center justify-center shrink-0 font-bold text-sm">
+                  ⚠️
+                </div>
+                <div>
+                  <h4 className="text-xs font-black text-amber-950 dark:text-amber-200">
+                    ১টি খরচের বিল অনুমোদনের অপেক্ষায়
+                  </h4>
+                  <p className="text-[10px] text-amber-800 dark:text-amber-300">
+                    মাইক ও আইপিএস ব্যাটারি মেরামত (মাওলানা মাহমুদ হাসান)
+                  </p>
+                </div>
+              </div>
+              <div className="text-right shrink-0">
+                <span className="text-sm font-black font-mono text-amber-900 dark:text-amber-200 block">
+                  ৳১২,৫০০
+                </span>
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-bold underline">
+                  অনুমোদন করুন ➔
+                </span>
+              </div>
+            </div>
+
+            {/* 6. 12-MONTH COLLECTION TRENDS BAR CHART */}
+            <div className="p-3.5 sm:p-4 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-2xs">
+              <div className="flex items-center justify-between mb-3">
+                <span className="text-xs font-black text-stone-900 dark:text-stone-100 flex items-center gap-1.5">
+                  <span>📊</span>
+                  <span>১২ মাসের চাঁদা আদায়ের ধারা (২০২৬)</span>
+                </span>
+                <span className="text-[10px] text-stone-400">বার স্পর্শ করে মাস দেখুন</span>
+              </div>
+
+              {/* Bar Columns Container */}
+              <div className="flex items-end justify-between gap-1 sm:gap-1.5 h-28 pt-2 px-1 border-b border-stone-100 dark:border-emerald-950">
+                {MONTH_TRENDS.map((m, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => {
+                      setSelectedMonth(m.full);
+                      setActiveModal("month-detail");
+                      toast.info(`${m.full}-এর চাঁদা বিবরণী`);
+                    }}
+                    className="flex-1 flex flex-col items-center justify-end h-full group cursor-pointer"
+                    title={`${m.full}: ৳${m.amount.toLocaleString("bn-BD")}`}
+                  >
+                    <div
+                      className={`w-full rounded-t-md transition-all group-hover:bg-amber-500 ${
+                        idx === 10
+                          ? "bg-gradient-to-t from-emerald-700 to-teal-500 shadow-xs"
+                          : "bg-emerald-600/70 dark:bg-emerald-700/60"
+                      }`}
+                      style={{ height: m.height }}
+                    ></div>
+                    <span className="text-[9px] font-bold text-stone-500 dark:text-stone-400 mt-1 truncate">
+                      {m.period}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 7. QUICK ACCESS BUTTONS TO 4 PILLARS */}
+            <div className="pt-2">
+              <span className="text-xs font-black text-stone-700 dark:text-stone-300 block mb-2 px-1">
+                স্মার্ট ইসলামিক ও মসজিদ সেবা (ক্যাটাগরি):
+              </span>
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { key: "ilm", icon: "📖", label: "ইলম", desc: "৮টি ফিচার" },
+                  { key: "amal", icon: "📝", label: "আমল", desc: "৮টি ফিচার" },
+                  { key: "seba", icon: "🛍️", label: "সেবা", desc: "৮টি ফিচার" },
+                  { key: "bibidh", icon: "⊞", label: "বিবিধ", desc: "৮টি ফিচার" },
+                ].map((pill) => (
+                  <button
+                    key={pill.key}
+                    onClick={() => setActiveTab(pill.key)}
+                    className="p-2.5 rounded-2xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-2xs hover:border-emerald-500 flex flex-col items-center justify-center text-center transition cursor-pointer"
+                  >
+                    <span className="text-xl mb-1">{pill.icon}</span>
+                    <span className="text-xs font-bold text-stone-800 dark:text-stone-200">{pill.label}</span>
+                    <span className="text-[9px] text-stone-400 mt-0.5">{pill.desc}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        ) : (
+          /* ── 5. CANONICAL PILLARS ACTION GRID (8 Cards per Pillar when tab !== "dashboard") ── */
+          <div className="space-y-3 animate-in fade-in duration-200">
+            {/* Back to Dashboard Banner */}
+            <div className="flex items-center justify-between p-2.5 rounded-2xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 shadow-2xs">
+              <button
+                onClick={() => setActiveTab("dashboard")}
+                className="text-xs font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-1 hover:underline cursor-pointer"
+              >
+                <span>⬅️ মূল ফিন্যান্স ড্যাশবোর্ডে ফিরুন</span>
+              </button>
+              <span className="text-xs font-black text-stone-700 dark:text-stone-300">
+                {sectionTitle}
+              </span>
+            </div>
+
+            {/* 4-Column Action Cards Grid (8 cards) */}
+            <div className="grid grid-cols-4 gap-2 sm:gap-2.5 mb-4">
+              {currentItems.map((item) => (
+                <div
+                  key={item.id}
+                  onClick={item.action}
+                  className="p-3 rounded-2xl bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/60 flex flex-col items-center justify-center text-center shadow-2xs hover:border-emerald-500 dark:hover:border-emerald-600 hover:shadow-sm active:scale-95 transition cursor-pointer min-h-[88px]"
+                >
+                  <span className="text-2xl mb-1.5 leading-none">{item.icon}</span>
+                  <span className="text-xs font-bold text-stone-800 dark:text-stone-200 leading-tight">
+                    {item.label}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── 6. FLOATING BOTTOM NAVIGATION DOCK (5 Canonical Tabs) ── */}
         <nav className="fixed left-1/2 -translate-x-1/2 bottom-3 w-[calc(100%-24px)] max-w-md bg-white dark:bg-[#0c1612] border border-stone-200 dark:border-emerald-800/80 rounded-full p-1.5 shadow-2xl flex items-center justify-between gap-1 z-40 backdrop-blur-md">
           {[
+            { key: "dashboard", icon: "📊", label: "ড্যাশবোর্ড" },
             { key: "ilm", icon: "📖", label: "ইলম" },
             { key: "amal", icon: "📝", label: "আমল" },
             { key: "seba", icon: "🛍️", label: "সেবা" },
@@ -538,7 +801,8 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor }) {
           })}
         </nav>
 
-        {/* ── 9. MODALS RENDERING ── */}
+        {/* ── 7. MODALS RENDERING ── */}
+        {/* Core Finance & Dues Modals */}
         {activeModal === "master-dues" && (
           <MasterDuesModal
             onClose={() => setActiveModal(null)}
@@ -546,6 +810,27 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor }) {
               toast.success(`সদস্য #${id}-এর চাঁদা আদায় ফরম প্রদর্শিত`);
             }}
           />
+        )}
+
+        {activeModal === "month-detail" && (
+          <MonthDetailModal
+            period={selectedMonth}
+            onClose={() => setActiveModal(null)}
+            onRecordPayment={(id) => {
+              setActiveModal("master-dues");
+            }}
+          />
+        )}
+
+        {activeModal === "my-account" && (
+          <MyAccountStatementModal
+            onClose={() => setActiveModal(null)}
+            mosqueName={mosqueName}
+          />
+        )}
+
+        {activeModal === "expense-approval" && (
+          <ExpenseApprovalModal onClose={() => setActiveModal(null)} />
         )}
 
         {activeModal === "prayer-edit" && (
