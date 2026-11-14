@@ -10,6 +10,15 @@
  */
 
 export const AUTHENTIC_QURAN_WORDS_MAP = {
+  "قَوْلًا": ["https://audio.qurancdn.com/wbw/033_070_007.mp3", "https://audio.qurancdn.com/wbw/073_005_002.mp3"],
+  "قَوْلًا سَدِيدًا": ["https://audio.qurancdn.com/wbw/033_070_007.mp3","https://audio.qurancdn.com/wbw/033_070_008.mp3"],
+  "الْقَارِعَةُ ۝ الْقَارِعَهْ": ["https://everyayah.com/data/Alafasy_128kbps/101001.mp3","https://audio.qurancdn.com/wbw/101_001_001.mp3"],
+  "الْقَارِعَةُ": ["https://audio.qurancdn.com/wbw/101_001_001.mp3","https://everyayah.com/data/Alafasy_128kbps/101001.mp3"],
+  "هَاوِيَةٌ ۝ هَاوِيَهْ": ["https://everyayah.com/data/Alafasy_128kbps/101009.mp3","https://audio.qurancdn.com/wbw/101_009_002.mp3"],
+  "هَاوِيَةٌ": ["https://audio.qurancdn.com/wbw/101_009_002.mp3","https://everyayah.com/data/Alafasy_128kbps/101009.mp3"],
+  "أَنَا۠": ["https://audio.qurancdn.com/wbw/018_038_004.mp3","https://audio.qurancdn.com/wbw/109_004_003.mp3"],
+  "أَنَا": ["https://audio.qurancdn.com/wbw/018_038_004.mp3","https://audio.qurancdn.com/wbw/109_004_003.mp3"],
+
   // ── Drag & Drop Game Words (Levels 11 - 14) ──
   "قُلْ": "https://audio.qurancdn.com/wbw/112_001_001.mp3",
   "أَبْ": "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter10/Page19-1.m4a",
@@ -216,6 +225,112 @@ export const AUTHENTIC_QURAN_WORDS_MAP = {
   "أَبِي": "https://audio.qurancdn.com/wbw/111_001_003.mp3",
   "لَهَبٍ": "https://audio.qurancdn.com/wbw/111_001_004.mp3",
   "وَتَبَّ": "https://audio.qurancdn.com/wbw/111_001_005.mp3",
+
+  // ── Class 43: Tashdeed Words ──
+  "شَدَّ": "https://audio.qurancdn.com/wbw/020_031_001.mp3",
+  "حَبَّ": "https://audio.qurancdn.com/wbw/038_032_004.mp3",
+  "قَوِيٌّ": "https://audio.qurancdn.com/wbw/058_021_009.mp3",
+  "قَوِىٌّ": "https://audio.qurancdn.com/wbw/058_021_009.mp3",
+  "نَبِيٌّ": "https://audio.qurancdn.com/wbw/007_094_006.mp3",
+  "نَّبِىٍّ": "https://audio.qurancdn.com/wbw/007_094_006.mp3",
+  "نَبِيًّا": "https://audio.qurancdn.com/wbw/019_041_005.mp3",
+
+  // ── Class 40: Sukoon / Jazm Words ──
+  "يَعْلَمُ": "https://audio.qurancdn.com/wbw/002_077_004.mp3",
+  "يَقْرَأُ": "https://audio.qurancdn.com/wbw/017_014_001.mp3",
+  "أَنْعَمْتَ": "https://audio.qurancdn.com/wbw/001_007_004.mp3",
+
+  // ── Class 38 ──
+  "أَمْ": "https://audio.qurancdn.com/wbw/002_006_006.mp3",
+
+  // ── Class 37 ──
+  "قَوْلًا سَدِيدًا": "https://everyayah.com/data/Alafasy_128kbps/033070.mp3",
+  "سَدِيدًا": "https://audio.qurancdn.com/wbw/033_070_009.mp3",
+
+  // ── Class 36: Leen Letters ──
+  "أَوْ": "https://audio.qurancdn.com/wbw/002_019_001.mp3",
+  "أَيْ": "https://audio.qurancdn.com/wbw/010_053_003.mp3",
+  "صَيْفٍ": "https://audio.qurancdn.com/wbw/106_002_003.mp3",
+  "الصَّيْفِ": "https://audio.qurancdn.com/wbw/106_002_003.mp3",
+
+  // ── Class 34 ──
+  "هٰذَا": "https://audio.qurancdn.com/wbw/002_025_013.mp3",
+  "هَـٰذَا": "https://audio.qurancdn.com/wbw/002_025_013.mp3",
+
+  // ── Class 32: Tanween Words ──
+  "أَحَدًا": "https://audio.qurancdn.com/wbw/072_002_008.mp3",
+  "مَرَضٌ": "https://audio.qurancdn.com/wbw/002_010_002.mp3",
+  "عَلِيمٌ": "https://audio.qurancdn.com/wbw/002_029_017.mp3",
+
+  // ── Class 28, 29, 30: Quranic Harakat Words ──
+  "خَلَقَكَ": "https://audio.qurancdn.com/wbw/082_007_002.mp3",
+  "فَعَدَلَكَ": "https://audio.qurancdn.com/wbw/082_007_003.mp3",
+  "خَلَقَكَ فَعَدَلَكَ": "https://everyayah.com/data/Alafasy_128kbps/082007.mp3",
+  "وَرَدَ": "https://audio.qurancdn.com/wbw/028_023_002.mp3",
+  "حَشَرَ": "https://audio.qurancdn.com/wbw/079_023_001.mp3",
+  "فَبَلَغَ": "https://audio.qurancdn.com/wbw/037_102_002.mp3",
+  "فَقَدَرَ": "https://audio.qurancdn.com/wbw/089_016_002.mp3",
+  "فَوَجَدَ": "https://audio.qurancdn.com/wbw/093_007_001.mp3",
+  "بِقَدَرٍ": "https://audio.qurancdn.com/wbw/054_049_004.mp3",
+  "ذُكِرَ فِيهِ": "https://audio.qurancdn.com/wbw/008_002_004.mp3",
+
+  // ── Class 26 & 27: Harakat Practice Words ──
+  "بَلَغَ": "https://audio.qurancdn.com/wbw/018_090_002.mp3",
+  "صَدَقَ": "https://audio.qurancdn.com/wbw/003_095_002.mp3",
+  "رَفَعَ": "https://audio.qurancdn.com/wbw/012_100_001.mp3",
+  "وَضَعَ": "https://audio.qurancdn.com/wbw/003_096_004.mp3",
+  "حَسَنَ": "https://audio.qurancdn.com/wbw/003_037_005.mp3",
+  "عَدَلَ": "https://audio.qurancdn.com/wbw/082_007_003.mp3",
+  "قَدَرَ": "https://audio.qurancdn.com/wbw/089_016_002.mp3",
+
+  // ── Class 24 & 25: 3-Letter Words ──
+  "سَمِعَ": "https://audio.qurancdn.com/wbw/058_001_002.mp3",
+  "عَلِمَ": "https://audio.qurancdn.com/wbw/008_023_002.mp3",
+  "شَرِبَ": "https://audio.qurancdn.com/wbw/002_249_011.mp3",
+  "حَمِدَ": "https://audio.qurancdn.com/wbw/022_064_008.mp3",
+  "رَحِمَ": "https://audio.qurancdn.com/wbw/011_043_013.mp3",
+  "عَمِلَ": "https://audio.qurancdn.com/wbw/002_062_010.mp3",
+  "فُعِلَ": "https://audio.qurancdn.com/wbw/021_059_003.mp3",
+  "رُزِقَ": "https://audio.qurancdn.com/wbw/002_025_007.mp3",
+  "ذُكِرَ": "https://audio.qurancdn.com/wbw/008_002_004.mp3",
+
+  // ── Class 23 ──
+  "قَرَأَ": "https://audio.qurancdn.com/wbw/017_014_001.mp3",
+
+  // ── Class 21 & 22: 2-Letter Words ──
+  "دَرَ": "https://audio.qurancdn.com/wbw/006_105_005.mp3",
+  "وَجَ": "https://audio.qurancdn.com/wbw/093_007_001.mp3",
+  "كَتَ": "https://audio.qurancdn.com/wbw/058_021_001.mp3",
+  "خَلَ": "https://audio.qurancdn.com/wbw/096_001_005.mp3",
+  "بِهِ": "https://audio.qurancdn.com/wbw/002_025_008.mp3",
+  "لَهُ": "https://audio.qurancdn.com/wbw/002_112_008.mp3",
+  "مَعَ": "https://audio.qurancdn.com/wbw/002_043_006.mp3",
+  "بِكَ": "https://audio.qurancdn.com/wbw/002_260_013.mp3",
+
+  // ── Class 10 ──
+  "نَحْنُ": "https://audio.qurancdn.com/wbw/002_030_008.mp3",
+
+  // ── Advanced Lessons (Classes 47 - 77) ──
+  "مِّن مَّالٍ": "https://audio.qurancdn.com/wbw/024_033_042.mp3",
+  "الْقَارِعَةُ ۝ الْقَارِعَهْ": "https://everyayah.com/data/Alafasy_128kbps/101001.mp3",
+  "هَاوِيَةٌ ۝ هَاوِيَهْ": "https://everyayah.com/data/Alafasy_128kbps/101009.mp3",
+  "صِرَاطَ الَّذِينَ أَنْعَمْتَ عَلَيْهِمْ": "https://everyayah.com/data/Alafasy_128kbps/001007.mp3",
+  "أَلَمْ تَرَ كَيْفَ فَعَلَ رَبُّكَ بِأَصْحَابِ الْفِيلِ": "https://everyayah.com/data/Alafasy_128kbps/105001.mp3",
+  "لِإِيلَافِ قُرَيْشٍ": "https://everyayah.com/data/Alafasy_128kbps/106001.mp3",
+  "أَرَأَيْتَ الَّذِي يُكَذِّبُ بِالدِّينِ": "https://everyayah.com/data/Alafasy_128kbps/107001.mp3",
+  "إِنَّا أَعْطَيْنَاكَ الْكَوْثَرَ": "https://everyayah.com/data/Alafasy_128kbps/108001.mp3",
+  "قُلْ يَا أَيُّهَا الْكَافِرُونَ": "https://everyayah.com/data/Alafasy_128kbps/109001.mp3",
+  "إِذَا جَاءَ نَصْرُ اللَّهِ وَالْفَتْحُ": "https://everyayah.com/data/Alafasy_128kbps/110001.mp3",
+  "تَبَّتْ يَدَا أَبِي لَهَبٍ وَتَبَّ": "https://everyayah.com/data/Alafasy_128kbps/111001.mp3",
+  "عَلِيمٌۢ بِذَاتِ": "https://audio.qurancdn.com/wbw/003_119_020.mp3",
+  "جَاءَ": "https://audio.qurancdn.com/wbw/110_001_002.mp3",
+  "إِنَّا فَتَحْنَا لَكَ فَتْحًا مُّبِينًا": "https://everyayah.com/data/Alafasy_128kbps/048001.mp3",
+  "يَسِّرْ وَلَا تُعَسِّرْ وَتَمِّمْ بِالْخَيْرِ": "https://audio.qurancdn.com/wbw/001_002_003.mp3",
+  "يَسِّرْ وَلَا تُعَسِّرْ": "https://audio.qurancdn.com/wbw/001_002_003.mp3",
+  "أَنَا۠": "https://audio.qurancdn.com/wbw/018_038_004.mp3",
+  "مَجْرٜىٰهَا": "https://audio.qurancdn.com/wbw/011_041_004.mp3",
+  "وَرَتِّلِ الْقُرْآنَ تَرْتِيلًا": "https://everyayah.com/data/Alafasy_128kbps/073004.mp3",
+
 };
 
 /**

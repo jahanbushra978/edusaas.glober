@@ -975,10 +975,10 @@ export const NOOR_QAIDA_CLASSES = [
     teacherNoteBn: "قَوِيّ (ক্বাবিয়্যু), نَبِيّ (নাবিয়্যু)। তাশদীদে কোনো শিথিলতা থাকা যাবে না।",
     colorTheme: "teal",
     items: [
-      { id: "c43-1", ar: "شَدَّ", nameBn: "শাদ্দা", tip: "দৃঢ় তাশদীদ", tag: "tashdid", sound: "شَدَّ" },
-      { id: "c43-2", ar: "حَبَّ", nameBn: "হাব্বা", tip: "দ্বিগুণ শক্তি", tag: "tashdid", sound: "حَبَّ" },
-      { id: "c43-3", ar: "قَوِيٌّ", nameBn: "ক্বাবিয়্যুন", tip: "তাশদীদ + তানবিন", tag: "tashdid", sound: "قَوِيٌّ" },
-      { id: "c43-4", ar: "نَبِيٌّ", nameBn: "নাবিয়্যুন", tip: "তাশদীদ + তানবিন", tag: "tashdid", sound: "نَبِيٌّ" },
+      { id: "c43-1", ar: "شَدَّ", nameBn: "শাদ্দা", tip: "দৃঢ় তাশদীদ", tag: "tashdid", sound: "شَدَّ", audioUrl: "https://audio.qurancdn.com/wbw/020_031_001.mp3" },
+      { id: "c43-2", ar: "حَبَّ", nameBn: "হাব্বা", tip: "দ্বিগুণ শক্তি", tag: "tashdid", sound: "حَبَّ", audioUrl: "https://audio.qurancdn.com/wbw/038_032_004.mp3" },
+      { id: "c43-3", ar: "قَوِيٌّ", nameBn: "ক্বাবিয়্যুন", tip: "তাশদীদ + তানবিন", tag: "tashdid", sound: "قَوِيٌّ", audioUrl: "https://audio.qurancdn.com/wbw/058_021_009.mp3" },
+      { id: "c43-4", ar: "نَبِيٌّ", nameBn: "নাবিয়্যুন", tip: "তাশদীদ + তানবিন", tag: "tashdid", sound: "نَبِيٌّ", audioUrl: "https://audio.qurancdn.com/wbw/007_094_006.mp3" },
     ]
   },
   {
