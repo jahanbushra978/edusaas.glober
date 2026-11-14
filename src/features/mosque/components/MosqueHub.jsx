@@ -130,68 +130,14 @@ import { CustomDomainModal } from "./modals/CustomDomainModal";
 import { MosqueDiscoveryModal } from "./modals/MosqueDiscoveryModal";
 import { MosqueRegistrationModal } from "./modals/MosqueRegistrationModal";
 import { MosqueUserGuideModal } from "./modals/MosqueUserGuideModal";
+import PageTutorialBanner from "@/features/admin/components/tutorials/PageTutorialBanner";
+import PageTutorialModal from "@/features/admin/components/tutorials/PageTutorialModal";
 
 const BANGLADESH_DISTRICTS = [
   "গাজীপুর", "ঢাকা", "নারায়ণগঞ্জ", "নরসিংদী", "মানিকগঞ্জ", "মুন্সীগঞ্জ",
   "চট্টগ্রাম", "কক্সবাজার", "কুমিল্লা", "সিলেট", "রাজশাহী", "বগুড়া",
   "খুলনা", "বরিশাল", "রংপুর", "ময়মনসিংহ",
 ];
-
-// 📌 প্রতিটি পেজের মূল কাজ ও কীভাবে ব্যবহার করবেন তার স্পষ্ট ও বড় ফন্টের নির্দেশিকা বক্স
-function TabFeatureExplainer({ title, purpose, howTo, icon: Icon, badge, actionLabel, onAction }) {
-  return (
-    <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-emerald-50/90 via-teal-50/60 to-amber-50/50 dark:from-emerald-950/40 dark:via-[#0c1a14] dark:to-amber-950/20 border-2 border-emerald-200/80 dark:border-emerald-800/60 shadow-xs space-y-2.5">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-emerald-200/60 dark:border-emerald-800/40 pb-2.5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-[#0D7A5F] text-white flex items-center justify-center shrink-0 shadow-xs">
-            {Icon ? <Icon className="w-5 h-5" /> : <Landmark className="w-5 h-5" />}
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100">
-                {title}
-              </h3>
-              {badge && (
-                <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 text-[#0D7A5F] dark:bg-emerald-900 dark:text-emerald-300">
-                  {badge}
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {actionLabel && onAction && (
-          <button
-            type="button"
-            onClick={onAction}
-            className="self-start sm:self-auto px-4 py-2 rounded-xl bg-[#0D7A5F] hover:bg-[#064E3B] text-white font-bold text-xs sm:text-sm flex items-center gap-1.5 transition cursor-pointer shadow-2xs"
-          >
-            <span>{actionLabel}</span>
-            <span>➔</span>
-          </button>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs sm:text-sm leading-relaxed">
-        <div className="p-3 rounded-2xl bg-white/90 dark:bg-[#07130e]/90 border border-emerald-200/60 dark:border-emerald-900/40 space-y-1">
-          <span className="font-black text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5 text-xs sm:text-sm">
-            <span>📌</span>
-            <span>মূল কাজ কী:</span>
-          </span>
-          <p className="text-stone-700 dark:text-stone-300 font-medium pl-6 leading-relaxed">{purpose}</p>
-        </div>
-
-        <div className="p-3 rounded-2xl bg-white/90 dark:bg-[#07130e]/90 border border-emerald-200/60 dark:border-emerald-900/40 space-y-1">
-          <span className="font-black text-amber-900 dark:text-amber-300 flex items-center gap-1.5 text-xs sm:text-sm">
-            <span>💡</span>
-            <span>কীভাবে ব্যবহার করবেন:</span>
-          </span>
-          <p className="text-stone-700 dark:text-stone-300 font-medium pl-6 leading-relaxed">{howTo}</p>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBack }) {
   // ── 1. REAL PERSISTENT DATABASE ENGINE ──
@@ -208,6 +154,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
   const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, members, committee, staff, income, funds, vouchers, bill-approvals, ledger, reports, prayer, roster, maktab, events, welfare, assets, notices, audit, backup, member-portal, settings, months
   const [activeModal, setActiveModal] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.innerWidth >= 1024) {
@@ -435,14 +382,16 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               </select>
             </div>
 
-            {/* User Guide & Manual */}
+            {/* In-App How-To-Use Guide Button */}
             <button
-              onClick={() => setActiveModal("user-guide")}
-              className="px-3 py-1.5 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 hover:bg-amber-100 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
-              title="মসজিদ সিস্টেমের সহজ ব্যবহার নির্দেশিকা ও গাইড"
+              type="button"
+              onClick={() => setIsTutorialModalOpen(true)}
+              className="px-3 py-1.5 rounded-xl border border-emerald-600/40 bg-emerald-50/90 hover:bg-emerald-100 dark:bg-emerald-950/40 text-emerald-950 dark:text-emerald-300 text-xs font-black shadow-xs flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
+              title="কীভাবে ব্যবহার করবেন? (ব্যবহার নির্দেশিকা ও টিউটোরিয়াল পড়ুন)"
             >
-              <HelpCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              <span className="hidden sm:inline">ব্যবহার নির্দেশিকা</span>
+              <BookOpen className="w-3.5 h-3.5 text-[#0D7A5F] shrink-0" />
+              <span className="hidden sm:inline">কীভাবে ব্যবহার করবেন?</span>
+              <span className="sm:hidden">গাইড</span>
             </button>
 
             {/* Switch to Public Site */}
@@ -700,6 +649,13 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
 
         {/* ── 5.2 MAIN CONTENT AREA ── */}
         <main className="flex-1 p-3 sm:p-6 overflow-y-auto space-y-4">
+          {/* Canonical How-To-Use Page Header Banner (Dismissible & 4-Pillar Tutorial Aware) */}
+          <PageTutorialBanner
+            activeRouteKey={`mosque-${activeTab}`}
+            onOpenTutorial={() => setIsTutorialModalOpen(true)}
+            isGlobalEnabled={true}
+          />
+
           {/* ══════════════════════════════════════════════════════════════
               VIEW 1: ড্যাশবোর্ড (DASHBOARD)
              ══════════════════════════════════════════════════════════════ */}
@@ -787,81 +743,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 </div>
               </div>
 
-              {/* Quick Feature Guide & Explainer Banner */}
-              <div className="p-4 rounded-3xl bg-gradient-to-r from-stone-50 via-emerald-50/50 to-amber-50/40 dark:from-[#0c1612] dark:via-emerald-950/20 dark:to-amber-950/20 border border-stone-200 dark:border-emerald-900/50 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200/60 dark:border-emerald-900/40 pb-2.5">
-                  <div className="flex items-center gap-2">
-                    <span className="w-6 h-6 rounded-lg bg-[#0D7A5F] text-white flex items-center justify-center text-xs font-black shadow-2xs">
-                      ℹ️
-                    </span>
-                    <h3 className="text-xs sm:text-sm font-extrabold text-stone-900 dark:text-stone-100">
-                      কোন ফিচারের কী কাজ? (সংক্ষিপ্ত গাইড)
-                    </h3>
-                  </div>
-                  <button
-                    onClick={() => setActiveModal("user-guide")}
-                    className="self-start sm:self-auto text-xs font-black text-[#0D7A5F] dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
-                  >
-                    <span>সম্পূর্ণ গাইডবুক পড়ুন</span>
-                    <span>➔</span>
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
-                  <div
-                    onClick={() => setActiveModal("imam-meal")}
-                    className="p-3 rounded-2xl bg-white dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 hover:border-emerald-500 transition cursor-pointer space-y-1"
-                  >
-                    <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
-                      <Utensils className="w-3.5 h-3.5 text-[#0D7A5F]" />
-                      <span>ইমামের খানা ও বদল:</span>
-                    </div>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
-                      প্রতিদিনের খাবার কার বাড়ি এবং কোনো কারণে না পারলে দায়িত্ব অদলবদল (Swap) আবেদন।
-                    </p>
-                  </div>
-
-                  <div
-                    onClick={() => setActiveTab("members")}
-                    className="p-3 rounded-2xl bg-white dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 hover:border-emerald-500 transition cursor-pointer space-y-1"
-                  >
-                    <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
-                      <Users className="w-3.5 h-3.5 text-[#0D7A5F]" />
-                      <span>চাঁদা ও নাম প্রকাশ সুইচ:</span>
-                    </div>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
-                      সদস্যের মাসিক ওয়াদা গ্রহণ এবং কমিটির নিয়ন্ত্রণে তালিকা গোপন বা উন্মুক্ত রাখা।
-                    </p>
-                  </div>
-
-                  <div
-                    onClick={() => setActiveModal("purchase-procurement")}
-                    className="p-3 rounded-2xl bg-white dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 hover:border-emerald-500 transition cursor-pointer space-y-1"
-                  >
-                    <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
-                      <Receipt className="w-3.5 h-3.5 text-[#0D7A5F]" />
-                      <span>কেনাকাটা ও ৪-স্বাক্ষর:</span>
-                    </div>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
-                      মালামাল ক্রয়ের রিকুইজিশন, অনুমোদন, মেমো সংযুক্তকরণ ও প্রিন্টযোগ্য অফিসিয়াল ভাউচার।
-                    </p>
-                  </div>
-
-                  <div
-                    onClick={() => setActiveTab("funds")}
-                    className="p-3 rounded-2xl bg-white dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 hover:border-emerald-500 transition cursor-pointer space-y-1"
-                  >
-                    <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
-                      <Landmark className="w-3.5 h-3.5 text-[#0D7A5F]" />
-                      <span>১০টি ফান্ড ও বেতন:</span>
-                    </div>
-                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
-                      স্বয়ংক্রিয় ডাবল-এন্ট্রি ফান্ড স্থিতি এবং ইমাম-মুয়াজ্জিনের বেতন বিতরণের খতিয়ান।
-                    </p>
-                  </div>
-                </div>
-              </div>
-
               {/* Imam Meal Roster Reminder Banner */}
               <div
                 onClick={() => setActiveModal("imam-meal")}
@@ -902,17 +783,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "members" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Feature Explainer Banner */}
-              <TabFeatureExplainer
-                title="মুসল্লি ও সদস্য ব্যবস্থাপনা"
-                badge={`${db.members.length} জন সদস্য`}
-                purpose="মসজিদের সাধারণ ও আজীবন সদস্যদের নাম, ফোন নম্বর, রক্তের গ্রুপ এবং কে প্রতি মাসে কত টাকা চাঁদা দেবেন (Monthly Pledge) তা ডিজিটালভাবে সংরক্ষণ করা।"
-                howTo="১. 'নতুন সদস্য যুক্ত করুন' দিয়ে মেম্বার যোগ করুন। ২. নামের পাশে 'চাঁদা জমা নিন' দিয়ে টাকা আদায় করুন। ৩. 'স্টেটমেন্ট' দিয়ে ব্যক্তিগত রসিদ দেখুন। ৪. 'গোপনীয়তা সুইচে' চাপ দিয়ে নাম গোপন বা উন্মুক্ত রাখুন।"
-                icon={Users}
-                actionLabel="নতুন সদস্য যোগ"
-                onAction={() => setNewMemberModalOpen(true)}
-              />
-
               <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
                   <div>
@@ -1059,17 +929,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "funds" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Feature Explainer Banner */}
-              <TabFeatureExplainer
-                title="১০টি সংরক্ষিত মসজিদ তহবিল ব্যবস্থাপনা (Segregated Funds)"
-                badge="শরিয়াহ সম্মত পৃথক হিসাব"
-                purpose="কুরআন ও শরিয়াহর বিধান অনুযায়ী ইমামের সম্মানী, যাকাত, ফিতরা, ওয়াকফ, মক্তব, বিদ্যুৎ বিল ও মেরামতের টাকা কঠোরভাবে পৃথক সংরক্ষণ করা।"
-                howTo="নিচের যেকোনো ফান্ডের 'অনুদান জমা দিন' বাটনে ক্লিক করে সরাসরি ওই নির্দিষ্ট তহবিলে টাকা যুক্ত করুন অথবা 'হিসাবের বিবরণ' বাটনে চাপ দিয়ে বিস্তারিত দেখুন।"
-                icon={Landmark}
-                actionLabel="নতুন অনুদান রেকর্ড"
-                onAction={() => setNewDonationModalOpen(true)}
-              />
-
               <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
                   <div>
@@ -1178,17 +1037,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "income" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Feature Explainer Banner */}
-              <TabFeatureExplainer
-                title="আয় ও অনুদান রেজিস্টার (Income Register)"
-                badge={`${db.inflows.length}টি এন্ট্রি`}
-                purpose="সাধারণ অনুদান, জুমার বাক্সের কালেকশন, মেম্বারদের চাঁদা ও অনলাইন দানের প্রতিটি টাকার স্বচ্ছ ডিজিটাল খতিয়ান ও রসিদ রাখা।"
-                howTo="'নতুন অনুদান রেকর্ড করুন' বাটনে চাপ দিয়ে দাতার নাম, পরিমাণ ও ফান্ড সিলেক্ট করে জমা দিলে স্বয়ংক্রিয়ভাবে ডিজিটাল মানি রিসিট তৈরি হবে এবং ফান্ডে টাকা যুক্ত হবে।"
-                icon={Coins}
-                actionLabel="নতুন অনুদান গ্রহণ"
-                onAction={() => setNewDonationModalOpen(true)}
-              />
-
               <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
                   <div>
@@ -1265,17 +1113,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
              ══════════════════════════════════════════════════════════════ */}
           {(activeTab === "bill-approvals" || activeTab === "vouchers") && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Feature Explainer Banner */}
-              <TabFeatureExplainer
-                title="বিল ও ৪-স্বাক্ষরের ভাউচার অনুমোদন ব্যবস্থাপনা"
-                badge={`${db.expenses.length}টি ভাউচার`}
-                purpose="মসজিদের যে কোনো মালামাল ক্রয়, মেরামত ও খরচের পূর্বে প্রকিউরমেন্ট রিকুইজিশন তৈরি ও ৪ জনের স্বাক্ষরে চূড়ান্ত পেমেন্ট রিলিজ নিশ্চিত করা।"
-                howTo="১. 'নতুন প্রকিউরমেন্ট রিকুইজিশন' দিন। ২. সভাপতি 'অনুমোদন' করবেন। ৩. কোষাধ্যক্ষ 'বিল পরিশোধ' করবেন। ৪. পরিশোধের পর ৪ জনের স্বাক্ষরযুক্ত অফিসিয়াল ভাউচার প্রিন্ট নেওয়া যাবে।"
-                icon={FileCheck}
-                actionLabel="নতুন প্রকিউরমেন্ট"
-                onAction={() => setActiveModal("purchase-procurement")}
-              />
-
               <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
                   <div>
@@ -1412,30 +1249,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "member-portal" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Feature Explainer Banner */}
-              <TabFeatureExplainer
-                title="সদস্যদের নিজস্ব পোর্টাল (প্রাইভেট ভিউ)"
-                badge="ব্যক্তিগত গোপনীয় পেজ"
-                purpose="একজন সাধারণ সদস্যের সম্পূর্ণ ব্যক্তিগত ড্যাশবোর্ড—যেখানে তিনি কেবল নিজের মাসিক অঙ্গীকার, আদায়কৃত চাঁদা, ব্যক্তিগত ডিজিটাল রসিদ এবং ইমাম সাহেবের আজকের খাবার দায়িত্ব দেখতে পাবেন।"
-                howTo="আপনার অবশিষ্ট বকেয়া পরিশোধ করতে 'অনলাইন চাঁদা পরিশোধ' বাটনে চাপুন অথবা নির্ধারিত দিনে খানা দিতে সমস্যা হলে 'খানা বদল আবেদন' বাটনে চাপ দিন।"
-                icon={User}
-                actionLabel="অনলাইন চাঁদা পরিশোধ"
-                onAction={() => {
-                  if (currentMemberStatement) {
-                    setNewDonationForm({
-                      donorName: currentMemberStatement.member.name,
-                      phone: currentMemberStatement.member.phone,
-                      fundId: "f1",
-                      amount: currentMemberStatement.remaining > 0 ? currentMemberStatement.remaining : 1000,
-                      category: "সদস্য চাঁদা",
-                      method: "বিকাশ (bKash)",
-                      notes: `সদস্য আইডি: ${currentMemberStatement.member.id}`,
-                    });
-                  }
-                  setNewDonationModalOpen(true);
-                }}
-              />
-
               <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
                   <div>
@@ -1564,15 +1377,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "audit" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Feature Explainer Banner */}
-              <TabFeatureExplainer
-                title="অডিট ট্রেইল ও নিরাপত্তা লগ (Security Audit)"
-                badge="অপরিবর্তনীয় লগ"
-                purpose="প্ল্যাটফর্মে কে কখন কোন অনুদান তুলল, কে কোন ভাউচার অনুমোদন দিল বা সেটিংস পরিবর্তন করল তার সময় ও ইউজার আইডিসহ অপরিবর্তনীয় প্রমাণ রাখা।"
-                howTo="নিচের টেবিলে প্রতিটি কাজের তারিখ, ব্যবহারকারী, অ্যাকশন এবং বিবরণ দেখে আর্থিক ও প্রশাসনিক স্বচ্ছতা নিশ্চিত করুন।"
-                icon={ShieldCheck}
-              />
-
               <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-emerald-950/80">
                   <div>
@@ -1620,17 +1424,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "backup" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Feature Explainer Banner */}
-              <TabFeatureExplainer
-                title="ডেটাবেস ব্যাকআপ ও ডেটা পুনরুদ্ধার (Backup & Restore)"
-                badge="১০০% ক্লাউড ও লোকাল নিরাপত্তা"
-                purpose="সম্পূর্ণ মসজিদের সকল সদস্য, ফান্ড ব্যালেন্স, ভাউচার ও খানা রোস্টার নিরাপদ JSON ফাইল আকারে সংরক্ষণ করা এবং যেকোনো ডিভাইসে ১ ক্লিকে রিস্টোর করা।"
-                howTo="'সম্পূর্ণ ডাটাবেস ব্যাকআপ ডাউনলোড করুন' বাটনে চাপ দিয়ে ফাইল সেভ রাখুন। নতুন মোবাইল বা ডিভাইসে 'ব্যাকআপ ফাইল আপলোড ও রিস্টোর' বাটনে চাপ দিয়ে যেকোনো সময় তথ্য ফিরিয়ে আনুন।"
-                icon={Database}
-                actionLabel="ব্যাকআপ ডাউনলোড"
-                onAction={handleExportBackup}
-              />
-
               <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
                 <div className="flex items-center gap-2 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
                   <Database className="w-5 h-5 text-[#0D7A5F]" />
@@ -1696,17 +1489,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
              ══════════════════════════════════════════════════════════════ */}
           {activeTab === "settings" && (
             <div className="space-y-4 animate-in fade-in duration-200">
-              {/* Feature Explainer Banner */}
-              <TabFeatureExplainer
-                title="মসজিদ সেটিংস ও কাস্টম ডোমেইন সংযোগ"
-                badge="মাল্টি-টেন্যান্ট কনফিগ"
-                purpose="মসজিদের নাম, লোগো, ঠিকানা, ব্যাংক তথ্য এবং নিজস্ব কাস্টম ডোমেন (যেমন: baitulamanmasjid.org) সংযোগ ও পরিচালনা করা।"
-                howTo="আপনার তথ্য পরিবর্তন করে সংরক্ষণ করুন অথবা 'কাস্টম ডোমেইন সেটিংস' বাটনে ক্লিক করে ক্লাউডফ্লেয়ার বা সিএনএএম (CNAME) পয়েন্ট করে নিজস্ব ডোমেন যুক্ত করুন।"
-                icon={Settings}
-                actionLabel="কাস্টম ডোমেইন সেটআপ"
-                onAction={() => setActiveModal("custom-domain")}
-              />
-
               <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
                 <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-emerald-950/80">
                   <div className="flex items-center gap-2">
@@ -2121,6 +1903,13 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
       {activeModal === "user-guide" && (
         <MosqueUserGuideModal onClose={() => setActiveModal(null)} />
       )}
+
+      {/* Canonical 4-Pillar Page Tutorial Modal */}
+      <PageTutorialModal
+        isOpen={isTutorialModalOpen}
+        onClose={() => setIsTutorialModalOpen(false)}
+        activeRouteKey={`mosque-${activeTab}`}
+      />
     </div>
   );
 }
