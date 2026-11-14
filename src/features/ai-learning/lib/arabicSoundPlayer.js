@@ -12,6 +12,7 @@
 
 import {
   universalAudioEngine,
+  nurQaidaAudioEngine,
   NOORANI_TRACK_MAP,
   ARABIC_LETTER_AUDIO_MAP,
   AUTHENTIC_TAJWEED_AUDIO_MAP,
@@ -22,6 +23,7 @@ export {
   NOORANI_TRACK_MAP,
   ARABIC_LETTER_AUDIO_MAP,
   AUTHENTIC_TAJWEED_AUDIO_MAP,
+  nurQaidaAudioEngine,
 };
 
 export const NOORANI_BASE_URL = AUDIO_CONFIG.NOORANI_FALLBACK_CDN;
@@ -32,6 +34,7 @@ export const ARABIC_AUDIO_BASE_URL = AUDIO_CONFIG.ARABIC_STUDIO_CDN;
  * Stop any currently playing audio across the entire platform
  */
 export function stopArabicAudio() {
+  nurQaidaAudioEngine.stop();
   universalAudioEngine.stopAll();
 }
 
@@ -43,16 +46,16 @@ export function preloadArabicSound(arabicCharOrText) {
 }
 
 /**
- * Play authentic sound for letter or Arabic text via the Centralized Audio Engine.
+ * Play authentic sound for letter or Arabic text via Central Nur Qaida Audio Engine.
  * Pure unvowelled letters use authentic Takhti 1 studio recordings.
  * Harakat, Tanween, Sukoon with Qalqalah, Tajweed rules use authentic verified Qari recordings.
  * 
- * @param {string} arabicCharOrText
+ * @param {string|Object} arabicCharOrText
  * @param {Function} [onEnded]
  * @param {number} [rate=1.0]
  */
 export function playArabicSound(arabicCharOrText, onEnded, rate = 1.0) {
-  return universalAudioEngine.playArabicSound(arabicCharOrText, onEnded, rate);
+  return nurQaidaAudioEngine.play(arabicCharOrText, { onEnd: onEnded, rate });
 }
 
 /**
@@ -61,11 +64,11 @@ export function playArabicSound(arabicCharOrText, onEnded, rate = 1.0) {
  * @param {Function} [onEnded]
  */
 export function playArabicWord(wordOrUrl, onEnded) {
-  return universalAudioEngine.playWord(wordOrUrl, { onEnd: onEnded });
+  return nurQaidaAudioEngine.play(wordOrUrl, { onEnd: onEnded });
 }
 
 export function playArabicLetterSound(char, options) {
-  return universalAudioEngine.playLetter(char, options);
+  return nurQaidaAudioEngine.playLetter(char, options);
 }
 
 // ─────────────────────────────────────────

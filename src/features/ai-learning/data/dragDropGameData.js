@@ -33,7 +33,7 @@ export const DRAG_DROP_LEVELS = [
     tip: "তখতী ২: একাধিক হরফ একত্রে যুক্ত হয়ে মুরাক্কাবাত গঠন করে।",
     letters: [
       { ar: "لَا", nameBn: "লাম-আলিফ", color: "from-orange-500 to-amber-600", audio: "https://audio.qurancdn.com/wbw/002_002_002.mp3", tip: "লাম ও আলিফ একসাথে যুক্ত রূপ" },
-      { ar: "بَا", nameBn: "বা-আলিফ", color: "from-cyan-500 to-blue-600", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter9/Page16-2.m4a", tip: "বা-এর সাথে আলিফ জুড়ে লম্বা ১ আলিফ মাদ্দ" },
+      { ar: "بَا", nameBn: "বা-আলিফ", color: "from-cyan-500 to-blue-600", audio: "https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/chapter08/Page13-26.m4a", tip: "বা-এর সাথে আলিফ জুড়ে লম্বা ১ আলিফ মাদ্দ" },
       { ar: "بَلْ", nameBn: "বা-লাম (বাল)", color: "from-indigo-500 to-violet-600", audio: "https://audio.qurancdn.com/wbw/002_088_005.mp3", tip: "বা ও লাম একসাথে সংযুক্ত শব্দ" },
     ],
   },
@@ -43,9 +43,9 @@ export const DRAG_DROP_LEVELS = [
     desc: "যবর, যের ও পেশের ১ হরকত দ্রুত উচ্চারণ করো",
     tip: "তখতী ৪: এক যবর, এক যের, এক পেশকে হরকত বলে। হরকতের উচ্চারণ তাড়াতাড়ি পড়তে হয়।",
     letters: [
-      { ar: "دَ", nameBn: "দাল যবর দা", color: "from-lime-500 to-green-600", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter4/Page8-8.m4a", tip: "যবর হরফের উপরে থাকে এবং 'আ'-কার দেয়" },
-      { ar: "بِ", nameBn: "বা যের বি", color: "from-sky-500 to-blue-600", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter4/Page9-2.m4a", tip: "যের হরফের নিচে থাকে এবং 'ই'-কার দেয়" },
-      { ar: "تُ", nameBn: "তা পেশ তু", color: "from-amber-500 to-yellow-600", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter4/Page10-3.m4a", tip: "পেশ হরফের উপরে গোল হয়ে থাকে এবং 'উ'-কার দেয়" },
+      { ar: "دَ", nameBn: "দাল যবর দা", color: "from-lime-500 to-green-600", audio: "https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/chapter04/Page8-19.m4a", tip: "যবর হরফের উপরে থাকে এবং 'আ'-কার দেয়" },
+      { ar: "بِ", nameBn: "বা যের বি", color: "from-sky-500 to-blue-600", audio: "https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/chapter04/Page9-10.m4a", tip: "যের হরফের নিচে থাকে এবং 'ই'-কার দেয়" },
+      { ar: "تُ", nameBn: "তা পেশ তু", color: "from-amber-500 to-yellow-600", audio: "https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/chapter04/Page8-24.m4a", tip: "পেশ হরফের উপরে গোল হয়ে থাকে এবং 'উ'-কার দেয়" },
     ],
   },
   {
@@ -54,9 +54,9 @@ export const DRAG_DROP_LEVELS = [
     desc: "হরকত মিলিয়ে কুরআন পড়ার প্রথম শব্দগুলো মেলাও",
     tip: "তখতী ৬: হরকত মিলিয়ে এক নিঃশ্বাসে না টেনে দ্রুত পড়তে হয়।",
     letters: [
-      { ar: "دَرَسَ", nameBn: "দারাছা (সে পাঠ করেছে)", color: "from-purple-500 to-violet-600", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter6/Page13-1.m4a", tip: "দাল যবর দা, র যবর রা, সীন যবর ছা" },
-      { ar: "كَتَبَ", nameBn: "কাতাবা (সে লিখেছে)", color: "from-emerald-600 to-teal-700", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter6/Page13-2.m4a", tip: "কাফ যবর কা, তা যবর তা, বা যবর বা" },
-      { ar: "وَلَدَ", nameBn: "ওয়ালাদা (সন্তান জন্ম দিয়েছে)", color: "from-rose-500 to-pink-600", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter6/Page13-5.m4a", tip: "ওয়াও যবর ওয়া, লাম যবর লা, দাল যবর দা" },
+      { ar: "دَرَسَ", nameBn: "দারাছা (সে পাঠ করেছে)", color: "from-purple-500 to-violet-600", audio: "https://audio.qurancdn.com/wbw/006_105_004.mp3", tip: "দাল যবর দা, র যবর রা, সীন যবর ছা" },
+      { ar: "كَتَبَ", nameBn: "কাতাবা (সে লিখেছে)", color: "from-emerald-600 to-teal-700", audio: "https://audio.qurancdn.com/wbw/002_183_004.mp3", tip: "কাফ যবর কা, তা যবর তা, বা যবর বা" },
+      { ar: "وَلَدَ", nameBn: "ওয়ালাদা (সন্তান জন্ম দিয়েছে)", color: "from-rose-500 to-pink-600", audio: "https://audio.qurancdn.com/wbw/112_003_002.mp3", tip: "ওয়াও যবর ওয়া, লাম যবর লা, দাল যবর দা" },
     ],
   },
   {
@@ -65,9 +65,9 @@ export const DRAG_DROP_LEVELS = [
     desc: "দুই যবর, দুই যের ও দুই পেশযুক্ত তানভীন মেলাও",
     tip: "তখতী ৭: দুই যবর, দুই যের, দুই পেশকে তানভীন বলে। তানভীনের মধ্যে নূন সাকিন লুকিয়ে থাকে।",
     letters: [
-      { ar: "بً", nameBn: "বা দুই যবর বান", color: "from-amber-600 to-orange-700", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter7/Page14-1.m4a", tip: "দুই যবর উপরে নূনসহ 'আন' আওয়াজ দেয়" },
-      { ar: "تٍ", nameBn: "তা দুই যের তিন", color: "from-blue-600 to-indigo-700", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter7/Page14-4.m4a", tip: "দুই যের নিচে নূনসহ 'ইন' আওয়াজ দেয়" },
-      { ar: "ثٌ", nameBn: "ছা দুই পেশ ছুন", color: "from-emerald-600 to-teal-700", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter7/Page14-9.m4a", tip: "দুই পেশ উপরে নূনসহ 'উন' আওয়াজ দেয়" },
+      { ar: "بً", nameBn: "বা দুই যবর বান", color: "from-amber-600 to-orange-700", audio: "https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/chapter05/Page9-18.m4a", tip: "দুই যবর উপরে নূনসহ 'আন' আওয়াজ দেয়" },
+      { ar: "تٍ", nameBn: "তা দুই যের তিন", color: "from-blue-600 to-indigo-700", audio: "https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/chapter05/Page10-17.m4a", tip: "দুই যের নিচে নূনসহ 'ইন' আওয়াজ দেয়" },
+      { ar: "ثٌ", nameBn: "ছা দুই পেশ ছুন", color: "from-emerald-600 to-teal-700", audio: "https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/chapter05/Page10-21.m4a", tip: "দুই পেশ উপরে নূনসহ 'উন' আওয়াজ দেয়" },
     ],
   },
   {
@@ -76,7 +76,7 @@ export const DRAG_DROP_LEVELS = [
     desc: "জযমযুক্ত হরফকে আগের হরকতের সাথে মিলিয়ে পড়ো",
     tip: "তখতী ৮: জযমযুক্ত হরফ নিজে উচ্চারিত হতে পারে না, ডানদিকের হরকতের সাথে মিলিয়ে পড়তে হয়।",
     letters: [
-      { ar: "أَبْ", nameBn: "হামযাহ-বা যবর আব", color: "from-teal-600 to-cyan-700", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter8/Page15-1.m4a", tip: "হামযাহ যবর আ, বা সাকিন ব — আব" },
+      { ar: "أَبْ", nameBn: "হামযাহ-বা যবর আব", color: "from-teal-600 to-cyan-700", audio: "https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/chapter10/Page19-1.m4a", tip: "হামযাহ যবর আ, বা সাকিন ব — আব" },
       { ar: "رَبْ", nameBn: "রা-বা যবর রাব", color: "from-rose-600 to-pink-700", audio: "https://audio.qurancdn.com/wbw/001_002_003.mp3", tip: "রা যবর র, বা সাকিন ব — রাব" },
       { ar: "قُلْ", nameBn: "ক্বাফ-লাম পেশ ক্বুল", color: "from-amber-600 to-yellow-700", audio: "https://audio.qurancdn.com/wbw/112_001_001.mp3", tip: "ক্বাফ পেশ কু, লাম সাকিন ল — ক্বুল" },
     ],
@@ -109,7 +109,7 @@ export const DRAG_DROP_LEVELS = [
     desc: "১ আলিফ দীর্ঘ টান ও নরম সুরের লীন অনুশীলন করো",
     tip: "তখতী ৯ ও ১১: আলিফ, ওয়াও, ইয়া মাদ্দের হরফ হলে ১ আলিফ টানতে হয়; যবরের পর ওয়াও/ইয়া হলে লীন হয়।",
     letters: [
-      { ar: "بَا", nameBn: "বাআ (আলিফ মাদ্দ ১ আলিফ)", color: "from-rose-600 to-red-700", audio: "https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/chapter9/Page16-2.m4a", tip: "যবরের বামে খালি আলিফ থাকলে ১ আলিফ টানতে হয়" },
+      { ar: "بَا", nameBn: "বাআ (আলিফ মাদ্দ ১ আলিফ)", color: "from-rose-600 to-red-700", audio: "https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/chapter08/Page13-26.m4a", tip: "যবরের বামে খালি আলিফ থাকলে ১ আলিফ টানতে হয়" },
       { ar: "نُوحٍ", nameBn: "নূহিন (ওয়াও মাদ্দ)", color: "from-purple-600 to-indigo-700", audio: "https://audio.qurancdn.com/wbw/071_001_002.mp3", tip: "পেশের বামে জযমযুক্ত ওয়াও থাকলে ১ আলিফ টান" },
       { ar: "بَيْتٍ", nameBn: "বাইতিন (ইয়া লীন নরম সুর)", color: "from-teal-600 to-cyan-700", audio: "https://audio.qurancdn.com/wbw/106_003_003.mp3", tip: "যবরের বামে জযমযুক্ত ইয়া থাকলে নরম করে তাড়াতাড়ি পড়া" },
     ],

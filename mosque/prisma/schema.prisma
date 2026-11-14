@@ -1,0 +1,306 @@
+generator client {
+  provider   = "prisma-client-js"
+  engineType = "client"
+}
+
+datasource db {
+  url      = env("DATABASE_URL")
+  provider = "postgresql"
+}
+
+enum MembershipStatus {
+  PENDING
+  ACTIVE
+  SUSPENDED
+}
+
+enum PaymentStatus {
+  UNVERIFIED
+  VERIFIED
+  REVERSED
+}
+
+enum ExpenseStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  CHANGES_REQUESTED
+  CANCELLED
+  PAID
+  REVERSED
+}
+
+model Mosque {
+  id                  String   @id @default(cuid())
+  slug                String   @unique
+  name                String
+  currency            String   @default("BDT")
+  timezone            String   @default("Asia/Dhaka")
+  /// First month (YYYY-MM) for which monthly dues exist.
+  startMonth          String
+  /// Dues have been generated for all periods up to and including this one.
+  duesThrough         String?
+  requireVerification Boolean  @default(true)
+  /// Privacy switch: may ordinary members see who paid / who is due?
+  showContributors    Boolean  @default(false)
+  receiptSeq          Int      @default(0)
+  voucherSeq          Int      @default(0)
+  /// Optional override of the reminder/escalation schedule (see services/reminders.ts).
+  reminderSteps       Json?
+  status              String   @default("ACTIVE")
+  createdAt           DateTime @default(now())
+
+  roles          Role[]
+  memberships    Membership[]
+  funds          Fund[]
+  dues           MonthlyDue[]
+  payments       Payment[]
+  expenses       Expense[]
+  notifications  Notification[]
+  reminderEvents ReminderEvent[]
+  mealRosters    MealRoster[]
+  maktabStudents MaktabStudent[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  loginId      String   @unique
+  name         String
+  passwordHash String
+  isSuperAdmin Boolean  @default(false)
+  createdAt    DateTime @default(now())
+
+  memberships   Membership[]
+  payments      Payment[]      @relation("PaymentRecorder")
+  notifications Notification[]
+}
+
+/// Roles are data, not code: each mosque can define its own roles and permission sets.
+model Role {
+  id          String   @id @default(cuid())
+  mosqueId    String
+  key         String
+  name        String
+  permissions String[]
+  isSystem    Boolean  @default(false)
+
+  mosque      Mosque       @relation(fields: [mosqueId], references: [id])
+  memberships Membership[]
+
+  @@unique([mosqueId, key])
+}
+
+model Membership {
+  id            String           @id @default(cuid())
+  mosqueId      String
+  userId        String
+  roleId        String
+  status        MembershipStatus @default(PENDING)
+  /// The member's own monthly contribution rate.
+  monthlyPledge Decimal          @default(0) @db.Decimal(14, 2)
+  joinedAt      DateTime         @default(now())
+
+  mosque   Mosque       @relation(fields: [mosqueId], references: [id])
+  user     User         @relation(fields: [userId], references: [id])
+  role     Role         @relation(fields: [roleId], references: [id])
+  dues     MonthlyDue[]
+  payments Payment[]
+
+  @@unique([mosqueId, userId])
+  @@index([mosqueId, status])
+}
+
+model Fund {
+  id         String   @id @default(cuid())
+  mosqueId   String
+  name       String
+  restricted Boolean  @default(false)
+  /// Monthly member contributions are collected into this fund.
+  isMonthly  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+
+  mosque   Mosque    @relation(fields: [mosqueId], references: [id])
+  payments Payment[]
+  expenses Expense[]
+
+  @@index([mosqueId])
+}
+
+/// Amount a member owes for one month (snapshot of the pledge at that time).
+model MonthlyDue {
+  id           String   @id @default(cuid())
+  mosqueId     String
+  membershipId String
+  period       String
+  amount       Decimal  @db.Decimal(14, 2)
+  createdAt    DateTime @default(now())
+
+  mosque     Mosque     @relation(fields: [mosqueId], references: [id])
+  membership Membership @relation(fields: [membershipId], references: [id])
+
+  @@unique([membershipId, period])
+  @@index([mosqueId, period])
+}
+
+model Payment {
+  id             String        @id @default(cuid())
+  mosqueId       String
+  membershipId   String
+  fundId         String
+  /// YYYY-MM the payment covers (monthly contributions); null for one-off donations.
+  period         String?
+  amount         Decimal       @db.Decimal(14, 2)
+  method         String
+  status         PaymentStatus @default(VERIFIED)
+  receiptNo      String
+  idempotencyKey String
+  recordedById   String
+  note           String?
+  signature      String?
+  duaMessage     String?
+  paidAt         DateTime      @default(now())
+  createdAt      DateTime      @default(now())
+
+  mosque     Mosque     @relation(fields: [mosqueId], references: [id])
+  membership Membership @relation(fields: [membershipId], references: [id])
+  fund       Fund       @relation(fields: [fundId], references: [id])
+  recordedBy User       @relation("PaymentRecorder", fields: [recordedById], references: [id])
+
+  @@unique([mosqueId, idempotencyKey])
+  @@unique([mosqueId, receiptNo])
+  @@index([mosqueId, period])
+  @@index([membershipId, period])
+}
+
+model Expense {
+  id                String        @id @default(cuid())
+  mosqueId          String
+  fundId            String
+  voucherNo         String
+  category          String
+  description       String
+  amount            Decimal       @db.Decimal(14, 2)
+  status            ExpenseStatus @default(DRAFT)
+  spentAt           DateTime
+  createdById       String
+  buyerSignature    String?
+  approverSignature String?
+  attachmentUrl     String?
+  createdAt         DateTime      @default(now())
+  submittedAt    DateTime?
+  decidedById    String?
+  decidedAt      DateTime?
+  decisionReason String?
+  paidAt         DateTime?
+  paymentRef     String?
+  overdueAt      DateTime?
+
+  mosque         Mosque          @relation(fields: [mosqueId], references: [id])
+  fund           Fund            @relation(fields: [fundId], references: [id])
+  reminderEvents ReminderEvent[]
+
+  @@unique([mosqueId, voucherNo])
+  @@index([mosqueId, status])
+}
+
+/// Append-only (enforced by a database trigger, see migration 0002).
+model AuditLog {
+  id        String   @id @default(cuid())
+  mosqueId  String?
+  actorId   String?
+  action    String
+  entity    String
+  entityId  String
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([mosqueId, createdAt])
+}
+
+/// In-app notification. `data` holds the parameters; the client renders the text in the user's language.
+model Notification {
+  id        String    @id @default(cuid())
+  mosqueId  String
+  userId    String
+  kind      String
+  data      Json
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  mosque Mosque @relation(fields: [mosqueId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([mosqueId])
+}
+
+/// One row per (expense, schedule step). The unique key makes reminder jobs idempotent across instances.
+model ReminderEvent {
+  id         String   @id @default(cuid())
+  mosqueId   String
+  expenseId  String
+  step       Int
+  recipients Int
+  firedAt    DateTime @default(now())
+
+  mosque  Mosque  @relation(fields: [mosqueId], references: [id])
+  expense Expense @relation(fields: [expenseId], references: [id])
+
+  @@unique([expenseId, step])
+}
+
+/// Daily food distribution schedule for Imam and Muazzin
+model MealRoster {
+  id            String   @id @default(cuid())
+  mosqueId      String
+  date          String   /// YYYY-MM-DD
+  dayName       String
+  householdName String
+  contactNumber String
+  mealType      String   @default("BOTH") /// LUNCH, DINNER, BOTH
+  status        String   @default("CONFIRMED") /// CONFIRMED, DELIVERED, PENDING
+  notes         String?
+  createdAt     DateTime @default(now())
+
+  mosque Mosque @relation(fields: [mosqueId], references: [id])
+
+  @@index([mosqueId, date])
+}
+
+/// Maktab students for Quran and basic Islamic studies
+model MaktabStudent {
+  id             String             @id @default(cuid())
+  mosqueId       String
+  name           String
+  guardianName   String
+  guardianPhone  String
+  batch          String             @default("Morning") /// Morning, Afternoon
+  progressLevel  String             @default("Qaida") /// Qaida, Ampara, Nazera, Hifz
+  rollNo         String?
+  photoUrl       String?
+  currentLesson  String?
+  status         String             @default("ACTIVE")
+  createdAt      DateTime           @default(now())
+
+  mosque         Mosque             @relation(fields: [mosqueId], references: [id])
+  attendances    MaktabAttendance[]
+
+  @@index([mosqueId])
+}
+
+model MaktabAttendance {
+  id           String        @id @default(cuid())
+  studentId    String
+  date         String        /// YYYY-MM-DD
+  status       String        @default("PRESENT") /// PRESENT, ABSENT, EXCUSED
+  sabaqRating  String?       /// EXCELLENT, GOOD, REVISE
+  notes        String?
+  createdAt    DateTime      @default(now())
+
+  student      MaktabStudent @relation(fields: [studentId], references: [id])
+
+  @@unique([studentId, date])
+}
+

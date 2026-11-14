@@ -28,6 +28,8 @@ yarn-error.log*
 # OS
 .DS_Store
 Thumbs.db
+.pgdata
+*.tsbuildinfo
 
 # Temporary scratch & evidence
 scratch/

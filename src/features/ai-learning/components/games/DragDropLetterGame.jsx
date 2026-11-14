@@ -15,7 +15,8 @@ import {
   universalAudioEngine,
   playArabicSound,
   playFeedbackChime,
-} from "@/lib/quran/universal-audio-engine";
+  nurQaidaAudioEngine,
+} from "@/lib/quran/audio";
 import NuruMascot from "../kids/NuruMascot";
 import { DRAG_DROP_LEVELS } from "../../data/dragDropGameData";
 import { useQuranGameProgress } from "../../hooks/useQuranGameProgress";
@@ -78,11 +79,7 @@ export default function DragDropLetterGame({ onBack, onEarnReward }) {
     if (isAlreadyPlaced) return;
 
     setSelectedLetter(letter);
-    if (letter.audio) {
-      universalAudioEngine.playWord(letter.audio);
-    } else {
-      playArabicSound(letter.ar);
-    }
+    nurQaidaAudioEngine.play(letter);
     playFeedbackChime("tap");
     const isWord = letter.nameBn && (currentLevel.id >= 11 || letter.ar.length > 2);
     setMascotFeedback(`এটি '${letter.nameBn}' ${isWord ? "শব্দ" : "হরফ"}। এবার নিচের সঠিক খোপে বসাও!`);
@@ -92,20 +89,12 @@ export default function DragDropLetterGame({ onBack, onEarnReward }) {
   const handleSlotClick = (slotTarget, slotIndex) => {
     if (placedSlots[slotIndex]) {
       const placed = placedSlots[slotIndex];
-      if (placed.audio) {
-        universalAudioEngine.playWord(placed.audio);
-      } else {
-        playArabicSound(placed.ar);
-      }
+      nurQaidaAudioEngine.play(placed);
       return;
     }
 
     if (!selectedLetter) {
-      if (slotTarget.audio) {
-        universalAudioEngine.playWord(slotTarget.audio);
-      } else {
-        playArabicSound(slotTarget.ar);
-      }
+      nurQaidaAudioEngine.play(slotTarget);
       const isWord = slotTarget.nameBn && (currentLevel.id >= 11 || slotTarget.ar.length > 2);
       setMascotFeedback(`আগে '${slotTarget.nameBn}' ${isWord ? "শব্দটির" : "হরফটির"} কার্ডে ক্লিক করো, তারপর এখানে বসাও!`);
       return;
@@ -114,11 +103,7 @@ export default function DragDropLetterGame({ onBack, onEarnReward }) {
     // Check Match
     if (selectedLetter.ar === slotTarget.ar) {
       playFeedbackChime("correct");
-      if (selectedLetter.audio) {
-        universalAudioEngine.playWord(selectedLetter.audio);
-      } else {
-        playArabicSound(selectedLetter.ar);
-      }
+      nurQaidaAudioEngine.play(selectedLetter);
 
       const newPlaced = { ...placedSlots, [slotIndex]: selectedLetter };
       setPlacedSlots(newPlaced);

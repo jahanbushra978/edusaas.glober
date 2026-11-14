@@ -814,8 +814,8 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                   setActiveBanglaEngine(e.target.value);
                   toast.success(
                     e.target.value === "engine-2"
-                      ? "ইঞ্জিন ২: প্রাকৃতিক মানবিক স্টুডিও কণ্ঠ (v3) সক্রিয় করা হয়েছে"
-                      : "ইঞ্জিন ১: প্রদীপ স্টুডিও (ফ্রি) সক্রিয় করা হয়েছে"
+                      ? "ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ (স্বাভাবিক ও হৃদয়স্পর্শী) সক্রিয়"
+                      : "ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ (অভিজ্ঞ ও শান্ত) সক্রিয়"
                   );
                 }}
                 className={`${
@@ -825,8 +825,8 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                 } rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-black focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer`}
                 title="বাংলা অনুবাদ ও ব্যাখ্যার ভয়েস ইঞ্জিন নির্বাচন করুন"
               >
-                <option value="engine-2">🎙️ ইঞ্জিন ২: প্রাকৃতিক স্টুডিও কণ্ঠ (v3) [ডিফল্ট]</option>
-                <option value="engine-1">🎙️ ইঞ্জিন ১: প্রদীপ স্টুডিও (ফ্রি)</option>
+                <option value="engine-2">🎙️ ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ [ডিফল্ট]</option>
+                <option value="engine-1">🎙️ ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ</option>
               </select>
               {(activeBanglaEngine || "engine-2") !== "engine-1" && elVoices && (
                 <select
@@ -959,8 +959,8 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
               setActiveBanglaEngine(e.target.value);
               toast.success(
                 e.target.value === "engine-2"
-                  ? "ইঞ্জিন ২: স্টুডিও কণ্ঠ (v3) সক্রিয়"
-                  : "ইঞ্জিন ১: প্রদীপ স্টুডিও (ফ্রি) সক্রিয়"
+                  ? "ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ সক্রিয়"
+                  : "ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ সক্রিয়"
               );
             }}
             className={`${
@@ -970,8 +970,8 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
             } rounded-xl px-2 py-1 text-[11px] font-black w-[112px] shrink-0 truncate focus:outline-none cursor-pointer`}
             title="বাংলা ভয়েস ইঞ্জিন"
           >
-            <option value="engine-2">ইঞ্জিন ২ (v3)</option>
-            <option value="engine-1">ইঞ্জিন ১ (ফ্রি)</option>
+            <option value="engine-2">ইঞ্জিন ২ (স্টুডিও)</option>
+            <option value="engine-1">ইঞ্জিন ১ (উস্তাদ)</option>
           </select>
 
           {(activeBanglaEngine || "engine-2") !== "engine-1" && elVoices && (
@@ -1766,16 +1766,16 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                     setActiveBanglaEngine(e.target.value);
                     toast.success(
                       e.target.value === "engine-2"
-                        ? "ইঞ্জিন ২: প্রাকৃতিক স্টুডিও কণ্ঠ (v3) সক্রিয়"
-                        : "ইঞ্জিন ১: প্রদীপ স্টুডিও (ফ্রি) সক্রিয়"
+                        ? "ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ সক্রিয়"
+                        : "ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ সক্রিয়"
                     );
                   }}
                   className={`rounded-xl px-2 py-1 text-[11px] font-bold border focus:outline-none ${
                     isDay ? "bg-white border-amber-300 text-slate-900" : "bg-[#071d15] border-emerald-700 text-amber-200"
                   }`}
                 >
-                  <option value="engine-2" className="bg-white text-slate-900">ইঞ্জিন ২: স্টুডিও কণ্ঠ (v3) [ডিফল্ট]</option>
-                  <option value="engine-1" className="bg-white text-slate-900">ইঞ্জিন ১: প্রদীপ স্টুডিও (ফ্রি)</option>
+                  <option value="engine-2" className="bg-white text-slate-900">ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ [ডিফল্ট]</option>
+                  <option value="engine-1" className="bg-white text-slate-900">ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ</option>
                 </select>
               </div>
               {(activeBanglaEngine || "engine-2") !== "engine-1" && elVoices && (
@@ -2068,7 +2068,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                           ? "bg-amber-500 text-slate-950 border-amber-300 font-extrabold animate-pulse"
                           : "bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/70 dark:hover:bg-amber-900 border-amber-300 dark:border-amber-700 text-amber-950 dark:text-amber-200"
                       }`}
-                      title={`এই আয়াতের বাংলা অনুবাদ শুনুন (${activeBanglaEngine === "engine-1" ? "প্রদীপ স্টুডিও (ফ্রি)" : "প্রাকৃতিক স্টুডিও কণ্ঠ (v3)"})`}
+                      title={`এই আয়াতের বাংলা অনুবাদ শুনুন (${activeBanglaEngine === "engine-1" ? "ইসলামিক উস্তাদ স্টুডিও কণ্ঠ" : "আল-কুরআন স্টুডিও কণ্ঠ"})`}
                     >
                       <Volume2 className="w-3.5 h-3.5 shrink-0" />
                       <span>{isPlayingB ? "থামুন" : "বাংলা অর্থ"}</span>

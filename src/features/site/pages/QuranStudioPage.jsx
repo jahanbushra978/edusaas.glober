@@ -34,6 +34,7 @@ import {
   MessageSquarePlus,
   Lightbulb,
   FileText,
+  Landmark,
 } from "lucide-react";
 import { toast } from "sonner";
 import AISettingsModal from "@/features/ai/components/AISettingsModal";
@@ -54,6 +55,7 @@ import TahfizQuranApp from "@/features/quran/components/TahfizQuranApp";
 import AmarProthomQuranShikkha from "@/features/ai/components/AmarProthomQuranShikkha";
 import NoorQaidaBook from "@/features/quran/components/NoorQaidaBook";
 import HumanTeacherPlatform from "@/features/teachers/components/HumanTeacherPlatform";
+import MosqueHub from "@/features/mosque/components/MosqueHub";
 import { playArabicSound } from "@/features/ai-learning/lib/arabicSoundPlayer";
 
 import {
@@ -186,6 +188,7 @@ function resolveFeatureTarget(p) {
   if (p === "search" || p === "quran-search" || p === "search-modal") return "quran-search";
   if (p === "amal" || p === "qurani-amal" || p === "quran-amal") return "qurani-amal";
   if (p === "human" || p === "human-teacher" || p === "teacher-profile" || p === "ustad") return "human-teacher";
+  if (p === "mosque" || p === "mosque-hub" || p === "masjid" || p === "masjid-hub") return "mosque";
   return null;
 }
 
@@ -563,6 +566,16 @@ export default function QuranStudioPage() {
           badge: "স্কোরিং",
           badgeStyle: "bg-teal-100 text-teal-800 border-teal-300",
         },
+        {
+          id: "mosque",
+          title: "মসজিদ প্ল্যাটফর্ম (Mosque Hub)",
+          subtitle: "নামাযের সময়সূচী, চাঁদা আদায়, তহবিল, মক্তব ও ডিজিটাল সেবা",
+          icon: Landmark,
+          emoji: "🕌",
+          gradient: "from-emerald-700 via-teal-800 to-slate-900 text-white",
+          badge: "ডিজিটাল মসজিদ",
+          badgeStyle: "bg-emerald-100 text-emerald-900 border-emerald-300 font-bold",
+        },
       ],
     },
     {
@@ -763,7 +776,7 @@ export default function QuranStudioPage() {
       </header>
 
       {/* ── MAIN STUDIO CONTAINER ── */}
-        <main className={`flex-1 w-full mx-auto ${activeFeature === "voice-tutor" ? "p-1 sm:p-4 max-w-4xl" : "max-w-6xl p-3 sm:p-5 md:p-6"} space-y-6`}>
+        <main className={`flex-1 w-full mx-auto ${activeFeature === "voice-tutor" ? "p-1 sm:p-4 max-w-4xl" : activeFeature === "mosque" ? "p-1 sm:p-3 max-w-7xl" : "max-w-6xl p-3 sm:p-5 md:p-6"} space-y-6`}>
 
           {/* ── 🌟 ACTIVE FEATURE SANCTUARY STAGE (Floats in when card clicked) ── */}
             { activeFeature === "voice-tutor" ? (
@@ -1261,6 +1274,12 @@ export default function QuranStudioPage() {
                   ) : activeFeature === "human-teacher" ? (
                     <HumanTeacherPlatform
                       onBackToStudio={closeActiveFeature}
+                    />
+                  ) : activeFeature === "mosque" ? (
+                    <MosqueHub
+                      onOpenQuranReader={() => setActiveFeature("tafseer-quran")}
+                      onOpenTutor={() => setActiveFeature("live-class")}
+                      onNavigateBack={closeActiveFeature}
                     />
                   ) : (
                     <div className="text-center py-10 space-y-3">

@@ -51,40 +51,62 @@ async function fetchElevenLabsTts(text, elVoice = null) {
     throw new Error("ElevenLabs API key not configured");
   }
   const voiceId = resolveElevenLabsVoiceId(elVoice);
-  const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`, {
-    method: "POST",
-    headers: {
-      "xi-api-key": apiKey,
-      "Content-Type": "application/json",
-      "Accept": "audio/mpeg",
-    },
-    body: JSON.stringify({
-      text,
-      model_id: "eleven_v3",
-      voice_settings: {
-        stability: 0.50,
-        similarity_boost: 0.78,
-        style: 0.35,
-        speed: 0.88,
-      },
-    }),
-    signal: AbortSignal.timeout(15000),
-  });
-  if (!res.ok) {
-    const errText = await res.text().catch(() => "");
-    throw new Error(`ElevenLabs HTTP ${res.status}: ${errText.slice(0, 120)}`);
+  
+  // Try eleven_multilingual_v2 first (faster, designed for Bengali phonetics) with eleven_v3 fallback
+  const models = ["eleven_multilingual_v2", "eleven_v3"];
+  let lastErr = null;
+
+  for (const modelId of models) {
+    try {
+      const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`, {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+          "Accept": "audio/mpeg",
+        },
+        body: JSON.stringify({
+          text,
+          model_id: modelId,
+          voice_settings: {
+            stability: 0.55,
+            similarity_boost: 0.80,
+            style: 0.25,
+            speed: 0.88,
+            use_speaker_boost: true,
+          },
+        }),
+        signal: AbortSignal.timeout(15000),
+      });
+
+      if (res.status === 429) {
+        // Concurrency limit reached: brief sleep and retry once
+        await new Promise((r) => setTimeout(r, 450));
+        continue;
+      }
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => "");
+        throw new Error(`ElevenLabs HTTP ${res.status}: ${errText.slice(0, 120)}`);
+      }
+
+      const buf = Buffer.from(await res.arrayBuffer());
+      if (buf.length < 400) {
+        throw new Error("ElevenLabs returned empty audio buffer");
+      }
+      return { data: buf, isPcm: false, provider: "elevenlabs-studio" };
+    } catch (err) {
+      lastErr = err;
+    }
   }
-  const buf = Buffer.from(await res.arrayBuffer());
-  if (buf.length < 400) {
-    throw new Error("ElevenLabs returned empty audio buffer");
-  }
-  return { data: buf, isPcm: false, provider: "elevenlabs-v3" };
+
+  throw lastErr || new Error("ElevenLabs synthesis failed");
 }
 
 function getDiskCachePath(chunk, lang, gender, voice, rate = "def", pitch = "def", engine = "engine-2", elVoice = "def") {
   const hash = crypto
     .createHash("sha256")
-    .update(`v14:${engine}:${elVoice || "def"}:${lang}:${gender}:${voice || "def"}:${rate}:${pitch}:${chunk}`)
+    .update(`v18:${engine}:${elVoice || "def"}:${lang}:${gender}:${voice || "def"}:${rate}:${pitch}:${chunk}`)
     .digest("hex");
   return path.join(DISK_CACHE_DIR, `${hash}.bin`);
 }
@@ -280,34 +302,27 @@ function pcmToWav(pcmBuffer, sampleRate = 24000, numChannels = 1, bitDepth = 16)
 async function masterStudioVoiceWithFfmpeg(inputFilePath, gender = "male") {
   const { execFile } = await import("child_process");
   const outPath = path.join(os.tmpdir(), `edge_master_${Date.now()}_${Math.random().toString(36).slice(2)}.mp3`);
-  // Analog tape depth + surgical studio condenser vocal EQ (zero WSOLA / vocoder metallic buzz)
+  // Studio vocal mastering: gentle warming & levelling without altering natural voice pitch/formant
   const af = gender === "female"
     ? [
         "aresample=48000",
-        "asetrate=46800,aresample=48000",
         "highpass=f=85",
-        "equalizer=f=185:t=q:w=1.1:g=3.2",
-        "equalizer=f=320:t=q:w=1.2:g=1.5",
-        "equalizer=f=2700:t=q:w=1.2:g=-3.0",
-        "equalizer=f=4500:t=q:w=1.0:g=-5.5",
-        "equalizer=f=6800:t=q:w=1.1:g=-4.0",
-        "lowpass=f=12200",
-        "acompressor=threshold=-20dB:ratio=2.2:attack=18:release=160:makeup=2.2",
-        "alimiter=limit=0.92",
+        "equalizer=f=185:t=q:w=1.1:g=2.0",
+        "equalizer=f=320:t=q:w=1.2:g=1.2",
+        "equalizer=f=3000:t=q:w=1.2:g=-1.5",
+        "lowpass=f=12500",
+        "acompressor=threshold=-20dB:ratio=2.0:attack=15:release=120:makeup=2.0",
+        "alimiter=limit=0.95",
       ].join(",")
     : [
         "aresample=48000",
-        "asetrate=44400,aresample=48000",
-        "highpass=f=70",
-        "equalizer=f=150:t=q:w=1.1:g=4.8",
-        "equalizer=f=260:t=q:w=1.2:g=2.5",
-        "equalizer=f=950:t=q:w=1.0:g=-1.8",
-        "equalizer=f=2700:t=q:w=1.2:g=-3.5",
-        "equalizer=f=4400:t=q:w=1.0:g=-6.0",
-        "equalizer=f=6600:t=q:w=1.1:g=-4.5",
-        "lowpass=f=11500",
-        "acompressor=threshold=-20dB:ratio=2.3:attack=18:release=160:makeup=2.8",
-        "alimiter=limit=0.92",
+        "highpass=f=75",
+        "equalizer=f=160:t=q:w=1.1:g=2.2",
+        "equalizer=f=280:t=q:w=1.2:g=1.5",
+        "equalizer=f=3000:t=q:w=1.2:g=-1.5",
+        "lowpass=f=12500",
+        "acompressor=threshold=-20dB:ratio=2.0:attack=15:release=120:makeup=2.2",
+        "alimiter=limit=0.95",
       ].join(",");
 
   return new Promise((resolve, reject) => {
@@ -531,11 +546,13 @@ async function fetchGoogleTtsFallback(text, lang = "bn") {
  * Fetch unified audio chunk with 100% Authentic Neural Human Male Voice Priority
  */
 async function synthesizeChunk(chunk, lang = "bn", voice = null, rate = null, gender = "male", pitch = null, engine = "engine-2", elVoice = null) {
+  // Whenever ElevenLabs is configured, use high-fidelity natural studio voice for Bengali
+  // to ensure zero robotic / metallic synthesizer sound across all engines.
   const useElevenLabsFirst = Boolean(
-    lang.startsWith("bn") && engine !== "engine-1" && process.env.ELEVENLABS_API_KEY && (gender !== "female" || elVoice)
+    lang.startsWith("bn") && process.env.ELEVENLABS_API_KEY && (gender !== "female" || elVoice)
   );
-  const resolvedElVoice = useElevenLabsFirst ? resolveElevenLabsVoiceId(elVoice) : "def";
-  const memKey = `v14:${engine}:${resolvedElVoice}:${lang}:${gender}:${voice || "def"}:${rate || "def"}:${pitch || "def"}:${chunk}`;
+  const resolvedElVoice = useElevenLabsFirst ? resolveElevenLabsVoiceId(elVoice || (engine === "engine-1" ? "bill" : "brian")) : "def";
+  const memKey = `v18:${engine}:${resolvedElVoice}:${lang}:${gender}:${voice || "def"}:${rate || "def"}:${pitch || "def"}:${chunk}`;
   if (ttsCache.has(memKey)) {
     return ttsCache.get(memKey);
   }

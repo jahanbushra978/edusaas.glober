@@ -9,7 +9,7 @@ import {
   BookOpen,
 } from "lucide-react";
 import { KIDS_HARAKAT_GAME_LEVELS } from "../../data/kidsGameData";
-import { universalAudioEngine } from "@/lib/quran/audio";
+import { universalAudioEngine, nurQaidaAudioEngine } from "@/lib/quran/audio";
 import {
   playArabicSound,
   playCorrectChime,
@@ -50,15 +50,7 @@ export default function HarakatGame({ onBack, onEarnReward }) {
 
   const playHarakatAudio = useCallback((item) => {
     if (!item) return;
-    if (item.audio) {
-      universalAudioEngine.playWord(item.audio, {
-        onError: () => {
-          if (item.ar) playArabicSound(item.ar);
-        },
-      });
-    } else if (item.ar) {
-      playArabicSound(item.ar);
-    }
+    nurQaidaAudioEngine.play(item);
   }, []);
 
   const startRound = useCallback(() => {

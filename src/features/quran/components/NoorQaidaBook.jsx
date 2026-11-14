@@ -48,7 +48,7 @@ import {
   SPECIAL_PAGES,
   BROKEN_SYLLABLES_DATA,
 } from "../data/noorQaidaPagesData";
-import { universalAudioEngine } from "@/lib/quran/audio";
+import { universalAudioEngine, nurQaidaAudioEngine } from "@/lib/quran/audio";
 import NoorQaidaBubblePopGame from "./NoorQaidaBubblePopGame";
 import NoorQaidaHarufNinjaGame from "./NoorQaidaHarufNinjaGame";
 
@@ -246,13 +246,12 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
     playAllAbortRef.current = true;
     setIsPlayingAll(false);
     setActiveItemId(null);
-    universalAudioEngine.stop();
+    nurQaidaAudioEngine.stop();
   }, [currentPage, activeTab]);
 
-  // Audio Play Function for Any Item (With Pop Burst Visual & Sound)
+  // Audio Play Function for Any Item (With Pop Burst Visual & Sound via NurQaidaAudioEngine)
   const playItemSound = async (item, speed = audioSpeed) => {
     playCuteBubbleSound();
-    const soundKey = typeof item === "string" ? item : (item.sound || item.ar);
     const itemId = typeof item === "string" ? item : (item.id || item.ar);
     setActiveItemId(itemId);
     setPoppingCardId(itemId);
@@ -262,16 +261,14 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
 
     try {
       if (item && item.ayahRef) {
-        await universalAudioEngine.playAyah(
-          item.ayahRef.surah,
-          item.ayahRef.ayah,
-          "alafasy",
+        await nurQaidaAudioEngine.play(
+          { surah: item.ayahRef.surah, ayah: item.ayahRef.ayah },
           { rate: speed }
         );
       } else if (item && item.audioUrl) {
-        await universalAudioEngine.playWord(item.audioUrl, { rate: speed });
+        await nurQaidaAudioEngine.play(item.audioUrl, { rate: speed });
       } else {
-        await universalAudioEngine.playArabicSound(soundKey, { rate: speed });
+        await nurQaidaAudioEngine.play(item, { rate: speed });
       }
     } catch (err) {
       console.warn("Audio play error:", err);
@@ -438,7 +435,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
     if (isPlayingAll) {
       playAllAbortRef.current = true;
       setIsPlayingAll(false);
-      universalAudioEngine.stop();
+      nurQaidaAudioEngine.stop();
       setActiveItemId(null);
       return;
     }
@@ -463,16 +460,14 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
 
         try {
           if (item.ayahRef) {
-            await universalAudioEngine.playAyah(
-              item.ayahRef.surah,
-              item.ayahRef.ayah,
-              "alafasy",
+            await nurQaidaAudioEngine.play(
+              { surah: item.ayahRef.surah, ayah: item.ayahRef.ayah },
               { rate: audioSpeed }
             );
           } else if (item.audioUrl) {
-            await universalAudioEngine.playWord(item.audioUrl, { rate: audioSpeed });
+            await nurQaidaAudioEngine.play(item.audioUrl, { rate: audioSpeed });
           } else {
-            await universalAudioEngine.playArabicSound(item.sound || item.ar, {
+            await nurQaidaAudioEngine.play(item, {
               rate: audioSpeed,
             });
           }

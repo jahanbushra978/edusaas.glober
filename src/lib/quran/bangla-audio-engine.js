@@ -35,9 +35,9 @@ export const BANGLA_VOICE_ENGINES = {
   "engine-2": {
     id: "engine-2",
     code: "engine-2",
-    name: "ইঞ্জিন ২: প্রাকৃতিক মানবিক স্টুডিও কণ্ঠ (ElevenLabs v3)",
-    shortName: "প্রাকৃতিক স্টুডিও কণ্ঠ (v3)",
-    description: "রোবোটিকতামুক্ত স্বাভাবিক মানবিক ও হৃদয়স্পর্শী বাংলা ভয়েস",
+    name: "ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ (স্বাভাবিক ও হৃদয়স্পর্শী)",
+    shortName: "আল-কুরআন স্টুডিও কণ্ঠ",
+    description: "রোবোটিকতামুক্ত স্বাভাবিক মানবিক ও হৃদয়স্পর্শী স্টুডিও বাংলা ভয়েস",
     pitch: "0Hz",
     rate: "-3%",
     isDefault: true,
@@ -45,9 +45,9 @@ export const BANGLA_VOICE_ENGINES = {
   "engine-1": {
     id: "engine-1",
     code: "engine-1",
-    name: "ইঞ্জিন ১: প্রদীপ স্টুডিও (ফ্রি)",
-    shortName: "প্রদীপ স্টুডিও (ফ্রি)",
-    description: "রোবোটিকতামুক্ত এনালগ স্টুডিও মাস্টার্ড বাংলা কণ্ঠ (সীমাহীন ও সম্পূর্ণ ফ্রি)",
+    name: "ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ (অভিজ্ঞ ও শান্ত)",
+    shortName: "ইসলামিক উস্তাদ কণ্ঠ",
+    description: "রোবোটিকতামুক্ত শান্ত, গম্ভীর ও স্পষ্ট স্টুডিও মাস্টার্ড বাংলা কণ্ঠ",
     pitch: "default",
     rate: "default",
     isDefault: false,
@@ -168,7 +168,7 @@ class UniversalBanglaAudioEngine {
     if (!clean) return "";
     const activeEngine = engineOverride || this.getActiveEngine();
     const activeElVoice = elVoiceOverride || this.getActiveElVoice();
-    return `/api/ai/tts?text=${encodeURIComponent(clean)}&lang=bn&gender=male&engine=${encodeURIComponent(activeEngine)}&elVoice=${encodeURIComponent(activeElVoice)}&v=studio-v14`;
+    return `/api/ai/tts?text=${encodeURIComponent(clean)}&lang=bn&gender=male&engine=${encodeURIComponent(activeEngine)}&elVoice=${encodeURIComponent(activeElVoice)}&v=studio-v18`;
   }
 
   /**

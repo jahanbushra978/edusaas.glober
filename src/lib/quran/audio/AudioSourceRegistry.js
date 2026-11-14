@@ -12,8 +12,37 @@
 import { AUDIO_CONFIG } from "./AudioConfig.js";
 import { getQariAudioUrl } from "./QariRegistry.js";
 import { AUTHENTIC_QURAN_WORDS_MAP, resolveWordAudio } from "./QuranWordsAudioMap.js";
+import { NUR_QAIDA_BY_AR, NUR_QAIDA_BY_ID } from "./NurQaidaManifest.js";
 
 export { AUTHENTIC_QURAN_WORDS_MAP, resolveWordAudio };
+
+/**
+ * Wraps single Noorani URLs into multi-mirror candidate URLs (raw GitHub -> jsDelivr)
+ * to guarantee 100% reliable 200 OK playback on Vercel production.
+ */
+export function wrapCandidateUrls(trackOrUrls) {
+  if (!trackOrUrls) return [];
+  const list = Array.isArray(trackOrUrls) ? trackOrUrls : [trackOrUrls];
+  const candidates = [];
+  for (const url of list) {
+    if (!url || typeof url !== "string") continue;
+    if (url.startsWith("/")) {
+      candidates.push(url);
+      continue;
+    }
+    const match = url.match(/sounds\/(chapter\d+)\/([^/]+\.(?:m4a|mp3))/);
+    if (match) {
+      let chapter = match[1];
+      if (/^chapter\d$/.test(chapter)) chapter = chapter.replace("chapter", "chapter0");
+      const filename = match[2];
+      candidates.push(`https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/${chapter}/${filename}`);
+      candidates.push(`https://cdn.jsdelivr.net/gh/nooresahar/noorani@master/sounds/${chapter}/${filename}`);
+    } else {
+      candidates.push(url);
+    }
+  }
+  return [...new Set(candidates)];
+}
 
 // Noorani Qaida Takhti 1: Huruf Mufradat (29 Letters) Track Numbers
 export const NOORANI_TRACK_MAP = {
@@ -115,13 +144,27 @@ export function extractBaseArabicLetter(char) {
  */
 export function resolveLetterAudio(char) {
   const base = extractBaseArabicLetter(char);
+
+  // Check Central Nur Qaida Manifest first (single source of truth with local studio assets)
+  const manifestItem = NUR_QAIDA_BY_AR.get(base) || NUR_QAIDA_BY_ID.get(`mufradat_${base}`);
+  if (manifestItem && manifestItem.candidateUrls && manifestItem.candidateUrls.length > 0) {
+    return {
+      found: true,
+      urls: manifestItem.candidateUrls,
+      assetId: manifestItem.id,
+      baseLetter: base,
+      trackNumber: manifestItem.track,
+    };
+  }
+
   const trackNumber = NOORANI_TRACK_MAP[base];
   const studioFile = ARABIC_LETTER_AUDIO_MAP[base];
   const candidateUrls = [];
 
   if (trackNumber) {
-    candidateUrls.push(`${AUDIO_CONFIG.NOORANI_PRIMARY_CDN}${trackNumber}.m4a`);
+    // Put Raw GitHub first for 100% uptime without jsDelivr 403 issues on Vercel
     candidateUrls.push(`${AUDIO_CONFIG.NOORANI_FALLBACK_CDN}${trackNumber}.m4a`);
+    candidateUrls.push(`${AUDIO_CONFIG.NOORANI_PRIMARY_CDN}${trackNumber}.m4a`);
   }
 
   if (studioFile) {
@@ -185,8 +228,24 @@ export function resolveArabicSoundAudio(text) {
   }
 
   const clean = cleanArabicString(text);
+  const hasHarakat = /[\u064B-\u065F\u0670]/.test(clean);
 
-  // 1. Direct match in Authentic Quran Words Map (WBW CDN / Master Qari recordings)
+  // 1. Direct match in Central Authoritative Nur Qaida Manifest (Single Source of Truth)
+  const manifestItem = NUR_QAIDA_BY_AR.get(clean) ||
+    NUR_QAIDA_BY_AR.get(clean.normalize("NFC")) ||
+    NUR_QAIDA_BY_AR.get(clean.normalize("NFD")) ||
+    (NUR_QAIDA_BY_ID.has(clean) ? NUR_QAIDA_BY_ID.get(clean) : null);
+
+  if (manifestItem && manifestItem.candidateUrls && manifestItem.candidateUrls.length > 0) {
+    return {
+      found: true,
+      urls: manifestItem.candidateUrls,
+      isSequence: false,
+      assetId: manifestItem.id,
+    };
+  }
+
+  // 2. Direct match in Authentic Quran Words Map (WBW CDN / Master Qari recordings)
   const wordMatch = resolveWordAudio(clean);
   if (wordMatch.found) {
     return {
@@ -197,11 +256,14 @@ export function resolveArabicSoundAudio(text) {
     };
   }
 
-  // 2. Direct match in Authentic Tajweed / Noorani Map
+  // 3. Direct match in Authentic Tajweed / Noorani Map
   const vowelledAlifCandidate = clean.length === 2 && clean.endsWith("ا")
     ? clean[0] + "\u064E" + "ا"
     : null;
-  const unvowelledCandidate = clean.replace(/[\u064B-\u065F\u0670]/g, "").trim();
+  
+  // STRICT RULE: Only match unvowelled base letter if the input text itself had NO Harakat!
+  // NEVER substitute an unvowelled letter name (e.g. Baa) for a vowelled Harakat letter (e.g. Bi or Bu).
+  const unvowelledCandidate = !hasHarakat ? clean.replace(/[\u064B-\u065F\u0670]/g, "").trim() : null;
 
   const authenticTrack =
     AUTHENTIC_TAJWEED_AUDIO_MAP[clean] ||
@@ -214,20 +276,20 @@ export function resolveArabicSoundAudio(text) {
     if (Array.isArray(authenticTrack)) {
       return {
         found: true,
-        urls: authenticTrack,
+        urls: authenticTrack.map(u => wrapCandidateUrls(u)).flat(),
         isSequence: true,
         assetId: `tajweed_seq_${clean}`,
       };
     }
     return {
       found: true,
-      urls: [authenticTrack],
+      urls: wrapCandidateUrls(authenticTrack),
       isSequence: false,
       assetId: `tajweed_${clean}`,
     };
   }
 
-  // 2. Single letter with Sukoon (requires preceding Hamzah e.g. جْ -> أَجْ)
+  // 4. Single letter with Sukoon (requires preceding Hamzah e.g. جْ -> أَجْ)
   const isSingleLetterSukoon = /^[\u0621-\u064A]\u0652$/.test(clean);
   if (isSingleLetterSukoon) {
     const hamzaForm = "أَ" + clean;
@@ -235,15 +297,14 @@ export function resolveArabicSoundAudio(text) {
     if (hamzaTrack) {
       return {
         found: true,
-        urls: Array.isArray(hamzaTrack) ? hamzaTrack : [hamzaTrack],
+        urls: wrapCandidateUrls(hamzaTrack),
         isSequence: Array.isArray(hamzaTrack),
         assetId: `sukoon_${clean}`,
       };
     }
   }
 
-  // 3. Pure letter without Harakat -> Takhti 1
-  const hasHarakat = /[\u064B-\u065F\u0670]/.test(clean);
+  // 5. Pure letter without Harakat -> Takhti 1
   if (!hasHarakat) {
     const letterRes = resolveLetterAudio(clean);
     if (letterRes.found) {

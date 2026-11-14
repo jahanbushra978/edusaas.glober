@@ -7,6 +7,19 @@
 
 import { universalAudioEngine } from "./UniversalQuranAudioEngine.js";
 export { universalAudioEngine } from "./UniversalQuranAudioEngine.js";
+
+// Central Global Nur Qaida Audio Engine & Manifest
+export {
+  nurQaidaAudioEngine,
+  useNurQaidaAudio,
+  NurQaidaAudioEngine,
+} from "./NurQaidaAudioEngine.js";
+export {
+  NUR_QAIDA_MANIFEST,
+  NUR_QAIDA_BY_ID,
+  NUR_QAIDA_BY_AR,
+} from "./NurQaidaManifest.js";
+
 export default universalAudioEngine;
 
 export { audioManager } from "./AudioManager.js";
@@ -41,22 +54,24 @@ export {
 
 // Convenient Direct Helper Functions
 export const playArabicLetterSound = (char, options) =>
-  universalAudioEngine.playLetter(char, options);
+  nurQaidaAudioEngine.playLetter(char, options);
 
 export const playQariRecitation = (surahNumber, ayahNumber, qariId, options) =>
   universalAudioEngine.playAyah(surahNumber, ayahNumber, qariId, options);
 
 export const playQuranWordSound = (url, options) =>
-  universalAudioEngine.playWord(url, options);
+  nurQaidaAudioEngine.play(url, options);
 
 export const playArabicWord = (wordOrUrl, options) =>
-  universalAudioEngine.playWord(wordOrUrl, options);
+  nurQaidaAudioEngine.play(wordOrUrl, options);
 
-export const playArabicSound = (text, options, rate) =>
-  universalAudioEngine.playArabicSound(text, options, rate);
+export const playArabicSound = (text, options, rate) => {
+  const opt = typeof options === "function" ? { onEnd: options, rate } : { ...options, rate: options?.rate || rate };
+  return nurQaidaAudioEngine.play(text, opt);
+};
 
 export const playAudioAuto = (target, options) =>
-  universalAudioEngine.play(target, options);
+  nurQaidaAudioEngine.play(target, options);
 
 export const playFeedbackChime = (type) =>
   universalAudioEngine.playChime(type);
