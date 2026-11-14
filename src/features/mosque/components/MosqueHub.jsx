@@ -129,6 +129,7 @@ import { CommunityWelfareModal } from "./modals/CommunityWelfareModal";
 import { CustomDomainModal } from "./modals/CustomDomainModal";
 import { MosqueDiscoveryModal } from "./modals/MosqueDiscoveryModal";
 import { MosqueRegistrationModal } from "./modals/MosqueRegistrationModal";
+import { MosqueUserGuideModal } from "./modals/MosqueUserGuideModal";
 
 const BANGLADESH_DISTRICTS = [
   "গাজীপুর", "ঢাকা", "নারায়ণগঞ্জ", "নরসিংদী", "মানিকগঞ্জ", "মুন্সীগঞ্জ",
@@ -364,6 +365,16 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                 <option value="SUPER_ADMIN">সুপার অ্যাডমিন (Super Admin)</option>
               </select>
             </div>
+
+            {/* User Guide & Manual */}
+            <button
+              onClick={() => setActiveModal("user-guide")}
+              className="px-3 py-1.5 rounded-xl border border-amber-300 dark:border-amber-700/60 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 hover:bg-amber-100 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+              title="মসজিদ সিস্টেমের সহজ ব্যবহার নির্দেশিকা ও গাইড"
+            >
+              <HelpCircle className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <span className="hidden sm:inline">ব্যবহার নির্দেশিকা</span>
+            </button>
 
             {/* Switch to Public Site */}
             <button
@@ -684,6 +695,81 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                     <User className="w-3.5 h-3.5" />
                     <span>আমার ব্যক্তিগত হিসাব</span>
                   </button>
+                </div>
+              </div>
+
+              {/* Quick Feature Guide & Explainer Banner */}
+              <div className="p-4 rounded-3xl bg-gradient-to-r from-stone-50 via-emerald-50/50 to-amber-50/40 dark:from-[#0c1612] dark:via-emerald-950/20 dark:to-amber-950/20 border border-stone-200 dark:border-emerald-900/50 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-200/60 dark:border-emerald-900/40 pb-2.5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-6 h-6 rounded-lg bg-[#0D7A5F] text-white flex items-center justify-center text-xs font-black shadow-2xs">
+                      ℹ️
+                    </span>
+                    <h3 className="text-xs sm:text-sm font-extrabold text-stone-900 dark:text-stone-100">
+                      কোন ফিচারের কী কাজ? (সংক্ষিপ্ত গাইড)
+                    </h3>
+                  </div>
+                  <button
+                    onClick={() => setActiveModal("user-guide")}
+                    className="self-start sm:self-auto text-xs font-black text-[#0D7A5F] dark:text-emerald-400 hover:underline flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>সম্পূর্ণ গাইডবুক পড়ুন</span>
+                    <span>➔</span>
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 text-xs">
+                  <div
+                    onClick={() => setActiveModal("imam-meal")}
+                    className="p-3 rounded-2xl bg-white dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 hover:border-emerald-500 transition cursor-pointer space-y-1"
+                  >
+                    <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
+                      <Utensils className="w-3.5 h-3.5 text-[#0D7A5F]" />
+                      <span>ইমামের খানা ও বদল:</span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
+                      প্রতিদিনের খাবার কার বাড়ি এবং কোনো কারণে না পারলে দায়িত্ব অদলবদল (Swap) আবেদন।
+                    </p>
+                  </div>
+
+                  <div
+                    onClick={() => setActiveTab("members")}
+                    className="p-3 rounded-2xl bg-white dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 hover:border-emerald-500 transition cursor-pointer space-y-1"
+                  >
+                    <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
+                      <Users className="w-3.5 h-3.5 text-[#0D7A5F]" />
+                      <span>চাঁদা ও নাম প্রকাশ সুইচ:</span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
+                      সদস্যের মাসিক ওয়াদা গ্রহণ এবং কমিটির নিয়ন্ত্রণে তালিকা গোপন বা উন্মুক্ত রাখা।
+                    </p>
+                  </div>
+
+                  <div
+                    onClick={() => setActiveModal("purchase-procurement")}
+                    className="p-3 rounded-2xl bg-white dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 hover:border-emerald-500 transition cursor-pointer space-y-1"
+                  >
+                    <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
+                      <Receipt className="w-3.5 h-3.5 text-[#0D7A5F]" />
+                      <span>কেনাকাটা ও ৪-স্বাক্ষর:</span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
+                      মালামাল ক্রয়ের রিকুইজিশন, অনুমোদন, মেমো সংযুক্তকরণ ও প্রিন্টযোগ্য অফিসিয়াল ভাউচার।
+                    </p>
+                  </div>
+
+                  <div
+                    onClick={() => setActiveTab("funds")}
+                    className="p-3 rounded-2xl bg-white dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 hover:border-emerald-500 transition cursor-pointer space-y-1"
+                  >
+                    <div className="flex items-center gap-2 text-emerald-800 dark:text-emerald-300 font-bold">
+                      <Landmark className="w-3.5 h-3.5 text-[#0D7A5F]" />
+                      <span>১০টি ফান্ড ও বেতন:</span>
+                    </div>
+                    <p className="text-[11px] text-stone-500 dark:text-stone-400 leading-snug">
+                      স্বয়ংক্রিয় ডাবল-এন্ট্রি ফান্ড স্থিতি এবং ইমাম-মুয়াজ্জিনের বেতন বিতরণের খতিয়ান।
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1722,6 +1808,11 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
         />
       )}
       {activeModal === "funds" && <FundsModal onClose={() => setActiveModal(null)} />}
+
+      {/* User Guide & Manual Modal */}
+      {activeModal === "user-guide" && (
+        <MosqueUserGuideModal onClose={() => setActiveModal(null)} />
+      )}
     </div>
   );
 }
