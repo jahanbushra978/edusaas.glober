@@ -42,6 +42,8 @@ import {
   LogIn,
   ShoppingBag,
   Wrench,
+  Landmark,
+  Utensils,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -95,6 +97,7 @@ import { CustomDomainModal } from "./modals/CustomDomainModal";
 import { MosqueDiscoveryModal } from "./modals/MosqueDiscoveryModal";
 import { MosqueRegistrationModal } from "./modals/MosqueRegistrationModal";
 import { PublicMosqueWebsite } from "./PublicMosqueWebsite";
+import { MosqueModuleCenter } from "./MosqueModuleCenter";
 
 const BANGLADESH_DISTRICTS = [
   "গাজীপুর",
@@ -318,23 +321,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
     { period: "ডিসেম্বর ২০২৬", short: "ডিসে", expected: 78500, collected: 0, remaining: 78500, paidCount: 0, totalMembers: 25 },
   ];
 
-  // Feature Actions Grid (14 High-Value Modules connecting the full ERP & Super App)
-  const FEATURE_BUTTONS = [
-    { id: "admin-360", icon: "👑", label: "মূল অ্যাডমিন ৩৬০", highlight: true, action: () => setActiveModal("admin-360") },
-    { id: "super-app", icon: "📱", label: "ইসলামিক সুপার অ্যাপ", highlight: true, action: () => setActiveModal("super-app") },
-    { id: "imam-meal", icon: "🍲", label: "ইমাম খানা রোস্টার", highlight: true, action: () => setActiveModal("imam-meal") },
-    { id: "purchase-procurement", icon: "🧾", label: "ক্রয় ও ভাউচার", highlight: true, action: () => setActiveModal("purchase-procurement") },
-    { id: "employee-salary", icon: "👳‍♂️", label: "সম্মানী ও কর্মচারী", action: () => setActiveModal("employee-salary") },
-    { id: "asset-inventory", icon: "🏢", label: "স্থায়ী সম্পদ ও মালামাল", action: () => setActiveModal("asset-inventory") },
-    { id: "community-welfare", icon: "🤝", label: "যাকাত ও কল্যাণ ফান্ড", action: () => setActiveModal("community-welfare") },
-    { id: "master", icon: "📊", label: "মাস্টার হিসাব", action: () => setActiveModal("master-dues") },
-    { id: "maktab", icon: "🏫", label: "নূরানী মক্তব", action: () => setActiveModal("maktab") },
-    { id: "custom-domain", icon: "🌐", label: "কাস্টম ডোমেইন", action: () => setActiveModal("custom-domain") },
-    { id: "discovery", icon: "🔍", label: "মসজিদ খুঁজুন", action: () => setActiveModal("mosque-discovery") },
-    { id: "register", icon: "➕", label: "মসজিদ যুক্ত করুন", action: () => setActiveModal("register-mosque") },
-    { id: "super-admin", icon: "🌐", label: "SaaS প্ল্যাটফর্ম", action: () => setActiveModal("super-admin") },
-    { id: "ai", icon: "🤖", label: "BYOK AI সহকারী", action: () => (onOpenTutor ? onOpenTutor() : setActiveModal("support")) },
-  ];
+
 
   // 10 Segregated Funds (Section 6.6)
   const TEN_FUNDS = [
@@ -543,37 +530,17 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
            ══════════════════════════════════════════════════════════════════ */}
         {activeTab === "dashboard" && (
           <div className="space-y-3 animate-in fade-in duration-200">
-            {/* Feature Action Buttons Grid (Full 14 ERP Modules) */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between px-1">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-4 bg-emerald-600 rounded-full inline-block"></span>
-                  <span className="text-xs font-bold text-stone-800 dark:text-stone-200">
-                    পূর্ণাঙ্গ মসজিদ ERP ও সেবা মডিউলসমূহ
-                  </span>
-                </div>
-                <span className="text-[10px] text-stone-400">১৪টি কার্যকরী মডিউল</span>
-              </div>
-
-              <div className="grid grid-cols-4 gap-2">
-                {FEATURE_BUTTONS.map((btn) => (
-                  <div
-                    key={btn.id}
-                    onClick={btn.action}
-                    className={`p-2.5 rounded-2xl flex flex-col items-center justify-center text-center cursor-pointer transition shadow-2xs hover:shadow-sm active:scale-95 min-h-[82px] border ${
-                      btn.highlight
-                        ? "bg-gradient-to-b from-white to-emerald-50 dark:from-[#0c1612] dark:to-emerald-950/40 border-emerald-400 dark:border-emerald-600"
-                        : "bg-white dark:bg-[#0c1612] border-stone-200 dark:border-emerald-900/50 hover:border-emerald-500"
-                    }`}
-                  >
-                    <span className="text-2xl mb-1 leading-none">{btn.icon}</span>
-                    <span className="text-[11px] font-bold text-stone-800 dark:text-stone-200 leading-tight">
-                      {btn.label}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </div>
+            {/* ══════════════════════════════════════════════════════════════
+                PREMIUM MOSQUE ERP MODULE CENTER (7 Categories & Search)
+               ══════════════════════════════════════════════════════════════ */}
+            <MosqueModuleCenter
+              onOpenModal={(modalId) => setActiveModal(modalId)}
+              onOpenQuranReader={onOpenQuranReader}
+              onOpenTutor={onOpenTutor}
+              onSelectTab={(tabId) => setActiveTab(tabId)}
+              onOpenPublicSite={() => setViewMode("public")}
+              currentMosque={currentMosque}
+            />
 
             {/* Dashboard Section Title */}
             <div className="flex items-center justify-between px-1 pt-2">
@@ -594,7 +561,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
 
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-semibold text-emerald-100 flex items-center gap-1.5">
-                  <span>🏛️</span>
+                  <Landmark className="w-4 h-4 text-emerald-200" />
                   <span>আসসালামু আলাইকুম · মোট তহবিল স্থিতি</span>
                 </span>
                 <span className="text-[10px] px-2 py-0.5 rounded-full bg-white/20 font-bold font-mono">
@@ -728,7 +695,9 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 flex items-center justify-between shadow-2xs cursor-pointer hover:border-emerald-500 transition"
             >
               <div className="flex items-center gap-2.5">
-                <span className="text-2xl">🍲</span>
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                  <Utensils className="w-5 h-5" />
+                </div>
                 <div>
                   <h4 className="text-xs font-black text-emerald-900 dark:text-emerald-200">
                     ইমাম সাহেবের আজকের খাবার দায়িত্ব
