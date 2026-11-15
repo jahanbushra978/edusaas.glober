@@ -4,13 +4,18 @@ import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Building2, CheckCircle2, MapPin, Search, Edit3, 
-  Save, X
+  Save, X, Landmark, Phone, User
 } from "lucide-react";
+import {
+  getMosqueOnboardingRequests,
+  approveMosqueOnboardingRequest,
+} from "@/features/mosque/services/mosqueStorage";
 
 export default function OnboardingRequestsPage() {
   const [requests, setRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
+  const [typeFilter, setTypeFilter] = useState("all"); // "all" | "institute" | "mosque"
   const [searchTerm, setSearchTerm] = useState("");
   
   // Selected request for customization
@@ -21,11 +26,55 @@ export default function OnboardingRequestsPage() {
   const fetchRequests = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/onboarding-requests");
-      const json = await res.json();
-      if (json.ok && Array.isArray(json.data)) {
-        setRequests(json.data);
+      // 1. Fetch remote requests from API
+      let remoteRequests = [];
+      try {
+        const res = await fetch("/api/admin/onboarding-requests");
+        const json = await res.json();
+        if (json.ok && Array.isArray(json.data)) {
+          remoteRequests = json.data;
+        }
+      } catch (e) {
+        console.warn("Could not fetch remote onboarding requests:", e);
       }
+
+      // 2. Fetch local mosque requests from mosqueStorage
+      const localMosqueRequests = getMosqueOnboardingRequests().map((m) => ({
+        id: m.id,
+        name_bn: m.name || m.name_bn,
+        name_en: m.name_en || m.name,
+        slug: m.slug,
+        address: m.address,
+        type: "মসজিদ কমপ্লেক্স",
+        approval_status: m.approval_status || "pending_approval",
+        is_active: m.is_active || false,
+        created_at: m.submittedAt,
+        metadata: {
+          submitterName: m.submitterName,
+          submitterPhone: m.submitterPhone,
+          submitterEmail: m.submitterEmail,
+          submitterRole: m.submitterRole,
+          imamName: m.imamName,
+          imamPhone: m.imamPhone,
+          musalliCapacity: m.musalliCapacity,
+          facilities: m.facilities,
+          establishedYear: m.establishedYear,
+          trackingId: m.id,
+          mosqueId: m.mosqueId,
+        },
+      }));
+
+      // Combine without duplicates (by tracking ID or slug)
+      const seenIds = new Set(remoteRequests.map((r) => r.id || r.metadata?.trackingId));
+      const combined = [...remoteRequests];
+      localMosqueRequests.forEach((lm) => {
+        if (!seenIds.has(lm.id)) {
+          combined.push(lm);
+          seenIds.add(lm.id);
+        }
+      });
+
+      setRequests(combined);
     } catch (err) {
       console.error(err);
     } finally {
@@ -37,18 +86,29 @@ export default function OnboardingRequestsPage() {
     fetchRequests();
   }, []);
 
-  const handleApprove = async (id) => {
+  const handleApprove = async (id, item) => {
     try {
+      const isMosque = item?.type === "মসজিদ কমপ্লেক্স" || String(id).startsWith("MREQ-") || item?.metadata?.facilities;
+      
+      if (isMosque) {
+        // Approve locally in mosqueStorage
+        const resStorage = approveMosqueOnboardingRequest(id, "সুপার এডমিন (Platform Owner)");
+        if (resStorage.ok) {
+          setToastMsg(`✅ মাশাআল্লাহ! "${item?.name_bn || 'মসজিদ'}" সফলভাবে অনুমোদন ও লাইভ করা হয়েছে!`);
+        }
+      }
+
+      // Also call backend API
       const res = await fetch("/api/admin/onboarding-requests", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, action: "approve" }),
       });
       const json = await res.json();
-      if (json.ok) {
+      if (json.ok && !toastMsg) {
         setToastMsg("✅ " + json.message);
-        fetchRequests();
       }
+      fetchRequests();
     } catch (err) {
       console.error(err);
     }
@@ -84,10 +144,25 @@ export default function OnboardingRequestsPage() {
     const matchesSearch = (r.name_bn || r.name_en || r.slug || "")
       .toLowerCase()
       .includes(searchTerm.toLowerCase());
-    if (filterStatus === "all") return matchesSearch;
-    if (filterStatus === "pending") return matchesSearch && (r.approval_status === "pending_approval" || !r.approval_status);
-    if (filterStatus === "approved") return matchesSearch && r.approval_status === "approved";
-    return matchesSearch;
+    
+    // Status Filter
+    let matchesStatus = true;
+    if (filterStatus === "pending") {
+      matchesStatus = r.approval_status === "pending_approval" || !r.approval_status;
+    } else if (filterStatus === "approved") {
+      matchesStatus = r.approval_status === "approved";
+    }
+
+    // Type Filter (Madrasa/School vs Mosque)
+    const isMosque = r.type === "মসজিদ কমপ্লেক্স" || String(r.id).startsWith("MREQ-") || r.metadata?.facilities;
+    let matchesType = true;
+    if (typeFilter === "mosque") {
+      matchesType = isMosque;
+    } else if (typeFilter === "institute") {
+      matchesType = !isMosque;
+    }
+
+    return matchesSearch && matchesStatus && matchesType;
   });
 
   return (
@@ -97,13 +172,13 @@ export default function OnboardingRequestsPage() {
         <div>
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs font-bold mb-2">
             <Building2 className="h-3.5 w-3.5 text-emerald-600" />
-            <span>EduSaaS ওয়েবসাইট এপ্রুভাল প্যানেল</span>
+            <span>EduSaaS প্রতিষ্ঠান ও মসজিদ এপ্রুভাল প্যানেল</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black text-slate-900 font-serif">
             অনলাইন তথ্য ফরম রিকোয়েস্টসমূহ (Onboarding Requests)
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 mt-1">
-            ল্যান্ডিং পেজ থেকে ইউজারদের জমা দেওয়া তথ্য রিভিও করুন, এপ্রুভ করে লাইভ করুন অথবা কাস্টমাইজ করুন।
+            মাদরাসা, স্কুল ও মসজিদ কমপ্লেক্সের তথ্য রিভিও করুন, ১-ক্লিকে এপ্রুভ করে স্বয়ংক্রিয়ভাবে লাইভ করুন।
           </p>
         </div>
       </div>
@@ -114,6 +189,40 @@ export default function OnboardingRequestsPage() {
           <button onClick={() => setToastMsg("")} className="text-slate-500 hover:text-slate-800 font-black">✕</button>
         </div>
       )}
+
+      {/* Category Tabs: All, Madrasa/School, Mosque */}
+      <div className="flex flex-wrap gap-2 pt-1">
+        {[
+          { key: "all", label: "🏢 সকল প্রতিষ্ঠান", count: requests.length },
+          { 
+            key: "institute", 
+            label: "🏫 মাদরাসা ও স্কুল", 
+            count: requests.filter((r) => !(r.type === "মসজিদ কমপ্লেক্স" || String(r.id).startsWith("MREQ-") || r.metadata?.facilities)).length 
+          },
+          { 
+            key: "mosque", 
+            label: "🕌 মসজিদ কমপ্লেক্স", 
+            count: requests.filter((r) => r.type === "মসজিদ কমপ্লেক্স" || String(r.id).startsWith("MREQ-") || r.metadata?.facilities).length 
+          },
+        ].map((cat) => (
+          <button
+            key={cat.key}
+            onClick={() => setTypeFilter(cat.key)}
+            className={`px-4 py-2 text-xs font-bold rounded-xl transition-all flex items-center gap-2 cursor-pointer ${
+              typeFilter === cat.key
+                ? "bg-emerald-800 text-white shadow-md"
+                : "bg-white text-slate-700 border border-slate-200 hover:bg-slate-50"
+            }`}
+          >
+            <span>{cat.label}</span>
+            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-mono ${
+              typeFilter === cat.key ? "bg-white/20 text-white" : "bg-slate-100 text-slate-600"
+            }`}>
+              {cat.count}
+            </span>
+          </button>
+        ))}
+      </div>
 
       {/* Filter & Search Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200 shadow-sm">
@@ -136,7 +245,7 @@ export default function OnboardingRequestsPage() {
             <button
               key={tab.key}
               onClick={() => setFilterStatus(tab.key)}
-              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all ${
+              className={`px-4 py-2 text-xs font-bold rounded-xl transition-all cursor-pointer ${
                 filterStatus === tab.key
                   ? "bg-[#052E2B] text-white shadow-md"
                   : "bg-slate-100 text-slate-600 hover:bg-slate-200"
@@ -162,18 +271,30 @@ export default function OnboardingRequestsPage() {
           {filteredRequests.map((item) => {
             const isApproved = item.approval_status === "approved";
             const meta = item.metadata || {};
+            const isMosqueItem = item.type === "মসজিদ কমপ্লেক্স" || String(item.id).startsWith("MREQ-") || meta.facilities;
+
             return (
               <div key={item.id} className="bg-white rounded-2xl border border-slate-200 p-5 shadow-sm hover:shadow-md transition-shadow relative flex flex-col justify-between">
                 <div>
-                  {/* Status Badge */}
-                  <div className="flex justify-between items-start mb-3">
-                    <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
-                      isApproved ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-amber-100 text-amber-800 border border-amber-300"
-                    }`}>
-                      {isApproved ? "✓ লাইভ (Approved)" : "⏳ পেন্ডিং (Pending)"}
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      {new Date(item.created_at || Date.now()).toLocaleDateString("bn-BD")}
+                  {/* Status & Type Badges */}
+                  <div className="flex justify-between items-start mb-3 gap-2">
+                    <div className="flex items-center gap-1.5 flex-wrap">
+                      <span className={`px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        isApproved ? "bg-emerald-100 text-emerald-800 border border-emerald-300" : "bg-amber-100 text-amber-800 border border-amber-300"
+                      }`}>
+                        {isApproved ? "✓ লাইভ (Approved)" : "⏳ পেন্ডিং (Pending)"}
+                      </span>
+                      <span className={`px-2 py-0.5 rounded-md text-[10px] font-bold flex items-center gap-1 ${
+                        isMosqueItem 
+                          ? "bg-teal-50 text-teal-800 border border-teal-200" 
+                          : "bg-blue-50 text-blue-800 border border-blue-200"
+                      }`}>
+                        {isMosqueItem ? "🕌 মসজিদ" : "🏫 প্রতিষ্ঠান"}
+                      </span>
+                    </div>
+
+                    <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                      {meta.trackingId || item.id}
                     </span>
                   </div>
 
@@ -183,8 +304,41 @@ export default function OnboardingRequestsPage() {
                   </p>
 
                   <div className="bg-slate-50 rounded-xl p-3 text-xs space-y-1.5 border border-slate-100 mb-4 font-medium">
-                    <p className="text-slate-700">👤 <strong>আবেদনকারী:</strong> {meta.submitterName || "নির্ধারিত নয়"}</p>
-                    <p className="text-slate-700">📞 <strong>মোবাইল:</strong> {meta.submitterPhone || "01576600265"}</p>
+                    <p className="text-slate-700 flex items-center gap-1">
+                      <User className="h-3 w-3 text-slate-400" />
+                      <strong>আবেদনকারী:</strong> {meta.submitterName || "নির্ধারিত নয়"} {meta.submitterRole ? `(${meta.submitterRole})` : ""}
+                    </p>
+                    <p className="text-slate-700 flex items-center gap-1">
+                      <Phone className="h-3 w-3 text-slate-400" />
+                      <strong>মোবাইল:</strong> {meta.submitterPhone || "01700000000"}
+                    </p>
+
+                    {isMosqueItem && meta.imamName && (
+                      <p className="text-emerald-800 flex items-center gap-1">
+                        <Landmark className="h-3 w-3 text-emerald-600" />
+                        <strong>পেশ ইমাম:</strong> {meta.imamName} {meta.imamPhone ? `(${meta.imamPhone})` : ""}
+                      </p>
+                    )}
+
+                    {isMosqueItem && meta.musalliCapacity && (
+                      <p className="text-slate-600">
+                        👥 <strong>ধারণক্ষমতা:</strong> {meta.musalliCapacity} জন মুসল্লি
+                      </p>
+                    )}
+
+                    {isMosqueItem && Array.isArray(meta.facilities) && meta.facilities.length > 0 && (
+                      <div className="pt-1 flex flex-wrap gap-1">
+                        {meta.facilities.slice(0, 3).map((f, idx) => (
+                          <span key={idx} className="px-1.5 py-0.5 rounded bg-emerald-50 text-[9px] text-emerald-800 font-bold border border-emerald-200">
+                            ✓ {f}
+                          </span>
+                        ))}
+                        {meta.facilities.length > 3 && (
+                          <span className="text-[9px] text-slate-400 font-bold">+{meta.facilities.length - 3}টি</span>
+                        )}
+                      </div>
+                    )}
+
                     {item.map_link && (
                       <p className="text-emerald-700 truncate">🗺️ <strong>ম্যাপ লিঙ্ক:</strong> <a href={item.map_link} target="_blank" rel="noopener noreferrer" className="underline">গুগল ম্যাপ দেখুন</a></p>
                     )}
@@ -198,8 +352,8 @@ export default function OnboardingRequestsPage() {
                 <div className="pt-3 border-t border-slate-100 flex gap-2">
                   {!isApproved && (
                     <button
-                      onClick={() => handleApprove(item.id)}
-                      className="flex-1 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-xs hover:opacity-90 shadow-sm flex items-center justify-center gap-1"
+                      onClick={() => handleApprove(item.id, item)}
+                      className="flex-1 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-bold text-xs hover:opacity-90 shadow-sm flex items-center justify-center gap-1 cursor-pointer"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5" />
                       <span>এপ্রুভ ও লাইভ করুন</span>
@@ -207,7 +361,7 @@ export default function OnboardingRequestsPage() {
                   )}
                   <button
                     onClick={() => setEditingItem(item)}
-                    className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1"
+                    className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1 cursor-pointer"
                   >
                     <Edit3 className="h-3.5 w-3.5 text-slate-600" />
                     <span>কাস্টমাইজ</span>

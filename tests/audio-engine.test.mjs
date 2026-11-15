@@ -129,6 +129,10 @@ test("4. EveryAyah CDN Ayah URL Generation & Canonical Shaykh Registry", () => {
   const switchedUrl = switchAudioUrlQari(alafasyUrl, "abdul_basit");
   assert.equal(switchedUrl, "https://everyayah.com/data/Abdul_Basit_Murattal_192kbps/112004.mp3");
 
+  const selectedQariAudio = resolveAyahAudio(112, 4, "abdul_basit");
+  assert.deepEqual(selectedQariAudio.urls, [switchedUrl]);
+  assert.equal(selectedQariAudio.qariId, "abdul_basit");
+
   // Persistent preference save & retrieve
   setActiveShaykhId("sudais");
   assert.equal(getActiveShaykhId(), "sudais");

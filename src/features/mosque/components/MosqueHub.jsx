@@ -48,6 +48,7 @@ import {
   getMemberPrivateStatement,
   exportDatabaseBackupJSON,
   restoreDatabaseBackupJSON,
+  switchActiveMosque,
 } from "../services/mosqueStorage";
 
 // Redesigned Module Launcher & Public Website
@@ -103,6 +104,7 @@ import { CommunityWelfareModal } from "./modals/CommunityWelfareModal";
 import { CustomDomainModal } from "./modals/CustomDomainModal";
 import { MosqueDiscoveryModal } from "./modals/MosqueDiscoveryModal";
 import { MosqueRegistrationModal } from "./modals/MosqueRegistrationModal";
+import { MosqueApprovalsModal } from "./modals/MosqueApprovalsModal";
 import { MosqueUserGuideModal } from "./modals/MosqueUserGuideModal";
 import PageTutorialModal from "@/features/admin/components/tutorials/PageTutorialModal";
 
@@ -331,6 +333,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
         onOpenDiscovery={() => setActiveModal("mosque-discovery")}
         onOpenCustomDomain={() => setActiveModal("custom-domain")}
         onOpenMaktab={() => setActiveModal("maktab")}
+        onOpenRegisterMosque={() => setActiveModal("register-mosque")}
         onNavigateBack={onNavigateBack}
         members={db.members}
       />
@@ -420,6 +423,19 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               <BookOpen className="w-3.5 h-3.5 text-[#0D7A5F] shrink-0" />
               <span className="hidden sm:inline">গাইড</span>
             </button>
+
+            {/* Mosque Onboarding Approvals Center */}
+            {(currentUserRole === "PRESIDENT" || currentUserRole === "SUPER_ADMIN") && (
+              <button
+                type="button"
+                onClick={() => setActiveModal("mosque-approvals")}
+                className="px-3 py-1.5 rounded-xl border border-amber-500/40 bg-amber-50 dark:bg-amber-950/40 text-amber-900 dark:text-amber-200 text-xs font-bold shadow-2xs flex items-center gap-1.5 transition cursor-pointer"
+                title="নতুন মসজিদের অনবোর্ডিং আবেদনসমূহ অনুমোদন করুন"
+              >
+                <Landmark className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span className="hidden sm:inline">অনুমোদন কেন্দ্র</span>
+              </button>
+            )}
 
             {/* Switch to Public Site */}
             <button
@@ -1969,9 +1985,8 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
         <MosqueDiscoveryModal
           onClose={() => setActiveModal(null)}
           onSelectMosque={(m, mode) => {
-            const updatedDb = getMosqueDatabase();
-            updatedDb.mosque = { ...updatedDb.mosque, ...m };
-            saveMosqueDatabase(updatedDb);
+            switchActiveMosque(m.id);
+            const updatedDb = getMosqueDatabase(m.id);
             setDb(updatedDb);
             setViewMode(mode);
           }}
@@ -1982,12 +1997,26 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
       {activeModal === "register-mosque" && (
         <MosqueRegistrationModal
           onClose={() => setActiveModal(null)}
-          onMosqueRegistered={(newM) => {
-            const updatedDb = getMosqueDatabase();
-            updatedDb.mosque = { ...updatedDb.mosque, ...newM };
-            saveMosqueDatabase(updatedDb);
+          onMosqueRegistered={() => {
+            // New request is pending admin review & approval
+          }}
+          onOpenDiscovery={() => setActiveModal("mosque-discovery")}
+        />
+      )}
+
+      {activeModal === "mosque-approvals" && (
+        <MosqueApprovalsModal
+          onClose={() => setActiveModal(null)}
+          onMosqueApproved={() => {
+            toast.success("নতুন মসজিদ সফলভাবে অনুমোদিত ও লাইভ হয়েছে!");
+          }}
+          onLaunchMosque={(req) => {
+            switchActiveMosque(req.mosqueId);
+            const updatedDb = getMosqueDatabase(req.mosqueId);
             setDb(updatedDb);
-            setViewMode("erp");
+            setViewMode("public");
+            setActiveModal(null);
+            toast.info(`"${req.name}"-এর পাবলিক ওয়েবসাইটে প্রবেশ করা হয়েছে।`);
           }}
         />
       )}

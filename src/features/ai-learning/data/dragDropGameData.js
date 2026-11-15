@@ -56,7 +56,7 @@ export const DRAG_DROP_LEVELS = [
     letters: [
       { ar: "دَرَسَ", nameBn: "দারাছা (সে পাঠ করেছে)", color: "from-purple-500 to-violet-600", audio: "https://audio.qurancdn.com/wbw/006_105_004.mp3", tip: "দাল যবর দা, র যবর রা, সীন যবর ছা" },
       { ar: "كَتَبَ", nameBn: "কাতাবা (সে লিখেছে)", color: "from-emerald-600 to-teal-700", audio: "https://audio.qurancdn.com/wbw/002_183_004.mp3", tip: "কাফ যবর কা, তা যবর তা, বা যবর বা" },
-      { ar: "وَلَدَ", nameBn: "ওয়ালাদা (সন্তান জন্ম দিয়েছে)", color: "from-rose-500 to-pink-600", audio: "https://audio.qurancdn.com/wbw/112_003_002.mp3", tip: "ওয়াও যবর ওয়া, লাম যবর লা, দাল যবর দা" },
+      { ar: "وَلَدَ", nameBn: "ওয়ালাদা (সন্তান জন্ম দিয়েছে)", color: "from-rose-500 to-pink-600", audioStatus: "unverified", tip: "ওয়াও যবর ওয়া, লাম যবর লা, দাল যবর দা" },
     ],
   },
   {
@@ -67,7 +67,7 @@ export const DRAG_DROP_LEVELS = [
     letters: [
       { ar: "بً", nameBn: "বা দুই যবর বান", color: "from-amber-600 to-orange-700", audio: "https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/chapter05/Page9-18.m4a", tip: "দুই যবর উপরে নূনসহ 'আন' আওয়াজ দেয়" },
       { ar: "تٍ", nameBn: "তা দুই যের তিন", color: "from-blue-600 to-indigo-700", audio: "https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/chapter05/Page10-17.m4a", tip: "দুই যের নিচে নূনসহ 'ইন' আওয়াজ দেয়" },
-      { ar: "ثٌ", nameBn: "ছা দুই পেশ ছুন", color: "from-emerald-600 to-teal-700", audio: "https://raw.githubusercontent.com/nooresahar/noorani/master/sounds/chapter05/Page10-21.m4a", tip: "দুই পেশ উপরে নূনসহ 'উন' আওয়াজ দেয়" },
+      { ar: "ثٌ", nameBn: "ছা দুই পেশ ছুন", color: "from-emerald-600 to-teal-700", audioStatus: "unverified", tip: "দুই পেশ উপরে নূনসহ 'উন' আওয়াজ দেয়" },
     ],
   },
   {

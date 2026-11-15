@@ -143,6 +143,11 @@ export function extractBaseArabicLetter(char) {
  * @returns {{ found: boolean, urls: string[], assetId: string, trackNumber?: number }}
  */
 export function resolveLetterAudio(char) {
+  if (/[\u064B-\u065F\u0670]/.test(String(char))) {
+    const sound = resolveArabicSoundAudio(char);
+    return { ...sound, baseLetter: extractBaseArabicLetter(char) };
+  }
+
   const base = extractBaseArabicLetter(char);
 
   // Check Central Nur Qaida Manifest first (single source of truth with local studio assets)
@@ -335,13 +340,10 @@ export function resolveArabicSoundAudio(text) {
  */
 export function resolveAyahAudio(surahNumber, ayahNumber, qariId = "alafasy") {
   const url = getQariAudioUrl(qariId, surahNumber, ayahNumber);
-  const fallbackUrl = qariId !== "alafasy"
-    ? getQariAudioUrl("alafasy", surahNumber, ayahNumber)
-    : getQariAudioUrl("husary_muallim", surahNumber, ayahNumber);
 
   return {
     found: true,
-    urls: [url, fallbackUrl],
+    urls: [url],
     assetId: `ayah_${surahNumber}_${ayahNumber}_${qariId}`,
     surahNumber,
     ayahNumber,

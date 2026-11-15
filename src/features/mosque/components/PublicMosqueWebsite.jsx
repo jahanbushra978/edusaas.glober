@@ -63,6 +63,7 @@ export function PublicMosqueWebsite({
   onOpenDiscovery,
   onOpenCustomDomain,
   onOpenMaktab,
+  onOpenRegisterMosque,
   onNavigateBack,
   members = [],
 }) {
@@ -277,6 +278,18 @@ export function PublicMosqueWebsite({
               >
                 <Search className="w-4 h-4" />
               </button>
+
+              {onOpenRegisterMosque && (
+                <button
+                  type="button"
+                  onClick={onOpenRegisterMosque}
+                  className="hidden md:flex px-3.5 py-2 rounded-2xl bg-emerald-700 hover:bg-emerald-600 text-white font-bold text-xs items-center gap-1.5 cursor-pointer shadow-xs transition"
+                  title="আপনার মসজিদ Edusaas প্ল্যাটফর্মে যুক্ত করুন"
+                >
+                  <Building2 className="w-3.5 h-3.5" />
+                  <span>+ মসজিদ যুক্ত করুন</span>
+                </button>
+              )}
 
               <button
                 type="button"
@@ -705,6 +718,27 @@ export function PublicMosqueWebsite({
                   পোর্টালে প্রবেশ করুন ➔
                 </button>
               </div>
+
+              {/* Onboard Mosque Call-to-Action Bar */}
+              {onOpenRegisterMosque && (
+                <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-800 to-teal-900 border border-emerald-400/40 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-md">
+                  <div className="flex items-center gap-2.5">
+                    <Building2 className="w-6 h-6 text-emerald-300 shrink-0" />
+                    <div>
+                      <b className="text-white text-sm block">আপনার মসজিদ কি এখনো Edusaas প্ল্যাটফর্মে যুক্ত করেননি?</b>
+                      <span className="text-emerald-100 text-[11px]">মাত্র ২ মিনিটে তথ্য ফরম পূরণ করুন। এডমিন রিভিউ ও অনুমোদন শেষে পাবেন নিজস্ব ফ্রি ওয়েবসাইট ও পূর্ণাঙ্গ ডিজিটাল ইআরপি!</span>
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={onOpenRegisterMosque}
+                    className="px-5 py-2.5 rounded-xl bg-amber-400 hover:bg-amber-300 text-stone-950 font-black transition cursor-pointer shadow-xs shrink-0 self-start sm:self-center"
+                  >
+                    + আপনার মসজিদ যুক্ত করুন ➔
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* ── [PILLAR E]: ONGOING PROJECTS & QUICK DONATION ── */}

@@ -14,6 +14,7 @@ import { DRAG_DROP_LEVELS } from "../src/features/ai-learning/data/dragDropGameD
 import {
   KIDS_HARAKAT_GAME_LEVELS,
   KIDS_MEMORY_GAME_LEVELS,
+  KIDS_TANWEEN_DATA,
   KIDS_TASHDEED_DATA,
   KIDS_MADD_DATA,
 } from "../src/features/ai-learning/data/kidsGameData.js";
@@ -99,6 +100,23 @@ describe("Complete Quran Learning Audio Resolution Test Suite", () => {
         assert.ok(soundRes.urls.length > 0, `Level ${lvl.id} word "${item.ar}" must have at least one URL`);
       });
     });
+  });
+
+  it("keeps Qaida words without an exact recording unverified and out of playback", () => {
+    const item = DRAG_DROP_LEVELS.find((level) => level.id === 5)?.letters.find((entry) => entry.ar === "وَلَدَ");
+    const unverifiedTanween = KIDS_TANWEEN_DATA.filter((entry) => entry.audioStatus === "unverified");
+    const unverifiedThaa = DRAG_DROP_LEVELS.find((level) => level.id === 6)?.letters.find((entry) => entry.ar === "ثٌ");
+
+    assert.ok(item, "The lesson word must remain available for the exercise");
+    assert.equal(item.audio, undefined, "An unverified word must not point at another word's recording");
+    assert.equal(item.audioStatus, "unverified");
+    assert.equal(resolveArabicSoundAudio(item.ar).found, false);
+    assert.deepEqual(unverifiedTanween.map((entry) => entry.ar), ["مً", "مٍ", "مٌ"]);
+    assert.equal(unverifiedThaa?.audio, undefined);
+    assert.equal(unverifiedThaa?.audioStatus, "unverified");
+    for (const token of [...unverifiedTanween, unverifiedThaa]) {
+      assert.equal(resolveArabicSoundAudio(token.ar).found, false);
+    }
   });
 
   it("resolves words in Harakat Master Game (Levels 6 - 9)", () => {

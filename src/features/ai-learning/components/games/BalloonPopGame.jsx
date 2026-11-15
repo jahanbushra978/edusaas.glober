@@ -147,7 +147,7 @@ export const BALLOON_LEVELS = [
       { ar: "بَ", correct: false, sound: "بَ", nameBn: "বা যবর বা" },
       { ar: "تٍ", correct: true, sound: "تٍ", nameBn: "তা দুই যের তিন" },
       { ar: "تِ", correct: false, sound: "تِ", nameBn: "তা যের তি" },
-      { ar: "ثٌ", correct: true, sound: "ثٌ", nameBn: "ছা দুই পেশ ছুন" },
+      { ar: "ثٌ", correct: true, sound: "ثٌ", nameBn: "ছা দুই পেশ ছুন", audioStatus: "unverified" },
       { ar: "جَ", correct: false, sound: "جَ", nameBn: "জীম যবর জা" },
     ],
   },
@@ -204,6 +204,7 @@ export default function BalloonPopGame({ onBack, onEarnReward }) {
   const [isCelebrationOpen, setIsCelebrationOpen] = useState(false);
   const [newlyEarnedComponent, setNewlyEarnedComponent] = useState(null);
   const [isTeachModalOpen, setIsTeachModalOpen] = useState(false);
+  const [audioNotice, setAudioNotice] = useState(null);
 
   const activeLevel =
     BALLOON_LEVELS.find((l) => l.id === currentLevelId) || BALLOON_LEVELS[0];
@@ -214,6 +215,7 @@ export default function BalloonPopGame({ onBack, onEarnReward }) {
     setFloatingScoreTag(null);
     setShakeIndex(null);
     setIsWon(false);
+    setAudioNotice(null);
   }, []);
 
   useEffect(() => {
@@ -234,7 +236,12 @@ export default function BalloonPopGame({ onBack, onEarnReward }) {
     if (item.correct) {
       // 🎈 Realistic Vina-Kids Balloon Pop Reaction
       playRealisticBalloonPop();
-      playArabicSound(item.sound);
+      if (item.audioStatus === "unverified") {
+        setAudioNotice("এই হরকতের নির্ভরযোগ্য ক্বারী রেকর্ডিং যাচাই হয়নি; তাই অডিও বাজানো হয়নি।");
+      } else {
+        setAudioNotice(null);
+        playArabicSound(item.sound);
+      }
       playStarPopSound(1);
 
       // Trigger pop explosion animation
@@ -274,7 +281,12 @@ export default function BalloonPopGame({ onBack, onEarnReward }) {
     } else {
       // Wrong item wiggle
       playWrongBuzzer();
-      playArabicSound(item.sound);
+      if (item.audioStatus === "unverified") {
+        setAudioNotice("এই হরকতের নির্ভরযোগ্য ক্বারী রেকর্ডিং যাচাই হয়নি; তাই অডিও বাজানো হয়নি।");
+      } else {
+        setAudioNotice(null);
+        playArabicSound(item.sound);
+      }
       setShakeIndex(idx);
       setTimeout(() => setShakeIndex(null), 500);
     }
@@ -424,6 +436,7 @@ export default function BalloonPopGame({ onBack, onEarnReward }) {
           {activeLevel.instructionBn}
         </p>
       </div>
+      {audioNotice && <p className="relative z-10 text-center text-sm font-bold text-amber-900" role="status">{audioNotice}</p>}
 
       {/* ── 🎈 VINA-KIDS STYLE REAL FLOATING BALLOONS PLAYGROUND ── */}
       <div className="relative z-10 min-h-[340px] sm:min-h-[380px] p-2 flex items-center justify-center">

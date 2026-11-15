@@ -69,6 +69,10 @@ export default function KidsLesson({
 
   // Audio Player for Current Item via Central Universal Audio Engine
   const playItemAudio = useCallback(() => {
+    if (currentItem?.audioStatus === "unverified") {
+      setMascotText("এই পাঠের নির্ভরযোগ্য ক্বারী রেকর্ডিং যাচাই হয়নি; তাই অডিও বাজানো হয়নি।");
+      return;
+    }
     if (currentItem?.audio) {
       universalAudioEngine.playWord(currentItem.audio, {
         onError: () => {

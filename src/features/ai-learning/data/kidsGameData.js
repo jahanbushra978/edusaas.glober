@@ -425,9 +425,9 @@ export const KIDS_TANWEEN_DATA = [
   { ar: "تً", nameBn: "তা দুই যবর তান", symbol: "ً", type: "দুই যবর", sound: "তান", base: "ت" },
   { ar: "تٍ", nameBn: "তা দুই যের তিন", symbol: "ٍ", type: "দুই যের", sound: "তিন", base: "ت" },
   { ar: "تٌ", nameBn: "তা দুই পেশ তুন", symbol: "ٌ", type: "দুই পেশ", sound: "তুন", base: "ت" },
-  { ar: "مً", nameBn: "মীম দুই যবর মান", symbol: "ً", type: "দুই যবর", sound: "মান", base: "م" },
-  { ar: "مٍ", nameBn: "মীম দুই যের মিন", symbol: "ٍ", type: "দুই যের", sound: "মিন", base: "م" },
-  { ar: "مٌ", nameBn: "মীম দুই পেশ মুন", symbol: "ٌ", type: "দুই পেশ", sound: "মুন", base: "م" },
+  { ar: "مً", nameBn: "মীম দুই যবর মান", symbol: "ً", type: "দুই যবর", sound: "মান", base: "م", audioStatus: "unverified" },
+  { ar: "مٍ", nameBn: "মীম দুই যের মিন", symbol: "ٍ", type: "দুই যের", sound: "মিন", base: "م", audioStatus: "unverified" },
+  { ar: "مٌ", nameBn: "মীম দুই পেশ মুন", symbol: "ٌ", type: "দুই পেশ", sound: "মুন", base: "م", audioStatus: "unverified" },
 ];
 
 // Stage 5: জযম ও ক্বলক্বলাহ (ধাক্কা ধ্বনি)

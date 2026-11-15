@@ -358,29 +358,9 @@ export default function TahfizQuranApp({
         })
         .catch((err) => {
           console.error("Audio playback error:", err);
-          // Auto fallback to Alafasy if original Qari had a network issue
-          if (activeQari !== "alafasy") {
-            const fallbackUrl = getAyahAudioUrl("alafasy", sId, aNum);
-            audioRef.current.src = fallbackUrl;
-            audioRef.current.currentTime = 0;
-            audioRef.current
-              .play()
-              .then(() => {
-                setIsPlayingAudio(true);
-                setPlayingAyahNumber(aNum);
-                setPlayingSurahId(sId);
-                setActiveWordIndex(0);
-              })
-              .catch(() => {
-                toast.error("ক্বারীর তিলাওয়াত বাজাতে সমস্যা হয়েছে");
-                setActiveWordIndex(-1);
-                setIsPlayingAudio(false);
-              });
-          } else {
-            toast.error("ক্বারীর তিলাওয়াত বাজাতে সমস্যা হয়েছে");
-            setActiveWordIndex(-1);
-            setIsPlayingAudio(false);
-          }
+          toast.error("নির্বাচিত ক্বারীর তিলাওয়াত বাজানো যায়নি");
+          setActiveWordIndex(-1);
+          setIsPlayingAudio(false);
         });
     } catch (e) {
       console.error(e);
@@ -1320,7 +1300,7 @@ export default function TahfizQuranApp({
                         const qId = e.target.value;
                         setSelectedQari(qId);
                         setStoredQariPreference(qId);
-                        handlePlayAyah(playingAyahNumber, playingSurahId);
+                        handlePlayAyah(playingAyahNumber, playingSurahId, qId);
                       }}
                       className="text-[10px] bg-black/50 text-teal-300 border border-teal-500/30 rounded px-1.5 py-0.5 mt-0.5 font-bold focus:outline-none cursor-pointer max-w-full truncate"
                     >

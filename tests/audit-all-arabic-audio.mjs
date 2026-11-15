@@ -119,8 +119,20 @@ alifLetters.forEach(l => {
 
 console.log(`Total unique Arabic items collected: ${items.size}`);
 
+const explicitlyUnverified = new Set(
+  [
+    ...KIDS_TANWEEN_DATA.filter((item) => item.audioStatus === "unverified").map((item) => item.ar),
+    ...DRAG_DROP_LEVELS.flatMap((level) =>
+      level.letters
+        .filter((item) => item.audioStatus === "unverified")
+        .map((item) => item.ar)
+    ),
+  ]
+);
+
 const resolved = [];
 const missing = [];
+const unverified = [];
 
 for (const item of items) {
   const soundRes = resolveArabicSoundAudio(item);
@@ -129,18 +141,26 @@ for (const item of items) {
 
   if (soundRes.found || letterRes.found || (wordRes && wordRes.found)) {
     resolved.push(item);
+  } else if (explicitlyUnverified.has(item)) {
+    unverified.push(item);
   } else {
     missing.push(item);
   }
 }
 
 console.log(`Working: ${resolved.length}`);
+console.log(`Unverified (playback disabled): ${unverified.length}`);
 console.log(`Missing: ${missing.length}`);
+
+if (unverified.length > 0) {
+  console.log("\n--- UNVERIFIED ITEMS ---");
+  console.log(unverified.join(", "));
+}
 
 if (missing.length > 0) {
   console.log("\n--- MISSING ITEMS ---");
   console.log(missing.join(", "));
   process.exit(1);
 } else {
-  console.log("\nALL ARABIC AUDIO ITEMS RESOLVE TO AUTHENTIC RECORDINGS (100% COVERAGE).");
+  console.log("\nAll remaining Arabic items resolve; explicitly unverified items are excluded from playback.");
 }

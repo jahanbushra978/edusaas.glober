@@ -71,37 +71,50 @@ export default function DragDropLetterGame({ onBack, onEarnReward }) {
     }
   }, [currentLevel.id, completedLevels]);
 
+  const playItemAudio = (item) => {
+    if (item.audioStatus === "unverified") {
+      setMascotFeedback("এই শব্দটির নির্ভরযোগ্য ক্বারী রেকর্ডিং যাচাই হয়নি; তাই অডিও বাজানো হয়নি।");
+      return false;
+    }
+    nurQaidaAudioEngine.play(item);
+    return true;
+  };
+
   // Handle letter select
   const handleSelectLetter = (letter) => {
     const isAlreadyPlaced = Object.values(placedSlots).some((p) => p.ar === letter.ar);
     if (isAlreadyPlaced) return;
 
     setSelectedLetter(letter);
-    nurQaidaAudioEngine.play(letter);
+    const hasVerifiedAudio = playItemAudio(letter);
     playFeedbackChime("tap");
     const isWord = letter.nameBn && (currentLevel.id >= 11 || letter.ar.length > 2);
-    setMascotFeedback(`এটি '${letter.nameBn}' ${isWord ? "শব্দ" : "হরফ"}। এবার নিচের সঠিক খোপে বসাও!`);
+    setMascotFeedback(hasVerifiedAudio
+      ? `এটি '${letter.nameBn}' ${isWord ? "শব্দ" : "হরফ"}। এবার নিচের সঠিক খোপে বসাও!`
+      : "এই শব্দটির নির্ভরযোগ্য ক্বারী রেকর্ডিং যাচাই হয়নি; তাই অডিও বাজানো হয়নি।");
   };
 
   // Handle slot click
   const handleSlotClick = (slotTarget, slotIndex) => {
     if (placedSlots[slotIndex]) {
       const placed = placedSlots[slotIndex];
-      nurQaidaAudioEngine.play(placed);
+      playItemAudio(placed);
       return;
     }
 
     if (!selectedLetter) {
-      nurQaidaAudioEngine.play(slotTarget);
+      const hasVerifiedAudio = playItemAudio(slotTarget);
       const isWord = slotTarget.nameBn && (currentLevel.id >= 11 || slotTarget.ar.length > 2);
-      setMascotFeedback(`আগে '${slotTarget.nameBn}' ${isWord ? "শব্দটির" : "হরফটির"} কার্ডে ক্লিক করো, তারপর এখানে বসাও!`);
+      if (hasVerifiedAudio) {
+        setMascotFeedback(`আগে '${slotTarget.nameBn}' ${isWord ? "শব্দটির" : "হরফটির"} কার্ডে ক্লিক করো, তারপর এখানে বসাও!`);
+      }
       return;
     }
 
     // Check Match
     if (selectedLetter.ar === slotTarget.ar) {
       playFeedbackChime("correct");
-      nurQaidaAudioEngine.play(selectedLetter);
+      playItemAudio(selectedLetter);
 
       const newPlaced = { ...placedSlots, [slotIndex]: selectedLetter };
       setPlacedSlots(newPlaced);

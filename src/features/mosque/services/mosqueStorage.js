@@ -6,6 +6,182 @@
  */
 
 const STORAGE_KEY = "mosque_erp_database_v2";
+const REGISTERED_MOSQUES_KEY = "mosque_registered_tenants_v2";
+const ONBOARDING_REQUESTS_KEY = "mosque_onboarding_requests_v2";
+const ACTIVE_MOSQUE_ID_KEY = "mosque_active_tenant_id_v2";
+
+// In-memory fallback for SSR and Node.js testing environments
+const memoryStorage = {};
+
+function safeGetItem(key) {
+  if (typeof window !== "undefined") {
+    try {
+      return localStorage.getItem(key);
+    } catch {
+      // ignore
+    }
+  }
+  return memoryStorage[key] || null;
+}
+
+function safeSetItem(key, val) {
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem(key, val);
+    } catch {
+      // ignore
+    }
+  }
+  memoryStorage[key] = val;
+}
+
+export const DEFAULT_REGISTERED_MOSQUES = [
+  {
+    id: "MAS-2026-0001",
+    name: "বাইতুন নূর জামে মসজিদ ও কমপ্লেক্স",
+    slug: "baitun-noor",
+    district: "গাজীপুর",
+    upazila: "সদর",
+    address: "হাড়িনাল, গাজীপুর সিটি কর্পোরেশন",
+    established: "১৯৯৮",
+    membersCount: 25,
+    imam: "মাওলানা মাহমুদ হাসান",
+    adminName: "মুহাম্মদ আব্দুল্লাহ (সভাপতি)",
+    phone: "০১৭১১-২২৩৩৪৪",
+    email: "info@baitunnoor.org",
+    customDomain: "baitunnoormasjid.org",
+    logoLetter: "বা",
+    approval_status: "approved",
+    is_active: true,
+  },
+  {
+    id: "MAS-2026-0002",
+    name: "হারিনাল কেন্দ্রীয় জামে মসজিদ",
+    slug: "harinal-central",
+    district: "গাজীপুর",
+    upazila: "সদর",
+    address: "হারিনাল বাজার রোড, সদর",
+    established: "১৯৮৫",
+    membersCount: 42,
+    imam: "মাওলানা আব্দুল বারী",
+    adminName: "হাজী রফিকুল ইসলাম",
+    phone: "০১৮১৯-১১২২৩৩",
+    email: "harinal.central@gmail.com",
+    customDomain: null,
+    logoLetter: "হা",
+    approval_status: "approved",
+    is_active: true,
+  },
+  {
+    id: "MAS-2026-0003",
+    name: "উত্তরা মডেল জামে মসজিদ ও মাদরাসা",
+    slug: "uttara-model",
+    district: "ঢাকা",
+    upazila: "উত্তরা",
+    address: "সেক্টর ৭, উত্তরা মডেল টাউন",
+    established: "২০১০",
+    membersCount: 65,
+    imam: "মুফতি এনামুল হক",
+    adminName: "ইঞ্জি. মোস্তাফিজুর রহমান",
+    phone: "০১৭৩৩-১১২২৪৪",
+    email: "contact@uttaramodelmosque.com",
+    customDomain: "uttaramodelmosque.com",
+    logoLetter: "উ",
+    approval_status: "approved",
+    is_active: true,
+  },
+  {
+    id: "MAS-2026-0004",
+    name: "দারুসসালাম জামে মসজিদ কমপ্লেক্স",
+    slug: "darussalam-jame",
+    district: "নারায়ণগঞ্জ",
+    upazila: "সদর",
+    address: "চাষাড়া, নারায়ণগঞ্জ",
+    established: "২০০২",
+    membersCount: 38,
+    imam: "মাওলানা আবু বকর সিদ্দিক",
+    adminName: "আলহাজ্ব জয়নাল আবেদীন",
+    phone: "০১৭৮৮-৩৩৪৪৫৫",
+    email: "darussalam.jame@gmail.com",
+    customDomain: null,
+    logoLetter: "দা",
+    approval_status: "approved",
+    is_active: true,
+  },
+  {
+    id: "MAS-2026-0005",
+    name: "দরগাহে হযরত শাহজালাল (রহ.) জামে মসজিদ",
+    slug: "sylhet-shahi",
+    district: "সিলেট",
+    upazila: "কোতোয়ালী",
+    address: "দরগাহ মহল্লা, কোতোয়ালী",
+    established: "১৩৫০",
+    membersCount: 120,
+    imam: "মাওলানা আসজাদ হোসেন",
+    adminName: "জনাব সৈয়দ আহমেদ",
+    phone: "০১৯১১-৪৪৫৫৬৬",
+    email: "contact@shahjalalmasjid.org",
+    customDomain: "shahjalalmasjid.org",
+    logoLetter: "শা",
+    approval_status: "approved",
+    is_active: true,
+  },
+];
+
+export const DEFAULT_MOSQUE_ONBOARDING_REQUESTS = [
+  {
+    id: "MREQ-2026-0001",
+    mosqueId: "MAS-2026-0006",
+    name: "বাইতুল ফালাহ জামে মসজিদ ও ইসলামিক একাডেমি",
+    slug: "baitul-falah",
+    district: "ঢাকা",
+    upazila: "মিরপুর",
+    address: "ব্লক-সি, মিরপুর-১২, ঢাকা-১২১৬",
+    phone: "০১৭১২-৩৪৫৬৭৮",
+    email: "baitulfalah.mirpur@gmail.com",
+    establishedYear: "২০১৫",
+    floorsCount: 3,
+    submitterName: "মুফতি আব্দুর রহমান",
+    submitterRole: "সেক্রেটারি",
+    submitterPhone: "০১৭২২-৯৮৭৬৫৪",
+    submitterEmail: "rahman.mirpur@gmail.com",
+    imamName: "মাওলানা তাহের বিন হাসান",
+    imamPhone: "০১৯৩৩-৮৮৭৭৬৬",
+    musalliCapacity: 1200,
+    facilities: ["শীতাতপ নিয়ন্ত্রিত (AC)", "জেনারেটর ব্যাকআপ", "সিসিটিভি ক্যামেরা", "নূরানী মক্তব", "অজুখানা ও গিজার", "ইমাম খানা রোস্টার"],
+    approval_status: "pending_approval",
+    is_active: false,
+    submittedAt: "১৫ নভেম্বর ২০২৬, ০৯:৩০ AM",
+    notes: "নতুন প্রতিষ্ঠিত মসজিদ ও নূরানী একাডেমি। ডিজিটাল অনুদান ও হিসাব ব্যবস্থাপনার জন্য আবেদন।",
+  },
+  {
+    id: "MREQ-2026-0002",
+    mosqueId: "MAS-2026-0003",
+    name: "উত্তরা মডেল জামে মসজিদ ও মাদরাসা",
+    slug: "uttara-model",
+    district: "ঢাকা",
+    upazila: "উত্তরা",
+    address: "সেক্টর ৭, উত্তরা মডেল টাউন",
+    phone: "০১৭৩৩-১১২২৪৪",
+    email: "contact@uttaramodelmosque.com",
+    establishedYear: "২০১০",
+    floorsCount: 4,
+    submitterName: "ইঞ্জি. মোস্তাফিজুর রহমান",
+    submitterRole: "সভাপতি",
+    submitterPhone: "০১৭৩৩-১১২২৪৪",
+    submitterEmail: "mustafiz@uttara.org",
+    imamName: "মুফতি এনামুল হক",
+    imamPhone: "০১৮১১-৩৩৪৪৭৭",
+    musalliCapacity: 2500,
+    facilities: ["শীতাতপ নিয়ন্ত্রিত (AC)", "জেনারেটর ব্যাকআপ", "সিসিটিভি ক্যামেরা", "নূরানী মক্তব", "লাইব্রেরি"],
+    approval_status: "approved",
+    is_active: true,
+    submittedAt: "১০ নভেম্বর ২০২৬, ০২:১৫ PM",
+    approvedAt: "১০ নভেম্বর ২০২৬, ০৪:০০ PM",
+    approvedBy: "সুপার এডমিন (Platform Owner)",
+    notes: "যথাযথ ভেরিফিকেশন সম্পন্ন সাপেক্ষে অনুমোদন দেওয়া হলো।",
+  },
+];
 
 // 10 Segregated Funds (Strictly Isolated, Section 6.6)
 export const DEFAULT_FUNDS = [
@@ -225,36 +401,337 @@ export const DEFAULT_AUDIT_LOGS = [
   { id: "LOG-005", timestamp: "২০২৬-১১-১২ ০২:২০ PM", actor: "মাওলানা মাহমুদ হাসান", role: "IMAM", action: "EXPENSE_SUBMITTED", targetType: "VOUCHER", targetId: "VCH-2026-089", details: "সাউন্ড সিস্টেম ও ব্যাটারি মেরামত রিকুইজিশন দাখিল" },
 ];
 
+export function getActiveMosqueId() {
+  return safeGetItem(ACTIVE_MOSQUE_ID_KEY) || "MAS-2026-0001";
+}
+
+export function setActiveMosqueId(id) {
+  if (!id) return;
+  safeSetItem(ACTIVE_MOSQUE_ID_KEY, id);
+}
+
+export function getRegisteredMosques() {
+  try {
+    const raw = safeGetItem(REGISTERED_MOSQUES_KEY);
+    if (!raw) {
+      safeSetItem(REGISTERED_MOSQUES_KEY, JSON.stringify(DEFAULT_REGISTERED_MOSQUES));
+      return DEFAULT_REGISTERED_MOSQUES;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_REGISTERED_MOSQUES;
+  } catch (err) {
+    console.error("Failed to read registered mosques:", err);
+    return DEFAULT_REGISTERED_MOSQUES;
+  }
+}
+
+export function saveRegisteredMosques(list) {
+  try {
+    safeSetItem(REGISTERED_MOSQUES_KEY, JSON.stringify(list));
+    return list;
+  } catch (err) {
+    console.error("Failed to save registered mosques:", err);
+    return list;
+  }
+}
+
+export function getMosqueOnboardingRequests() {
+  try {
+    const raw = safeGetItem(ONBOARDING_REQUESTS_KEY);
+    if (!raw) {
+      safeSetItem(ONBOARDING_REQUESTS_KEY, JSON.stringify(DEFAULT_MOSQUE_ONBOARDING_REQUESTS));
+      return DEFAULT_MOSQUE_ONBOARDING_REQUESTS;
+    }
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) && parsed.length > 0 ? parsed : DEFAULT_MOSQUE_ONBOARDING_REQUESTS;
+  } catch (err) {
+    console.error("Failed to read onboarding requests:", err);
+    return DEFAULT_MOSQUE_ONBOARDING_REQUESTS;
+  }
+}
+
+export function saveMosqueOnboardingRequests(list) {
+  try {
+    safeSetItem(ONBOARDING_REQUESTS_KEY, JSON.stringify(list));
+    return list;
+  } catch (err) {
+    console.error("Failed to save onboarding requests:", err);
+    return list;
+  }
+}
+
+export function saveMosqueOnboardingRequest(reqData) {
+  const currentRequests = getMosqueOnboardingRequests();
+  const nextNum = currentRequests.length + 1;
+  const trackingId = `MREQ-2026-${String(nextNum).padStart(4, "0")}`;
+  const mosqueId = `MAS-2026-${String(Math.floor(1000 + Math.random() * 9000))}`;
+  const slug = (reqData.slug || reqData.name || "")
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, "")
+    .replace(/[\s_-]+/g, "-")
+    .replace(/^-+|-+$/g, "") || `mosque-${Date.now().toString().slice(-4)}`;
+
+  const newRequest = {
+    id: trackingId,
+    mosqueId: mosqueId,
+    name: reqData.name?.trim() || "নতুন জামে মসজিদ",
+    name_bn: reqData.name?.trim() || "নতুন জামে মসজিদ",
+    name_en: reqData.name_en?.trim() || reqData.name?.trim(),
+    slug: slug,
+    district: reqData.district || "ঢাকা",
+    upazila: reqData.upazila || "সদর",
+    address: reqData.address || `${reqData.upazila || ""}, ${reqData.district || ""}`,
+    phone: reqData.phone || reqData.submitterPhone || "০১৭XX-XXXXXX",
+    email: reqData.email || reqData.submitterEmail || "info@mosque.org",
+    establishedYear: reqData.establishedYear || "২০২৬",
+    floorsCount: Number(reqData.floorsCount || 2),
+    submitterName: reqData.submitterName?.trim() || "আবেদনকারী",
+    submitterRole: reqData.submitterRole || "সভাপতি",
+    submitterPhone: reqData.submitterPhone?.trim() || "০১৭XX-XXXXXX",
+    submitterEmail: reqData.submitterEmail?.trim() || "admin@mosque.org",
+    password: reqData.password || "12345678",
+    imamName: reqData.imamName?.trim() || "মাওলানা ও পেশ ইমাম",
+    imamPhone: reqData.imamPhone?.trim() || "০১৯XX-XXXXXX",
+    musalliCapacity: Number(reqData.musalliCapacity || 500),
+    facilities: Array.isArray(reqData.facilities) ? reqData.facilities : ["শীতাতপ নিয়ন্ত্রিত (AC)", "নূরানী মক্তব"],
+    mapLink: reqData.mapLink || null,
+    photoUrl: reqData.photoUrl || null,
+    approval_status: "pending_approval",
+    is_active: false,
+    submittedAt: formatCurrentTimeBangla(),
+    notes: reqData.notes || "অনলাইন পোর্টাল থেকে নতুন মসজিদ নিবন্ধনের আবেদন।",
+  };
+
+  const updated = [newRequest, ...currentRequests];
+  saveMosqueOnboardingRequests(updated);
+
+  if (typeof window !== "undefined") {
+    fetch("/api/mosque/onboarding-requests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newRequest),
+    }).catch((err) => console.log("Background mosque onboarding sync notice:", err));
+  }
+
+  return { ok: true, trackingId, data: newRequest };
+}
+
+export function approveMosqueOnboardingRequest(requestId, approver = "সুপার এডমিন (Platform Owner)", adminNotes = "") {
+  const currentRequests = getMosqueOnboardingRequests();
+  const reqIndex = currentRequests.findIndex((r) => r.id === requestId || r.mosqueId === requestId);
+  if (reqIndex === -1) {
+    return { ok: false, message: "আবেদন খুঁজে পাওয়া যায়নি" };
+  }
+
+  const req = currentRequests[reqIndex];
+  const approvedAt = formatCurrentTimeBangla();
+
+  const updatedReq = {
+    ...req,
+    approval_status: "approved",
+    is_active: true,
+    approvedAt: approvedAt,
+    approvedBy: approver,
+    admin_notes: adminNotes || "যথাযথ প্রশাসনিক যাচাই-বাছাই সাপেক্ষে লাইভ অনুমোদন করা হলো।",
+  };
+
+  currentRequests[reqIndex] = updatedReq;
+  saveMosqueOnboardingRequests(currentRequests);
+
+  const newLiveMosque = {
+    id: req.mosqueId || `MAS-2026-${Date.now().toString().slice(-4)}`,
+    name: req.name || req.name_bn,
+    name_bn: req.name_bn || req.name,
+    name_en: req.name_en || req.name,
+    slug: req.slug,
+    district: req.district || "ঢাকা",
+    upazila: req.upazila || "সদর",
+    address: req.address || `${req.upazila}, ${req.district}`,
+    established: req.establishedYear || "২০২৬",
+    membersCount: 1,
+    imam: req.imamName || "মাওলানা পেশ ইমাম",
+    adminName: `${req.submitterName} (${req.submitterRole || "সভাপতি"})`,
+    phone: req.phone || req.submitterPhone,
+    email: req.email || req.submitterEmail,
+    customDomain: null,
+    logoLetter: (req.name || "ম").trim()[0] || "ম",
+    approval_status: "approved",
+    is_active: true,
+    approvedAt: approvedAt,
+  };
+
+  const registered = getRegisteredMosques();
+  const exists = registered.some((m) => m.id === newLiveMosque.id || m.slug === newLiveMosque.slug);
+  if (!exists) {
+    saveRegisteredMosques([newLiveMosque, ...registered]);
+  }
+
+  const newWorkspaceDb = provisionNewMosqueWorkspace(newLiveMosque, req);
+  saveMosqueDatabase(newWorkspaceDb, newLiveMosque.id);
+
+  if (typeof window !== "undefined") {
+    fetch("/api/mosque/onboarding-requests", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: req.id, action: "approve", customData: updatedReq }),
+    }).catch((err) => console.log("Background mosque approval sync notice:", err));
+  }
+
+  return { ok: true, mosque: newLiveMosque, request: updatedReq };
+}
+
+export function rejectMosqueOnboardingRequest(requestId, rejector = "সুপার এডমিন (Platform Owner)", reason = "অসম্পূর্ণ তথ্য") {
+  const currentRequests = getMosqueOnboardingRequests();
+  const reqIndex = currentRequests.findIndex((r) => r.id === requestId);
+  if (reqIndex === -1) return { ok: false };
+
+  currentRequests[reqIndex] = {
+    ...currentRequests[reqIndex],
+    approval_status: "rejected",
+    is_active: false,
+    rejectedAt: formatCurrentTimeBangla(),
+    rejectedBy: rejector,
+    rejectionReason: reason,
+  };
+
+  saveMosqueOnboardingRequests(currentRequests);
+  return { ok: true, request: currentRequests[reqIndex] };
+}
+
+export function provisionNewMosqueWorkspace(mosqueInfo, onboardingData = null) {
+  const adminMember = {
+    id: "M-101",
+    name: onboardingData?.submitterName || mosqueInfo.adminName || "প্রধান সভাপতি",
+    phone: onboardingData?.submitterPhone || mosqueInfo.phone || "০১৭১১-XXXXXX",
+    address: mosqueInfo.address || "মসজিদ প্রাঙ্গণ",
+    role: onboardingData?.submitterRole || "সভাপতি",
+    type: "COMMITTEE",
+    status: "ACTIVE",
+    pledge: 2000,
+    paid: 0,
+    remaining: 2000,
+    loginId: "admin01",
+    joinedDate: new Date().toISOString().split("T")[0],
+  };
+
+  const imamEmployee = {
+    id: "EMP-01",
+    name: onboardingData?.imamName || mosqueInfo.imam || "মাওলানা পেশ ইমাম",
+    role: "পেশ ইমাম ও খতীব",
+    phone: onboardingData?.imamPhone || "০১৯১১-XXXXXX",
+    salary: 18000,
+    joinedAt: new Date().toISOString().split("T")[0],
+    status: "ACTIVE",
+  };
+
+  const initialFunds = DEFAULT_FUNDS.map((f) => ({
+    ...f,
+    initialBalance: f.id === "f1" ? 10000 : 0,
+    currentBalance: f.id === "f1" ? 10000 : 0,
+  }));
+
+  const initialDb = {
+    version: "2.0",
+    mosque: {
+      id: mosqueInfo.id,
+      name: mosqueInfo.name,
+      slug: mosqueInfo.slug,
+      district: mosqueInfo.district,
+      address: mosqueInfo.address,
+      established: mosqueInfo.established,
+      membersCount: 1,
+      logoLetter: mosqueInfo.logoLetter || (mosqueInfo.name || "ম").trim()[0],
+      customDomain: mosqueInfo.customDomain || null,
+      phone: mosqueInfo.phone,
+      email: mosqueInfo.email,
+    },
+    currentUserRole: "PRESIDENT",
+    currentMemberId: "M-101",
+    funds: initialFunds,
+    members: [adminMember],
+    employees: [imamEmployee],
+    mealRoster: [],
+    leaves: [],
+    inflows: [],
+    expenses: [],
+    auditLogs: [
+      {
+        id: `LOG-${Date.now().toString().slice(-4)}`,
+        timestamp: formatCurrentTimeBangla(),
+        actor: "এডমিন সিস্টেম",
+        role: "SYSTEM",
+        action: "MOSQUE_APPROVED_AND_LIVE",
+        targetType: "MOSQUE",
+        targetId: mosqueInfo.id,
+        details: `"${mosqueInfo.name}" সফলভাবে লাইভ এবং স্বাধীন ইআরপি ওয়ার্কস্পেস প্রস্তুত হয়েছে।`,
+      },
+    ],
+    assets: [
+      { id: "AST-01", name: "প্রধান সাউন্ড এমপ্লিফায়ার ও মাইক্রোফোন", category: "সাউন্ড সিস্টেম", location: "ইমাম ডেস্ক", purchaseDate: "২০২৬-০১-০১", cost: 25000, condition: "সক্রিয়", warrantyTill: "২০২৮-০১-০১", lastMaintenance: "২০২৬-০১-০১" },
+    ],
+    maktab: {
+      studentsCount: 15,
+      teachersCount: 1,
+      activeSession: "নূরানী কায়দা ও নাযেরা ২০২৬",
+      monthlyFee: 300,
+    },
+    prayerSchedule: [
+      { name: "ফজর", arabic: "الفجر", start: "০৫:০২ AM", end: "০৬:১৮ AM", jamaat: "০৫:২৫ AM", isActive: false },
+      { name: "সূর্যোদয়", arabic: "الشروق", start: "০৬:১৯ AM", end: "—", jamaat: "—", isForbidden: true },
+      { name: "যোহর", arabic: "الظهر", start: "১১:৪৬ AM", end: "০৩:৪৩ PM", jamaat: "০১:১৫ PM", isActive: false },
+      { name: "আসর", arabic: "العصر", start: "০৩:৪৪ PM", end: "০৫:০৮ PM", jamaat: "০৪:১৫ PM", isActive: true },
+      { name: "মাগরিব", arabic: "المغرب", start: "০৫:০৯ PM", end: "০৬:২৩ PM", jamaat: "০৫:১৫ PM", isActive: false },
+      { name: "এশা", arabic: "العشاء", start: "০৬:২৪ PM", end: "০৪:৫৯ AM", jamaat: "০৭:৩০ PM", isActive: false },
+      { name: "জুমা", arabic: "الجمعة", start: "১১:৪৬ AM", end: "০৩:৪৩ PM", jamaat: "০১:৩০ PM", isJummah: true },
+    ],
+  };
+
+  return recalculateDatabase(initialDb);
+}
+
+export function switchActiveMosque(mosqueId) {
+  setActiveMosqueId(mosqueId);
+  return getMosqueDatabase(mosqueId);
+}
+
 /**
  * Initialize or retrieve the database
  */
-export function getMosqueDatabase() {
-  if (typeof window === "undefined") {
-    return createInitialDatabase();
-  }
-
+export function getMosqueDatabase(tenantId = null) {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const activeId = tenantId || getActiveMosqueId() || "MAS-2026-0001";
+    const key = activeId === "MAS-2026-0001" ? STORAGE_KEY : `mosque_erp_tenant_${activeId}`;
+    const raw = safeGetItem(key);
     if (!raw) {
-      const initial = createInitialDatabase();
-      saveMosqueDatabase(initial);
+      if (activeId === "MAS-2026-0001") {
+        const initial = createInitialDatabase();
+        saveMosqueDatabase(initial, "MAS-2026-0001");
+        return initial;
+      }
+      const registered = getRegisteredMosques();
+      const target = registered.find((m) => m.id === activeId);
+      const initial = target ? provisionNewMosqueWorkspace(target) : createInitialDatabase();
+      saveMosqueDatabase(initial, activeId);
       return initial;
     }
     const parsed = JSON.parse(raw);
 
     // Auto-migrate: populate leaves or newly added fund inflows/expenses if missing in existing local session
     if (!parsed.leaves || parsed.leaves.length === 0) {
-      parsed.leaves = DEFAULT_LEAVES;
+      parsed.leaves = activeId === "MAS-2026-0001" ? DEFAULT_LEAVES : [];
     }
-    if (!parsed.inflows || parsed.inflows.length < DEFAULT_INFLOWS.length) {
-      const existingInflowIds = new Set((parsed.inflows || []).map((i) => i.id));
-      const missingInflows = DEFAULT_INFLOWS.filter((i) => !existingInflowIds.has(i.id));
-      parsed.inflows = [...(parsed.inflows || []), ...missingInflows];
-    }
-    if (!parsed.expenses || parsed.expenses.length < DEFAULT_EXPENSES.length) {
-      const existingExpIds = new Set((parsed.expenses || []).map((e) => e.id));
-      const missingExpenses = DEFAULT_EXPENSES.filter((e) => !existingExpIds.has(e.id));
-      parsed.expenses = [...(parsed.expenses || []), ...missingExpenses];
+    if (activeId === "MAS-2026-0001") {
+      if (!parsed.inflows || parsed.inflows.length < DEFAULT_INFLOWS.length) {
+        const existingInflowIds = new Set((parsed.inflows || []).map((i) => i.id));
+        const missingInflows = DEFAULT_INFLOWS.filter((i) => !existingInflowIds.has(i.id));
+        parsed.inflows = [...(parsed.inflows || []), ...missingInflows];
+      }
+      if (!parsed.expenses || parsed.expenses.length < DEFAULT_EXPENSES.length) {
+        const existingExpIds = new Set((parsed.expenses || []).map((e) => e.id));
+        const missingExpenses = DEFAULT_EXPENSES.filter((e) => !existingExpIds.has(e.id));
+        parsed.expenses = [...(parsed.expenses || []), ...missingExpenses];
+      }
     }
 
     return recalculateDatabase(parsed);
@@ -267,11 +744,12 @@ export function getMosqueDatabase() {
 /**
  * Save database to localStorage and return recalculated state
  */
-export function saveMosqueDatabase(db) {
-  if (typeof window === "undefined") return db;
+export function saveMosqueDatabase(db, tenantId = null) {
   try {
+    const activeId = tenantId || db?.mosque?.id || getActiveMosqueId() || "MAS-2026-0001";
+    const key = activeId === "MAS-2026-0001" ? STORAGE_KEY : `mosque_erp_tenant_${activeId}`;
     const recalculated = recalculateDatabase(db);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(recalculated));
+    safeSetItem(key, JSON.stringify(recalculated));
     return recalculated;
   } catch (err) {
     console.error("Failed to save mosque database:", err);

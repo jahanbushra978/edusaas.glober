@@ -121,7 +121,20 @@ class NurQaidaAudioEngine {
 
     // 1. Direct Object
     if (typeof target === "object") {
-      // Direct explicit audio URLs passed in item
+      // If object has id or ar, look up in manifest
+      if (target.id && NUR_QAIDA_BY_ID.has(target.id)) {
+        const found = NUR_QAIDA_BY_ID.get(target.id);
+        return { item: found, urls: found.candidateUrls, id: found.id, ar: found.ar };
+      }
+      if (target.sound && NUR_QAIDA_BY_AR.has(target.sound)) {
+        const found = NUR_QAIDA_BY_AR.get(target.sound);
+        return { item: found, urls: found.candidateUrls, id: found.id, ar: found.ar };
+      }
+      if (target.ar && NUR_QAIDA_BY_AR.has(target.ar)) {
+        const found = NUR_QAIDA_BY_AR.get(target.ar);
+        return { item: found, urls: found.candidateUrls, id: found.id, ar: found.ar };
+      }
+      // Direct URLs are only used when the canonical manifest has no exact match.
       if (target.candidateUrls && Array.isArray(target.candidateUrls) && target.candidateUrls.length > 0) {
         return {
           item: target,
@@ -138,19 +151,6 @@ class NurQaidaAudioEngine {
           id: target.id || target.ar || rawUrl,
           ar: target.ar || "",
         };
-      }
-      // If object has id or ar, look up in manifest
-      if (target.id && NUR_QAIDA_BY_ID.has(target.id)) {
-        const found = NUR_QAIDA_BY_ID.get(target.id);
-        return { item: found, urls: found.candidateUrls, id: found.id, ar: found.ar };
-      }
-      if (target.sound && NUR_QAIDA_BY_AR.has(target.sound)) {
-        const found = NUR_QAIDA_BY_AR.get(target.sound);
-        return { item: found, urls: found.candidateUrls, id: found.id, ar: found.ar };
-      }
-      if (target.ar && NUR_QAIDA_BY_AR.has(target.ar)) {
-        const found = NUR_QAIDA_BY_AR.get(target.ar);
-        return { item: found, urls: found.candidateUrls, id: found.id, ar: found.ar };
       }
       // String target inside object
       const text = target.sound || target.ar || "";
@@ -299,7 +299,7 @@ class NurQaidaAudioEngine {
     try {
       this.status = "playing";
       this.notify();
-      await universalAudioEngine.play(target, {
+      const audio = await universalAudioEngine.play(target, {
         rate,
         onStart: options.onStart,
         onEnd: () => {
@@ -316,7 +316,7 @@ class NurQaidaAudioEngine {
           if (options.onError) options.onError(err);
         },
       });
-      return true;
+      return Boolean(audio);
     } catch (err) {
       this.status = "error";
       this.error = err.message;

@@ -679,11 +679,28 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
   };
 
   const handleQariChange = (qariId) => {
+    const activeAyah = playingAyahRef.current;
+    const shouldResume = Boolean(
+      activeAyah &&
+      (isPlayingAudio || (audioRef.current && !audioRef.current.paused))
+    );
+
+    playbackSessionIdRef.current += 1;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.onloadedmetadata = null;
+      audioRef.current.oncanplay = null;
+      audioRef.current.ontimeupdate = null;
+      audioRef.current.onended = null;
+      audioRef.current = null;
+    }
+
     setSelectedQari(qariId);
     selectedQariRef.current = qariId;
     setStoredQariPreference(qariId);
-    if (isPlayingAudio && playingAyahRef.current) {
-      startNewAyahAudio(playingAyahRef.current);
+    setIsPlayingAudio(false);
+    if (shouldResume) {
+      startNewAyahAudio(activeAyah);
     }
   };
 
