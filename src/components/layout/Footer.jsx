@@ -47,7 +47,7 @@ export default function Footer({ user: userProp }) {
               </Link>
               <Link href="/quran-tutor/tahfiz" className={`flex items-center gap-1.5 text-xs italic text-teal-300 hover:text-teal-200 transition-colors duration-200 ${lang === "ar" ? "flex-row-reverse" : ""}`}>
                 <ChevronRight className={`h-3 w-3 shrink-0 text-[#D4AF37] ${lang === "ar" ? "rotate-180" : ""}`} />
-                {lang === "bn" ? "📗 নূর কুরআন শরীফ (১৫ লাইন হাফেজী)" : "📗 Nur Quran Sharif (15-Line Hafizi)"}
+                {lang === "bn" ? "📗 নূর হিফজী মুসহাফ (১৫ লাইন)" : lang === "ar" ? "📗 مصحف نور للحفظ (١٥ سطرًا)" : "📗 Nur Hifzi Mushaf (15-line)"}
               </Link>
               <Link href="/quran-tutor/live-class" className={`flex items-center gap-1.5 text-xs italic text-emerald-300 hover:text-emerald-200 transition-colors duration-200 ${lang === "ar" ? "flex-row-reverse" : ""}`}>
                 <ChevronRight className={`h-3 w-3 shrink-0 text-[#D4AF37] ${lang === "ar" ? "rotate-180" : ""}`} />
@@ -104,7 +104,7 @@ export default function Footer({ user: userProp }) {
         </div>
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-6 text-center sm:text-left">
           <p className="text-white/50 text-[10px] md:text-[11px] italic">
-            © 2026 {lang === "bn" ? (t?.contactSection?.title || "রহমানিয়া ইনস্টিটিউট") : lang === "ar" ? (t?.contactSection?.title || "معهد الرحمانية") : instNameEn}. {t?.common?.copyright || "All rights reserved."}
+            © {new Date().getFullYear()} {lang === "bn" ? (t?.contactSection?.title || "রহমানিয়া ইনস্টিটিউট") : lang === "ar" ? (t?.contactSection?.title || "معهد الرحمانية") : instNameEn}. {t?.common?.copyright || "All rights reserved."}
           </p>
           <p className="text-[10px] md:text-[11px] italic flex flex-wrap items-center justify-center sm:justify-end gap-x-1 gap-y-0.5">
             <span className="text-white/50 not-italic">{lang === "bn" ? "Created by" : (t?.common?.createdBy || "Created by")}</span>

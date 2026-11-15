@@ -879,7 +879,7 @@ export default function QuranThematicSearch({ onSelectAyah }) {
               </div>
               <div>
                 <h3 className="text-base sm:text-lg font-black text-white flex items-center gap-2">
-                  <span>পবিত্র কুরআন শরীফ — ১১৪ সূরা ক্যাটালগ</span>
+                  <span>আল-কুরআনুল কারীম — ১১৪ সূরা ক্যাটালগ</span>
                 </h3>
                 <p className="text-xs text-emerald-300/80">
                   সরাসরি যেকোনো সূরা, ৩০ পারা বা ১৫ লাইনের হাফেজী পৃষ্ঠায় প্রবেশ করুন।

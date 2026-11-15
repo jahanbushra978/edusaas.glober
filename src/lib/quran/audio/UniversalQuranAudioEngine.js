@@ -147,6 +147,20 @@ class UniversalQuranAudioEngine {
     const selectedQari = qariId || getActiveShaykhId() || AUDIO_CONFIG.DEFAULT_SHAYKH_ID;
     const resolved = resolveAyahAudio(surahNumber, ayahNumber, selectedQari);
 
+    if (!resolved.found) {
+      const error = new Error(resolved.reason);
+      audioEvents.emit(AUDIO_EVENTS.ASSET_MISSING, {
+        assetId: resolved.assetId,
+        surahNumber,
+        ayahNumber,
+        qariId: selectedQari,
+        reason: resolved.reason,
+      });
+      if (options.onError) options.onError(error);
+      if (options.onEnd) options.onEnd();
+      return Promise.resolve(null);
+    }
+
     this.activeType = "ayah";
     this.activeKey = `${surahNumber}:${ayahNumber}`;
 
@@ -319,6 +333,13 @@ class UniversalQuranAudioEngine {
     audioManager.stop();
     this.activeType = null;
     this.activeKey = null;
+  }
+
+  claimExternalAudio(audio, assetId) {
+    if (audioQueue.queue.length > 0 || audioQueue.timer) audioQueue.stop();
+    this.activeType = "external";
+    this.activeKey = assetId || audio?.currentSrc || audio?.src || null;
+    return audioManager.claimExternalAudio(audio, assetId);
   }
 
   /**

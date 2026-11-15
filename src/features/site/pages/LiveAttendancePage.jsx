@@ -368,7 +368,7 @@ export default function LiveAttendancePage() {
           {/* Clock Card */}
           <div className="flex flex-col items-end px-4 py-1.5 rounded-2xl bg-emerald-950/60 border border-emerald-800/40 shadow-inner">
             <div className="text-xl sm:text-2xl font-black text-emerald-300 tracking-wider font-mono">
-              {timeStr || "০০:০০:০০ PM"}
+              {timeStr || "সময় পাওয়া যায়নি"}
             </div>
             <div className="text-[11px] font-medium text-emerald-400/70 font-bengali">
               {dateStr || "অপেক্ষমান..."}

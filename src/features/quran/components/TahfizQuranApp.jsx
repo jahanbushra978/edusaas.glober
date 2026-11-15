@@ -11,14 +11,12 @@ import {
   ArrowLeft,
   ChevronRight,
   ChevronLeft,
-  CheckCircle2,
   Volume2,
   VolumeX,
   RotateCcw,
   X,
   Play,
   Pause,
-  Award,
   Compass,
   FileText,
   List
@@ -36,6 +34,14 @@ import {
 import { getSurahData, getAyahAudioUrl } from "@/lib/quran/quran-service";
 import { loadChapterSegments, getActiveArabicWordIndex, splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 import { QARI_REGISTRY, getStoredQariPreference, setStoredQariPreference } from "@/lib/ai/qari-registry";
+import { universalAudioEngine } from "@/lib/quran/audio";
+import {
+  formatBangladeshClock,
+  formatBangladeshDate,
+  formatBangladeshEraDate,
+  formatBangladeshHijriDate,
+  getInstituteSunTimes,
+} from "@/lib/quran/bangladesh-time";
 import AmbientFloatingOrbs from "./AmbientFloatingOrbs";
 import HafiziMushafSheet from "./HafiziMushafSheet";
 import QuranReader from "./QuranReader";
@@ -88,31 +94,44 @@ export default function TahfizQuranApp({
   const [paraSearchQuery, setParaSearchQuery] = useState("");
 
   // Default initial states to prevent SSR Hydration Mismatch
-  const DEFAULT_BOOKMARKS = [
-    { id: "bm-1", surahId: 2, ayah: 255, para: 3, page: 42, label: "আয়াতুল কুরসী", date: "০৯ নভে ২০২৬" },
-    { id: "bm-2", surahId: 36, ayah: 1, para: 22, page: 440, label: "সূরা ইয়াসীন শুরু", date: "০৮ নভে ২০২৬" }
-  ];
-  const DEFAULT_LAST_READ = { surahId: 2, ayah: 1, para: 1, page: 2, percentage: 3 };
-
   // Bookmark State
-  const [bookmarks, setBookmarks] = useState(DEFAULT_BOOKMARKS);
+  const [bookmarks, setBookmarks] = useState([]);
   const [isAddBookmarkOpen, setIsAddBookmarkOpen] = useState(false);
   const [newBookmarkLabel, setNewBookmarkLabel] = useState("");
 
   // Last Read State
-  const [lastRead, setLastRead] = useState(DEFAULT_LAST_READ);
+  const [lastRead, setLastRead] = useState(null);
   const hasLoadedStorageRef = useRef(false);
+  const [bangladeshNow, setBangladeshNow] = useState(null);
+  const instituteSunTimes = useMemo(
+    () => bangladeshNow ? getInstituteSunTimes(bangladeshNow) : null,
+    [bangladeshNow],
+  );
 
   // Hydrate Client Storage safely after mount (Zero SSR Hydration Mismatch)
   useEffect(() => {
     try {
       const savedLastRead = localStorage.getItem("tahfiz_quran_last_read_v1");
       if (savedLastRead) {
-        setLastRead(JSON.parse(savedLastRead));
+        const parsedLastRead = JSON.parse(savedLastRead);
+        const isLegacyDemo = parsedLastRead?.surahId === 2 &&
+          parsedLastRead?.ayah === 1 &&
+          parsedLastRead?.para === 1 &&
+          parsedLastRead?.page === 2 &&
+          parsedLastRead?.percentage === 3 &&
+          !parsedLastRead?.updatedAt;
+        if (isLegacyDemo) {
+          localStorage.removeItem("tahfiz_quran_last_read_v1");
+        } else if (parsedLastRead?.surahId && parsedLastRead?.page) {
+          setLastRead(parsedLastRead);
+        }
       }
       const savedBookmarks = localStorage.getItem("tahfiz_quran_bookmarks_v1");
       if (savedBookmarks) {
-        setBookmarks(JSON.parse(savedBookmarks));
+        const parsedBookmarks = JSON.parse(savedBookmarks);
+        setBookmarks(Array.isArray(parsedBookmarks)
+          ? parsedBookmarks.filter((bookmark) => !["bm-1", "bm-2"].includes(bookmark.id))
+          : []);
       }
       const prefQari = getStoredQariPreference();
       if (prefQari) {
@@ -141,17 +160,20 @@ export default function TahfizQuranApp({
     }
   }, []);
 
-  // Rewarded Ad-Free Mode State (Countdown)
-  const [adFreeRemainingSeconds, setAdFreeRemainingSeconds] = useState(35820); // ~9h 57m
-  const [isRewardModalOpen, setIsRewardModalOpen] = useState(false);
-  const [isWatchingAd, setIsWatchingAd] = useState(false);
+  useEffect(() => {
+    const updateTime = () => setBangladeshNow(new Date());
+    updateTime();
+    const timer = setInterval(updateTime, 30000);
+    return () => clearInterval(timer);
+  }, []);
+
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   // Digital Tasbih State
   const [tasbihCount, setTasbihCount] = useState(0);
   const [tasbihTarget, setTasbihTarget] = useState(33);
   const [tasbihRounds, setTasbihRounds] = useState(0);
-  const [tasbihTotal, setTasbihTotal] = useState(13);
+  const [tasbihTotal, setTasbihTotal] = useState(0);
   const [tasbihSound, setTasbihSound] = useState(true);
   const [activeDhikrIndex, setActiveDhikrIndex] = useState(0);
 
@@ -178,20 +200,6 @@ export default function TahfizQuranApp({
       localStorage.setItem("tahfiz_quran_last_read_v1", JSON.stringify(lastRead));
     } catch {}
   }, [lastRead]);
-
-  // Countdown timer for ad-free mode
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setAdFreeRemainingSeconds((prev) => Math.max(0, prev - 1));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, []);
-
-  const formatCountdown = (totalSec) => {
-    const hours = Math.floor(totalSec / 3600);
-    const mins = Math.floor((totalSec % 3600) / 60);
-    return `${toBn(hours)} ঘণ্টা ${toBn(mins)} মিনিট`;
-  };
 
   // Sound Synthesizer for Digital Tasbih
   const playBeadClickSound = () => {
@@ -237,19 +245,6 @@ export default function TahfizQuranApp({
     }
   };
 
-  // Handle Rewarded Ad Extension (+3 Hours)
-  const handleWatchRewardedAd = () => {
-    setIsWatchingAd(true);
-    setTimeout(() => {
-      setIsWatchingAd(false);
-      setIsRewardModalOpen(false);
-      setAdFreeRemainingSeconds((prev) => prev + 3 * 3600);
-      toast.success("মাশাআল্লাহ! বিজ্ঞাপন মুক্ত মোড ৩ ঘণ্টা বাড়ানো হয়েছে।", {
-        icon: "👑"
-      });
-    }, 2500);
-  };
-
   // Audio Engine Playback Handlers (Instant Recitation from Ayah Start + Live Synchronized Highlighting)
   const handlePlayAyah = (ayahNum, surahId, overrideQariId = null, directWords = null, startWordIndex = 0) => {
     const sId = surahId || readerSurahId;
@@ -291,6 +286,7 @@ export default function TahfizQuranApp({
           audioRef.current.pause();
         } catch {}
       }
+      universalAudioEngine.claimExternalAudio(audioRef.current, `ayah_${sId}_${aNum}_${activeQari}`);
 
       // Preload timing segments and set Ayah text/words for live synchronized highlighting
       if (directWords && directWords.length > 0) {
@@ -370,6 +366,7 @@ export default function TahfizQuranApp({
   };
 
   const handleStopAudio = () => {
+    universalAudioEngine.stopAll();
     if (audioRef.current) {
       try {
         audioRef.current.pause();
@@ -380,6 +377,22 @@ export default function TahfizQuranApp({
     setPlayingAyahNumber(null);
     setActiveWordIndex(-1);
     playingAyahWordsRef.current = [];
+  };
+
+  const handleQariChange = (qariId) => {
+    if (!QARI_REGISTRY.some((qari) => qari.id === qariId)) return;
+    const activeAyah = playingAyahNumber;
+    const activeSurah = playingSurahId;
+    const shouldResume = Boolean(isPlayingAudio && activeAyah && activeSurah);
+
+    setSelectedQari(qariId);
+    setStoredQariPreference(qariId);
+
+    if (shouldResume) {
+      handlePlayAyah(activeAyah, activeSurah, qariId);
+    } else if (audioRef.current) {
+      handleStopAudio();
+    }
   };
 
   // Jump to specific Para & Page (হাফেজী বিন্যাস: ১নং পারায় ২১ পৃষ্ঠা, ২৯নং এ ২৪, ৩০নং এ ২৫, বাকিগুলোতে ২০ পৃষ্ঠা করে)
@@ -399,7 +412,8 @@ export default function TahfizQuranApp({
       ayah: target.ayah,
       para: p,
       page: uthmaniPage,
-      percentage: Math.min(100, Math.round((uthmaniPage / TOTAL_UTHMANI_PAGES) * 100))
+      percentage: Math.min(100, Math.round((uthmaniPage / TOTAL_UTHMANI_PAGES) * 100)),
+      updatedAt: new Date().toISOString(),
     });
 
     setIsPageSearchOpen(false);
@@ -431,7 +445,8 @@ export default function TahfizQuranApp({
       ayah: aNum,
       para: loc.para,
       page: targetPage,
-      percentage: Math.min(100, Math.round((targetPage / TOTAL_UTHMANI_PAGES) * 100))
+      percentage: Math.min(100, Math.round((targetPage / TOTAL_UTHMANI_PAGES) * 100)),
+      updatedAt: new Date().toISOString(),
     });
 
     setIsPageSearchOpen(false);
@@ -450,6 +465,16 @@ export default function TahfizQuranApp({
     }
     const targetPage = Math.min(TOTAL_UTHMANI_PAGES, Math.max(1, Math.round((rawPage / 610) * TOTAL_UTHMANI_PAGES)));
     setReaderPageNum(targetPage);
+    const pageMeta = getHafiziPageMeta(targetPage);
+    const pageLocation = getHafiziLocation(targetPage);
+    setLastRead({
+      surahId: pageMeta.ranges[0]?.surah || readerSurahId,
+      ayah: pageMeta.ranges[0]?.fromAyah || 1,
+      para: pageLocation.para,
+      page: targetPage,
+      percentage: Math.min(100, Math.round((targetPage / TOTAL_UTHMANI_PAGES) * 100)),
+      updatedAt: new Date().toISOString(),
+    });
     setReaderMode("mushaf");
     setIsPageSearchOpen(false);
     setCurrentScreen("reader");
@@ -470,7 +495,8 @@ export default function TahfizQuranApp({
       ayah: 1,
       para: loc.para,
       page: targetPage,
-      percentage: Math.min(100, Math.round((targetPage / TOTAL_UTHMANI_PAGES) * 100))
+      percentage: Math.min(100, Math.round((targetPage / TOTAL_UTHMANI_PAGES) * 100)),
+      updatedAt: new Date().toISOString(),
     });
 
     setCurrentScreen("reader");
@@ -487,7 +513,7 @@ export default function TahfizQuranApp({
       para: loc.para,
       page: readerPageNum,
       label: newBookmarkLabel.trim() || `সূরা ${sMeta.nameBn} (পৃষ্ঠা ${toBn(readerPageNum)})`,
-      date: "আজ"
+      date: formatBangladeshDate(new Date()),
     };
 
     setBookmarks((prev) => [newBm, ...prev]);
@@ -554,26 +580,16 @@ export default function TahfizQuranApp({
                 <div className="w-2.5 h-8 bg-gradient-to-b from-[#00d2b8] to-[#14b8a6] rounded-full shadow-[0_0_12px_rgba(0,210,184,0.6)]" />
                 <div>
                   <h1 className="text-base sm:text-lg font-black text-white tracking-wide flex items-center gap-1.5">
-                    <span>নূর কুরআন শরীফ</span>
+                    <span>আল-কুরআনুল কারীম</span>
                   </h1>
                   <p className="text-[11px] text-teal-300/80 font-medium tracking-tight">
-                    সহজে ও স্পষ্ট পবিত্র কুরআন
+                    নূর • ১৫-লাইন হিফজী মুসহাফ
                   </p>
                 </div>
               </div>
 
-              {/* Action Buttons: Ad-free, Theme, Settings */}
+              {/* Action Buttons: Theme, Settings */}
               <div className="flex items-center gap-1.5">
-                {/* Ad-free Golden Badge */}
-                <button
-                  type="button"
-                  onClick={() => setIsRewardModalOpen(true)}
-                  className="px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500/20 via-amber-400/10 to-amber-500/20 border border-amber-400/60 text-amber-300 font-black text-[11px] flex items-center gap-1 shadow-xs hover:border-amber-400 transition cursor-pointer active:scale-95"
-                >
-                  <Award className="w-3.5 h-3.5 text-amber-400" />
-                  <span>বিজ্ঞাপন মুক্ত</span>
-                </button>
-
                 {/* Day / Night Theme Toggle */}
                 <button
                   type="button"
@@ -603,18 +619,18 @@ export default function TahfizQuranApp({
               <div className="absolute -right-4 -top-4 w-32 h-32 rounded-full border border-teal-500/15 pointer-events-none" />
 
               <div className="text-center space-y-2">
-                {/* Live Current Date */}
+                {/* Current Bangladesh date */}
                 <h2 className="text-base sm:text-lg font-black text-white tracking-wide">
-                  সোমবার, ৯ নভেম্বর ২০২৬
+                  {bangladeshNow ? formatBangladeshDate(bangladeshNow) : "—"}
                 </h2>
 
-                {/* Side-by-side Bengali & Hijri date badges */}
+                {/* Bengali Era & Hijri Date badges */}
                 <div className="flex flex-wrap items-center justify-center gap-2">
-                  <span className="px-3 py-1 rounded-full bg-teal-950/70 border border-teal-500/40 text-teal-300 text-xs font-bold">
-                    ২৪ কার্তিক ১৪৩৩ বঙ্গাব্দ
+                  <span className="px-3 py-1 rounded-full bg-teal-950/60 border border-teal-500/30 text-teal-200 text-xs font-bold">
+                    {bangladeshNow ? formatBangladeshEraDate(bangladeshNow) : "—"}
                   </span>
                   <span className="px-3 py-1 rounded-full bg-amber-950/40 border border-amber-500/30 text-amber-300 text-xs font-bold">
-                    ২৯ জমাদিউল আউয়াল ১৪৪৮ হিজরি
+                    {bangladeshNow ? formatBangladeshHijriDate(bangladeshNow) : "—"}
                   </span>
                 </div>
 
@@ -624,43 +640,17 @@ export default function TahfizQuranApp({
                 </p>
               </div>
 
-              {/* Sunrise & Sunset Pills */}
+              {/* Calculated sunrise and sunset for Rahmania Institute */}
               <div className="grid grid-cols-2 gap-2 pt-1 border-t border-teal-900/40">
                 <div className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-black/30 border border-teal-500/20 text-xs text-slate-300">
                   <span className="text-amber-400 text-sm">🌅</span>
-                  <span>সূর্যোদয়: ০৬:০৯ AM</span>
+                  <span>সূর্যোদয়: {instituteSunTimes ? formatBangladeshClock(instituteSunTimes.sunrise) : "—"}</span>
                 </div>
                 <div className="flex items-center justify-center gap-1.5 py-1.5 px-2 rounded-xl bg-black/30 border border-teal-500/20 text-xs text-slate-300">
                   <span className="text-amber-500 text-sm">🌇</span>
-                  <span>সূর্যাস্ত: ০৫:১৫ PM</span>
+                  <span>সূর্যাস্ত: {instituteSunTimes ? formatBangladeshClock(instituteSunTimes.sunset) : "—"}</span>
                 </div>
               </div>
-            </div>
-
-            {/* 3. REWARDED AD-FREE MODE CARD */}
-            <div className="rounded-2xl bg-[#0c2d27]/80 border border-teal-500/20 p-3.5 flex items-center justify-between shadow-lg">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-teal-500/20 border border-teal-400/50 flex items-center justify-center text-[#00d2b8] shadow-sm">
-                  <CheckCircle2 className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-xs sm:text-sm font-extrabold text-white">
-                    বিজ্ঞাপন মুক্ত মোড সক্রিয়
-                  </h3>
-                  <p className="text-[11px] text-teal-300/80">
-                    বাকি: {formatCountdown(adFreeRemainingSeconds)} • বাড়াতে চাপুন
-                  </p>
-                </div>
-              </div>
-
-              {/* + বাড়ান Action Button */}
-              <button
-                type="button"
-                onClick={() => setIsRewardModalOpen(true)}
-                className="px-3 py-1.5 rounded-xl bg-teal-950/80 hover:bg-teal-900 border border-teal-500/40 text-[#00d2b8] hover:text-white font-black text-xs shadow-xs active:scale-95 transition cursor-pointer"
-              >
-                +বাড়ান
-              </button>
             </div>
 
             {/* 4. CONTINUE READING SECTION ("পড়া চালিয়ে যান") */}
@@ -668,12 +658,12 @@ export default function TahfizQuranApp({
               <div className="flex items-center gap-2">
                 <div className="w-1.5 h-4 bg-[#00d2b8] rounded-full shadow-[0_0_8px_rgba(0,210,184,0.8)]" />
                 <h3 className="text-xs sm:text-sm font-black text-white">
-                  পড়া চালিয়ে যান
+                  {lastRead ? "পড়া চালিয়ে যান" : "কুরআন পড়া শুরু করুন"}
                 </h3>
               </div>
 
-              {/* Interactive Continue Reading Card */}
-              <div
+              {lastRead ? (
+                <div
                 onClick={() => {
                   setReaderSurahId(lastRead.surahId);
                   setReaderPageNum(lastRead.page);
@@ -711,7 +701,16 @@ export default function TahfizQuranApp({
                     {toBn(lastRead.percentage)}%
                   </span>
                 </div>
-              </div>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setCurrentScreen("reader")}
+                  className="w-full rounded-2xl bg-[#0c2d27]/85 hover:bg-[#0f3730] border border-teal-500/25 p-4 text-left text-sm font-bold text-teal-100 transition-colors"
+                >
+                  এখনো পড়ার ইতিহাস নেই। মুসহাফ খুলে পড়া শুরু করুন।
+                </button>
+              )}
             </div>
 
             {/* 5. ALL FEATURES 2x3 GRID ("সকল ফিচার") */}
@@ -771,8 +770,10 @@ export default function TahfizQuranApp({
                 <button
                   type="button"
                   onClick={() => {
-                    setReaderSurahId(lastRead.surahId);
-                    setReaderPageNum(lastRead.page);
+                    if (lastRead) {
+                      setReaderSurahId(lastRead.surahId);
+                      setReaderPageNum(lastRead.page);
+                    }
                     setCurrentScreen("reader");
                   }}
                   className="rounded-2xl bg-[#0c2d27]/80 hover:bg-[#0f3730] border border-teal-500/20 p-4 flex flex-col items-center justify-center space-y-2 shadow-lg transition-all active:scale-95 cursor-pointer group"
@@ -781,7 +782,7 @@ export default function TahfizQuranApp({
                     <FileText className="w-6 h-6" />
                   </div>
                   <span className="text-xs font-black text-white group-hover:text-teal-300">
-                    সর্বশেষ পঠিত
+                    {lastRead ? "সর্বশেষ পঠিত" : "পড়া শুরু করুন"}
                   </span>
                 </button>
 
@@ -1255,11 +1256,16 @@ export default function TahfizQuranApp({
                   pageNum={readerPageNum}
                   onPageChange={(p) => {
                     setReaderPageNum(p);
-                    setLastRead((prev) => ({
-                      ...prev,
+                    const pageMeta = getHafiziPageMeta(p);
+                    const pageLocation = getHafiziLocation(p);
+                    setLastRead({
+                      surahId: pageMeta.ranges[0]?.surah || readerSurahId,
+                      ayah: pageMeta.ranges[0]?.fromAyah || 1,
+                      para: pageLocation.para,
                       page: p,
-                      percentage: Math.min(100, Math.round((p / TOTAL_UTHMANI_PAGES) * 100))
-                    }));
+                      percentage: Math.min(100, Math.round((p / TOTAL_UTHMANI_PAGES) * 100)),
+                      updatedAt: new Date().toISOString(),
+                    });
                   }}
                   onJumpToParaPage={handleJumpToParaAndPage}
                   onPlayAyah={handlePlayAyah}
@@ -1271,7 +1277,7 @@ export default function TahfizQuranApp({
                   readerTheme={pageFilter === "day" ? "day" : "night"}
                   getSurahData={getSurahData}
                   selectedQari={selectedQari}
-                  onSelectQari={(qId) => setSelectedQari(qId)}
+                  onSelectQari={handleQariChange}
                   onOpenSearch={() => setIsPageSearchOpen(true)}
                 />
               ) : (
@@ -1298,9 +1304,7 @@ export default function TahfizQuranApp({
                       value={selectedQari}
                       onChange={(e) => {
                         const qId = e.target.value;
-                        setSelectedQari(qId);
-                        setStoredQariPreference(qId);
-                        handlePlayAyah(playingAyahNumber, playingSurahId, qId);
+                        handleQariChange(qId);
                       }}
                       className="text-[10px] bg-black/50 text-teal-300 border border-teal-500/30 rounded px-1.5 py-0.5 mt-0.5 font-bold focus:outline-none cursor-pointer max-w-full truncate"
                     >
@@ -1701,53 +1705,6 @@ export default function TahfizQuranApp({
                     সংরক্ষণ করুন
                   </button>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ── MODAL 3: REWARDED AD BONUS MODAL ── */}
-        {isRewardModalOpen && (
-          <div className="fixed inset-0 z-50 bg-black/85 backdrop-blur-xs flex items-center justify-center p-4 animate-fadeIn">
-            <div className="w-full max-w-sm rounded-3xl bg-[#09221e] border-2 border-amber-500/40 p-5 shadow-2xl space-y-4 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-amber-500/15 border border-amber-400/50 flex items-center justify-center text-amber-400 mx-auto shadow-md">
-                <Award className="w-8 h-8" />
-              </div>
-
-              <div>
-                <h3 className="font-black text-base text-white">বিজ্ঞাপন মুক্ত সময় বাড়ান</h3>
-                <p className="text-xs text-amber-300 font-bold mt-1">
-                  একটি ছোট ভিডিও দেখলে আরও +৩ ঘণ্টা বিজ্ঞাপন মুক্ত পাঠ উপভোগ করুন!
-                </p>
-                <p className="text-[11px] text-slate-400 mt-1">
-                  বর্তমানে বাকি আছে: {formatCountdown(adFreeRemainingSeconds)}
-                </p>
-              </div>
-
-              <div className="flex items-center gap-2 pt-2">
-                <button
-                  type="button"
-                  disabled={isWatchingAd}
-                  onClick={() => setIsRewardModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl bg-black/40 border border-slate-700 text-slate-300 font-bold text-xs cursor-pointer"
-                >
-                  পরে করব
-                </button>
-                <button
-                  type="button"
-                  disabled={isWatchingAd}
-                  onClick={handleWatchRewardedAd}
-                  className="flex-1 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-xs shadow-md active:scale-95 transition cursor-pointer flex items-center justify-center gap-1"
-                >
-                  {isWatchingAd ? (
-                    <span>বোনাস যোগ হচ্ছে...</span>
-                  ) : (
-                    <>
-                      <Play className="w-3.5 h-3.5 fill-current" />
-                      <span>ভিডিও দেখুন (+৩ ঘণ্টা)</span>
-                    </>
-                  )}
-                </button>
               </div>
             </div>
           </div>

@@ -56,7 +56,7 @@ export default function AdmissionBanner() {
 
               style={{ background: "rgba(212,175,55,0.18)", border: "1px solid rgba(212,175,55,0.45)", color: "#D4AF37" }}>
 
-              📋 Admission Open — 2026
+              📋 Admissions — {new Date().getFullYear()}
 
             </div>
 

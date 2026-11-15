@@ -1,4 +1,6 @@
-import { NOORANI_QAIDA_17_TAKHTIS, NOORANI_QAIDA_MODULES } from "../src/features/ai-learning/data/nooraniQaidaCurriculum.js";
+import { NOORANI_QAIDA_MODULES } from "../src/features/ai-learning/data/nooraniQaidaCurriculum.js";
+import { NOOR_QAIDA_CLASSES } from "../src/features/quran/data/noorQaidaCurriculumData.js";
+import { SPECIAL_PAGES } from "../src/features/quran/data/noorQaidaPagesData.js";
 import {
   KIDS_ARABIC_LETTERS,
   KIDS_MURAKKABAT_DATA,
@@ -18,11 +20,46 @@ import { resolveArabicSoundAudio, resolveLetterAudio, resolveWordAudio } from ".
 
 // Collect all unique Arabic items across the entire platform
 const items = new Set();
+const explicitAudio = new Map();
+const explicitlyUnverified = new Set();
+const ayahReferenceTargets = new Set();
 
 function addToken(str) {
   if (!str || typeof str !== "string") return;
   const clean = str.replace(/[➔➜➝→]/g, "").trim();
-  if (clean) items.add(clean);
+  if (clean && /[\u0600-\u06FF]/.test(clean)) items.add(clean);
+}
+
+function collectQaidaTargets(value) {
+  if (Array.isArray(value)) {
+    value.forEach(collectQaidaTargets);
+    return;
+  }
+  if (!value || typeof value !== "object") return;
+
+  const audioUrl = value.audioUrl || value.audio;
+  const soundIsArabic = typeof value.sound === "string" && /[\u0600-\u06FF]/.test(value.sound);
+  const targetText = soundIsArabic ? value.sound : (value.ar || value.word || value.sound);
+  if (typeof targetText === "string") {
+    addToken(targetText);
+    if (value.audioStatus === "unverified") {
+      explicitlyUnverified.add(targetText.replace(/[➔➜➝→]/g, "").trim());
+    }
+  }
+  if (
+    typeof targetText === "string" &&
+    typeof audioUrl === "string" &&
+    (/^https?:\/\//i.test(audioUrl) || audioUrl.startsWith("/"))
+  ) {
+    const target = targetText.replace(/[➔➜➝→]/g, "").trim();
+    if (target) {
+      const urls = explicitAudio.get(target) || [];
+      urls.push(audioUrl);
+      explicitAudio.set(target, urls);
+    }
+  }
+
+  Object.values(value).forEach(collectQaidaTargets);
 }
 
 // 1. Kids Arabic Letters (all 29 letters and their isolated, initial, medial, final forms)
@@ -77,18 +114,7 @@ DRAG_DROP_LEVELS.forEach(lvl => {
   if (lvl.letters) lvl.letters.forEach(l => addToken(l.ar));
 });
 
-// 10. Noorani Qaida 17 Takhtis
-for (const t of NOORANI_QAIDA_17_TAKHTIS) {
-  if (t.drills) {
-    for (const d of t.drills) {
-      if (d.ar) {
-        d.ar.split(/\s+/).forEach(tok => addToken(tok));
-      }
-    }
-  }
-}
-
-// 11. Noorani Qaida Modules
+// 10. Noorani Qaida modules rendered by the Duolingo learning page
 for (const m of NOORANI_QAIDA_MODULES) {
   for (const l of m.lessons) {
     if (l.arabicItems) {
@@ -102,6 +128,27 @@ for (const m of NOORANI_QAIDA_MODULES) {
     }
   }
 }
+
+collectQaidaTargets(NOOR_QAIDA_CLASSES);
+collectQaidaTargets(KIDS_TANWEEN_DATA);
+collectQaidaTargets(DRAG_DROP_LEVELS);
+collectQaidaTargets(KIDS_MURAKKABAT_DATA);
+collectQaidaTargets(KIDS_HARAKAT_DRILL_DATA);
+collectQaidaTargets(KIDS_JAZM_QALQALAH_DATA);
+collectQaidaTargets(KIDS_TASHDEED_DATA);
+collectQaidaTargets(KIDS_MADD_DATA);
+collectQaidaTargets(KIDS_HARAKAT_GAME_LEVELS);
+collectQaidaTargets(KIDS_MEMORY_GAME_LEVELS);
+collectQaidaTargets(KIDS_SOUND_DETECTIVE_LEVELS);
+collectQaidaTargets(SPECIAL_PAGES[5].cards);
+collectQaidaTargets(SPECIAL_PAGES[18].pairs);
+collectQaidaTargets(SPECIAL_PAGES[39].items);
+collectQaidaTargets(SPECIAL_PAGES[56].bingoWords);
+SPECIAL_PAGES[18].riddles.forEach((riddle) => riddle.options.forEach(addToken));
+SPECIAL_PAGES[88].surahs.forEach((surah) => {
+  addToken(surah.firstAyah);
+  ayahReferenceTargets.add(surah.firstAyah.trim());
+});
 
 // 12. Sifat Curriculum Letters
 Object.values(LETTER_SIFAT_MAP).forEach(s => addToken(s.letterAr));
@@ -119,17 +166,6 @@ alifLetters.forEach(l => {
 
 console.log(`Total unique Arabic items collected: ${items.size}`);
 
-const explicitlyUnverified = new Set(
-  [
-    ...KIDS_TANWEEN_DATA.filter((item) => item.audioStatus === "unverified").map((item) => item.ar),
-    ...DRAG_DROP_LEVELS.flatMap((level) =>
-      level.letters
-        .filter((item) => item.audioStatus === "unverified")
-        .map((item) => item.ar)
-    ),
-  ]
-);
-
 const resolved = [];
 const missing = [];
 const unverified = [];
@@ -139,7 +175,13 @@ for (const item of items) {
   const letterRes = resolveLetterAudio(item);
   const wordRes = resolveWordAudio(item);
 
-  if (soundRes.found || letterRes.found || (wordRes && wordRes.found)) {
+  if (
+    soundRes.found ||
+    letterRes.found ||
+    (wordRes && wordRes.found) ||
+    explicitAudio.has(item) ||
+    ayahReferenceTargets.has(item)
+  ) {
     resolved.push(item);
   } else if (explicitlyUnverified.has(item)) {
     unverified.push(item);

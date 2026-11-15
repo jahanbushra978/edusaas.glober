@@ -1380,7 +1380,7 @@ export default function AIQuranTutorPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-10 mt-10 border-t border-emerald-900/60 text-center text-xs text-emerald-400/60">
-          © 2026 AI Quran Tutor. সর্বস্বত্ব সংরক্ষিত।
+          © {new Date().getFullYear()} AI Quran Tutor. সর্বস্বত্ব সংরক্ষিত।
         </div>
       </footer>
 

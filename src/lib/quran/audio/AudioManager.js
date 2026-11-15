@@ -68,6 +68,14 @@ class AudioManager {
     }
   }
 
+  claimExternalAudio(audio, assetId) {
+    if (!audio) return null;
+    if (this.activeAudio !== audio) this.stop();
+    this.activeAudio = audio;
+    this.activeAssetId = assetId || audio.currentSrc || audio.src || "external-audio";
+    return audio;
+  }
+
   /**
    * Pause current playback without resetting position
    */

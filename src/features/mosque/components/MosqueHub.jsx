@@ -54,6 +54,7 @@ import {
 // Redesigned Module Launcher & Public Website
 import { MosqueModuleCenter } from "./MosqueModuleCenter";
 import { PublicMosqueWebsite } from "./PublicMosqueWebsite";
+import { calculateRealtimePrayerState } from "@/lib/quran/bangladesh-time";
 
 // Existing Modal Suite
 import MasterDuesModal from "./modals/MasterDuesModal";
@@ -121,6 +122,17 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
   // Current Active Role & Member Identity
   const [currentUserRole, setCurrentUserRole] = useState("PRESIDENT"); // "SUPER_ADMIN" | "PRESIDENT" | "TREASURER" | "IMAM" | "MEMBER" | "STAFF"
   const [currentMemberId, setCurrentMemberId] = useState("M-101");
+
+  // Real-time live clock for mosque calculations
+  const [liveClock, setLiveClock] = useState(() => new Date());
+  useEffect(() => {
+    const timer = setInterval(() => setLiveClock(new Date()), 30000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const realtimeAdminPrayer = useMemo(() => {
+    return calculateRealtimePrayerState(liveClock, db.prayerSchedule);
+  }, [liveClock, db.prayerSchedule]);
 
   // Operating View Mode: Default to "public" landing page when clicking Mosque card
   const [viewMode, setViewMode] = useState("public");
@@ -325,9 +337,6 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
       <PublicMosqueWebsite
         mosque={currentMosque}
         schedule={db.prayerSchedule}
-        currentPrayer={db.prayerSchedule[3]}
-        countdown="৪৫ মিনিট বাকি"
-        nextJamaatText="মাগরিব জামা'আত: ০৫:১৫ PM"
         onOpenLogin={() => {}}
         onLoginRole={handleLoginRole}
         onOpenDiscovery={() => setActiveModal("mosque-discovery")}
@@ -1658,15 +1667,22 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
 
                 {/* Prayer Schedule Cards Grid */}
                 <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
-                  {db.prayerSchedule.map((p, idx) => (
-                    <div
-                      key={idx}
-                      className={`p-3.5 rounded-2xl border ${
-                        p.isActive
-                          ? "bg-emerald-50 dark:bg-emerald-950/60 border-2 border-[#0D7A5F] shadow-xs"
-                          : "bg-stone-50 dark:bg-[#07130e] border-stone-200 dark:border-emerald-900/40"
-                      }`}
-                    >
+                  {db.prayerSchedule.map((p, idx) => {
+                    const isCurrent = !p.isForbidden && Boolean(
+                      realtimeAdminPrayer?.activePrayer && (
+                        (p.id && p.id === realtimeAdminPrayer.activePrayer.id) ||
+                        p.name === realtimeAdminPrayer.activePrayer.name
+                      )
+                    );
+                    return (
+                      <div
+                        key={p.id || idx}
+                        className={`p-3.5 rounded-2xl border ${
+                          isCurrent
+                            ? "bg-emerald-50 dark:bg-emerald-950/60 border-2 border-[#0D7A5F] shadow-xs"
+                            : "bg-stone-50 dark:bg-[#07130e] border-stone-200 dark:border-emerald-900/40"
+                        }`}
+                      >
                       <div className="text-[10px] font-mono text-stone-400">{p.arabic || "الفجر"}</div>
                       <div className="text-sm font-black text-stone-900 dark:text-stone-100 mt-1">{p.name}</div>
                       <div className="text-[11px] text-stone-500 mt-0.5">আযান: {p.start}</div>
@@ -1675,7 +1691,8 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                       </div>
                       <div className="text-[10px] text-stone-400 mt-0.5">শেষ: {p.end || "—"}</div>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* Imam Duties & Khutba Quick Notes */}

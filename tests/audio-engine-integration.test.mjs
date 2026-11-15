@@ -26,7 +26,7 @@ test("8. SSR Safety Verification (window undefined)", () => {
 test("9. Ayah Audio Resolution across multiple Qaris", () => {
   const surah = 1;
   const ayah = 1;
-  const qaris = ["husary_muallim", "alafasy", "abdul_basit", "minshawi_murattal", "sudais", "ghamadi"];
+  const qaris = ["husary_muallim", "alafasy", "abdul_basit", "minshawy_teacher", "sudais", "ghamadi"];
   
   for (const qari of qaris) {
     const res = resolveAyahAudio(surah, ayah, qari);

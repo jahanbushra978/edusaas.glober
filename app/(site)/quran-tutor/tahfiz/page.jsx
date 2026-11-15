@@ -2,8 +2,8 @@ import React from "react";
 import TahfizQuranApp from "@/features/quran/components/TahfizQuranApp";
 
 export const metadata = {
-  title: "নূর কুরআন শরীফ — সহজে ও স্পষ্ট পবিত্র কুরআন | Edusaas",
-  description: "মোবাইল-ফার্স্ট ১৫ লাইনের পূর্ণাঙ্গ হাফেজী কুরআন মুসহাফ, ডিজিটাল তাসবীহ ও তাজবীদ লার্নিং প্ল্যাটফর্ম।",
+  title: "আল-কুরআনুল কারীম — ১৫-লাইন হিফজী মুসহাফ | নূর",
+  description: "আল-কুরআনুল কারীমের ১৫-লাইন হিফজী মুসহাফ, আয়াত অনুসন্ধান, বুকমার্ক ও তিলাওয়াত সুবিধা।",
 };
 
 export default function TahfizQuranPage() {

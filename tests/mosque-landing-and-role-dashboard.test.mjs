@@ -48,7 +48,7 @@ test("Mosque Platform Suite: Landing Page, Prayer Schedule, Mosque Details, Plat
 
     // Check Live Clock & Islamic Calendar
     assert.match(publicWebsiteContent, /currentTime/, "Must track live time");
-    assert.match(publicWebsiteContent, /জমাদিউল আউয়াল/, "Must display Islamic Hijri month");
+    assert.match(publicWebsiteContent, /formatBangladeshHijriDate|হিজরি/, "Must display Islamic Hijri month dynamically");
     assert.match(publicWebsiteContent, /formattedGregorianDate/, "Must display Gregorian / Bengali date");
 
     // Check Countdown & Next Jama'at

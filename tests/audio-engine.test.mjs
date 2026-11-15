@@ -42,6 +42,7 @@ if (typeof globalThis.window === "undefined") {
 import { AUDIO_CONFIG } from "../src/lib/quran/audio/AudioConfig.js";
 import { audioEvents, AUDIO_EVENTS } from "../src/lib/quran/audio/AudioEvents.js";
 import { audioCache } from "../src/lib/quran/audio/AudioCache.js";
+import { audioManager } from "../src/lib/quran/audio/AudioManager.js";
 import {
   SHAYKH_REGISTRY,
   DEFAULT_SHAYKH_ID,
@@ -72,6 +73,33 @@ test("1. Centralized Audio Engine Singleton & Config Verification", () => {
 
   assert.equal(AUDIO_CONFIG.DEFAULT_SHAYKH_ID, "husary_muallim");
   assert.ok(AUDIO_CONFIG.MAX_IN_MEMORY_AUDIO_INSTANCES >= 100);
+});
+
+test("AudioManager enforces exclusive playback for externally-owned audio elements", () => {
+  const makeAudio = () => ({
+    paused: false,
+    currentTime: 3,
+    pauseCount: 0,
+    pause() { this.pauseCount += 1; this.paused = true; },
+    ontimeupdate() {},
+    onended() {},
+    onerror() {},
+  });
+  const first = makeAudio();
+  const second = makeAudio();
+
+  audioManager.claimExternalAudio(first, "reader-first");
+  audioManager.claimExternalAudio(second, "reader-second");
+
+  assert.equal(first.pauseCount, 1);
+  assert.equal(first.currentTime, 0);
+  assert.equal(first.ontimeupdate, null);
+  assert.equal(first.onended, null);
+  assert.equal(audioManager.activeAudio, second);
+
+  audioManager.stop();
+  assert.equal(second.pauseCount, 1);
+  assert.equal(audioManager.activeAudio, null);
 });
 
 test("2. Complete 29 Arabic Letters (Huruf Mufradat) Resolution Coverage", () => {
@@ -132,6 +160,9 @@ test("4. EveryAyah CDN Ayah URL Generation & Canonical Shaykh Registry", () => {
   const selectedQariAudio = resolveAyahAudio(112, 4, "abdul_basit");
   assert.deepEqual(selectedQariAudio.urls, [switchedUrl]);
   assert.equal(selectedQariAudio.qariId, "abdul_basit");
+  assert.equal(resolveAyahAudio(112, 4, "unknown_qari").found, false);
+  assert.deepEqual(resolveAyahAudio(112, 4, "unknown_qari").urls, []);
+  assert.equal(switchAudioUrlQari("https://example.test/old-reciter/001001.mp3", "alafasy"), "");
 
   // Persistent preference save & retrieve
   setActiveShaykhId("sudais");

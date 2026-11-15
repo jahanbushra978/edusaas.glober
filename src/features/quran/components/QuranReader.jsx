@@ -322,6 +322,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
           setIsLoadingSurah(false);
           // If surah changes, reset audio safely
           if (audioRef.current && playingAyahRef.current) {
+            universalAudioEngine.stopAll();
             try {
               audioRef.current.pause();
             } catch {}
@@ -424,6 +425,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
     const audioUrl = getAyahAudioUrl(selectedQariRef.current, selectedSurahIdRef.current, ayahNumber);
     const audio = audioCache.getOrCreate(audioUrl);
     audioRef.current = audio;
+    universalAudioEngine.claimExternalAudio(audio, `ayah_${selectedSurahIdRef.current}_${ayahNumber}_${selectedQariRef.current}`);
 
     audio.defaultPlaybackRate = playbackSpeedRef.current;
     audio.playbackRate = playbackSpeedRef.current;
@@ -654,6 +656,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
   const closePlayerBar = () => {
     universalAudioEngine.stopAll();
     if (audioRef.current) {
+      universalAudioEngine.stopAll();
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
     }
@@ -686,6 +689,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
     );
 
     playbackSessionIdRef.current += 1;
+    universalAudioEngine.stopAll();
     if (audioRef.current) {
       audioRef.current.pause();
       audioRef.current.onloadedmetadata = null;

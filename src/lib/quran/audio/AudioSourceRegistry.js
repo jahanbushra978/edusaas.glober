@@ -341,6 +341,19 @@ export function resolveArabicSoundAudio(text) {
 export function resolveAyahAudio(surahNumber, ayahNumber, qariId = "alafasy") {
   const url = getQariAudioUrl(qariId, surahNumber, ayahNumber);
 
+  if (!url) {
+    return {
+      found: false,
+      urls: [],
+      assetId: `ayah_${surahNumber}_${ayahNumber}_${qariId}`,
+      surahNumber,
+      ayahNumber,
+      qariId,
+      missingAsset: true,
+      reason: `No recitation URL is registered for Qari "${qariId}".`,
+    };
+  }
+
   return {
     found: true,
     urls: [url],

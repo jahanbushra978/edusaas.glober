@@ -677,13 +677,13 @@ export function provisionNewMosqueWorkspace(mosqueInfo, onboardingData = null) {
       monthlyFee: 300,
     },
     prayerSchedule: [
-      { name: "ফজর", arabic: "الفجر", start: "০৫:০২ AM", end: "০৬:১৮ AM", jamaat: "০৫:২৫ AM", isActive: false },
-      { name: "সূর্যোদয়", arabic: "الشروق", start: "০৬:১৯ AM", end: "—", jamaat: "—", isForbidden: true },
-      { name: "যোহর", arabic: "الظهر", start: "১১:৪৬ AM", end: "০৩:৪৩ PM", jamaat: "০১:১৫ PM", isActive: false },
-      { name: "আসর", arabic: "العصر", start: "০৩:৪৪ PM", end: "০৫:০৮ PM", jamaat: "০৪:১৫ PM", isActive: true },
-      { name: "মাগরিব", arabic: "المغرب", start: "০৫:০৯ PM", end: "০৬:২৩ PM", jamaat: "০৫:১৫ PM", isActive: false },
-      { name: "এশা", arabic: "العشاء", start: "০৬:২৪ PM", end: "০৪:৫৯ AM", jamaat: "০৭:৩০ PM", isActive: false },
-      { name: "জুমা", arabic: "الجمعة", start: "১১:৪৬ AM", end: "০৩:৪৩ PM", jamaat: "০১:৩০ PM", isJummah: true },
+      { id: "fajr", name: "ফজর", arabic: "الفجر", start: "০৫:০২ AM", end: "০৬:১৮ AM", jamaat: "০৫:২৫ AM" },
+      { id: "sunrise", name: "সূর্যোদয়", arabic: "الشروق", start: "০৬:১৯ AM", end: "—", jamaat: "—", isForbidden: true },
+      { id: "dhuhr", name: "যোহর", arabic: "الظهر", start: "১১:৪৬ AM", end: "০৩:৪৩ PM", jamaat: "০১:১৫ PM" },
+      { id: "asr", name: "আসর", arabic: "العصر", start: "০৩:৪৪ PM", end: "০৫:০৮ PM", jamaat: "০৪:১৫ PM" },
+      { id: "maghrib", name: "মাগরিব", arabic: "المغرب", start: "০৫:০৯ PM", end: "০৬:২৩ PM", jamaat: "০৫:১৫ PM" },
+      { id: "isha", name: "এশা", arabic: "العشاء", start: "০৬:২৪ PM", end: "০৪:৫৯ AM", jamaat: "০৭:৩০ PM" },
+      { id: "jumuah", name: "জুমা", arabic: "الجمعة", start: "১১:৪৬ AM", end: "০৩:৪৩ PM", jamaat: "০১:৩০ PM", isJummah: true },
     ],
   };
 
@@ -796,13 +796,13 @@ function createInitialDatabase() {
       monthlyFee: 500,
     },
     prayerSchedule: [
-      { name: "ফজর", arabic: "الفجر", start: "০৫:০২ AM", end: "০৬:১৮ AM", jamaat: "০৫:২৫ AM", isActive: false },
-      { name: "সূর্যোদয়", arabic: "الشروق", start: "০৬:১৯ AM", end: "—", jamaat: "—", isForbidden: true },
-      { name: "যোহর", arabic: "الظهر", start: "১১:৪৬ AM", end: "০৩:৪৩ PM", jamaat: "০১:১৫ PM", isActive: false },
-      { name: "আসর", arabic: "العصر", start: "০৩:৪৪ PM", end: "০৫:০৮ PM", jamaat: "০৪:১৫ PM", isActive: true },
-      { name: "মাগরিব", arabic: "المغرب", start: "০৫:০৯ PM", end: "০৬:২৩ PM", jamaat: "০৫:১৫ PM", isActive: false },
-      { name: "এশা", arabic: "العشاء", start: "০৬:২৪ PM", end: "০৪:৫৯ AM", jamaat: "০৭:৩০ PM", isActive: false },
-      { name: "জুমা", arabic: "الجمعة", start: "১১:৪৬ AM", end: "০৩:৪৩ PM", jamaat: "০১:৩০ PM", isJummah: true },
+      { id: "fajr", name: "ফজর", arabic: "الفجر", start: "০৫:০২ AM", end: "০৬:১৮ AM", jamaat: "০৫:২৫ AM" },
+      { id: "sunrise", name: "সূর্যোদয়", arabic: "الشروق", start: "০৬:১৯ AM", end: "—", jamaat: "—", isForbidden: true },
+      { id: "dhuhr", name: "যোহর", arabic: "الظهر", start: "১১:৪৬ AM", end: "০৩:৪৩ PM", jamaat: "০১:১৫ PM" },
+      { id: "asr", name: "আসর", arabic: "العصر", start: "০৩:৪৪ PM", end: "০৫:০৮ PM", jamaat: "০৪:১৫ PM" },
+      { id: "maghrib", name: "মাগরিব", arabic: "المغرب", start: "০৫:০৯ PM", end: "০৬:২৩ PM", jamaat: "০৫:১৫ PM" },
+      { id: "isha", name: "এশা", arabic: "العشاء", start: "০৬:২৪ PM", end: "০৪:৫৯ AM", jamaat: "০৭:৩০ PM" },
+      { id: "jumuah", name: "জুমা", arabic: "الجمعة", start: "১১:৪৬ AM", end: "০৩:৪৩ PM", jamaat: "০১:৩০ PM", isJummah: true },
     ],
   };
 

@@ -39,7 +39,7 @@ export default function HeroNavBar() {
       children: [
         { label: isBn ? "🎯 এআই কোরআন শিক্ষা (Duolingo)" : "🎯 AI Quran Learning (Duolingo)", to: "/ai-quran-learning" },
         { label: isBn ? "🎙️ লাইভ ভয়েস ক্লাসরুম" : "🎙️ Live Voice Classroom", to: "/quran-tutor/live-class" },
-        { label: isBn ? "📗 নূর কুরআন শরীফ (১৫ লাইন হাফেজী)" : isAr ? "مصحف الحفاظ (١٥ سطر)" : "📗 Nur Quran Sharif (15-Line Hafizi)", to: "/quran-tutor/tahfiz" },
+        { label: isBn ? "📗 নূর হিফজী মুসহাফ (১৫ লাইন)" : isAr ? "مصحف نور للحفظ (١٥ سطرًا)" : "📗 Nur Hifzi Mushaf (15-line)", to: "/quran-tutor/tahfiz" },
         { label: isBn ? "📖 সম্পূর্ণ কুরআন" : "📖 Full Quran Reader", to: "/quran-tutor/studio?tab=reader" },
         { label: isBn ? "নূর AI কুরআন শিক্ষক" : "Nur AI Quran Tutor", to: "/quran-tutor" },
       ],

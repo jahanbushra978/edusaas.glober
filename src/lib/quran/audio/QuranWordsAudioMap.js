@@ -188,6 +188,9 @@ export const AUTHENTIC_QURAN_WORDS_MAP = {
   "رَحْمَهْ": "https://audio.qurancdn.com/wbw/002_157_006.mp3",
   "عَلِيمًا": "https://audio.qurancdn.com/wbw/004_017_019.mp3",
   "عَلِيمَا": "https://audio.qurancdn.com/wbw/004_017_019.mp3",
+  "حَكِيمًا": "https://audio.qurancdn.com/wbw/004_011_081.mp3",
+  "يَجْعَلْ": "https://audio.qurancdn.com/wbw/105_002_002.mp3",
+  "لَمْ": "https://audio.qurancdn.com/wbw/112_003_001.mp3",
   "جَعَلَ": "https://audio.qurancdn.com/wbw/002_022_002.mp3",
   "رِزْقًا": "https://audio.qurancdn.com/wbw/002_022_016.mp3",
   "جَاءَ": "https://audio.qurancdn.com/wbw/110_001_002.mp3",
@@ -373,28 +376,6 @@ export function resolveWordAudio(wordText) {
       assetId: `quran_word_${clean}`,
       word: clean,
     };
-  }
-
-  // 2. Strip diacritics & orthography match as fallback (Uthmani vs Imla'ei)
-  const normalizeForMatch = (s) =>
-    s
-      .replace(/\u0670/g, "ا") // Dagger alif to standard alif
-      .replace(/[\u064B-\u065F\u0653]/g, "") // Harakat & Maddah
-      .replace(/[آأإٱ]/g, "ا") // Normalizing alif variants
-      .replace(/\u0640/g, "") // Tatweel
-      .trim();
-
-  const baseNormalized = normalizeForMatch(clean);
-
-  for (const [key, audioUrl] of Object.entries(AUTHENTIC_QURAN_WORDS_MAP)) {
-    if (normalizeForMatch(key) === baseNormalized) {
-      return {
-        found: true,
-        urls: [audioUrl],
-        assetId: `quran_word_${clean}`,
-        word: clean,
-      };
-    }
   }
 
   return {

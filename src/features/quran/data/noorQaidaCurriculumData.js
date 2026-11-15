@@ -345,7 +345,7 @@ export const NOOR_QAIDA_CLASSES = [
     teacherNoteBn: "শিক্ষার্থীকে ডান থেকে বামে হরফগুলো পৃথক করে পড়তে বলুন: ب - ل - د = بَلَد। হরফ চেনার গতি বাড়াতে দ্রুত ও উল্টো দিক থেকেও ধরুন।",
     colorTheme: "teal",
     items: [
-      { id: "c10-1", ar: "بَلَد", nameBn: "বা - লাম - দাল", tip: "তিনটি পৃথক হরফের চমৎকার সংযুক্তি", tag: "teal", sound: "بَلَد" },
+      { id: "c10-1", ar: "بَلَد", nameBn: "বা - লাম - দাল", tip: "তিনটি পৃথক হরফের চমৎকার সংযুক্তি", tag: "teal", sound: "بَلَد", audioStatus: "unverified" },
       { id: "c10-2", ar: "نَحْنُ", nameBn: "নূন - হা - নূন", tip: "নূন, হা এবং নূন হরফের মিশ্রণ", tag: "teal", sound: "نَحْنُ" },
       { id: "c10-3", ar: "جَعَلَ", nameBn: "জীম - আইন - লাম", tip: "জীম, আইন ও লামের সমন্বয়", tag: "teal", sound: "جَعَلَ" },
       { id: "c10-4", ar: "عَلِمَ", nameBn: "আইন - লাম - মীম", tip: "আইন, লাম ও মীমের শব্দ গঠন", tag: "teal", sound: "عَلِمَ" },
@@ -606,7 +606,7 @@ export const NOOR_QAIDA_CLASSES = [
       { id: "c23-3", ar: "كَتَبَ", nameBn: "কা - তা - বা = কাতাবা", tip: "কুরআনিক শব্দ: তিনি লিখলেন", tag: "jabar", sound: "كَتَبَ" },
       { id: "c23-4", ar: "خَلَقَ", nameBn: "খা - লা - ক্বা = খালাক্বা", tip: "কুরআনিক শব্দ: তিনি সৃষ্টি করলেন", tag: "jabar", sound: "خَلَقَ" },
       { id: "c23-5", ar: "قَرَأَ", nameBn: "ক্বা - রা - আ = ক্বারা'আ", tip: "কুরআনিক শব্দ: তিনি পড়লেন", tag: "jabar", sound: "قَرَأَ" },
-      { id: "c23-6", ar: "نَصَرَ", nameBn: "না - ছোয়া - রা = নাছোয়ারা", tip: "কুরআনিক শব্দ: তিনি সাহায্য করলেন", tag: "jabar", sound: "نَصَرَ" },
+      { id: "c23-6", ar: "نَصَرَ", nameBn: "না - ছোয়া - রা = নাছোয়ারা", tip: "কুরআনিক শব্দ: তিনি সাহায্য করলেন", tag: "jabar", sound: "نَصَرَ", audioStatus: "unverified" },
     ]
   },
   {
@@ -642,10 +642,10 @@ export const NOOR_QAIDA_CLASSES = [
     colorTheme: "blue",
     items: [
       { id: "c25-1", ar: "فُعِلَ", nameBn: "ফু - 'ই - লা = ফু'ইলা", tip: "পেশ + যের + জবর", tag: "blue", sound: "فُعِلَ" },
-      { id: "c25-2", ar: "كُتِبَ", nameBn: "কু - তি - বা = কুতিবা", tip: "কুরআনিক শব্দ: লিখিত হলো", tag: "blue", sound: "كُتِبَ" },
-      { id: "c25-3", ar: "خُلِقَ", nameBn: "খু - লি - ক্বা = খুলিক্বা", tip: "কুরআনিক শব্দ: সৃষ্টি করা হলো", tag: "blue", sound: "خُلِقَ" },
+      { id: "c25-2", ar: "كُتِبَ", nameBn: "কু - তি - বা = কুতিবা", tip: "কুরআনিক শব্দ: লিখিত হলো", tag: "blue", sound: "كُتِبَ", audioStatus: "unverified" },
+      { id: "c25-3", ar: "خُلِقَ", nameBn: "খু - লি - ক্বা = খুলিক্বা", tip: "কুরআনিক শব্দ: সৃষ্টি করা হলো", tag: "blue", sound: "خُلِقَ", audioStatus: "unverified" },
       { id: "c25-4", ar: "رُزِقَ", nameBn: "রু - যি - ক্বা = রুযিক্বা", tip: "কুরআনিক শব্দ: রিযিক দেওয়া হলো", tag: "blue", sound: "رُزِقَ" },
-      { id: "c25-5", ar: "نُصِرَ", nameBn: "নু - ছি - রা = নুছিরা", tip: "কুরআনিক শব্দ: সাহায্য করা হলো", tag: "blue", sound: "نُصِرَ" },
+      { id: "c25-5", ar: "نُصِرَ", nameBn: "নু - ছি - রা = নুছিরা", tip: "কুরআনিক শব্দ: সাহায্য করা হলো", tag: "blue", sound: "نُصِرَ", audioStatus: "unverified" },
       { id: "c25-6", ar: "ذُكِرَ", nameBn: "যু - কি - রা = যুকিরা", tip: "কুরআনিক শব্দ: স্মরণ করা হলো", tag: "blue", sound: "ذُكِرَ" },
     ]
   },
@@ -680,7 +680,7 @@ export const NOOR_QAIDA_CLASSES = [
     colorTheme: "blue",
     items: [
       { id: "c27-1", ar: "حَسَنَ", nameBn: "হাসানা (টান ছাড়া)", tip: "ভুল: হাসাআনা, সঠিক: হাসানা", tag: "blue", sound: "حَسَنَ" },
-      { id: "c27-2", ar: "مَلَكَ", nameBn: "মালাকা", tip: "ভুল: মালাআকা, সঠিক: মালাকা", tag: "blue", sound: "مَلَكَ" },
+      { id: "c27-2", ar: "مَلَكَ", nameBn: "মালাকা", tip: "ভুল: মালাআকা, সঠিক: মালাকা", tag: "blue", sound: "مَلَكَ", audioStatus: "unverified" },
       { id: "c27-3", ar: "عَدَلَ", nameBn: "'আদালা", tip: "ঝটপট পাঠ", tag: "blue", sound: "عَدَلَ" },
       { id: "c27-4", ar: "قَدَرَ", nameBn: "ক্বাদারা", tip: "ক্বাফ ও রা মোটা", tag: "blue", sound: "قَدَرَ" },
     ]
@@ -734,7 +734,7 @@ export const NOOR_QAIDA_CLASSES = [
     colorTheme: "blue",
     items: [
       { id: "c30-1", ar: "خَلَقَكَ فَعَدَلَكَ", nameBn: "খালাক্বাকা ফা'আদালাকা", tip: "একটানা দুই শব্দের পরীক্ষা", tag: "blue", sound: "خَلَقَكَ" },
-      { id: "c30-2", ar: "كُتِبَ عَلَيْكُمُ", nameBn: "কুতিবা 'আলাইকুমু", tip: "হরকত ও সুকুন মেলানো", tag: "blue", sound: "كُتِبَ" },
+      { id: "c30-2", ar: "كُتِبَ عَلَيْكُمُ", nameBn: "কুতিবা 'আলাইকুমু", tip: "হরকত ও সুকুন মেলানো", tag: "blue", sound: "كُتِبَ", audioStatus: "unverified" },
       { id: "c30-3", ar: "ذُكِرَ فِيهِ", nameBn: "যুকিরা ফীহি", tip: "মিশ্রিত হরকত পরীক্ষা", tag: "blue", sound: "ذُكِرَ" },
     ]
   },
@@ -754,9 +754,9 @@ export const NOOR_QAIDA_CLASSES = [
     teacherNoteBn: "দুই জবর, দুই যের, দুই পেশকে তানবিন বলে। তানবিনের আওয়াজ নূন সাকিনের মতো হয় (যেমন: اً = أَنْ, اٍ = إِنْ, اٌ = أُنْ)।",
     colorTheme: "purple",
     items: [
-      { id: "c31-1", ar: "اً", nameBn: "দুই জবর = আন্", tip: "হামযাহ দুই জবর আন্", tag: "tanween", sound: "أَنْ" },
-      { id: "c31-2", ar: "اٍ", nameBn: "দুই যের = ইন্", tip: "হামযাহ দুই যের ইন্", tag: "tanween", sound: "إِنْ" },
-      { id: "c31-3", ar: "اٌ", nameBn: "দুই পেশ = উন্", tip: "হামযাহ দুই পেশ উন্", tag: "tanween", sound: "أُنْ" },
+      { id: "c31-1", ar: "اً", nameBn: "দুই জবর = আন্", tip: "হামযাহ দুই জবর আন্", tag: "tanween", sound: "أَنْ", audioStatus: "unverified" },
+      { id: "c31-2", ar: "اٍ", nameBn: "দুই যের = ইন্", tip: "হামযাহ দুই যের ইন্", tag: "tanween", sound: "إِنْ", audioStatus: "unverified" },
+      { id: "c31-3", ar: "اٌ", nameBn: "দুই পেশ = উন্", tip: "হামযাহ দুই পেশ উন্", tag: "tanween", sound: "أُنْ", audioStatus: "unverified" },
       { id: "c31-4", ar: "بً بٍ بٌ", nameBn: "বান্ - বিন্ - বুন্", tip: "বা হরফে তানবিন ত্রয়ী", tag: "tanween", sound: "بً" },
       { id: "c31-5", ar: "تً تٍ تٌ", nameBn: "তান্ - তিন্ - তুন্", tip: "তা হরফে তানবিন ত্রয়ী", tag: "tanween", sound: "تً" },
     ]

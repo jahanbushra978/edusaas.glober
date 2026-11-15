@@ -142,7 +142,8 @@ export function setActiveShaykhId(id) {
  * @returns {string} Audio URL
  */
 export function getQariAudioUrl(qariId, surahNumber, ayahNumber) {
-  const qari = SHAYKH_REGISTRY.find((q) => q.id === qariId) || SHAYKH_REGISTRY[0];
+  const qari = SHAYKH_REGISTRY.find((q) => q.id === qariId);
+  if (!qari) return "";
   const s = String(surahNumber).padStart(3, "0");
   const a = String(ayahNumber).padStart(3, "0");
   return `${AUDIO_CONFIG.EVERYAYAH_CDN_BASE}${qari.cdnDir}/${s}${a}.mp3`;
@@ -155,8 +156,8 @@ export function getQariAudioUrl(qariId, surahNumber, ayahNumber) {
  * @returns {string} Modified Audio URL
  */
 export function switchAudioUrlQari(originalUrl, targetQariId) {
-  const targetQari = SHAYKH_REGISTRY.find((q) => q.id === targetQariId) || SHAYKH_REGISTRY[0];
-  if (!originalUrl) return "";
+  const targetQari = SHAYKH_REGISTRY.find((q) => q.id === targetQariId);
+  if (!originalUrl || !targetQari) return "";
 
   const match = originalUrl.match(/everyayah\.com\/data\/([^/]+)\/(\d{6})\.mp3/i);
   if (match) {
@@ -164,7 +165,7 @@ export function switchAudioUrlQari(originalUrl, targetQariId) {
     return `${AUDIO_CONFIG.EVERYAYAH_CDN_BASE}${targetQari.cdnDir}/${filename}.mp3`;
   }
 
-  return originalUrl;
+  return "";
 }
 
 // Backward-compatible canonical aliases

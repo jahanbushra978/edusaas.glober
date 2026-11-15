@@ -24,6 +24,7 @@ import {
 } from "@/lib/quran/hafizi-annotations";
 import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 import { useBanglaAudioEngine, BANGLA_VOICE_ENGINES } from "@/lib/quran/bangla-audio-engine";
+import { QARI_REGISTRY } from "@/lib/ai/qari-registry";
 
 // Canonical Arabic normalizer for 100% accurate Mutashabihat and Waqf matching
 function cleanArabic(str) {
@@ -346,14 +347,10 @@ export default function HafiziMushafSheet({
     return toBn(s);
   };
 
-  // Popular 5 Qaris matching the user's authentic Hafizi Quran screenshot
-  const POPULAR_QARIS = [
-    { id: "minshawy_teacher", shortNameBn: "শায়খ মুহাম্মদ সিদ্দিক আল-মিনশাবী" },
-    { id: "sudais", shortNameBn: "শায়খ আব্দুর রহমান আস-সুদাইস" },
-    { id: "ghamadi", shortNameBn: "শায়খ সা'দ আল-গামিদী" },
-    { id: "husary_muallim", shortNameBn: "শায়খ মাহমুদ খলিল আল-হুসারী" },
-    { id: "alafasy", shortNameBn: "শায়খ মাশারি বিন রাশেদ আল-আফাসী" },
-  ];
+  const POPULAR_QARIS = QARI_REGISTRY.map((qari) => ({
+    id: qari.id,
+    shortNameBn: qari.shortNameBn || qari.nameBn,
+  }));
 
   // Distribute Mutashabihat references to Left and Right Margins (ডান ও বাম হাশিয়া)
   const allMarginRefs = useMemo(() => {

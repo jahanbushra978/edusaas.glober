@@ -11,6 +11,13 @@ import {
   AUTHENTIC_TAJWEED_AUDIO_MAP,
 } from "../src/lib/quran/audio/index.js";
 import { DRAG_DROP_LEVELS } from "../src/features/ai-learning/data/dragDropGameData.js";
+import { SPECIAL_PAGES } from "../src/features/quran/data/noorQaidaPagesData.js";
+import {
+  formatBangladeshClock,
+  formatBangladeshDate,
+  formatBangladeshHijriDate,
+  getInstituteSunTimes,
+} from "../src/lib/quran/bangladesh-time.js";
 import {
   KIDS_HARAKAT_GAME_LEVELS,
   KIDS_MEMORY_GAME_LEVELS,
@@ -32,6 +39,21 @@ describe("Complete Quran Learning Audio Resolution Test Suite", () => {
       assert.equal(res.found, true, `Letter "${l}" must be found`);
       assert.ok(res.urls.length > 0, `Letter "${l}" must have candidate URLs`);
     });
+  });
+
+  it("does not route a vowelled letter through its unvowelled letter recording", () => {
+    const sound = resolveArabicSoundAudio("بَ");
+    const letter = resolveLetterAudio("بَ");
+
+    assert.equal(letter.found, sound.found);
+    assert.deepEqual(letter.urls, sound.urls);
+    assert.notDeepEqual(letter.urls, resolveLetterAudio("ب").urls);
+  });
+
+  it("does not guess Quran word audio by stripping harakat", () => {
+    assert.equal(resolveWordAudio("مِن").found, true);
+    assert.equal(resolveWordAudio("مَنْ").found, true);
+    assert.equal(resolveWordAudio("مُن").found, false);
   });
 
   it("resolves Drag & Drop Game Level 14 words (الْفَلَقِ, الْحَمْدُ, النَّاسِ) with 100% authentic audio", () => {
@@ -83,6 +105,39 @@ describe("Complete Quran Learning Audio Resolution Test Suite", () => {
       assert.equal(res.found, true, `"${word}" must be found`);
       assert.equal(res.urls[0], expectedUrl, `"${word}" must match exact verified audio URL ${expectedUrl}`);
     }
+  });
+
+  it("maps the clickable Qaida words to their exact QuranCDN word positions", () => {
+    const expected = {
+      "يَجْعَلْ": "https://audio.qurancdn.com/wbw/105_002_002.mp3",
+      "حَكِيمًا": "https://audio.qurancdn.com/wbw/004_011_081.mp3",
+      "لَمْ": "https://audio.qurancdn.com/wbw/112_003_001.mp3",
+    };
+
+    for (const [word, url] of Object.entries(expected)) {
+      assert.deepEqual(resolveWordAudio(word).urls, [url]);
+    }
+  });
+
+  it("keeps isolated tanween and tashdeed cards without verified recordings unverified", () => {
+    const cards = SPECIAL_PAGES[5].cards.filter((item) => item.audioStatus === "unverified");
+
+    assert.deepEqual(cards.map((item) => item.ar), ["جً", "جٍ", "جٌ", "جّ"]);
+    for (const card of cards) {
+      assert.equal(resolveArabicSoundAudio(card.ar).found, false);
+    }
+  });
+
+  it("formats live dates and institute sunrise/sunset in Bangladesh time", () => {
+    const date = new Date("2026-11-15T06:00:00.000Z");
+    const sunTimes = getInstituteSunTimes(date);
+
+    assert.match(formatBangladeshDate(date), /রবিবার/);
+    assert.match(formatBangladeshHijriDate(date), /হিজরি$/);
+    assert.match(formatBangladeshClock(date), /১২:০০/);
+    assert.ok(sunTimes.sunrise instanceof Date);
+    assert.ok(sunTimes.sunset instanceof Date);
+    assert.ok(sunTimes.sunrise < sunTimes.sunset);
   });
 
   it("resolves all words across Drag & Drop levels 11, 12, 13, 14", () => {

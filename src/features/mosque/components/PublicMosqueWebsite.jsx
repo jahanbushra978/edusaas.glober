@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Building2,
   Clock,
@@ -35,6 +35,10 @@ import { toast } from "sonner";
 import { recordDonationInDatabase } from "../services/mosqueStorage";
 import MosqueLoginModal from "./modals/MosqueLoginModal";
 import MonthlyPrayerCalendarModal from "./modals/MonthlyPrayerCalendarModal";
+import {
+  calculateRealtimePrayerState,
+  formatBangladeshHijriDate,
+} from "@/lib/quran/bangladesh-time";
 
 /**
  * PublicMosqueWebsite — Dedicated Mosque Landing Page & Web Portal
@@ -113,19 +117,41 @@ export function PublicMosqueWebsite({
     weekday: "long",
   });
 
-  // Authentic Default 5 Waqt Prayer Timetable if schedule is empty
-  const PRAYER_TIMETABLE = schedule && schedule.length >= 5 ? schedule : [
-    { id: "fajr", name: "ফজর", arabic: "الفجر", start: "০৫:০২ AM", jamaat: "০৫:২৫ AM", end: "০৬:১৮ AM", isActive: false },
-    { id: "dhuhr", name: "যোহর", arabic: "الظهر", start: "১১:৪৬ AM", jamaat: "০১:১৫ PM", end: "০৩:৪৩ PM", isActive: false },
-    { id: "asr", name: "আসর", arabic: "العصر", start: "০৩:৪৪ PM", jamaat: "০৪:১৫ PM", end: "০৫:০৮ PM", isActive: true },
-    { id: "maghrib", name: "মাগরিব", arabic: "المغرب", start: "০৫:০৯ PM", jamaat: "০৫:১৫ PM", end: "০৬:২৩ PM", isActive: false },
-    { id: "isha", name: "এশা", arabic: "العشاء", start: "০৬:২৪ PM", jamaat: "০৭:৩০ PM", end: "০৪:৫৯ AM", isActive: false },
-    { id: "jumuah", name: "পবিত্র জুমু'আ", arabic: "الجمعة", start: "১১:৪৬ AM", jamaat: "০১:৩০ PM", end: "০৩:৪৩ PM", isJummah: true },
-  ];
+  // Calculate Realtime Active Prayer, Next Jama'at and Countdown dynamically
+  const realtimePrayerState = useMemo(() => {
+    return calculateRealtimePrayerState(currentTime, schedule);
+  }, [currentTime, schedule]);
 
-  const currentPrayerItem = initialCurrentPrayer || PRAYER_TIMETABLE.find(p => p.isActive) || PRAYER_TIMETABLE[2];
-  const nextJamaatDisplay = initialNextJamaat || "মাগরিব জামা'আত: ০৫:১৫ PM";
-  const countdownDisplay = initialCountdown || "৪৫ মিনিট বাকি";
+  // Normalized Prayer Timetable with verified unique IDs
+  const PRAYER_TIMETABLE = useMemo(() => {
+    const raw = schedule && schedule.length >= 5 ? schedule : [
+      { id: "fajr", name: "ফজর", arabic: "الفجر", start: "০৫:০২ AM", jamaat: "০৫:২৫ AM", end: "০৬:১৮ AM" },
+      { id: "sunrise", name: "সূর্যোদয়", arabic: "الشروق", start: "০৬:১৯ AM", jamaat: "—", end: "০৬:৩৫ AM", isForbidden: true },
+      { id: "dhuhr", name: "যোহর", arabic: "الظهر", start: "১১:৪৬ AM", jamaat: "০১:১৫ PM", end: "০৩:৪৩ PM" },
+      { id: "asr", name: "আসর", arabic: "العصر", start: "০৩:৪৪ PM", jamaat: "০৪:১৫ PM", end: "০৫:০৮ PM" },
+      { id: "maghrib", name: "মাগরিব", arabic: "المغرب", start: "০৫:০৯ PM", jamaat: "০৫:১৫ PM", end: "০৬:২৩ PM" },
+      { id: "isha", name: "এশা", arabic: "العشاء", start: "০৬:২৪ PM", jamaat: "০৭:৩০ PM", end: "০৪:৫৯ AM" },
+      { id: "jumuah", name: "পবিত্র জুমু'আ", arabic: "الجمعة", start: "১১:৪৬ AM", jamaat: "০১:৩০ PM", end: "০৩:৪৩ PM", isJummah: true },
+    ];
+
+    return raw.map((p, idx) => {
+      let id = p.id;
+      if (!id) {
+        if (p.name?.includes("ফজর")) id = "fajr";
+        else if (p.name?.includes("সূর্যোদয়")) id = "sunrise";
+        else if (p.name?.includes("যোহর") || p.name?.includes("জুমা")) id = "dhuhr";
+        else if (p.name?.includes("আসর")) id = "asr";
+        else if (p.name?.includes("মাগরিব")) id = "maghrib";
+        else if (p.name?.includes("এশা")) id = "isha";
+        else id = `prayer-${idx}`;
+      }
+      return { ...p, id };
+    });
+  }, [schedule]);
+
+  const currentPrayerItem = realtimePrayerState.activePrayer || initialCurrentPrayer || PRAYER_TIMETABLE[2];
+  const nextJamaatDisplay = realtimePrayerState.nextJamaatDisplay || initialNextJamaat || "মাগরিব জামা'আত: ০৫:১৫ PM";
+  const countdownDisplay = realtimePrayerState.countdownDisplay || initialCountdown || "৪৫ মিনিট বাকি";
 
   const handleTriggerLogin = () => {
     if (onOpenLogin) {
@@ -214,7 +240,7 @@ export function PublicMosqueWebsite({
         </div>
         <div className="flex items-center gap-3 text-[11px]">
           <span className="font-mono bg-emerald-900/60 px-2 py-0.5 rounded-md border border-emerald-700/50">
-            🌙 ২২ জমাদিউল আউয়াল ১৪৪৮ হিজরি
+            🌙 {formatBangladeshHijriDate(currentTime)}
           </span>
           <span className="hidden md:inline font-mono text-emerald-200">
             {formattedDayName}, {formattedGregorianDate}
@@ -366,7 +392,7 @@ export function PublicMosqueWebsite({
                       </span>
                     </div>
                     <h2 className="text-sm sm:text-base font-black text-stone-900 dark:text-stone-100 mt-0.5">
-                      {formattedDayName}, {formattedGregorianDate} · ২২ জমাদিউল আউয়াল ১৪৪৮ হিজরি
+                      {formattedDayName}, {formattedGregorianDate} · {formatBangladeshHijriDate(currentTime)}
                     </h2>
                   </div>
                 </div>
@@ -418,7 +444,9 @@ export function PublicMosqueWebsite({
               {/* 5 Waqt + Jumu'ah Timetable Grid */}
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-1 text-center">
                 {PRAYER_TIMETABLE.map((p) => {
-                  const isCurrent = currentPrayerItem?.id === p.id;
+                  const isCurrent = !p.isForbidden && Boolean(
+                    currentPrayerItem && (p.id === currentPrayerItem.id || p.name === currentPrayerItem.name)
+                  );
                   return (
                     <div
                       key={p.id}
@@ -858,7 +886,9 @@ export function PublicMosqueWebsite({
                 </thead>
                 <tbody className="divide-y divide-stone-100 dark:divide-emerald-950/80">
                   {PRAYER_TIMETABLE.map((p) => {
-                    const isCurrent = currentPrayerItem?.id === p.id;
+                    const isCurrent = !p.isForbidden && Boolean(
+                      currentPrayerItem && (p.id === currentPrayerItem.id || p.name === currentPrayerItem.name)
+                    );
                     return (
                       <tr key={p.id} className={isCurrent ? "bg-emerald-50/80 dark:bg-emerald-950/40 font-bold" : ""}>
                         <td className="py-3.5 px-4 flex items-center gap-2">

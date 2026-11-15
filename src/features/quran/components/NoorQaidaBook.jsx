@@ -31,6 +31,7 @@ import {
   SPECIAL_PAGES,
 } from "../data/noorQaidaPagesData";
 import { nurQaidaAudioEngine } from "@/lib/quran/audio";
+import { formatBangladeshDate } from "@/lib/quran/bangladesh-time";
 import NoorQaidaBubblePopGame from "./NoorQaidaBubblePopGame";
 import NoorQaidaHarufNinjaGame from "./NoorQaidaHarufNinjaGame";
 
@@ -284,6 +285,12 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
 
   // Audio Play Function for Any Item (With Pop Burst Visual & Sound via NurQaidaAudioEngine)
   const playItemSound = async (item, speed = audioSpeed) => {
+    if (item?.audioStatus === "unverified") {
+      setCelebrationToast("এই উচ্চারণের নির্ভরযোগ্য ক্বারী রেকর্ডিং যাচাই হয়নি; তাই অডিও বাজানো হয়নি।");
+      setTimeout(() => setCelebrationToast(null), 3500);
+      return false;
+    }
+
     playCuteBubbleSound();
     const itemId = typeof item === "string" ? item : (item.id || item.ar);
     setActiveItemId(itemId);
@@ -293,18 +300,27 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
     }, 650);
 
     try {
+      let played = false;
       if (item && item.ayahRef) {
-        await nurQaidaAudioEngine.play(
+        played = await nurQaidaAudioEngine.play(
           { surah: item.ayahRef.surah, ayah: item.ayahRef.ayah },
           { rate: speed }
         );
       } else if (item && item.audioUrl) {
-        await nurQaidaAudioEngine.play(item.audioUrl, { rate: speed });
+        played = await nurQaidaAudioEngine.play(item.audioUrl, { rate: speed });
       } else {
-        await nurQaidaAudioEngine.play(item, { rate: speed });
+        played = await nurQaidaAudioEngine.play(item, { rate: speed });
       }
+      if (!played) {
+        setCelebrationToast("এই উচ্চারণের যাচাইকৃত অডিও পাওয়া যায়নি; তাই অন্য অডিও চালানো হয়নি।");
+        setTimeout(() => setCelebrationToast(null), 3500);
+      }
+      return played;
     } catch (err) {
       console.warn("Audio play error:", err);
+      setCelebrationToast("অডিও লোড করা যায়নি। আবার চেষ্টা করুন।");
+      setTimeout(() => setCelebrationToast(null), 3500);
+      return false;
     } finally {
       setActiveItemId((curr) => (curr === itemId ? null : curr));
     }
@@ -490,6 +506,13 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
         if (playAllAbortRef.current) break;
         const item = items[i];
         setActiveItemId(item.id || item.ar);
+
+        if (item.audioStatus === "unverified") {
+          setCelebrationToast("এই উচ্চারণের নির্ভরযোগ্য ক্বারী রেকর্ডিং যাচাই হয়নি; তাই অডিও বাজানো হয়নি।");
+          setTimeout(() => setCelebrationToast(null), 3500);
+          playAllAbortRef.current = true;
+          break;
+        }
 
         try {
           if (item.ayahRef) {
@@ -701,7 +724,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               return (
                 <div
                   key={idx}
-                  onClick={() => playItemSound({ ar: card.ar, id: card.nameBn, sound: card.ar })}
+                  onClick={() => playItemSound({ ar: card.ar, id: card.nameBn, sound: card.ar, audioStatus: card.audioStatus })}
                   className={`p-3 sm:p-4 rounded-3xl border-3 text-center cursor-pointer transition-all ${card.bg} ${card.border} ${
                     isItemActive
                       ? "scale-105 ring-4 ring-emerald-400 shadow-xl"
@@ -1824,7 +1847,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               </div>
               <div className="space-y-1">
                 <div className="h-6 border-b border-slate-400 mx-2 flex items-center justify-center font-mono text-[10px] text-slate-800">
-                  {new Date().toLocaleDateString("bn-BD")}
+                  {formatBangladeshDate(new Date())}
                 </div>
                 <span>তারিখ</span>
               </div>
