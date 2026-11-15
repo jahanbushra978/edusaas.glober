@@ -11,13 +11,18 @@ const API_KEY_HEADER = "x-api-key";
 
 function verifyApiKey(request) {
   const apiKey = request.headers.get(API_KEY_HEADER);
-  if (!apiKey) return false;
+  if (!apiKey || typeof apiKey !== "string") return false;
   const expectedKey = process.env.BIOMETRIC_API_KEY;
-  if (!expectedKey) return false;
-  if (apiKey.trim().length !== expectedKey.length) return false;
+  if (!expectedKey || typeof expectedKey !== "string" || expectedKey.length < 16) {
+    // Zero-fallback: if environment secret is missing or insufficient, reject all requests
+    return false;
+  }
+  const cleanApiKey = apiKey.trim();
+  const cleanExpected = expectedKey.trim();
+  if (cleanApiKey.length !== cleanExpected.length) return false;
   let result = 0;
-  for (let i = 0; i < apiKey.trim().length; i++) {
-    result |= apiKey.trim().charCodeAt(i) ^ expectedKey.charCodeAt(i);
+  for (let i = 0; i < cleanApiKey.length; i++) {
+    result |= cleanApiKey.charCodeAt(i) ^ cleanExpected.charCodeAt(i);
   }
   return result === 0;
 }

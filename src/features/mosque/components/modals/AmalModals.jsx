@@ -5,17 +5,7 @@ import {
   CheckCircle2,
   X,
   RotateCcw,
-  Volume2,
   Copy,
-  Calendar,
-  Award,
-  ChevronRight,
-  MapPin,
-  Clock,
-  Heart,
-  Moon,
-  Sun,
-  Flame,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -181,7 +171,7 @@ export function DuaModal({ onClose }) {
 
               <div className="pt-2 border-t border-stone-100 dark:border-emerald-950/80 flex items-center justify-between text-[11px] text-stone-500 dark:text-stone-400">
                 <span>📚 সনদ: {item.reference}</span>
-                <span className="text-amber-700 dark:text-amber-400 font-bold">✨ ফযীলত</span>
+                <span className="text-amber-700 dark:text-amber-400 font-bold">ফযীলত</span>
               </div>
               <p className="text-[11px] text-stone-600 dark:text-stone-400 leading-relaxed bg-amber-50/50 dark:bg-amber-950/20 p-2 rounded-lg">
                 {item.benefit}

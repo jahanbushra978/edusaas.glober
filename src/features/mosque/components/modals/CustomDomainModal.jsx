@@ -4,13 +4,9 @@ import React, { useState } from "react";
 import {
   X,
   Globe,
-  ShieldCheck,
-  CheckCircle2,
   Copy,
   ExternalLink,
-  ArrowRight,
   RefreshCw,
-  AlertCircle,
 } from "lucide-react";
 import { toast } from "sonner";
 

@@ -4,23 +4,36 @@
  * Canonical URL, EducationalOrganization Schema, FAQPage Schema & Breadcrumbs.
  */
 
-export const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://edusaasglobal.com";
+export const BASE_URL = process.env.NEXT_PUBLIC_SITE_URL || "https://edusaas.global";
 
 /**
  * Generate Next.js Dynamic Metadata Object for Pages
  */
 export function generateSeoMetadata({
-  title = "EduSaaS Global - স্মার্ট স্কুল ও মাদরাসা ম্যানেজমেন্ট প্ল্যাটফর্ম",
-  description = "বাংলাদেশের স্কুল ও মাদরাসার জন্য অনলাইন ভর্তি, নো-কোড ওয়েবসাইট, ফেস ও ফিঙ্গারপ্রিন্ট হাজিরা, অটো রেজাল্ট শিট ও ফি কালেকশনের অল-ইন-ওয়ান ক্লাউড সফটওয়্যার।",
+  title = "Edusaas - স্মার্ট স্কুল ও মাদরাসা ম্যানেজমেন্ট প্ল্যাটফর্ম | Education ERP",
+  description = "বাংলাদেশের স্কুল, মাদরাসা ও কলেজের জন্য অনলাইন ভর্তি, নো-কোড ডায়নামিক ওয়েবসাইট, বায়োমেট্রিক হাজিরা, অটো রেজাল্ট শিট ও পেপারলেস ফি কালেকশনের অল-ইন-ওয়ান ক্লাউড ইআরপি প্ল্যাটফর্ম।",
   canonicalPath = "/",
-  ogImage = `${BASE_URL}/og-image.jpg`,
-  keywords = ["মাদরাসা সফটওয়্যার", "স্কুল ম্যানেজমেন্ট সিস্টেম", "মাদ্রাসা রেজাল্ট শিট", "অনলাইন মাদরাসা ভর্তি", "মাদরাসা হিসাব সফটওয়্যার"],
-  author = "EduSaaS Global"
+  ogImage = `${BASE_URL}/edusaas-hero-bg-v2.jpg`,
+  keywords = [
+    "School Management Software",
+    "School ERP Software",
+    "Education Management System",
+    "Madrasa Management Software",
+    "মাদরাসা সফটওয়্যার",
+    "স্কুল ম্যানেজমেন্ট সিস্টেম",
+    "মাদ্রাসা রেজাল্ট শিট",
+    "অনলাইন মাদরাসা ভর্তি",
+    "মাদরাসা হিসাব সফটওয়্যার",
+    "বায়োমেট্রিক হাজিরা",
+    "Edusaas",
+    "EduSaaS Global"
+  ],
+  author = "Edusaas"
 } = {}) {
   const fullCanonicalUrl = `${BASE_URL}${canonicalPath}`;
 
   return {
-    title: `${title} | EduSaaS Global`,
+    title: `${title} | Edusaas`,
     description,
     keywords: keywords.join(", "),
     authors: [{ name: author }],
@@ -34,7 +47,7 @@ export function generateSeoMetadata({
       title,
       description,
       url: fullCanonicalUrl,
-      siteName: "EduSaaS Global",
+      siteName: "Edusaas",
       images: [
         {
           url: ogImage,
@@ -64,6 +77,42 @@ export function generateSeoMetadata({
         "max-snippet": -1,
       },
     },
+  };
+}
+
+/**
+ * Edusaas SoftwareApplication JSON-LD Schema
+ */
+export function generateEdusaasSoftwareSchema() {
+  return {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "@id": `${BASE_URL}/#software`,
+    "name": "Edusaas",
+    "alternateName": ["EduSaaS Global", "Edusaas ERP", "Edusaas Platform"],
+    "operatingSystem": "All, Cloud Web Application",
+    "applicationCategory": "EducationalApplication, BusinessApplication",
+    "description": "All-in-one Education SaaS & School/Madrasa ERP Software with real-time biometric attendance, automated grading, fee collection, and website builder.",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "BDT",
+      "category": "Free Trial Available"
+    },
+    "author": {
+      "@type": "Organization",
+      "@id": `${BASE_URL}/#organization`,
+      "name": "Edusaas",
+      "url": BASE_URL,
+      "logo": `${BASE_URL}/favicon.png`,
+      "email": "contact@edusaas.global",
+      "telephone": "+8801576600265",
+      "address": {
+        "@type": "PostalAddress",
+        "addressLocality": "Dhaka",
+        "addressCountry": "Bangladesh"
+      }
+    }
   };
 }
 

@@ -15,13 +15,13 @@ import { Building2, CreditCard, MessageSquare, ShieldAlert,
 
 const DEFAULT_SETTINGS = {
   // General & Branding
-  platformName: "Rahmania EduSaaS Multi-Tenant Engine",
+  platformName: "Edusaas Multi-Tenant Platform Engine",
   slogan: "সেন্ট্রাল শিক্ষা প্রতিষ্ঠান ও মাদ্রাসা অটোমেশন প্ল্যাটফর্ম",
   logoUrl: "/logo.png",
   faviconUrl: "/favicon.ico",
-  supportPhone: "+880 1906-898939",
-  whatsappNumber: "+880 1906-898939",
-  supportEmail: "rahmaniainstitute.org@gmail.com",
+  supportPhone: "+880 1576-600265",
+  whatsappNumber: "+880 1576-600265",
+  supportEmail: "support@edusaas.global",
   officeAddress: "হাড়িনাল, গাজীপুর সিটি কর্পোরেশন, ঢাকা, বাংলাদেশ",
   currency: "BDT (৳)",
   timezone: "Asia/Dhaka (GMT+6)",

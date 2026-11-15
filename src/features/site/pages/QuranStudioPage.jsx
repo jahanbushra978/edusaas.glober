@@ -389,16 +389,6 @@ export default function QuranStudioPage() {
           badgeStyle: "bg-emerald-100 text-emerald-800 border-emerald-300 font-bold",
         },
         {
-          id: "tafseer-quran",
-          title: "তাফসীর ভিত্তিক কুরআন",
-          subtitle: "বাংলা অর্থ, শব্দার্থ, শানে নুযূল ও তাফসীরুল কুরআন",
-          icon: FileText,
-          emoji: "📜",
-          gradient: "from-amber-600 via-amber-700 to-emerald-800 text-white",
-          badge: "অর্থ ও তাফসীর",
-          badgeStyle: "bg-amber-100 text-amber-900 border-amber-300 font-bold",
-        },
-        {
           id: "quran-search",
           title: "কুরআন সার্চ",
           subtitle: "যেকোনো বিষয়ের কুরআনিক আয়াত খুঁজুন",
@@ -417,6 +407,16 @@ export default function QuranStudioPage() {
           gradient: "from-amber-500 to-emerald-700 text-white",
           badge: "মাসনূন আমল",
           badgeStyle: "bg-amber-100 text-amber-900 border-amber-300 font-black",
+        },
+        {
+          id: "tafseer-quran",
+          title: "তাফসীর ভিত্তিক কুরআন",
+          subtitle: "বাংলা অর্থ, শব্দার্থ, শানে নুযূল ও তাফসীরুল কুরআন",
+          icon: FileText,
+          emoji: "📜",
+          gradient: "from-amber-600 via-amber-700 to-emerald-800 text-white",
+          badge: "অর্থ ও তাফসীর",
+          badgeStyle: "bg-amber-100 text-amber-900 border-amber-300 font-bold",
         },
         {
           id: "voice-tutor",

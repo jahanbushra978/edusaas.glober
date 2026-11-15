@@ -6,12 +6,7 @@ import {
   Video,
   CheckCircle2,
   Star,
-  ExternalLink,
-  BookOpen,
-  Award,
-  Clock,
-  Heart,
-  Volume2
+  Clock
 } from "lucide-react";
 import { toast } from "sonner";
 import { playCorrectChime, playStarPopSound, playTapSound } from "@/features/ai-learning/lib/arabicSoundPlayer";

@@ -115,11 +115,11 @@ export default function PlatformConsoleLayout({ children }) {
             <div className="space-y-1.5 pt-1 text-slate-300">
               <div className="flex items-center gap-2">
                 <Mail className="h-3.5 w-3.5 text-[#D4AF37] shrink-0" />
-                <span className="truncate">rahmaniainstitute.org@gmail.com</span>
+                <span className="truncate">support@edusaas.global</span>
               </div>
               <div className="flex items-center gap-2">
                 <MapPin className="h-3.5 w-3.5 text-[#D4AF37] shrink-0" />
-                <span>হাড়িনাল, গাজীপুর সিটি, ঢাকা</span>
+                <span>ঢাকা, বাংলাদেশ</span>
               </div>
             </div>
           </div>

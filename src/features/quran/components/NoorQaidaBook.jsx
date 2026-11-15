@@ -4,10 +4,8 @@ import React, { useState, useEffect, useRef, useMemo } from "react";
 import {
   BookOpen,
   Volume2,
-  VolumeX,
   Play,
   Pause,
-  RotateCcw,
   ChevronLeft,
   ChevronRight,
   Search,
@@ -16,26 +14,11 @@ import {
   Layers,
   Printer,
   X,
-  GraduationCap,
   Star,
-  Check,
-  Maximize2,
-  Minimize2,
-  HelpCircle,
-  Trophy,
   ArrowRight,
-  ArrowLeft,
-  RefreshCw,
-  Bookmark,
   Gamepad2,
   LayoutGrid,
-  Sliders,
-  Smartphone,
   RotateCw,
-  Eye,
-  Smile,
-  Compass,
-  Heart,
 } from "lucide-react";
 import {
   NOOR_QAIDA_PARVAS,
@@ -46,9 +29,8 @@ import {
 import {
   PARVA_THEMES,
   SPECIAL_PAGES,
-  BROKEN_SYLLABLES_DATA,
 } from "../data/noorQaidaPagesData";
-import { universalAudioEngine, nurQaidaAudioEngine } from "@/lib/quran/audio";
+import { nurQaidaAudioEngine } from "@/lib/quran/audio";
 import NoorQaidaBubblePopGame from "./NoorQaidaBubblePopGame";
 import NoorQaidaHarufNinjaGame from "./NoorQaidaHarufNinjaGame";
 
@@ -2087,7 +2069,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
       )}
 
       {/* ── EMBEDDED CSS FOR THE TRUE 3D LEAF FLIP PHYSICS ── */}
-      <style jsx global>{`
+      <style>{`
         @keyframes trueFlipNext {
           0% {
             transform: rotateY(0deg);

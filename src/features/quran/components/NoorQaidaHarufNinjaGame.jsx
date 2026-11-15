@@ -7,14 +7,8 @@ import {
   Home,
   RotateCcw,
   ChevronRight,
-  Pause,
-  Play,
-  Heart,
   X,
-  Sparkles,
-  ShoppingBag,
   Check,
-  Lock,
 } from "lucide-react";
 import { universalAudioEngine } from "@/lib/quran/audio";
 import {

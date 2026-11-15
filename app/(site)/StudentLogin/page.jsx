@@ -1,11 +1,14 @@
-'use client'
+import StudentLoginClient from './StudentLoginClient';
 
-import dynamic from 'next/dynamic'
-import { SectionSkeleton } from '@/shared/components/progressive/ProgressiveSection'
+export const metadata = {
+  title: 'Student Portal Login',
+  description: 'Login to access student profile, attendance, and exam results.',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
-const StudentLogin = dynamic(() => import('@/lib/StudentLogin'), {
-  loading: () => <SectionSkeleton minHeight={520} />,
-  ssr: false,
-})
-
-export default StudentLogin
+export default function StudentLoginPage() {
+  return <StudentLoginClient />;
+}

@@ -10,7 +10,6 @@ import {
   Loader2,
   Compass,
   Mic,
-  MicOff,
 } from "lucide-react";
 import { toast } from "sonner";
 import { ALL_SURAHS } from "@/lib/quran/quran-meta";

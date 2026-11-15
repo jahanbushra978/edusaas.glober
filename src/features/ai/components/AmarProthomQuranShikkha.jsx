@@ -3,7 +3,6 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
   Volume2,
-  RotateCcw,
   Star,
   Heart,
   Printer,

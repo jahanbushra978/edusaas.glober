@@ -262,7 +262,7 @@ export default function ReelsDiscoverySection({
         <div className="flex items-center gap-2">
           <Film className="w-4 h-4 text-rose-600" />
           <h3 className="text-xs sm:text-sm font-black text-slate-900 dark:text-white">
-            রিলস ও শর্ট ভিডিও (Facebook Style Reels)
+            রিলস ও ইসলামিক শর্ট ভিডিও (Facebook Style Reels)
           </h3>
         </div>
         <div className="flex items-center gap-2">
@@ -314,6 +314,11 @@ export default function ReelsDiscoverySection({
           </div>
 
           {/* Published Reels Stream */}
+          {displayedReels.length === 0 && (
+            <div className="flex items-center justify-center p-6 text-xs font-bold text-slate-400">
+              এখনো কোনো ভিডিও রিলস প্রকাশিত হয়নি
+            </div>
+          )}
           {displayedReels.map((reel) => (
             <div
               key={reel.id}

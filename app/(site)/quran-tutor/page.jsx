@@ -1,9 +1,9 @@
 import AIQuranTutorPage from "@/features/site/pages/AIQuranTutorPage";
 
 export const metadata = {
-  title: "AI Quran Tutor — আপনার ব্যক্তিগত এআই কুরআন শিক্ষক | Rahmania Institute",
+  title: "AI Quran Tutor — আপনার ব্যক্তিগত এআই কুরআন শিক্ষক | Edusaas",
   description: "এআই-চালিত, ২৪/৭ উপলব্ধ আপনার ব্যক্তিগত এআই কুরআন শিক্ষক। তেলাওয়াত শিখুন, তাজবীদে দক্ষ হন এবং কুরআন মুখস্থ করুন রিয়েল-টাইম অডিও ফিডব্যাক ও ১৭ মাখরাজ গাইডের সাথে।",
-  keywords: ["AI Quran Tutor", "নূর কুরআন শিক্ষক", "কুরআন শিক্ষা", "তাজবীদ", "মাখরাজ", "হিফজ সহকারী", "Rahmania Institute"],
+  keywords: ["AI Quran Tutor", "নূর কুরআন শিক্ষক", "কুরআন শিক্ষা", "তাজবীদ", "মাখরাজ", "হিফজ সহকারী", "Edusaas", "EduSaaS Global"],
   robots: { index: true, follow: true },
 };
 

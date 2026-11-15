@@ -34,7 +34,7 @@ export const BUILDING_JOURNEYS = {
       { level: 9, id: "steering", nameBn: "স্পোর্টস স্টিয়ারিং ও ড্যাশবোর্ড", icon: "🎮", percent: 64, descBn: "চালকের কেবিন ও মিটার প্রস্তুত!" },
       { level: 10, id: "seats", nameBn: "আরামদায়ক লেদার সিট", icon: "💺", percent: 71, descBn: "বসার আরামদায়ক আসন বসে গেল!" },
       { level: 11, id: "spoiler", nameBn: "রেসিং স্পয়লার ও উইং", icon: "🏎️", percent: 78, descBn: "বাতাস কেটে দ্রুত চলার ডানা তৈরি!" },
-      { level: 12, id: "decals", nameBn: "স্বর্ণালী ডিক্যাল ও নূর ব্যাজ", icon: "✨", percent: 85, descBn: "গাড়িতে যুক্ত হলো রাজকীয় নূর ডিক্যাল!" },
+      { level: 12, id: "decals", nameBn: "স্বর্ণালী ডিক্যাল ও নূর ব্যাজ", icon: "🎖️", percent: 85, descBn: "গাড়িতে যুক্ত হলো রাজকীয় নূর ডিক্যাল!" },
       { level: 13, id: "golden-rims", nameBn: "স্বর্ণালী লাক্সারি অ্যালয় রিম", icon: "🟡", percent: 92, descBn: "চাকায় যুক্ত হলো সোনার জমকালো রিম!" },
       { level: 14, id: "noor-crown", nameBn: "নূর গোল্ডেন তারা মুকুট", icon: "👑", percent: 100, descBn: "পূর্ণাঙ্গ সুপার নূর কারের রাজকীয় মুকুট!" },
     ],

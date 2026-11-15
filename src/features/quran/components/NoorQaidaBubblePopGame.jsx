@@ -4,19 +4,11 @@ import React, { useState, useEffect, useRef, useCallback, useMemo } from "react"
 import {
   Volume2,
   VolumeX,
-  RotateCw,
   Home,
   X,
-  Award,
-  Zap,
-  Play,
   RotateCcw,
-  Heart,
   ChevronRight,
-  Sparkles,
-  ShoppingBag,
   Check,
-  Lock,
 } from "lucide-react";
 import { universalAudioEngine } from "@/lib/quran/audio";
 import {

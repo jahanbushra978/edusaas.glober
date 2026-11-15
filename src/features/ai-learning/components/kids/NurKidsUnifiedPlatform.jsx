@@ -1,24 +1,16 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import {
   Gamepad2,
   BookOpen,
   Video,
   Award,
-  Star,
   Heart,
-  Volume2,
-  VolumeX,
   ArrowLeft,
-  RotateCcw,
   Home,
-  CheckCircle2,
-  Play,
   Settings,
-  Trophy,
-  Flame,
   Printer,
   ChevronRight
 } from "lucide-react";
@@ -26,8 +18,6 @@ import { toast } from "sonner";
 import {
   playTapSound,
   playStarPopSound,
-  playCorrectChime,
-  playLifeLostSound,
   playMaShaAllahCelebration
 } from "@/features/ai-learning/lib/arabicSoundPlayer";
 

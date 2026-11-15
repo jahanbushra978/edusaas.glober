@@ -23,6 +23,8 @@ export const getTenantContext = cache(async () => {
         cleanHost === "127.0.0.1" ||
         cleanHost === "0.0.0.0" ||
         cleanHost === "::1" ||
+        cleanHost === "edusaas.global" ||
+        cleanHost === "www.edusaas.global" ||
         cleanHost === "rahmaniainstitute.org" ||
         cleanHost === "www.rahmaniainstitute.org" ||
         (process.env.NEXT_PUBLIC_APP_DOMAIN && cleanHost === process.env.NEXT_PUBLIC_APP_DOMAIN.toLowerCase().trim()) ||
@@ -59,23 +61,66 @@ export const getTenantContext = cache(async () => {
       }
     }
   } catch (error) {
+    if (error?.digest === "DYNAMIC_SERVER_USAGE") {
+      throw error; // Re-throw so Next.js seamlessly flags the route as dynamic SSR without cluttering build logs
+    }
     console.error("Error resolving tenant context:", error);
   }
 
-  // Fallback to Rahmania Institute default tenant for recognized default hosts
+  // Fallback / resolution for recognized default hosts
+  let cleanHost = "";
+  try {
+    if (typeof window === "undefined") {
+      const { headers } = await import("next/headers");
+      const reqHeaders = await headers();
+      cleanHost = (reqHeaders.get("host") || "").split(":")[0].toLowerCase().trim();
+    }
+  } catch {}
+
+  const isEdusaasHost =
+    !cleanHost ||
+    cleanHost === "localhost" ||
+    cleanHost === "127.0.0.1" ||
+    cleanHost === "0.0.0.0" ||
+    cleanHost === "::1" ||
+    cleanHost === "edusaas.global" ||
+    cleanHost === "www.edusaas.global" ||
+    (process.env.NEXT_PUBLIC_APP_DOMAIN && cleanHost === process.env.NEXT_PUBLIC_APP_DOMAIN.toLowerCase().trim()) ||
+    cleanHost.endsWith(".vercel.app");
+
+  const isRahmaniaHost =
+    cleanHost === "rahmaniainstitute.org" ||
+    cleanHost === "www.rahmaniainstitute.org";
+
+  if (!isEdusaasHost && !isRahmaniaHost) {
+    // STRICT UNKNOWN DOMAIN POLICY:
+    // If the hostname is neither an approved Edusaas host nor an approved Rahmania host,
+    // and was NOT found as an active verified tenant in organizations, strictly return 404!
+    // Never silently serve Edusaas or Rahmania data for an unknown domain.
+    return {
+      organizationId: null,
+      org: null,
+      isDefault: false,
+      notFound: true,
+      isUnknownDomain: true,
+      resolvedFrom: "unknown_domain",
+    };
+  }
+
   return {
     organizationId: DEFAULT_TENANT_ID,
     org: {
       id: DEFAULT_TENANT_ID,
-      name: "Rahmania Institute",
-      slug: "rahmania",
-      domain: "rahmaniainstitute.org",
-      subdomain: "rahmania",
+      name: isRahmaniaHost ? "Rahmania Institute" : "Edusaas Platform",
+      slug: isRahmaniaHost ? "rahmania" : "edusaas",
+      domain: isRahmaniaHost ? "rahmaniainstitute.org" : "edusaas.global",
+      subdomain: isRahmaniaHost ? "rahmania" : "platform",
       status: "active",
     },
     isDefault: true,
+    isPlatform: isEdusaasHost,
     notFound: false,
     isUnknownDomain: false,
-    resolvedFrom: "default_host",
+    resolvedFrom: isRahmaniaHost ? "flagship_academy" : "default_host",
   };
 });

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState } from "react";
-import { BookOpen, Scroll, FileText, Mic, X, Search, Check, Copy, Share2, Volume2, ChevronRight, ExternalLink } from "lucide-react";
+import { BookOpen, Scroll, FileText, Mic, X, Search, Copy, ExternalLink } from "lucide-react";
 import { toast } from "sonner";
 
 async function copyText(text, msg = "উদ্ধৃতি কপি করা হয়েছে") {

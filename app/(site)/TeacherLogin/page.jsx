@@ -1,11 +1,14 @@
-'use client'
+import TeacherLoginClient from './TeacherLoginClient';
 
-import dynamic from 'next/dynamic'
-import { SectionSkeleton } from '@/shared/components/progressive/ProgressiveSection'
+export const metadata = {
+  title: 'Teacher Portal Login',
+  description: 'Login to access teacher dashboard, attendance, and grading.',
+  robots: {
+    index: false,
+    follow: false,
+  },
+};
 
-const TeacherLogin = dynamic(() => import('@/lib/TeacherLogin'), {
-  loading: () => <SectionSkeleton minHeight={520} />,
-  ssr: false,
-})
-
-export default TeacherLogin
+export default function TeacherLoginPage() {
+  return <TeacherLoginClient />;
+}

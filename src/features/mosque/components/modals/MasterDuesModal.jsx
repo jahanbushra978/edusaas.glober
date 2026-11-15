@@ -9,8 +9,6 @@ import {
   X,
   CheckCircle2,
   Printer,
-  Coins,
-  Filter,
 } from "lucide-react";
 import { toast } from "sonner";
 

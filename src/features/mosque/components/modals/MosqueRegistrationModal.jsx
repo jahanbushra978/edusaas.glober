@@ -3,16 +3,6 @@
 import React, { useState } from "react";
 import {
   X,
-  Building,
-  CheckCircle2,
-  MapPin,
-  Phone,
-  Mail,
-  Calendar,
-  Lock,
-  User,
-  ShieldCheck,
-  ArrowRight,
 } from "lucide-react";
 import { toast } from "sonner";
 

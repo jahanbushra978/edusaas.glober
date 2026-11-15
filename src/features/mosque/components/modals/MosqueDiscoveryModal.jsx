@@ -4,12 +4,9 @@ import React, { useState } from "react";
 import {
   X,
   Search,
-  Building,
   MapPin,
   LogIn,
   ExternalLink,
-  CheckCircle2,
-  Lock,
   Plus,
 } from "lucide-react";
 import { toast } from "sonner";

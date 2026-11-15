@@ -9,17 +9,12 @@ import {
   Calendar,
   Printer,
   FileText,
-  Phone,
   Plus,
   ShieldCheck,
-  Building,
   Edit2,
   Wallet,
-  Briefcase,
-  AlertCircle,
   Clock,
   Check,
-  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 import {

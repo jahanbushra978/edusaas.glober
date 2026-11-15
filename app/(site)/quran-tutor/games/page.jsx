@@ -4,9 +4,9 @@ import { ArrowLeft, Gamepad2 } from "lucide-react";
 import { QuranGamesHub } from "@/features/ai-learning";
 
 export const metadata = {
-  title: "ছোটদের কুরআন লার্নিং গেমস — খেলে শিখি | Rahmania Institute",
+  title: "ছোটদের কুরআন লার্নিং গেমস — খেলে শিখি | Edusaas",
   description: "শিশুদের জন্য আকর্ষণীয় কুরআন লার্নিং গেমস। হরকত বেলুন পপ, হরফ মেলানো মেমোরি কার্ড ও মাখরাজ লক্ষ্যভেদ গেম খেলে অর্জন করুন পয়েন্ট ও উপহার।",
-  keywords: ["Quran Games", "কুরআন গেম", "ছোটদের কুরআন শিক্ষা", "খেলে শিখি", "হরকত বেলুন পপ", "মাখরাজ গেম"],
+  keywords: ["Quran Games", "কুরআন গেম", "ছোটদের কুরআন শিক্ষা", "খেলে শিখি", "হরকত বেলুন পপ", "মাখরাজ গেম", "Edusaas"],
 };
 
 export default function QuranGamesRoute() {

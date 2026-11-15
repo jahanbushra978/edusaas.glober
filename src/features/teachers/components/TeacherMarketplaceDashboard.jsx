@@ -28,9 +28,7 @@ import {
   GraduationCap,
   ExternalLink,
   Copy,
-  MessageSquare,
   Bot,
-  Zap,
 } from "lucide-react";
 import { toast } from "sonner";
 import StudentProfileModal from "./StudentProfileModal";
@@ -645,7 +643,7 @@ export default function TeacherMarketplaceDashboard({
           {/* Card 1: Wallet & Earnings */}
           <div className="p-5 rounded-3xl bg-gradient-to-br from-white via-white to-emerald-50/50 dark:from-stone-900 dark:via-stone-900 dark:to-emerald-950/30 border-2 border-emerald-500/20 dark:border-emerald-700/40 shadow-sm hover:shadow-md transition-all space-y-3 group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-slate-600 dark:text-stone-300">হাদিয়া ও ওয়ালেট ব্যালেন্স</span>
+              <span className="text-xs font-bold text-slate-600 dark:text-stone-300">উত্তোলনযোগ্য ওয়ালেট ব্যালেন্স</span>
               <div className="w-10 h-10 rounded-2xl bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shadow-xs group-hover:scale-105 transition">
                 <Wallet className="w-5 h-5" />
               </div>

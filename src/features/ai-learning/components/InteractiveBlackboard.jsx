@@ -4,11 +4,8 @@ import React, { useState, useRef, useEffect, useCallback, useMemo } from "react"
 import {
   Volume2,
   RotateCcw,
-  Eraser,
   PenTool,
   Download,
-  Eye,
-  EyeOff,
   Award,
   ArrowRight,
   CheckCircle2,

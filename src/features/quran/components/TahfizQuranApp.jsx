@@ -34,7 +34,7 @@ import {
   getHafiziPageTarget
 } from "@/lib/quran/hafizi-pages";
 import { getSurahData, getAyahAudioUrl } from "@/lib/quran/quran-service";
-import { loadChapterSegments, getActiveArabicWordIndex, splitArabicAyahWords, getWordStartTimeSec } from "@/lib/quran/quran-audio-timing";
+import { loadChapterSegments, getActiveArabicWordIndex, splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
 import { QARI_REGISTRY, getStoredQariPreference, setStoredQariPreference } from "@/lib/ai/qari-registry";
 import AmbientFloatingOrbs from "./AmbientFloatingOrbs";
 import HafiziMushafSheet from "./HafiziMushafSheet";

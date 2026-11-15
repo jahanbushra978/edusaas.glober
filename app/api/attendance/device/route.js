@@ -46,10 +46,13 @@ function verifySecret(authHeader, deviceSecret) {
 }
 
 function verifyApiKey(apiKeyHeader) {
-  if (!apiKeyHeader) return false;
+  if (!apiKeyHeader || typeof apiKeyHeader !== "string") return false;
   const expectedKey = process.env.BIOMETRIC_API_KEY;
-  if (!expectedKey) return false;
-  return safeCompare(apiKeyHeader.trim(), expectedKey);
+  if (!expectedKey || typeof expectedKey !== "string" || expectedKey.length < 16) {
+    // Zero-fallback: if environment secret is missing or insufficient, reject all requests
+    return false;
+  }
+  return safeCompare(apiKeyHeader.trim(), expectedKey.trim());
 }
 
 function normalizeEvent(body) {

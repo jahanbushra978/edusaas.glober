@@ -1,21 +1,15 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Coins,
   GraduationCap,
   UtensilsCrossed,
   HelpCircle,
-  Heart,
   Briefcase,
   Headphones,
   CheckCircle2,
   X,
   Plus,
-  Trash2,
-  Calculator,
-  Search,
-  Check,
-  RotateCcw,
 } from "lucide-react";
 import { toast } from "sonner";
 

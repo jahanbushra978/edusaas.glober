@@ -4,9 +4,9 @@ import { ArrowLeft, BookOpen } from "lucide-react";
 import { SifatLearningModule } from "@/features/ai-learning";
 
 export const metadata = {
-  title: "সিফাতুল হুরুফ — হরফের ১৮টি বৈশিষ্ট্য ও বিশুদ্ধ উচ্চারণ | Rahmania Institute",
+  title: "সিফাতুল হুরুফ — হরফের ১৮টি বৈশিষ্ট্য ও বিশুদ্ধ উচ্চারণ | Edusaas",
   description: "সিফাতুল হুরুফের পূর্ণাঙ্গ গাইড: ৫ জোড়া বিপরীত সিফাত (হামস, জাহর, শিদ্দাহ, ইস্তি'লা ইত্যাদি) এবং ৮টি বিপরীতহীন সিফাত (ক্বলক্বলাহ, সাফীর, লীন ইত্যাদি)।",
-  keywords: ["সিফাতুল হুরুফ", "Sifat al Huruf", "তাজবীদ", "কুরআন শিক্ষা", "Rahmania Institute"],
+  keywords: ["সিফাতুল হুরুফ", "Sifat al Huruf", "তাজবীদ", "কুরআন শিক্ষা", "Edusaas"],
   robots: { index: true, follow: true },
 };
 

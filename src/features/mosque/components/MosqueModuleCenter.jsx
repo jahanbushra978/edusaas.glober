@@ -7,16 +7,13 @@ import {
   Receipt,
   Coins,
   Users,
-  Calendar,
   Clock,
   BookOpen,
   GraduationCap,
   HeartHandshake,
   Globe,
   Search,
-  Wrench,
   Briefcase,
-  Layers,
   Compass,
   HelpCircle,
   CheckCircle2,
@@ -39,7 +36,6 @@ import {
   Heart,
   X,
   ArrowUpRight,
-  SlidersHorizontal,
 } from "lucide-react";
 
 /**

@@ -7,16 +7,8 @@ import {
   CheckCircle2,
   Printer,
   Coins,
-  Filter,
   Search,
-  Plus,
-  ArrowRight,
-  TrendingUp,
-  AlertCircle,
-  FileText,
   Calendar,
-  Building2,
-  Share2,
 } from "lucide-react";
 import { toast } from "sonner";
 

@@ -6,7 +6,7 @@ import {
   BookOpen, Mic, Award, Compass, Volume2, Headphones, 
   BarChart3, Trophy, Users, Building2, 
   Check, X, ChevronDown, ChevronUp, Play, Square, 
-  Star, ArrowRight, ArrowLeft, Bot, Search, Menu, Baby, Gamepad2, RotateCcw, PenTool, FileText
+  Star, ArrowRight, ArrowLeft, Bot, Menu, Baby, Gamepad2, RotateCcw, PenTool, FileText
 } from "lucide-react";
 import { toast } from "sonner";
 import QuranSemanticSearchModal from "@/features/ai/components/QuranSemanticSearchModal";
@@ -551,7 +551,7 @@ export default function AIQuranTutorPage() {
                 {/* 🌟 Key Studio Attractions Pill Strip (স্টুডিওর মূল আকর্ষণসমূহ) */}
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2 pt-1 text-xs font-bold text-slate-700 select-none">
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 border border-emerald-200/90 shadow-2xs">
-                    <span className="text-amber-500">✨</span>
+                    <span className="text-amber-500 font-bold">◈</span>
                     <span>১৭টি মাখরাজের চিত্ররূপ</span>
                   </span>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/90 border border-emerald-200/90 shadow-2xs">

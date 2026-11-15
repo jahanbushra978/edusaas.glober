@@ -9,9 +9,8 @@ import {
   BookOpen,
 } from "lucide-react";
 import { KIDS_HARAKAT_GAME_LEVELS } from "../../data/kidsGameData";
-import { universalAudioEngine, nurQaidaAudioEngine } from "@/lib/quran/audio";
+import { nurQaidaAudioEngine } from "@/lib/quran/audio";
 import {
-  playArabicSound,
   playCorrectChime,
   playWrongBuzzer,
   playStarPopSound,

@@ -11,7 +11,7 @@ import {
   Menu, X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { generateFaqSchema, generateEducationalOrgSchema } from "@/lib/seo";
+import { generateFaqSchema, generateEdusaasSoftwareSchema } from "@/lib/seo";
 import WebsiteOnboardingModal from "@/features/site/components/saas/WebsiteOnboardingModal";
 import ContactMessageModal from "@/features/site/components/saas/ContactMessageModal";
 import SaaSHeroSection from "@/features/site/components/saas/SaaSHeroSection";
@@ -30,7 +30,7 @@ export default function SaaSLandingPage() {
   const stats = [
     { number: "১,২০০+", label: "নিবন্ধিত প্রতিষ্ঠান", desc: "স্কুল ও মাদ্রাসা", icon: Building2 },
     { number: "১,৫০,০০০+", label: "সক্রিয় শিক্ষার্থী", desc: "দৈনন্দিন ব্যবহারকারী", icon: Users },
-    { number: "৯৯.৯%", label: "সিস্টেম আপটাইম", desc: "ক্লাউড নির্ভর সার্ভার", icon: ShieldCheck },
+    { number: "১০০%", label: "ক্লাউড পরিচালিত", desc: "কোনো লোকাল সার্ভার প্রয়োজন নেই", icon: ShieldCheck },
     { number: "২৪/৭", label: "লাইভ সাপোর্ট", desc: "টেকনিক্যাল হেল্প", icon: Zap },
   ];
 
@@ -165,13 +165,13 @@ export default function SaaSLandingPage() {
   }, [dbBranches]);
 
   const faqSchema = useMemo(() => generateFaqSchema(faqs), []);
-  const eduOrgSchema = useMemo(() => generateEducationalOrgSchema(), []);
+  const softwareSchema = useMemo(() => generateEdusaasSoftwareSchema(), []);
 
   return (
     <div className="min-h-screen bg-[#F8F9FB] text-slate-800 font-sans antialiased overflow-x-hidden">
       {/* JSON-LD SEO Schemas */}
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }} />
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(eduOrgSchema) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareSchema) }} />
 
       {/* ── Top Promo Bar ── */}
       <div className="bg-gradient-to-r from-[#052E2B] via-emerald-900 to-[#031d1b] text-white py-2 px-4 text-center text-xs font-semibold border-b border-[#D4AF37]/20">

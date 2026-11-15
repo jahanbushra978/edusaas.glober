@@ -3,16 +3,9 @@
 import React, { useState } from "react";
 import {
   X,
-  Building,
   CheckCircle2,
-  AlertTriangle,
-  Plus,
-  Wrench,
   Search,
-  ShieldCheck,
-  Calendar,
 } from "lucide-react";
-import { toast } from "sonner";
 
 export function AssetInventoryModal({
   onClose,

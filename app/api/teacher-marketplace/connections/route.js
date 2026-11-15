@@ -34,13 +34,14 @@ async function resolveCallerIdentity(session, adminClient) {
 
       teacherProfile = data;
     }
+    const currentStatus = teacherProfile?.status || session.status || "approved";
     return {
       role: "teacher",
       userId: authUserId,
       teacherId: teacherProfile?.teacher_id || session.teacherId || authUserId,
       nameBn: teacherProfile?.name_bn || session.nameBn || session.name || "উস্তাদ",
-      status: teacherProfile?.status || session.status || "approved",
-      isApproved: true,
+      status: currentStatus,
+      isApproved: currentStatus === "approved",
     };
   }
 
@@ -163,24 +164,11 @@ export async function POST(req) {
     const body = await req.json();
     const { initiated_by, teacher_id, student_id, request_message, subject } = body;
 
-    // Gracefully fallback session if cookie is not set in browser
     if (!session || !session.role) {
-      if (initiated_by === "teacher") {
-        session = {
-          role: "teacher",
-          authUserId: teacher_id || "qari-mahmudul-hasan",
-          teacherId: teacher_id || "qari-mahmudul-hasan",
-          nameBn: body.teacher_name || "সম্মানিত উস্তাদ",
-          status: "approved",
-        };
-      } else {
-        session = {
-          role: "student",
-          authUserId: student_id || "guest-student",
-          studentPublicId: body.student_public_id || "STU-1001",
-          name: body.student_name || "উন্মুক্ত শিক্ষার্থী",
-        };
-      }
+      return NextResponse.json(
+        { ok: false, error: "Authentication required to send a learning request" },
+        { status: 401 }
+      );
     }
 
     const adminClient = createSupabaseAdminClient();
@@ -216,7 +204,13 @@ export async function POST(req) {
 
     // ── Direction 1: Student -> Teacher Request ──
     if (initiated_by === "student") {
-      // Allow students, learners, and cross-role learning requests gracefully
+      if (caller.role !== "student" && !caller.isAdmin) {
+        return NextResponse.json(
+          { ok: false, error: "শুধুমাত্র শিক্ষার্থীরা পড়ার আবেদন পাঠাতে পারেন" },
+          { status: 403 }
+        );
+      }
+
       if (!teacher_id) {
         return NextResponse.json({ ok: false, error: "teacher_id is required" }, { status: 400 });
       }
@@ -237,6 +231,13 @@ export async function POST(req) {
         );
       }
 
+      if (targetTeacher.status !== "approved") {
+        return NextResponse.json(
+          { ok: false, error: "নির্বাচিত শিক্ষক বর্তমানে অনুমোদিত নন" },
+          { status: 403 }
+        );
+      }
+
       resolvedTeacherId = targetTeacher.teacher_id || targetTeacher.id;
       resolvedTeacherName = targetTeacher.name_bn || "সম্মানিত উস্তাদ";
       // Server-derived student identity
@@ -247,11 +248,16 @@ export async function POST(req) {
 
     // ── Direction 2: Teacher -> Student Invitation ──
     if (initiated_by === "teacher") {
-      // Allow verified teachers or testing accounts to invite students
-      const isApprovedTeacher = true;
-      if (!isApprovedTeacher) {
+      if (caller.role !== "teacher" && !caller.isAdmin) {
         return NextResponse.json(
-          { ok: false, error: "আপনার শিক্ষক প্রোফাইল বর্তমানে যাচাই-বাছাইাধীন রয়েছে। অনুমোদনের পর আমন্ত্রণ পাঠানো যাবে।" },
+          { ok: false, error: "শুধুমাত্র অনুমোদিত শিক্ষকগণ পাঠদানের আমন্ত্রণ পাঠাতে পারেন" },
+          { status: 403 }
+        );
+      }
+
+      if (!caller.isApproved && !caller.isAdmin) {
+        return NextResponse.json(
+          { ok: false, error: "আপনার শিক্ষক প্রোফাইল এখনো অনুমোদিত নয়" },
           { status: 403 }
         );
       }

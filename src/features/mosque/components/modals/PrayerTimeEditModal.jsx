@@ -224,7 +224,7 @@ export default function PrayerTimeEditModal({
                     🕒 সময়: <span className="text-teal-700 dark:text-teal-400">{item.waqt}</span>
                   </p>
                   <p className="text-xs text-stone-600 dark:text-stone-400 leading-relaxed">
-                    ✨ ফযীলত: {item.virt}
+                    ফযীলত: {item.virt}
                   </p>
                 </div>
               ))}

@@ -3,14 +3,6 @@
 import React, { useState } from "react";
 import {
   X,
-  Heart,
-  Coins,
-  CheckCircle2,
-  AlertCircle,
-  FileText,
-  User,
-  ShieldCheck,
-  Plus,
 } from "lucide-react";
 import { toast } from "sonner";
 

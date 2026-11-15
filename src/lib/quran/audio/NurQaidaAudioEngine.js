@@ -18,7 +18,7 @@
  *    handles rapid clicks, and cleans up on component unmount.
  */
 
-import { NUR_QAIDA_MANIFEST, NUR_QAIDA_BY_ID, NUR_QAIDA_BY_AR } from "./NurQaidaManifest.js";
+import { NUR_QAIDA_BY_ID, NUR_QAIDA_BY_AR } from "./NurQaidaManifest.js";
 import { audioManager } from "./AudioManager.js";
 import { audioEvents, AUDIO_EVENTS } from "./AudioEvents.js";
 import { universalAudioEngine } from "./UniversalQuranAudioEngine.js";

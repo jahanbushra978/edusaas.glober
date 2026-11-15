@@ -5,10 +5,7 @@ import {
   ArrowLeft,
   RotateCcw,
   BookOpen,
-  Volume2,
   Trophy,
-  Star,
-  CheckCircle2,
 } from "lucide-react";
 import {
   playArabicSound,

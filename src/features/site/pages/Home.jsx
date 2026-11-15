@@ -118,25 +118,12 @@ function HomeContent() {
   useEffect(() => {
     setMounted(true);
     if (typeof window !== "undefined") {
-      const p = new URLSearchParams(window.location.search);
-      if (p.get("view") === "school") {
+      const hostname = window.location.hostname.toLowerCase();
+      const isRahmaniaDomain = hostname === "rahmaniainstitute.org" || hostname === "www.rahmaniainstitute.org";
+      if (isRahmaniaDomain) {
         setViewMode("school");
-        localStorage.setItem("home_view_mode", "school");
-      } else if (p.get("view") === "saas") {
-        setViewMode("saas");
-        localStorage.setItem("home_view_mode", "saas");
-      } else if (p.get("view") === "quran-tutor") {
-        setViewMode("quran-tutor");
       } else {
-        const saved = localStorage.getItem("home_view_mode");
-        if (saved === "school") {
-          setViewMode("school");
-        } else {
-          setViewMode("saas");
-          if (saved === "quran-tutor") {
-            localStorage.setItem("home_view_mode", "saas");
-          }
-        }
+        setViewMode("saas");
       }
     }
   }, []);

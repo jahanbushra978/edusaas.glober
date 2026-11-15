@@ -4,55 +4,28 @@ import React, { useState, useEffect, useMemo } from "react";
 import {
   Menu,
   ShieldCheck,
-  Building2,
   Clock,
-  Calendar,
-  Heart,
   BookOpen,
-  Scroll,
   FileText,
-  Mic,
   GraduationCap,
-  Compass,
-  CheckCircle2,
   Coins,
   Receipt,
-  HelpCircle,
   Briefcase,
-  Headphones,
-  Award,
-  Video,
-  Moon,
-  Sun,
-  ChevronRight,
-  Bell,
   Search,
   Settings,
   User,
   Users,
   Plus,
   X,
-  ExternalLink,
-  ArrowRight,
-  TrendingUp,
-  AlertCircle,
   Check,
-  Filter,
   Printer,
-  Lock,
   Globe,
-  LogIn,
-  ShoppingBag,
-  Wrench,
   Landmark,
   Utensils,
   Download,
   Upload,
   Database,
   FileSpreadsheet,
-  Layers,
-  Eye,
-  EyeOff,
   FileCheck,
   Wallet,
   Boxes,
@@ -66,11 +39,9 @@ import { toast } from "sonner";
 import {
   getMosqueDatabase,
   saveMosqueDatabase,
-  recalculateDatabase,
   addMemberToDatabase,
   updateMemberPledgeInDatabase,
   recordDonationInDatabase,
-  submitExpenseToDatabase,
   approveExpenseInDatabase,
   payExpenseInDatabase,
   rejectExpenseInDatabase,
@@ -133,7 +104,6 @@ import { CustomDomainModal } from "./modals/CustomDomainModal";
 import { MosqueDiscoveryModal } from "./modals/MosqueDiscoveryModal";
 import { MosqueRegistrationModal } from "./modals/MosqueRegistrationModal";
 import { MosqueUserGuideModal } from "./modals/MosqueUserGuideModal";
-import PageTutorialBanner from "@/features/admin/components/tutorials/PageTutorialBanner";
 import PageTutorialModal from "@/features/admin/components/tutorials/PageTutorialModal";
 
 const BANGLADESH_DISTRICTS = [
@@ -147,17 +117,40 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
   const [db, setDb] = useState(() => getMosqueDatabase());
 
   // Current Active Role & Member Identity
-  const [currentUserRole, setCurrentUserRole] = useState("PRESIDENT"); // "SUPER_ADMIN" | "PRESIDENT" | "TREASURER" | "IMAM" | "MEMBER"
+  const [currentUserRole, setCurrentUserRole] = useState("PRESIDENT"); // "SUPER_ADMIN" | "PRESIDENT" | "TREASURER" | "IMAM" | "MEMBER" | "STAFF"
   const [currentMemberId, setCurrentMemberId] = useState("M-101");
 
-  // Operating View Mode: "erp" (Admin & Member ERP) vs "public" (Public website)
-  const [viewMode, setViewMode] = useState("erp");
+  // Operating View Mode: Default to "public" landing page when clicking Mosque card
+  const [viewMode, setViewMode] = useState("public");
 
   // Navigation State
   const [activeTab, setActiveTab] = useState("dashboard"); // dashboard, members, committee, staff, income, funds, vouchers, bill-approvals, ledger, reports, prayer, roster, maktab, events, welfare, assets, notices, audit, backup, member-portal, settings, months
   const [activeModal, setActiveModal] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isTutorialModalOpen, setIsTutorialModalOpen] = useState(false);
+
+  // Dedicated Role-Based Authentication & Dashboard Router
+  const handleLoginRole = ({ role, memberId, targetTab, userName, title }) => {
+    setCurrentUserRole(role);
+    if (memberId) setCurrentMemberId(memberId);
+    
+    // Route to appropriate role-specific dashboard
+    if (targetTab) {
+      setActiveTab(targetTab);
+    } else if (role === "IMAM") {
+      setActiveTab("prayer");
+    } else if (role === "TREASURER") {
+      setActiveTab("income");
+    } else if (role === "MEMBER") {
+      setActiveTab("member-portal");
+    } else if (role === "STAFF") {
+      setActiveTab("assets");
+    } else {
+      setActiveTab("dashboard");
+    }
+    
+    setViewMode("erp");
+  };
 
   useEffect(() => {
     if (typeof window !== "undefined" && window.innerWidth >= 1024) {
@@ -332,11 +325,14 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
         schedule={db.prayerSchedule}
         currentPrayer={db.prayerSchedule[3]}
         countdown="৪৫ মিনিট বাকি"
-        nextJamaatText="মাগরিব শুরু: ০৫:৩৮ PM"
-        onOpenLogin={() => setViewMode("erp")}
+        nextJamaatText="মাগরিব জামা'আত: ০৫:১৫ PM"
+        onOpenLogin={() => {}}
+        onLoginRole={handleLoginRole}
         onOpenDiscovery={() => setActiveModal("mosque-discovery")}
         onOpenCustomDomain={() => setActiveModal("custom-domain")}
         onOpenMaktab={() => setActiveModal("maktab")}
+        onNavigateBack={onNavigateBack}
+        members={db.members}
       />
     );
   }
@@ -381,19 +377,35 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
 
           {/* Center/Right: Role Switcher Simulator & Controls */}
           <div className="flex items-center gap-2 shrink-0">
-            {/* Role Switcher Pill */}
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-stone-100 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 text-xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-[#0D7A5F]" />
-              <span className="text-[10px] text-stone-500 hidden sm:inline">রোল:</span>
+            {/* Active User Role Badge */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-800 text-xs font-bold text-emerald-950 dark:text-emerald-200 shadow-2xs">
+              {currentUserRole === "PRESIDENT" && <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />}
+              {currentUserRole === "TREASURER" && <Coins className="w-4 h-4 text-amber-600 shrink-0" />}
+              {currentUserRole === "IMAM" && <Clock className="w-4 h-4 text-teal-600 shrink-0" />}
+              {currentUserRole === "MEMBER" && <User className="w-4 h-4 text-blue-600 shrink-0" />}
+              {currentUserRole === "STAFF" && <Boxes className="w-4 h-4 text-stone-600 shrink-0" />}
+              {currentUserRole === "SUPER_ADMIN" && <ShieldCheck className="w-4 h-4 text-purple-600 shrink-0" />}
+              
+              <span className="truncate max-w-[130px] sm:max-w-[180px]">
+                {currentUserRole === "PRESIDENT" && "সভাপতি: আলহাজ্ব মোস্তাফিজুর"}
+                {currentUserRole === "TREASURER" && "কোষাধ্যক্ষ: জনাব শাহিনুর"}
+                {currentUserRole === "IMAM" && "পেশ ইমাম: মুফতি আব্দুল্লাহ"}
+                {currentUserRole === "MEMBER" && `সদস্য: ${db.members.find(m => m.id === currentMemberId)?.name || "সম্মানিত সদস্য"} (${currentMemberId})`}
+                {currentUserRole === "STAFF" && "প্রধান মুয়াজ্জিন: ক্বারী আহমাদুল্লাহ"}
+                {currentUserRole === "SUPER_ADMIN" && "সুপার অ্যাডমিন"}
+              </span>
+
               <select
                 value={currentUserRole}
                 onChange={(e) => setCurrentUserRole(e.target.value)}
-                className="bg-transparent text-xs font-bold text-stone-900 dark:text-stone-100 focus:outline-hidden cursor-pointer"
+                className="bg-transparent text-[10px] text-stone-500 hover:text-stone-800 dark:hover:text-stone-200 cursor-pointer ml-1 border-l border-emerald-300 pl-1"
+                title="রোল পরিবর্তন করুন"
               >
                 <option value="PRESIDENT">সভাপতি (President)</option>
                 <option value="TREASURER">কোষাধ্যক্ষ (Treasurer)</option>
                 <option value="IMAM">খতীব ও ইমাম (Imam)</option>
                 <option value="MEMBER">সদস্য পোর্টাল (Member)</option>
+                <option value="STAFF">মুয়াজ্জিন ও স্টাফ (Staff)</option>
                 <option value="SUPER_ADMIN">সুপার অ্যাডমিন (Super Admin)</option>
               </select>
             </div>
@@ -406,8 +418,7 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               title="কীভাবে ব্যবহার করবেন? (ব্যবহার নির্দেশিকা ও টিউটোরিয়াল পড়ুন)"
             >
               <BookOpen className="w-3.5 h-3.5 text-[#0D7A5F] shrink-0" />
-              <span className="hidden sm:inline">কীভাবে ব্যবহার করবেন?</span>
-              <span className="sm:hidden">গাইড</span>
+              <span className="hidden sm:inline">গাইড</span>
             </button>
 
             {/* Switch to Public Site */}
@@ -420,11 +431,25 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
               <span className="hidden sm:inline">পাবলিক সাইট</span>
             </button>
 
+            {/* Logout to Public Landing Page */}
+            <button
+              type="button"
+              onClick={() => {
+                setViewMode("public");
+                toast.info("সফলভাবে লগআউট হয়েছে। পাবলিক ল্যান্ডিং পেজে ফিরে এসেছেন।");
+              }}
+              className="px-3 py-1.5 rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+              title="লগআউট করে ল্যান্ডিং পেজে ফিরুন"
+            >
+              <LogIn className="w-3.5 h-3.5 rotate-180 text-rose-600" />
+              <span className="hidden sm:inline">লগআউট</span>
+            </button>
+
             {/* Back Button if available */}
             {onNavigateBack && (
               <button
                 onClick={onNavigateBack}
-                className="p-1.5 rounded-xl border border-stone-200 dark:border-emerald-900/60 hover:bg-stone-100 text-stone-600 dark:text-stone-300"
+                className="p-1.5 rounded-xl border border-stone-200 dark:border-emerald-900/60 hover:bg-stone-100 text-stone-600 dark:text-stone-300 cursor-pointer"
                 title="পূর্বের মেনুতে ফিরুন"
               >
                 <X className="w-4 h-4" />
@@ -1562,6 +1587,125 @@ export default function MosqueHub({ onOpenQuranReader, onOpenTutor, onNavigateBa
                     <p>ঠিকানা: <b>{currentMosque.address}</b></p>
                     <p>স্লাগ: <code className="font-mono text-[#0D7A5F] bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded">{currentMosque.slug}</code></p>
                     <p>কাস্টম ডোমেইন: <code className="font-mono text-[#0D7A5F] bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded">{currentMosque.customDomain}</code></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* ══════════════════════════════════════════════════════════════
+              VIEW 10: সালাত, জামাত ও ইমাম-খতিব ড্যাশবোর্ড (PRAYER & IMAM SUITE)
+             ══════════════════════════════════════════════════════════════ */}
+          {activeTab === "prayer" && (
+            <div className="space-y-4 animate-in fade-in duration-200">
+              <div className="p-4 sm:p-6 rounded-3xl bg-white dark:bg-[#0c1612] border border-stone-200/90 dark:border-emerald-900/50 shadow-xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-stone-100 dark:border-emerald-950/80">
+                  <div className="flex items-center gap-2.5">
+                    <Clock className="w-5 h-5 text-[#0D7A5F]" />
+                    <div>
+                      <h3 className="text-base sm:text-lg font-black text-stone-900 dark:text-stone-100">
+                        সালাত, জামাত ও ইমাম-খতিব কার্যপরিচালনা ড্যাশবোর্ড
+                      </h3>
+                      <p className="text-xs text-stone-500 dark:text-stone-400">
+                        ৫ ওয়াক্ত সালাতের জামা'আত সময় নির্ধারণ, বয়ান খসড়া ও খানা রোস্টার
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveModal("prayer-edit")}
+                      className="px-3.5 py-1.5 rounded-xl bg-[#0D7A5F] hover:bg-[#0b654e] text-white font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+                    >
+                      <Clock className="w-3.5 h-3.5" />
+                      <span>সময়সূচি পরিবর্তন করুন</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveModal("imam-meal")}
+                      className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-stone-950 font-bold text-xs flex items-center gap-1.5 cursor-pointer shadow-xs transition"
+                    >
+                      <Utensils className="w-3.5 h-3.5" />
+                      <span>ইমাম খানা রোস্টার</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveModal("maktab")}
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950 text-[#0D7A5F] dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-bold text-xs flex items-center gap-1.5 cursor-pointer transition"
+                    >
+                      <GraduationCap className="w-3.5 h-3.5" />
+                      <span>মক্তব ট্র্যাকিং</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Prayer Schedule Cards Grid */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 text-center">
+                  {db.prayerSchedule.map((p, idx) => (
+                    <div
+                      key={idx}
+                      className={`p-3.5 rounded-2xl border ${
+                        p.isActive
+                          ? "bg-emerald-50 dark:bg-emerald-950/60 border-2 border-[#0D7A5F] shadow-xs"
+                          : "bg-stone-50 dark:bg-[#07130e] border-stone-200 dark:border-emerald-900/40"
+                      }`}
+                    >
+                      <div className="text-[10px] font-mono text-stone-400">{p.arabic || "الفجر"}</div>
+                      <div className="text-sm font-black text-stone-900 dark:text-stone-100 mt-1">{p.name}</div>
+                      <div className="text-[11px] text-stone-500 mt-0.5">আযান: {p.start}</div>
+                      <div className="text-xs sm:text-sm font-mono font-black text-[#0D7A5F] dark:text-emerald-400 mt-1">
+                        জামাত: {p.jamaat}
+                      </div>
+                      <div className="text-[10px] text-stone-400 mt-0.5">শেষ: {p.end || "—"}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Imam Duties & Khutba Quick Notes */}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div className="p-4 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-xs sm:text-sm text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                        <BookOpen className="w-4 h-4 text-[#0D7A5F]" />
+                        <span>আগামী জুমার বয়ান ও খুতবা পরিকল্পনা:</span>
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModal("bayan")}
+                        className="text-[11px] font-bold text-[#0D7A5F] hover:underline cursor-pointer"
+                      >
+                        বয়ান লাইব্রেরি ➔
+                      </button>
+                    </div>
+                    <p className="text-xs text-stone-600 dark:text-stone-300">
+                      নির্ধারিত বিষয়: <b>"ইসলামে প্রতিবেশীর হক ও সামাজিক দায়িত্ববোধ"</b>
+                    </p>
+                    <p className="text-[11px] text-stone-500 leading-relaxed">
+                      কুরআনের সূরা আন-নিসা আয়াত ৩৬ ও বুখারী শরীফের ৬০১৪ নং হাদিসের আলোকে আলোচনা। বয়ান শুরু: দুপুর ০১:০০ PM।
+                    </p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-stone-50 dark:bg-[#07130e] border border-stone-200 dark:border-emerald-900/40 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-bold text-xs sm:text-sm text-stone-900 dark:text-stone-100 flex items-center gap-2">
+                        <Utensils className="w-4 h-4 text-[#0D7A5F]" />
+                        <span>আজকের খানা আপ্যায়ন (ইমাম মেস রোস্টার):</span>
+                      </h4>
+                      <button
+                        type="button"
+                        onClick={() => setActiveModal("imam-meal")}
+                        className="text-[11px] font-bold text-[#0D7A5F] hover:underline cursor-pointer"
+                      >
+                        সম্পূর্ণ রোস্টার ➔
+                      </button>
+                    </div>
+                    <p className="text-xs text-stone-600 dark:text-stone-300">
+                      আজকের নির্ধারিত পরিবার: <b>হাজী মুহাম্মদ রফিকুল ইসলাম পরিবার</b> (সদস্য ID: M-101)
+                    </p>
+                    <p className="text-[11px] text-stone-500">
+                      মোবাইল: ০১৭১১-২২৩৩৪৪ · খানা প্রেরণের স্ট্যাটাস: <span className="font-bold text-emerald-600">নিশ্চিতকৃত (Confirmed)</span>
+                    </p>
                   </div>
                 </div>
               </div>

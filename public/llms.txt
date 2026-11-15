@@ -1,0 +1,49 @@
+# Edusaas — Education SaaS & Institutional ERP Platform
+
+> Edusaas (https://edusaas.global) is an enterprise-grade Multi-Tenant Educational SaaS & ERP platform designed for schools, madrasas, colleges, academies, and multi-branch educational institutes in Bangladesh and internationally.
+
+## Overview
+- **Brand**: Edusaas (also known as EduSaaS Global)
+- **Website**: https://edusaas.global
+- **Business Category**: Educational SaaS / School & Madrasa Management ERP Software
+- **Headquarters**: Dhaka, Bangladesh
+- **Official Contact**: contact@edusaas.global | Phone/WhatsApp: +8801576600265
+- **Architecture**: Next.js 16 App Router, Supabase PostgreSQL with Row Level Security (RLS), multi-tenant isolation, and multi-provider AI adapters.
+
+## Core Capabilities & Modules
+1. **Biometric Attendance Integration**:
+   - Hardware bridge for ZKTeco and standard fingerprint & facial recognition devices.
+   - Real-time cloud synchronization, automatic 1-minute deduplication, and automated Bengali SMS notification to parents upon student arrival and departure.
+2. **Automated Examination & Grading Engine**:
+   - Subject-wise marks tabulation, automatic percentage calculation, GPA & letter grade assignment, section/class merit rankings, and printable marksheets with QR verification.
+3. **Paperless Student Fee Management & Accounting**:
+   - Double-entry institutional accounting ledger, fee schedules, automated SMS dues reminders, digital fee receipts with QR validation, and boarding expense tracking.
+4. **Online Admission Portal & Student Registry**:
+   - Customizable digital admission forms, document uploads, student profile management, and automatic ID generation.
+5. **No-Code White-Label Dynamic Website Builder**:
+   - Enables independent madrasas and schools to deploy custom white-label websites on their own custom domains (e.g., your-institution.edu.bd) within minutes.
+6. **Nur AI Quran Companion & Interactive Teaching Engine**:
+   - Integrated AI Quran learning tutor providing voice recitation evaluation, 17 Makharij anatomical articulation guidance, Tajweed rules (Noon Saakin, Meem Saakin, Madd, Qalqalah), and Hifz memorization tracking.
+
+## Target Institutions
+- General Schools & Colleges (Bangla Medium and English Version)
+- Islamic Madrasas (Noorani, Najera, Hifzul Quran, Kitabkhana, and Dawra-e-Hadith)
+- Training Academies and Multi-Branch Educational Chains
+
+## Security & Multi-Tenant Isolation
+- Strict server-side tenant resolution via cryptographic session tokens or validated Host headers.
+- Zero-Trust database isolation enforced via PostgreSQL Row-Level Security (RLS).
+- Write-once immutable audit logging for administrative actions and security anomalies.
+- Zero credential logging and timing-safe API secret validation.
+
+## Public Endpoints & Links
+- Homepage: https://edusaas.global/
+- About Us: https://edusaas.global/about
+- Features & Modules: https://edusaas.global/facilities
+- Frequently Asked Questions: https://edusaas.global/faq
+- Notices & Blog: https://edusaas.global/notices
+- Nur AI Quran Companion: https://edusaas.global/quran-tutor
+- Live Voice Classroom: https://edusaas.global/quran-tutor/live-class
+- Institutional Admin Portal: https://edusaas.global/AdminLogin
+- Teacher Portal: https://edusaas.global/TeacherLogin
+- Student Portal: https://edusaas.global/StudentLogin

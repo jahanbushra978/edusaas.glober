@@ -263,8 +263,8 @@ export default function BillingPage() {
         </div>
 
         <div class="footer">
-          <p>This is an automated system generated digital receipt issued by the Rahmania EduSaaS Platform Engine.</p>
-          <p>Thank you for partnering with Rahmania Institute Educational Management Suite.</p>
+          <p>This is an automated system generated digital receipt issued by the Edusaas Platform Engine.</p>
+          <p>Thank you for partnering with Edusaas Educational Management Suite.</p>
         </div>
         <script>
           window.onload = function() { window.print(); };

@@ -1,17 +1,12 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Award,
   Video,
   ShieldCheck,
   Building,
-  Users,
-  FileText,
-  DollarSign,
-  TrendingUp,
   X,
   Search,
-  CheckCircle2,
   ExternalLink,
   ChevronRight,
   Plus,

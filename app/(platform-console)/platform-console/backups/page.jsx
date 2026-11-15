@@ -96,7 +96,7 @@ export default function BackupsManagementPage() {
       // Collect real client system state
       const backupPayload = {
         metadata: {
-          platform: "Rahmania EduSaaS Central Engine",
+          platform: "Edusaas Central Platform Engine",
           version: "2.4.0-Production",
           generatedAt: new Date().toISOString(),
           environment: "production",

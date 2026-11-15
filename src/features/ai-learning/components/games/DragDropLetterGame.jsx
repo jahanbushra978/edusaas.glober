@@ -12,8 +12,6 @@ import {
   BookOpen,
 } from "lucide-react";
 import {
-  universalAudioEngine,
-  playArabicSound,
   playFeedbackChime,
   nurQaidaAudioEngine,
 } from "@/lib/quran/audio";
