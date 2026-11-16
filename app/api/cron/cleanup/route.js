@@ -1,13 +1,23 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "../../../../src/lib/supabase-admin";
+import { safeCompare } from "../../../../src/lib/safe-compare";
 
 // This route can be called by Vercel Cron Jobs (or any external cron service)
 // to automatically clean up old security logs in the Supabase database.
 export async function GET(request) {
-  // Optional: Verify Vercel Cron Secret for security
-  const authHeader = request.headers.get('authorization');
-  if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  // Fail-closed verification: CRON_SECRET is strictly required
+  const cronSecret = process.env.CRON_SECRET;
+  if (!cronSecret) {
+    return NextResponse.json(
+      { ok: false, error: "CRON_SECRET is not configured on the server." },
+      { status: 503 }
+    );
+  }
+
+  const authHeader = request.headers.get("authorization") || "";
+  const expectedHeader = `Bearer ${cronSecret}`;
+  if (!safeCompare(authHeader, expectedHeader)) {
+    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
   }
 
   try {

@@ -1,16 +1,24 @@
 import { NextResponse } from "next/server";
 import { createSupabaseAdminClient } from "../../../../src/lib/supabase-admin";
+import { safeCompare } from "../../../../src/lib/safe-compare";
 
 export const runtime = "nodejs";
 
 export async function GET(request) {
   try {
-    // Basic verification for Vercel Cron or similar systems
-    const authHeader = request.headers.get('authorization');
-    if (process.env.CRON_SECRET) {
-      if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
-        return NextResponse.json({ ok: false, message: "Unauthorized cron execution" }, { status: 401 });
-      }
+    // Fail-closed verification: CRON_SECRET is strictly required
+    const cronSecret = process.env.CRON_SECRET;
+    if (!cronSecret) {
+      return NextResponse.json(
+        { ok: false, message: "CRON_SECRET is not configured on the server." },
+        { status: 503 }
+      );
+    }
+
+    const authHeader = request.headers.get("authorization") || "";
+    const expectedHeader = `Bearer ${cronSecret}`;
+    if (!safeCompare(authHeader, expectedHeader)) {
+      return NextResponse.json({ ok: false, message: "Unauthorized cron execution" }, { status: 401 });
     }
 
     const supabase = createSupabaseAdminClient();

@@ -18,11 +18,13 @@ function getAdminDb() {
   return new Pool({ connectionString: url, max: 1 });
 }
 
+const ALLOWED_READ_ROLES = ["admin", "branch_admin", "boarding_manager", "superadmin", "super_admin"];
+
 async function requireAdminSession() {
   const cookieStore = await cookies();
   const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
   const session = await verifySessionToken(token);
-  if (!session || session.role !== "admin") return null;
+  if (!session || !ALLOWED_READ_ROLES.includes(session.role)) return null;
   return session;
 }
 
@@ -104,6 +106,15 @@ export async function POST(request) {
   const session = await requireAdminSession();
   if (!session) {
     return NextResponse.json({ ok: false, message: "Unauthorized" }, { status: 401 });
+  }
+
+  // Mutation guard: Only top administrators can advance or close accounting periods
+  const writeAllowedRoles = ["admin", "superadmin", "super_admin"];
+  if (!writeAllowedRoles.includes(session.role)) {
+    return NextResponse.json(
+      { ok: false, message: "Forbidden: Only top administrators can advance or close accounting periods." },
+      { status: 403 }
+    );
   }
 
   const supabaseAdmin = createSupabaseAdminClient();

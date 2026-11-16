@@ -8,8 +8,6 @@
  * 4. Multi-Tafsir Registry: Tafsir-e-Usmani (তাফসীরে উসমানী) & Ahsanul Bayan (আহসানুল বায়ান)
  */
 
-import { normalizeQuranWord } from "./hafizi-annotations";
-
 // Curated high-fidelity translations for popular and core Quranic sections
 export const CURATED_TAQI_USMANI_TRANSLATIONS = {
   // Surah 1: Al-Fatihah

@@ -1,12 +1,10 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { Clock, Sun, Moon, Sunrise, Sunset, Compass, Bell } from "lucide-react";
+import { Clock, Sun, Moon, Sunrise, Sunset, Bell } from "lucide-react";
 import {
   calculateRealtimePrayerState,
-  formatRemainingTimeBengali,
   formatBangladeshClock,
-  toBnDigits,
 } from "@/lib/quran/bangladesh-time";
 
 export default function PrayerTimesDashboardCard({

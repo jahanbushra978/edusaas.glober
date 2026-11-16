@@ -9,7 +9,6 @@ import {
   ChevronRight,
   X,
   Check,
-  Settings,
   Lock,
 } from "lucide-react";
 import { universalAudioEngine, QAIDA_TAKHTI_1_LETTERS } from "@/lib/quran/audio";

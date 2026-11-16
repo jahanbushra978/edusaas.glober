@@ -3,9 +3,13 @@ import fs from "fs";
 import path from "path";
 import crypto from "crypto";
 import os from "os";
+import { checkRateLimit } from "../../../../src/lib/rate-limit";
+import { getClientIp } from "../../../../src/lib/security";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+const MAX_TTS_TEXT_LENGTH = 600;
 
 // Global in-memory cache for synthesized audio chunks (LRU up to 1000 entries)
 if (!global.__ttsBufferCache) {
@@ -639,10 +643,16 @@ async function synthesizeChunk(chunk, lang = "bn", voice = null, rate = null, ge
 
 export async function GET(request) {
   try {
-    const { searchParams } = new URL(request.url);
-    if (searchParams.get("clear") === "1") {
-      ttsCache.clear();
+    // ── IP-Based Rate Limiting for Abuse Protection ──
+    const ip = getClientIp(request);
+    if (!checkRateLimit(`tts:${ip}`, { windowMs: 60000, max: 60 })) {
+      return NextResponse.json(
+        { ok: false, message: "Too many speech requests. Please slow down." },
+        { status: 429 }
+      );
     }
+
+    const { searchParams } = new URL(request.url);
     const text = (searchParams.get("text") || "").trim();
     const lang = (searchParams.get("lang") || "bn").toLowerCase();
     const voice = searchParams.get("voice") || null;
@@ -654,6 +664,14 @@ export async function GET(request) {
 
     if (!text) {
       return NextResponse.json({ ok: false, message: "Text parameter is required." }, { status: 400 });
+    }
+
+    // ── Input Length Bound to Prevent Excessive Quota Consumption ──
+    if (text.length > MAX_TTS_TEXT_LENGTH) {
+      return NextResponse.json(
+        { ok: false, message: `Text parameter exceeds maximum allowed length of ${MAX_TTS_TEXT_LENGTH} characters.` },
+        { status: 400 }
+      );
     }
 
     if (lang.startsWith("bn")) {
@@ -733,6 +751,15 @@ export async function GET(request) {
 
 export async function POST(request) {
   try {
+    // ── IP-Based Rate Limiting for Abuse Protection ──
+    const ip = getClientIp(request);
+    if (!checkRateLimit(`tts:${ip}`, { windowMs: 60000, max: 60 })) {
+      return NextResponse.json(
+        { ok: false, message: "Too many speech requests. Please slow down." },
+        { status: 429 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const text = (body.text || "").trim();
     const lang = (body.lang || "bn").toLowerCase();
@@ -750,6 +777,14 @@ export async function POST(request) {
 
     if (!text) {
       return NextResponse.json({ ok: false, message: "Text is required in body." }, { status: 400 });
+    }
+
+    // ── Input Length Bound to Prevent Excessive Quota Consumption ──
+    if (text.length > MAX_TTS_TEXT_LENGTH) {
+      return NextResponse.json(
+        { ok: false, message: `Text parameter exceeds maximum allowed length of ${MAX_TTS_TEXT_LENGTH} characters.` },
+        { status: 400 }
+      );
     }
 
     const normalized = lang.startsWith("bn")
