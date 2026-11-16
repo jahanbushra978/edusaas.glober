@@ -1,58 +1,45 @@
-import { Inter, Hind_Siliguri, Noto_Sans_Bengali, Noto_Sans_Arabic, Amiri, Playfair_Display, Baloo_Da_2 } from "next/font/google";
+// Instant font configuration with zero dev-server remote blocking.
+// Browser smoothly loads Google Fonts via preconnected links in layout.jsx,
+// completely eliminating the "Request timed out after 3000ms / Retrying 1/3..." freezes.
 
-// next/font self-hosts these at build time — no runtime request to
-// fonts.googleapis.com, no render-blocking <link>, automatic font-display:
-// swap, and no layout shift from late-loading fonts.
+export const inter = {
+  className: "font-sans",
+  variable: "font-sans",
+  style: { fontFamily: "'Inter', sans-serif" },
+};
 
-export const inter = Inter({
-  subsets: ["latin"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-inter",
-  display: "swap",
-});
+export const hindSiliguri = {
+  className: "font-hind-siliguri",
+  variable: "font-hind-siliguri",
+  style: { fontFamily: "'Hind Siliguri', sans-serif" },
+};
 
-export const hindSiliguri = Hind_Siliguri({
-  subsets: ["latin", "bengali"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-hind-siliguri",
-  display: "swap",
-});
+export const notoSansBengali = {
+  className: "font-bn",
+  variable: "font-bn",
+  style: { fontFamily: "'Noto Sans Bengali', 'Hind Siliguri', sans-serif" },
+};
 
-export const notoSansBengali = Noto_Sans_Bengali({
-  subsets: ["bengali"],
-  weight: ["300", "400", "500", "600", "700"],
-  variable: "--font-noto-sans-bengali",
-  display: "swap",
-});
+export const notoSansArabic = {
+  className: "font-ar",
+  variable: "font-ar",
+  style: { fontFamily: "'Noto Sans Arabic', 'Amiri', 'Scheherazade New', serif" },
+};
 
-export const notoSansArabic = Noto_Sans_Arabic({
-  subsets: ["arabic"],
-  weight: ["100", "200", "300", "400", "500", "600", "700", "800", "900"],
-  variable: "--font-noto-sans-arabic",
-  display: "swap",
-});
+export const amiri = {
+  className: "font-amiri",
+  variable: "font-amiri",
+  style: { fontFamily: "'Amiri', 'Amiri Quran', serif" },
+};
 
-export const amiri = Amiri({
-  subsets: ["arabic", "latin"],
-  weight: ["400", "700"],
-  style: ["normal", "italic"],
-  variable: "--font-amiri",
-  display: "swap",
-});
+export const playfairDisplay = {
+  className: "font-serif",
+  variable: "font-serif",
+  style: { fontFamily: "'Playfair Display', serif" },
+};
 
-export const playfairDisplay = Playfair_Display({
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800", "900"],
-  style: ["normal", "italic"],
-  variable: "--font-playfair",
-  display: "swap",
-});
-
-export const balooDa2 = Baloo_Da_2({
-  subsets: ["bengali", "latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  variable: "--font-kids",
-  display: "swap",
-});
-
-
+export const balooDa2 = {
+  className: "font-baloo",
+  variable: "font-kids",
+  style: { fontFamily: "'Baloo Da 2', 'Hind Siliguri', sans-serif" },
+};

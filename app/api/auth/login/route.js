@@ -223,11 +223,24 @@ export async function POST(request) {
 
     const supabaseToken = await generateSupabaseJwt(userObj);
 
+    // 5.5. Claim 20-Point Daily Login Bonus (Every 24 Hours Server-Side)
+    let dailyBonus = null;
+    try {
+      const { data: bonusData } = await adminClient.rpc("claim_daily_login_bonus", {
+        p_target_user_id: result.user.id,
+      });
+      dailyBonus = bonusData || null;
+    } catch (bonusErr) {
+      // Gracefully continue if RPC migration is pending in Supabase
+      console.warn("Daily bonus check deferred:", bonusErr?.message || bonusErr);
+    }
+
     const response = NextResponse.json({
       ok: true,
       user: userObj,
       profile: result.profile,
       supabaseToken,
+      dailyBonus,
     });
 
     // 6. Issue Cookies (Session & Device ID)

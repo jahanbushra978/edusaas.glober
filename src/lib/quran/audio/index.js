@@ -18,6 +18,7 @@ export {
   NUR_QAIDA_MANIFEST,
   NUR_QAIDA_BY_ID,
   NUR_QAIDA_BY_AR,
+  QAIDA_TAKHTI_1_LETTERS,
 } from "./NurQaidaManifest.js";
 
 export default universalAudioEngine;

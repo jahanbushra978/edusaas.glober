@@ -1,14 +1,12 @@
 'use client'
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
-import { useSearchParams } from 'next/navigation'
 
 const TenantContext = createContext(null)
 
 export function TenantProvider({ children }) {
   const [org, setOrg] = useState(null)
   const [loading, setLoading] = useState(true)
-  const searchParams = useSearchParams()
 
   const resolveOrg = useCallback(async (rawSlug) => {
     if (!rawSlug) {
@@ -125,13 +123,15 @@ export function TenantProvider({ children }) {
   }, [])
 
   useEffect(() => {
-    const slug = searchParams?.get('slug')
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get('slug');
     if (slug) {
-      resolveOrg(slug)
+      resolveOrg(slug);
     } else {
-      setLoading(false)
+      setLoading(false);
     }
-  }, [searchParams, resolveOrg])
+  }, [resolveOrg]);
 
   return (
     <TenantContext.Provider value={{ org, loading, resolveOrg }}>

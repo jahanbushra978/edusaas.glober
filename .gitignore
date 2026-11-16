@@ -34,3 +34,5 @@ Thumbs.db
 # Temporary scratch & evidence
 scratch/
 artifacts/
+vedio/
+*.mp4

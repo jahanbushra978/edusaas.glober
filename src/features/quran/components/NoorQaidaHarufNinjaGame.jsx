@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import {
   Volume2,
   VolumeX,
@@ -10,7 +10,7 @@ import {
   X,
   Check,
 } from "lucide-react";
-import { universalAudioEngine } from "@/lib/quran/audio";
+import { universalAudioEngine, QAIDA_TAKHTI_1_LETTERS } from "@/lib/quran/audio";
 import {
   SHOP_BLADES,
   SHOP_NEEDLES,
@@ -22,16 +22,16 @@ import {
   getEquippedNeedle,
 } from "@/lib/quran/qaidaGameShop";
 
-// ── FRUITS WITH EXACT COLOR CODES FOR JUICE SPLATTERS ──
+// ── VIBRANT 3D FRUITS WITH JUICY RADIANT COLORS (FIXES FADED DISPLAY) ──
 const NINJA_FRUITS = [
-  { icon: "🍏", nameBn: "সবুজ আপেল", color: "#84cc16", juiceColor: "rgba(132, 204, 22, 0.85)" },
-  { icon: "🍎", nameBn: "লাল আপেল", color: "#ef4444", juiceColor: "rgba(239, 68, 68, 0.85)" },
-  { icon: "🥝", nameBn: "কিউই", color: "#65a30d", juiceColor: "rgba(101, 163, 13, 0.85)" },
-  { icon: "🍌", nameBn: "কলা", color: "#eab308", juiceColor: "rgba(234, 179, 8, 0.85)" },
-  { icon: "🍉", nameBn: "তরমুজ", color: "#f43f5e", juiceColor: "rgba(244, 63, 94, 0.85)" },
-  { icon: "🍐", nameBn: "নাশপাতি", color: "#a3e635", juiceColor: "rgba(163, 230, 53, 0.85)" },
-  { icon: "🍓", nameBn: "স্ট্রবেরি", color: "#e11d48", juiceColor: "rgba(225, 29, 72, 0.85)" },
-  { icon: "🍊", nameBn: "কমলা", color: "#f97316", juiceColor: "rgba(249, 115, 22, 0.85)" },
+  { icon: "🍏", nameBn: "সবুজ আপেল", color: "#84cc16", darkColor: "#3f6212", juiceColor: "rgba(132, 204, 22, 0.95)" },
+  { icon: "🍎", nameBn: "লাল আপেল", color: "#ef4444", darkColor: "#991b1b", juiceColor: "rgba(239, 68, 68, 0.95)" },
+  { icon: "🥝", nameBn: "কিউই", color: "#65a30d", darkColor: "#365314", juiceColor: "rgba(101, 163, 13, 0.95)" },
+  { icon: "🍌", nameBn: "কলা", color: "#eab308", darkColor: "#854d0e", juiceColor: "rgba(234, 179, 8, 0.95)" },
+  { icon: "🍉", nameBn: "তরমুজ", color: "#f43f5e", darkColor: "#9f1239", juiceColor: "rgba(244, 63, 94, 0.95)" },
+  { icon: "🍐", nameBn: "নাশপাতি", color: "#a3e635", darkColor: "#4d7c0f", juiceColor: "rgba(163, 230, 53, 0.95)" },
+  { icon: "🍓", nameBn: "স্ট্রবেরি", color: "#e11d48", darkColor: "#881337", juiceColor: "rgba(225, 29, 72, 0.95)" },
+  { icon: "🍊", nameBn: "কমলা", color: "#f97316", darkColor: "#9a3412", juiceColor: "rgba(249, 115, 22, 0.95)" },
 ];
 
 export default function NoorQaidaHarufNinjaGame({
@@ -52,6 +52,26 @@ export default function NoorQaidaHarufNinjaGame({
   const [isMuted, setIsMuted] = useState(false);
   const [bestScore, setBestScore] = useState(0);
 
+  // ⏱️ Round Countdown Timer (Default 30 seconds, selectable: 15s, 30s, 45s, 60s)
+  const [selectedDuration, setSelectedDuration] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(30);
+
+  // 🎯 Target Letter Index in Canonical Takhti 1 sequence
+  const targetIndex = useMemo(() => {
+    if (!QAIDA_TAKHTI_1_LETTERS) return 0;
+    const idx = QAIDA_TAKHTI_1_LETTERS.findIndex(
+      (l) => l.ar === targetItem?.ar || l.sound === targetItem?.sound || l.id === targetItem?.id
+    );
+    return idx >= 0 ? idx : 0;
+  }, [targetItem]);
+
+  // 📚 Strictly Learned Distractor Letters: Only letters learned prior to targetIndex
+  // At Alif (index 0), this is strictly EMPTY! Future letters (Ayn, Taa, etc.) can NEVER spawn!
+  const learnedDistractors = useMemo(() => {
+    if (!QAIDA_TAKHTI_1_LETTERS || targetIndex <= 0) return [];
+    return QAIDA_TAKHTI_1_LETTERS.slice(0, targetIndex);
+  }, [targetIndex]);
+
   // 🛒 Coin & Shop System
   const [coins, setCoins] = useState(150);
   const [equippedBladeId, setEquippedBladeId] = useState("wood_blade");
@@ -70,6 +90,34 @@ export default function NoorQaidaHarufNinjaGame({
   const lastSpawnTimeRef = useRef(Date.now());
   const isShakingRef = useRef(false);
   const [shakeScreen, setShakeScreen] = useState(false);
+
+  // Responsive Orientation State
+  const [isPortrait, setIsPortrait] = useState(false);
+  const [showRotateTip, setShowRotateTip] = useState(true);
+
+  // Detect orientation for responsive mobile gameplay
+  useEffect(() => {
+    const checkOrientation = () => {
+      const portrait = typeof window !== "undefined" && window.innerHeight > window.innerWidth && window.innerWidth < 768;
+      setIsPortrait(portrait);
+    };
+    checkOrientation();
+    window.addEventListener("resize", checkOrientation);
+    return () => window.removeEventListener("resize", checkOrientation);
+  }, []);
+
+  // Manual Landscape Request
+  const handleRequestLandscape = async () => {
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      }
+      if (window.screen?.orientation?.lock) {
+        await window.screen.orientation.lock("landscape");
+      }
+      setShowRotateTip(false);
+    } catch {}
+  };
 
   // Load coins, unlocked swords and best score on mount
   useEffect(() => {
@@ -296,35 +344,82 @@ export default function NoorQaidaHarufNinjaGame({
     let type = "fruit";
     let content = "🍎";
     let color = "#ef4444";
-    let juiceColor = "rgba(239, 68, 68, 0.85)";
+    let darkColor = "#991b1b";
+    let juiceColor = "rgba(239, 68, 68, 0.95)";
+    let nameBn = "ফল";
+    let sound = "apple";
 
-    // 40% Target letter, 35% Fruit, 25% Bomb
-    if (rand < 0.4) {
-      type = "target";
-      content = targetItem.ar || "س";
-      color = "#f59e0b"; // Golden glow for Arabic letter
-      juiceColor = "rgba(245, 158, 11, 0.85)";
-    } else if (rand < 0.75) {
-      type = "fruit";
-      const fruit = NINJA_FRUITS[Math.floor(Math.random() * NINJA_FRUITS.length)];
-      content = fruit.icon;
-      color = fruit.color;
-      juiceColor = fruit.juiceColor;
+    // Strict cumulative spawning:
+    // If learnedDistractors is empty (Alif): ONLY Alif, fruits, and bombs can spawn.
+    if (learnedDistractors.length === 0) {
+      if (rand < 0.45) {
+        type = "target";
+        content = targetItem.ar || "ا";
+        nameBn = targetItem.nameBn || "আলিফ";
+        sound = targetItem.sound || targetItem.ar;
+        color = "#f59e0b"; // Golden glow for Arabic letter
+        darkColor = "#b45309";
+        juiceColor = "rgba(245, 158, 11, 0.95)";
+      } else if (rand < 0.82) {
+        type = "fruit";
+        const fruit = NINJA_FRUITS[Math.floor(Math.random() * NINJA_FRUITS.length)];
+        content = fruit.icon;
+        nameBn = fruit.nameBn;
+        sound = fruit.nameBn;
+        color = fruit.color;
+        darkColor = fruit.darkColor;
+        juiceColor = fruit.juiceColor;
+      } else {
+        type = "bomb";
+        content = "💣";
+        nameBn = "বিপদজনক বোমা";
+        color = "#1e293b";
+        darkColor = "#0f172a";
+        juiceColor = "rgba(225, 29, 72, 0.95)";
+      }
     } else {
-      type = "bomb";
-      content = "💣";
-      color = "#1e293b";
-      juiceColor = "rgba(225, 29, 72, 0.9)";
+      // At Baa, Taa, etc.: 40% Target, 15% Prior learned letter, 30% Fruit, 15% Bomb
+      if (rand < 0.40) {
+        type = "target";
+        content = targetItem.ar;
+        nameBn = targetItem.nameBn;
+        sound = targetItem.sound || targetItem.ar;
+        color = "#f59e0b";
+        darkColor = "#b45309";
+        juiceColor = "rgba(245, 158, 11, 0.95)";
+      } else if (rand < 0.55) {
+        type = "distractor";
+        const dist = learnedDistractors[Math.floor(Math.random() * learnedDistractors.length)];
+        content = dist.ar;
+        nameBn = dist.nameBn;
+        sound = dist.ar;
+        color = "#38bdf8";
+        darkColor = "#0284c7";
+        juiceColor = "rgba(56, 189, 248, 0.95)";
+      } else if (rand < 0.85) {
+        type = "fruit";
+        const fruit = NINJA_FRUITS[Math.floor(Math.random() * NINJA_FRUITS.length)];
+        content = fruit.icon;
+        nameBn = fruit.nameBn;
+        sound = fruit.nameBn;
+        color = fruit.color;
+        darkColor = fruit.darkColor;
+        juiceColor = fruit.juiceColor;
+      } else {
+        type = "bomb";
+        content = "💣";
+        nameBn = "বিপদজনক বোমা";
+        color = "#1e293b";
+        darkColor = "#0f172a";
+        juiceColor = "rgba(225, 29, 72, 0.95)";
+      }
     }
 
     const radius = type === "target" ? 44 : 38;
-    // Launch from bottom quarter
     const x = Math.random() * (width * 0.7) + width * 0.15;
     const y = height + 40;
 
-    // Upward launch velocity with parabolic gravity
-    const vy = -(Math.random() * 4 + 14.5); // Peak height around middle screen
-    // Horizontal drift towards center
+    const vy = -(Math.random() * 4 + 14.5);
     const vx = ((width / 2 - x) / width) * 4 + (Math.random() * 2 - 1);
     const rotation = Math.random() * Math.PI * 2;
     const vRot = (Math.random() - 0.5) * 0.08;
@@ -333,7 +428,10 @@ export default function NoorQaidaHarufNinjaGame({
       id: Math.random(),
       type,
       content,
+      nameBn,
+      sound,
       color,
+      darkColor,
       juiceColor,
       x,
       y,
@@ -345,7 +443,7 @@ export default function NoorQaidaHarufNinjaGame({
       isSliced: false,
       slicedAt: 0,
     });
-  }, [targetItem]);
+  }, [targetItem, learnedDistractors]);
 
   // ── ADD JUICE SPLATTER ON WOODEN WALL ──
   const addJuiceSplatter = (x, y, color) => {
@@ -651,16 +749,16 @@ export default function NoorQaidaHarufNinjaGame({
     ctx.translate(item.x, item.y);
     ctx.rotate(item.rotation);
 
-    if (item.type === "target") {
-      // Golden Glowing Arabic Orb
-      ctx.shadowColor = "#f59e0b";
-      ctx.shadowBlur = 20;
+    if (item.type === "target" || item.type === "distractor") {
+      // Golden / Luminous Glowing Arabic Orb
+      ctx.shadowColor = item.color || "#f59e0b";
+      ctx.shadowBlur = 24;
 
-      // Outer circle
+      // Outer circle with rich gradient
       const gradient = ctx.createRadialGradient(0, 0, 10, 0, 0, item.radius);
       gradient.addColorStop(0, "#fef3c7");
-      gradient.addColorStop(0.7, "#f59e0b");
-      gradient.addColorStop(1, "#b45309");
+      gradient.addColorStop(0.7, item.color || "#f59e0b");
+      gradient.addColorStop(1, item.darkColor || "#b45309");
       ctx.fillStyle = gradient;
       ctx.beginPath();
       ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
@@ -668,20 +766,20 @@ export default function NoorQaidaHarufNinjaGame({
 
       // Border ring
       ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 3.5;
       ctx.stroke();
 
       // Arabic Calligraphy in center
       ctx.shadowBlur = 0;
       ctx.fillStyle = "#1e293b";
-      ctx.font = "bold 34px 'Amiri', 'Traditional Arabic', serif";
+      ctx.font = "bold 36px 'Amiri', 'Traditional Arabic', serif";
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillText(item.content, 0, -2);
     } else if (item.type === "bomb") {
       // Danger Cartoon Bomb
       ctx.shadowColor = "#ef4444";
-      ctx.shadowBlur = 15;
+      ctx.shadowBlur = 18;
 
       // Dark bomb sphere
       ctx.fillStyle = "#0f172a";
@@ -703,52 +801,95 @@ export default function NoorQaidaHarufNinjaGame({
       ctx.textBaseline = "middle";
       ctx.fillText("💣", 0, 0);
     } else {
-      // Juicy Fruit
-      ctx.shadowColor = item.color;
-      ctx.shadowBlur = 12;
+      // 🍎 Juicy 3D Fruit Orb with Radiant Glow & Specular Highlight
+      // Fixes washed-out / faint fruit against dark wood (user photo 5)!
+      ctx.shadowColor = item.juiceColor || item.color;
+      ctx.shadowBlur = 24;
 
-      ctx.font = "42px sans-serif";
+      // 3D Spherical Radial Gradient Body
+      const fruitGrad = ctx.createRadialGradient(
+        -item.radius * 0.3,
+        -item.radius * 0.3,
+        item.radius * 0.1,
+        0,
+        0,
+        item.radius
+      );
+      fruitGrad.addColorStop(0, "#ffffff");
+      fruitGrad.addColorStop(0.25, item.color);
+      fruitGrad.addColorStop(0.75, item.darkColor || item.color);
+      fruitGrad.addColorStop(1, "rgba(20, 10, 5, 0.85)");
+      ctx.fillStyle = fruitGrad;
+      ctx.beginPath();
+      ctx.arc(0, 0, item.radius, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Specular Reflection / Gloss Highlight
+      ctx.fillStyle = "rgba(255, 255, 255, 0.75)";
+      ctx.beginPath();
+      ctx.ellipse(
+        -item.radius * 0.32,
+        -item.radius * 0.32,
+        item.radius * 0.32,
+        item.radius * 0.16,
+        -Math.PI / 4,
+        0,
+        Math.PI * 2
+      );
+      ctx.fill();
+
+      // Crisp luminous white border ring for high contrast
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      // Bold, vibrant fruit icon with drop shadow
+      ctx.shadowColor = "#ffffff";
+      ctx.shadowBlur = 6;
+      ctx.font = `${Math.floor(item.radius * 1.05)}px sans-serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
-      ctx.fillText(item.content, 0, 0);
+      ctx.fillText(item.content, 0, 2);
     }
 
     ctx.restore();
   };
 
-  // ── DRAW SLICED HALVES FLYING APART ──
+  // ── DRAW SLICED HALVES FLYING APART (REAL CANVAS CLIPPING) ──
   const drawSlicedHalves = (ctx, item) => {
     const age = (Date.now() - item.slicedAt) / 1000;
-    const spread = age * 90; // Drift apart distance
+    const spread = age * 110; // Drift apart distance
 
-    // Left Half
+    // Normal vector perpendicular to slice line
+    const sliceAngle = item.sliceAngle || 0;
+    const perpAngle = sliceAngle + Math.PI / 2;
+    const dx = Math.cos(perpAngle) * spread;
+    const dy = Math.sin(perpAngle) * spread;
+
+    // ── UPPER/FIRST HALF (CLIPPED AT SLICE LINE) ──
     ctx.save();
-    ctx.translate(item.x - spread, item.y);
-    ctx.rotate(item.rotation - age * 3);
-    ctx.font = "34px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    if (item.type === "target") {
-      ctx.fillStyle = "#f59e0b";
-      ctx.fillText(item.content, 0, 0);
-    } else {
-      ctx.fillText(item.content, 0, 0);
-    }
+    ctx.translate(item.x - dx, item.y - dy);
+    ctx.rotate(sliceAngle);
+    ctx.beginPath();
+    // Clip rectangle: everything above the slice line (y <= 0)
+    ctx.rect(-item.radius * 3, -item.radius * 3, item.radius * 6, item.radius * 3);
+    ctx.clip();
+    ctx.rotate(-sliceAngle);
+    // Draw the actual item oriented with slight spin
+    drawFlyingItem(ctx, { ...item, rotation: item.rotation - age * 3 });
     ctx.restore();
 
-    // Right Half
+    // ── LOWER/SECOND HALF (CLIPPED AT SLICE LINE) ──
     ctx.save();
-    ctx.translate(item.x + spread, item.y);
-    ctx.rotate(item.rotation + age * 3);
-    ctx.font = "34px sans-serif";
-    ctx.textAlign = "center";
-    ctx.textBaseline = "middle";
-    if (item.type === "target") {
-      ctx.fillStyle = "#f59e0b";
-      ctx.fillText(item.content, 0, 0);
-    } else {
-      ctx.fillText(item.content, 0, 0);
-    }
+    ctx.translate(item.x + dx, item.y + dy);
+    ctx.rotate(sliceAngle);
+    ctx.beginPath();
+    // Clip rectangle: everything below the slice line (y >= 0)
+    ctx.rect(-item.radius * 3, 0, item.radius * 6, item.radius * 3);
+    ctx.clip();
+    ctx.rotate(-sliceAngle);
+    // Draw the actual item oriented with slight spin
+    drawFlyingItem(ctx, { ...item, rotation: item.rotation + age * 3 });
     ctx.restore();
   };
 
@@ -804,10 +945,41 @@ export default function NoorQaidaHarufNinjaGame({
     setScore(0);
     setSlicedTargetCount(0);
     setLives(3);
+    setTimeLeft(selectedDuration);
     itemsRef.current = [];
     splattersRef.current = [];
     setGameState("playing");
   };
+
+  const handleSelectDuration = (sec) => {
+    setSelectedDuration(sec);
+    setTimeLeft(sec);
+  };
+
+  // ⏱️ Countdown Timer Tick Effect
+  useEffect(() => {
+    if (gameState !== "playing") return;
+    if (timeLeft <= 0) {
+      setGameState("won");
+      playVictorySound();
+      setCoins((c) => {
+        const next = c + 50;
+        saveCoins(next);
+        return next;
+      });
+      return;
+    }
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [gameState, timeLeft, playVictorySound]);
 
   return (
     <div
@@ -816,56 +988,106 @@ export default function NoorQaidaHarufNinjaGame({
         shakeScreen ? "animate-shake" : ""
       }`}
     >
+      {/* 🔄 Gentle Orientation Guidance (Non-Blocking) */}
+      {isPortrait && showRotateTip && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 bg-amber-950/95 text-amber-200 text-xs px-3 py-1.5 rounded-full border border-amber-400 shadow-xl flex items-center gap-2 backdrop-blur-md animate-fade-in pointer-events-auto max-w-[95%]">
+          <span>🔄</span>
+          <span className="font-bold font-hind-siliguri truncate">ফোনটি আড়াআড়ি (Landscape) করে ধরলে সবচেয়ে সুন্দর দেখা যাবে</span>
+          <button
+            type="button"
+            onClick={handleRequestLandscape}
+            className="text-[10px] font-black bg-amber-500 text-amber-950 px-2 py-0.5 rounded-lg hover:bg-amber-400 shrink-0 cursor-pointer"
+          >
+            আড়াআড়ি মোড
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowRotateTip(false)}
+            className="text-amber-400 hover:text-white font-black px-1.5 py-0.5 rounded bg-white/10 shrink-0 cursor-pointer"
+            title="বন্ধ করুন"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* ══════════════════════════════════════════════════════════
           TOP NINJA HUD (MATCHING USER SCREENSHOT)
           (Home, Shop/Coins, Target Badge, Sliced Slots, Sliced Score, Best Score, Lives)
       ══════════════════════════════════════════════════════════ */}
-      <header className="relative z-30 p-2 sm:p-4 flex items-center justify-between gap-2 max-w-6xl mx-auto w-full pointer-events-auto">
+      <header className="relative z-30 p-1.5 sm:p-4 flex items-center justify-between gap-1 sm:gap-2 max-w-6xl mx-auto w-full pointer-events-auto">
         {/* Left: Home Button & Point Shop */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={onClose}
-            className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-amber-900/90 hover:bg-amber-800 text-amber-200 border-2 border-amber-600 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-amber-900/90 hover:bg-amber-800 text-amber-200 border-2 border-amber-600 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
             title="কায়দায় ফিরে যান"
           >
-            <Home className="w-5 h-5 sm:w-6 sm:h-6" />
+            <Home className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           {/* 🛒 Shop Button (সুই ও চাকু কেনা) */}
           <button
             onClick={() => setIsShopOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs shadow-xl border-2 border-amber-400 active:scale-95 transition hover:scale-105 cursor-pointer"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs shadow-xl border-2 border-amber-400 active:scale-95 transition hover:scale-105 cursor-pointer"
             title="দোকান: নতুন চাকু ও তলোয়ার কিনুন"
           >
-            <span className="text-sm">🛒</span>
+            <span className="text-xs sm:text-sm">🛒</span>
             <span className="hidden sm:inline">দোকান</span>
-            <span className="bg-black/40 px-1.5 py-0.5 rounded-full text-[10px] font-mono shadow-2xs">
+            <span className="bg-black/40 px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono shadow-2xs">
               🪙 {coins}
             </span>
           </button>
         </div>
 
         {/* Center: Mission Target Letter & Score Box */}
-        <div className="flex items-center gap-2 sm:gap-4 bg-amber-950/85 backdrop-blur-md px-3 sm:px-6 py-1.5 sm:py-2 rounded-2xl sm:rounded-3xl border-2 sm:border-3 border-amber-500 shadow-2xl text-white">
+        <div className="flex items-center gap-1.5 sm:gap-4 bg-amber-950/85 backdrop-blur-md px-2 sm:px-6 py-1 sm:py-2 rounded-2xl sm:rounded-3xl border-2 sm:border-3 border-amber-500 shadow-2xl text-white">
           {/* Target Letter Display */}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] sm:text-xs font-black text-amber-200 hidden xs:inline">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <span className="text-[10px] sm:text-xs font-black text-amber-200 hidden xs:inline">
               কাটার লক্ষ্য:
             </span>
-            <div className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-arabic font-black text-xl sm:text-2xl shadow-md flex items-center gap-1.5 animate-pulse">
+            <div className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-arabic font-black text-lg sm:text-2xl shadow-md flex items-center gap-1 animate-pulse">
               <span>{targetItem.ar}</span>
-              <span className="text-[10px] font-sans font-bold bg-white/20 px-1.5 rounded">
+              <span className="text-[9px] sm:text-[10px] font-sans font-bold bg-white/20 px-1 sm:px-1.5 rounded">
                 {targetItem.nameBn}
               </span>
             </div>
           </div>
 
           {/* Sliced Progress Goal */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-emerald-900/80 border border-emerald-400 text-emerald-200 font-black text-xs sm:text-sm">
+          <div className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-emerald-900/80 border border-emerald-400 text-emerald-200 font-black text-[11px] sm:text-sm">
             <span>🎯</span>
             <span>
               {slicedTargetCount} / {TARGET_GOAL}
             </span>
+          </div>
+
+          {/* ⏱️ Countdown Timer Display */}
+          <div className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-900/80 border border-amber-400 text-amber-200 font-black text-[11px] sm:text-sm shadow-xs">
+            <span>⏱️</span>
+            <span className={`font-mono ${timeLeft <= 5 ? "text-rose-400 font-black animate-pulse" : ""}`}>
+              {timeLeft}s
+            </span>
+          </div>
+
+          {/* ⏱️ Duration Selector Options (15s, 30s [default], 45s, 60s) */}
+          <div className="hidden lg:flex items-center gap-1 bg-black/40 p-0.5 rounded-xl border border-amber-700/60">
+            {[15, 30, 45, 60].map((sec) => (
+              <button
+                key={sec}
+                type="button"
+                onClick={() => handleSelectDuration(sec)}
+                className={`px-1.5 py-0.5 rounded-lg text-[10px] font-black transition cursor-pointer ${
+                  selectedDuration === sec
+                    ? "bg-amber-500 text-amber-950 shadow-xs"
+                    : "text-amber-300/80 hover:bg-white/10"
+                }`}
+                title={`সময়: ${sec} সেকেন্ড`}
+              >
+                {sec}s
+              </button>
+            ))}
           </div>
 
           {/* Target Sliced Wooden Collection Slots (Matching Image 6 Reference) */}
@@ -1288,6 +1510,117 @@ export default function NoorQaidaHarufNinjaGame({
                 className="w-full py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-black text-xs shadow-md cursor-pointer"
               >
                 খেলায় ফিরে যাও
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          VICTORY CELEBRATION MODAL (HARUF NINJA SLICING VICTORY)
+      ══════════════════════════════════════════════════════════ */}
+      {gameState === "won" && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in pointer-events-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center space-y-4 border-4 border-amber-400 shadow-2xl">
+            <div className="w-20 h-20 mx-auto rounded-full bg-amber-100 border-4 border-amber-400 flex items-center justify-center text-4xl shadow-inner animate-bounce">
+              🏆
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center justify-center gap-1 text-2xl animate-pulse">
+                {lives === 3 ? "⭐⭐⭐" : lives === 2 ? "⭐⭐" : "⭐"}
+              </div>
+              <h2 className="text-2xl font-black text-amber-950 font-hind-siliguri">
+                مَا شَاءَ اللَّهُ (মাশাআল্লাহ!)
+              </h2>
+              <p className="text-sm font-bold text-emerald-800">
+                হরফ নিনজা জয়! তুমি সফলভাবে <strong>{targetItem.nameBn} ({targetItem.ar})</strong> হরফ কেটে {score} পয়েন্ট অর্জন করেছ!
+              </p>
+              <div className="text-xs font-black text-amber-700 bg-amber-50 py-1.5 rounded-xl border border-amber-200 flex items-center justify-center gap-2">
+                <span>পুরস্কার: +৫০ 🪙 কয়েন</span>
+                <span>•</span>
+                <span>স্কোর: {score} ⭐</span>
+              </div>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              {/* ➔ Next Level Button */}
+              {onNextLetter && (
+                <button
+                  onClick={() => {
+                    onNextLetter();
+                    restartGame();
+                  }}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 animate-pulse cursor-pointer"
+                >
+                  <span>পরবর্তী হরফে যান</span>
+                  <ChevronRight className="w-5 h-5 stroke-[3]" />
+                </button>
+              )}
+
+              {/* ↺ Replay Button */}
+              <button
+                onClick={restartGame}
+                className="w-full py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>পুনরায় খেলুন</span>
+              </button>
+
+              {/* Switch to Bubble Pop Game */}
+              {onSwitchToBubble && (
+                <button
+                  onClick={onSwitchToBubble}
+                  className="w-full py-2.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                >
+                  <span>🎈 বুদ্বুদ ফুটানো খেলায় যান</span>
+                </button>
+              )}
+
+              <button
+                onClick={onClose}
+                className="w-full py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+              >
+                কায়দায় ফিরে যান
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          GAME OVER MODAL (SLICED BOMB 3 TIMES)
+      ══════════════════════════════════════════════════════════ */}
+      {gameState === "gameover" && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-md animate-fade-in pointer-events-auto">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center space-y-4 border-4 border-rose-400 shadow-2xl">
+            <div className="w-20 h-20 mx-auto rounded-full bg-rose-100 border-4 border-rose-400 flex items-center justify-center text-4xl shadow-inner animate-pulse">
+              💥
+            </div>
+
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black text-rose-950 font-hind-siliguri">
+                ওহ নো! বোমায় তলোয়ার লেগেছে!
+              </h2>
+              <p className="text-xs text-slate-600 font-bold">
+                জীবন শেষ হয়ে গেছে। বোমায় ভুলেও তলোয়ার চালানো যাবে না! চলো আবার চেষ্টা করি।
+              </p>
+            </div>
+
+            <div className="space-y-2 pt-2">
+              <button
+                onClick={restartGame}
+                className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
+              >
+                <RotateCcw className="w-5 h-5" />
+                <span>আবার চেষ্টা করো</span>
+              </button>
+
+              <button
+                onClick={onClose}
+                className="w-full py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
+              >
+                কায়দায় ফিরে যান
               </button>
             </div>
           </div>

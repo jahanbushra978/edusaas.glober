@@ -30,6 +30,13 @@
     --input: 168 15% 88%;
     --ring: 168 100% 19%;
     --radius: 0.75rem;
+    --font-hind-siliguri: 'Hind Siliguri', sans-serif;
+    --font-noto-sans-bengali: 'Noto Sans Bengali', 'Hind Siliguri', sans-serif;
+    --font-noto-sans-arabic: 'Noto Sans Arabic', 'Amiri', 'Scheherazade New', serif;
+    --font-amiri: 'Amiri', 'Amiri Quran', serif;
+    --font-kids: 'Baloo Da 2', 'Hind Siliguri', sans-serif;
+    --font-inter: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-playfair: 'Playfair Display', serif;
     --font-display: var(--font-hind-siliguri, 'Hind Siliguri', sans-serif);
   }
 

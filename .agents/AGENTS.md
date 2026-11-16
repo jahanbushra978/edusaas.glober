@@ -32,6 +32,15 @@
   - প্রতিটি উচ্চারণ শতভাগ সঠিক, নিখুঁত এবং সম্পূর্ণ নির্ভুল হতে হবে।
   - কোনো ধরনের রোবোটিক, মেটালিক বা কৃত্রিম সিন্থেসাইজার সাউন্ড বাজানো যাবে না, যাতে শিশুরা বিভ্রান্ত না হয়ে খাঁটি মাখরাজ ও সুর শিখতে পারে।
   - সমস্ত হরফ, হরকত ও পাঠের অডিও খাঁটি ও প্রখ্যাত ক্বারীর সুর ও উচ্চারণের সাথে সামঞ্জস্যপূর্ণ এবং স্পষ্ট হতে হবে।
+- **Universal Holy Quran Waqf (★) and Ibtida (✓) Across All 114 Surahs (Strict Invariant)**:
+  - **Multi-Surah Universal Invariant**: The Waqf (★) and Ibtida (✓) markers MUST operate across the **entire Holy Quran (all 114 Surahs and 6,236 Ayahs)**. Never hardcode single Ayahs or single pages (e.g. 8:44 or Surah 2).
+  - Both `QuranReader.jsx` (Ayah view) and `HafiziMushafSheet.jsx` (15-line Mushaf view across all 604 pages) MUST consume the unified `getUniversalAyahRepeats(surahNumber, ayahNumber, words, qariId)` engine.
+  - **Golden Star ★ (ওয়াকফ)**: Placed on words where the Qari pauses for breath where there is **no written Quranic Waqf sign**.
+  - **Printed Stop Marks Exclusion**: Where printed Quranic signs (`ۖ`, `ۗ`, `ۘ`, `ۚ`, `ۛ`, `ۜ`, `ط`, `ج`, `م`, `۞`, `۩`) already exist, **no Star (★) or Tick (✓) may be shown**.
+  - **Emerald Tick ✓ (ওয়াকফে ইবতেদা)**: Placed on the resumption word after a breath pause. Word 0 (`wIdx === 0`) must never get a tick.
+  - **Dynamic Qari Reactivity**: Recalculates dynamically whenever a new Qari is selected. Markers persist while that Qari is selected. Default Qari when unselected is **Shaykh Muhammad Siddiq Al-Minshawi** (`minshawy_teacher`).
+  - **3-Tier Engine**: (1) QuranCDN millisecond repeat segments for active Qari → (2) Scholarly `WAQF_IBTIDA_REGISTRY` → (3) Universal Tajweed Syntactic & Breath Engine for any long span ($\ge 6-9$ words before transition particles like `واذ`, `ثم`, `ان`, `فان`, `قال`, `قالوا`, `ولكن`, `بل`, `لعل`, `وهو`, `فمن`, `الذين`, `كما`).
+  - **Minshawi Teacher Dual-Phase Sync**: Accurately differentiates Ustad recitation from Student choir repetition (`ustad` vs `student`) with matching dual-tone word highlights.
 - **Preserve Biometric Attendance**:
   - `biometric hajirar jeno kaj kore seta okkhono rekhe kaj korte hobe`.
   - The biometric bridge daemon, attendance APIs, and live attendance tracking must remain fully operational.

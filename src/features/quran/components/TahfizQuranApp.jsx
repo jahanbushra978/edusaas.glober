@@ -73,7 +73,7 @@ export default function TahfizQuranApp({
   const [readingNavStyle, setReadingNavStyle] = useState("flip"); // 'flip' | 'scroll'
 
   // Universal Authentic Audio Engine State
-  const [selectedQari, setSelectedQari] = useState("husary_muallim");
+  const [selectedQari, setSelectedQari] = useState(() => getStoredQariPreference() || "minshawy_teacher");
   const [playingAyahNumber, setPlayingAyahNumber] = useState(null);
   const [playingSurahId, setPlayingSurahId] = useState(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
@@ -555,8 +555,8 @@ export default function TahfizQuranApp({
 
   return (
     <div className="w-full min-h-screen bg-gradient-to-b from-[#041412] via-[#051c19] to-[#08221e] text-slate-100 flex justify-center selection:bg-teal-500/30 selection:text-teal-200 relative overflow-hidden">
-      {/* ── AMBIENT FLOATING ORBS / BUBBLES ANIMATION (নিচ থেকে সুন্দর ছোট ছোট বল উঠবে) ── */}
-      <AmbientFloatingOrbs count={16} />
+      {/* ── AMBIENT FLOATING ORBS / BUBBLES ANIMATION (হোম স্ক্রিনে সুন্দর শান্ত আলো) ── */}
+      {currentScreen !== "reader" && <AmbientFloatingOrbs count={14} />}
 
       <div className="w-full max-w-md sm:max-w-lg min-h-screen flex flex-col justify-between relative z-10 shadow-2xl overflow-x-hidden border-x border-teal-950/60 pb-20">
 

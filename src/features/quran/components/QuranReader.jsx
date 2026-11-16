@@ -18,7 +18,8 @@ import {
   FileText,
   List,
   ArrowRight,
-  ArrowUp
+  ArrowUp,
+  GraduationCap
 } from "lucide-react";
 import { toast } from "sonner";
 import { ALL_SURAHS, JUZ_MAPPING } from "@/lib/quran/quran-meta";
@@ -37,11 +38,14 @@ import HafiziMushafSheet from "./HafiziMushafSheet";
 import { useBanglaAudioEngine } from "@/lib/quran/bangla-audio-engine";
 import {
   loadChapterSegments,
-  getActiveArabicWordIndex,
+  getActiveArabicWordDetails,
   splitArabicAyahWords,
-  getWordStartTimeSec
+  getWordStartTimeSec,
+  getUniversalAyahRepeats,
+  AUTHENTIC_WAQF_GLYPH_REGEX
 } from "@/lib/quran/quran-audio-timing";
-import { universalAudioEngine, audioCache } from "@/lib/quran/audio";
+import { normalizeQuranWord } from "@/lib/quran/hafizi-annotations";
+import { universalAudioEngine, audioCache, audioPreloader } from "@/lib/quran/audio";
 
 const STORAGE_LAST_READ = "rahmania_quran_last_read_v1";
 const STORAGE_BOOKMARKS = "rahmania_quran_bookmarks_v1";
@@ -67,7 +71,9 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
   const [readerTheme, setReaderTheme] = useState("day"); // 'day' (kids/warm) | 'night' (dark sanctuary)
 
   // Audio Player State
-  const [selectedQari, setSelectedQari] = useState(QARI_REGISTRY[1].id); // Default Alafasy
+  const [selectedQari, setSelectedQari] = useState(() => getStoredQariPreference() || "minshawy_teacher");
+  const [activeSpeaker, setActiveSpeaker] = useState("ustad"); // 'ustad' | 'student' (ফর মুআল্লিম ও ছাত্রদল পুনরাবৃত্তি)
+  const [qariSegmentsVersion, setQariSegmentsVersion] = useState(0); // Triggers re-render when Qari segments load
   const [playingAyahNumber, setPlayingAyahNumber] = useState(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);
   const [activeWordIndex, setActiveWordIndex] = useState(0);
@@ -235,9 +241,17 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
 
   // Pre-load QuranCDN millisecond-accurate word timing segments for active Surah & Qari
   useEffect(() => {
+    let isMounted = true;
     if (selectedSurahId) {
-      loadChapterSegments(selectedSurahId, selectedQari);
+      loadChapterSegments(selectedSurahId, selectedQari).then((map) => {
+        if (isMounted && map) {
+          setQariSegmentsVersion((prev) => prev + 1);
+        }
+      });
     }
+    return () => {
+      isMounted = false;
+    };
   }, [selectedSurahId, selectedQari]);
 
   const hafiziSearchMatch = useMemo(() => {
@@ -266,7 +280,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
     }
   }, [pendingScrollAyah, isLoadingSurah, surahData]);
 
-  // Auto-scroll active reciting Ayah smoothly into view
+  // Auto-scroll active reciting Ayah smoothly into view (only if out of viewport, preventing screen jumps)
   useEffect(() => {
     if (playingAyahNumber && !isLoadingSurah) {
       const scrollTimer = setTimeout(() => {
@@ -274,7 +288,13 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
           document.getElementById(`mushaf-ayah-${playingAyahNumber}`) ||
           document.getElementById(`ayah-${playingAyahNumber}`);
         if (el) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
+          const rect = el.getBoundingClientRect();
+          const isInViewport =
+            rect.top >= 80 &&
+            rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) - 80;
+          if (!isInViewport) {
+            el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+          }
         }
       }, 120);
       return () => clearTimeout(scrollTimer);
@@ -413,19 +433,31 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
     repeatCounterRef.current = 0;
     setRepeatCounter(0);
 
-    setPlayingAyahNumber(ayahNumber);
-    playingAyahRef.current = ayahNumber;
+    const aNum = Number(ayahNumber) || 1;
+    setPlayingAyahNumber(aNum);
+    playingAyahRef.current = aNum;
     setActiveWordIndex(startWordIdx >= 0 ? startWordIdx : 0);
 
-    const currentAyahObj = currentSurah.ayahs.find((a) => a.numberInSurah === ayahNumber);
-    const cleanWords = words && words.length > 0
-      ? words
-      : (currentAyahObj?.words && currentAyahObj.words.length > 0 ? currentAyahObj.words : splitArabicAyahWords(currentAyahObj?.text || ""));
+    const currentAyahObj = currentSurah.ayahs.find((a) => Number(a.numberInSurah) === aNum);
+    const cleanWords = splitArabicAyahWords(
+      words && words.length > 0
+        ? words
+        : (currentAyahObj?.words && currentAyahObj.words.length > 0 ? currentAyahObj.words : currentAyahObj?.text || "")
+    );
 
-    const audioUrl = getAyahAudioUrl(selectedQariRef.current, selectedSurahIdRef.current, ayahNumber);
+    const audioUrl = getAyahAudioUrl(selectedQariRef.current, selectedSurahIdRef.current, aNum);
     const audio = audioCache.getOrCreate(audioUrl);
     audioRef.current = audio;
-    universalAudioEngine.claimExternalAudio(audio, `ayah_${selectedSurahIdRef.current}_${ayahNumber}_${selectedQariRef.current}`);
+    universalAudioEngine.claimExternalAudio(audio, `ayah_${selectedSurahIdRef.current}_${aNum}_${selectedQariRef.current}`);
+
+    // Clean up any stale listeners on the cached audio element to guarantee single clean execution
+    audio.onloadedmetadata = null;
+    audio.oncanplay = null;
+    audio.ontimeupdate = null;
+    audio.onended = null;
+    audio.onerror = null;
+    audio.onwaiting = null;
+    audio.onplaying = null;
 
     audio.defaultPlaybackRate = playbackSpeedRef.current;
     audio.playbackRate = playbackSpeedRef.current;
@@ -434,7 +466,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
     const seekSec = startWordIdx > 0
       ? getWordStartTimeSec({
           surahNumber: selectedSurahIdRef.current,
-          ayahNumber,
+          ayahNumber: aNum,
           wordIndex: startWordIdx,
           qariId: selectedQariRef.current,
           duration: audio.duration || 0,
@@ -445,17 +477,19 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
     const executePlay = () => {
       // Abort if another click arrived in the meantime
       if (playbackSessionIdRef.current !== thisSessionId) {
-        audio.pause();
+        try { audio.pause(); } catch {}
         return;
       }
 
-      if (seekSec > 0) {
-        audio.currentTime = seekSec;
-        setActiveWordIndex(startWordIdx);
-      } else {
-        audio.currentTime = 0;
-        setActiveWordIndex(0);
-      }
+      try {
+        if (seekSec > 0) {
+          audio.currentTime = seekSec;
+          setActiveWordIndex(startWordIdx);
+        } else {
+          audio.currentTime = 0;
+          setActiveWordIndex(0);
+        }
+      } catch {}
 
       audio.playbackRate = playbackSpeedRef.current;
 
@@ -464,67 +498,102 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
         playPromise
           .then(() => {
             if (playbackSessionIdRef.current !== thisSessionId) {
-              audio.pause();
+              try { audio.pause(); } catch {}
               return;
             }
             setIsPlayingAudio(true);
             if (audioRef.current) audioRef.current.playbackRate = playbackSpeedRef.current;
-            // Scroll playing Ayah into view
-            const el = document.getElementById(`mushaf-ayah-${selectedSurahIdRef.current}-${ayahNumber}`);
+
+            // Predictive Background Preloading of next 2 Ayahs to eliminate audio gaps / stuttering
+            if (aNum < currentSurah.ayahs.length) {
+              const nextAyahNum = aNum + 1;
+              const nextUrl = getAyahAudioUrl(selectedQariRef.current, selectedSurahIdRef.current, nextAyahNum);
+              audioPreloader.preload(nextUrl);
+              if (nextAyahNum < currentSurah.ayahs.length) {
+                const nextNextUrl = getAyahAudioUrl(selectedQariRef.current, selectedSurahIdRef.current, nextAyahNum + 1);
+                audioPreloader.preload(nextNextUrl);
+              }
+            }
+
+            // Scroll playing Ayah into view only if out of viewport
+            const el = document.getElementById(`mushaf-ayah-${selectedSurahIdRef.current}-${aNum}`);
             if (el) {
-              el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              const rect = el.getBoundingClientRect();
+              const isInViewport =
+                rect.top >= 80 &&
+                rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) - 80;
+              if (!isInViewport) {
+                el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              }
             }
           })
           .catch((err) => {
             if (err.name !== "AbortError") {
               console.warn("Audio playback interrupted or failed:", err);
-              setIsPlayingAudio(false);
+              if (playbackSessionIdRef.current === thisSessionId) {
+                setIsPlayingAudio(false);
+              }
             }
           });
       }
     };
 
-    if (audio.readyState >= 1) {
+    audio.onwaiting = () => {
+      // Smoothly handle buffer stalls without resetting playback session
+    };
+
+    audio.onplaying = () => {
+      if (playbackSessionIdRef.current === thisSessionId) {
+        setIsPlayingAudio(true);
+      }
+    };
+
+    // One-time execution guard: guarantees executePlay is invoked exactly once
+    let playTriggered = false;
+    const triggerPlaybackOnce = () => {
+      if (playTriggered) return;
+      playTriggered = true;
+      audio.onloadedmetadata = null;
+      audio.oncanplay = null;
       executePlay();
+    };
+
+    audio.onerror = (e) => {
+      console.warn("Ayah audio load error:", e);
+      if (playbackSessionIdRef.current === thisSessionId) {
+        setIsPlayingAudio(false);
+        toast.error("ক্বারীর তিলাওয়াত অডিও লোড হতে সমস্যা হয়েছে। ইন্টারনেট সংযোগ পরীক্ষা করুন।");
+      }
+    };
+
+    if (audio.readyState >= 2) {
+      triggerPlaybackOnce();
     } else {
-      audio.onloadedmetadata = () => {
-        executePlay();
-      };
-      audio.oncanplay = () => {
-        executePlay();
-      };
+      audio.oncanplay = triggerPlaybackOnce;
+      audio.onloadedmetadata = triggerPlaybackOnce;
     }
 
-    // Precise word-by-word tracking during playback (QuranCDN Millisecond Segments + Tajweed Pacing)
-    // lastHighlightedWordRef: হাইলাইট যেন কখনো পিছিয়ে না যায় (monotonically non-decreasing)
-    let lastHighlightedWord = startWordIdx >= 0 ? startWordIdx : 0;
+    // Precise word-by-word tracking during playback (QuranCDN Millisecond Segments + Teacher Mode Dual Sync)
     audio.ontimeupdate = () => {
+      if (playbackSessionIdRef.current !== thisSessionId) return;
       if (!audioRef.current || audioRef.current !== audio) return;
       const { currentTime, duration } = audio;
       if (!duration || isNaN(duration)) return;
 
-      const computedIndex = getActiveArabicWordIndex({
+      const details = getActiveArabicWordDetails({
         currentTime,
         duration,
         surahNumber: selectedSurahIdRef.current,
-        ayahNumber,
+        ayahNumber: aNum,
         qariId: selectedQariRef.current,
         words: cleanWords,
       });
 
-      // Monotonic guard: হাইলাইট শুধু সামনে যাবে, কখনো হঠাৎ পিছিয়ে আসবে না
-      // (Qari-র repeat/waqf pause-এর সময় সাময়িক পিছিয়ে আসা স্বাভাবিক তবে flickering ঠেকাতে হবে)
-      const safeIndex = Math.max(lastHighlightedWord, computedIndex);
-      if (safeIndex !== lastHighlightedWord) {
-        lastHighlightedWord = safeIndex;
-        setActiveWordIndex(safeIndex);
-      } else if (computedIndex !== lastHighlightedWord) {
-        // If computedIndex jumped back significantly (genuine repeat/waqf), allow it
-        // but only if it's a real backward jump (> 2 words back = likely genuine Qari repeat)
-        if (lastHighlightedWord - computedIndex > 2) {
-          lastHighlightedWord = computedIndex;
-          setActiveWordIndex(computedIndex);
-        }
+      setActiveWordIndex(details.wordIndex);
+      if (details.isTeacherMode) {
+        setActiveSpeaker(details.speaker || "ustad");
+      } else {
+        setActiveSpeaker("ustad");
       }
     };
 
@@ -537,7 +606,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
           repeatCounterRef.current += 1;
           setRepeatCounter(1);
           if (audioRef.current) {
-            audioRef.current.currentTime = 0;
+            try { audioRef.current.currentTime = 0; } catch {}
             audioRef.current.playbackRate = playbackSpeedRef.current;
             audioRef.current.play().catch(() => {});
           }
@@ -553,7 +622,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
           repeatCounterRef.current += 1;
           setRepeatCounter(repeatCounterRef.current);
           if (audioRef.current) {
-            audioRef.current.currentTime = 0;
+            try { audioRef.current.currentTime = 0; } catch {}
             audioRef.current.playbackRate = playbackSpeedRef.current;
             audioRef.current.play().catch(() => {});
           }
@@ -572,26 +641,27 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
 
   // Audio player handler
   const playAyahAudio = (ayahNumber, startWordIdx = 0, words = null) => {
+    const aNum = Number(ayahNumber) || 1;
     // If clicking on a specific word in currently active Ayah: seek immediately!
-    if (playingAyahRef.current === ayahNumber && audioRef.current) {
+    if (playingAyahRef.current === aNum && audioRef.current) {
       if (startWordIdx > 0) {
         const thisSessionId = ++playbackSessionIdRef.current;
         const dur = audioRef.current.duration || 0;
-        const currentAyahObj = surahDataRef.current?.ayahs?.find((a) => a.numberInSurah === ayahNumber);
+        const currentAyahObj = surahDataRef.current?.ayahs?.find((a) => Number(a.numberInSurah) === aNum);
         const cleanWords = words && words.length > 0
           ? words
           : (currentAyahObj?.words && currentAyahObj.words.length > 0 ? currentAyahObj.words : splitArabicAyahWords(currentAyahObj?.text || ""));
 
         const seekTime = getWordStartTimeSec({
           surahNumber: selectedSurahIdRef.current,
-          ayahNumber,
+          ayahNumber: aNum,
           wordIndex: startWordIdx,
           qariId: selectedQariRef.current,
           duration: dur,
           words: cleanWords,
         });
 
-        audioRef.current.currentTime = seekTime;
+        try { audioRef.current.currentTime = seekTime; } catch {}
         audioRef.current.playbackRate = playbackSpeedRef.current;
         audioRef.current.play().then(() => {
           if (playbackSessionIdRef.current === thisSessionId) {
@@ -604,7 +674,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
 
       // If clicking word 0 on same playing Ayah: toggle pause or resume
       if (isPlayingAudio) {
-        audioRef.current.pause();
+        try { audioRef.current.pause(); } catch {}
         setIsPlayingAudio(false);
         return;
       } else if (audioRef.current.src) {
@@ -612,13 +682,13 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
         audioRef.current.play().then(() => {
           setIsPlayingAudio(true);
         }).catch(() => {
-          startNewAyahAudio(ayahNumber, 0, words);
+          startNewAyahAudio(aNum, 0, words);
         });
         return;
       }
     }
 
-    startNewAyahAudio(ayahNumber, startWordIdx, words);
+    startNewAyahAudio(aNum, startWordIdx, words);
   };
 
   // Toggle Play / Pause on currently active Ayah
@@ -702,6 +772,9 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
     setSelectedQari(qariId);
     selectedQariRef.current = qariId;
     setStoredQariPreference(qariId);
+    loadChapterSegments(selectedSurahIdRef.current, qariId).then((map) => {
+      if (map) setQariSegmentsVersion((prev) => prev + 1);
+    });
     setIsPlayingAudio(false);
     if (shouldResume) {
       startNewAyahAudio(activeAyah);
@@ -1304,6 +1377,9 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                 ayah.words && ayah.words.length > 0 ? ayah.words : ayah.text
               );
 
+              // Universal Waqf & Ibtida repeats for this Ayah across all 114 Surahs
+              const activeRepeats = getUniversalAyahRepeats(selectedSurahId, ayah.numberInSurah, words, selectedQari);
+
               return (
                 <div
                   key={ayah.numberInSurah}
@@ -1340,6 +1416,21 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                       {isThisAyahActive && !isPlayingAudio && (
                         <span className="text-[10px] bg-amber-100 text-amber-900 border border-amber-300 px-2 py-0.5 rounded-full font-bold">
                           বিরতি
+                        </span>
+                      )}
+                      {activeRepeats && activeRepeats.length > 0 && (
+                        <span
+                          className={`px-2 py-0.5 rounded-full text-[10px] font-black border flex items-center gap-1 shadow-2xs ${
+                            isDay
+                              ? "bg-amber-100/90 text-amber-950 border-amber-300"
+                              : "bg-amber-950/80 text-amber-200 border-amber-500/50"
+                          }`}
+                          title="এই আয়াতে ক্বারীর নিজস্ব দম ফেলার বিরতি (★) ও পুনরায় শুরুর সূচনা (✓) চিহ্নিত রয়েছে"
+                        >
+                          <span className="text-amber-500 font-bold">★</span>
+                          <span>ওয়াকফ</span>
+                          <span className="text-emerald-500 font-bold ml-1">✓</span>
+                          <span>ইবতেদা</span>
                         </span>
                       )}
                     </div>
@@ -1438,26 +1529,92 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                     </div>
                   </div>
 
-                  {/* ARABIC TEXT with Word-by-Word Active Highlighting */}
+                  {/* ARABIC TEXT with Word-by-Word Active Highlighting & Waqf/Ibtida Dynamic Markers */}
                   <div className="py-3 text-right">
+                    {/* Teacher Mode Dual Recitation Role Indicator (শায়খ আল-মিনশাবী ও ছাত্রদল) */}
+                    {isThisAyahActive && isPlayingAudio && selectedQari === "minshawy_teacher" && (
+                      <div className="flex items-center justify-end pb-2.5">
+                        {activeSpeaker === "student" ? (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sky-500/20 border border-sky-400 text-sky-400 text-xs font-black animate-pulse shadow-xs">
+                            <GraduationCap className="w-4 h-4 text-sky-400" />
+                            <span>🎓 ছাত্রদলের পুনরাবৃত্তি (শিক্ষার্থীরা সমস্বরে পড়ছে...)</span>
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 border border-amber-400 text-amber-400 text-xs font-black animate-pulse shadow-xs">
+                            <Volume2 className="w-4 h-4 text-amber-400" />
+                            <span>🎙️ উস্তাদের তিলাওয়াত (শায়খ আল-মিনশাবী)</span>
+                          </span>
+                        )}
+                      </div>
+                    )}
+
                     <p
                       className={`font-hafizi-quran ${isDay ? "text-slate-900" : "text-slate-100"} tracking-wide select-text leading-[2.6]`}
                       style={{ fontSize: `${arabicFontSize}px` }}
                     >
                       {words.map((word, wIdx) => {
                         const isThisWordActive = isThisAyahActive && activeWordIndex === wIdx && activeWordIndex >= 0;
+                        const normWord = normalizeQuranWord(word);
+                        const wordHasQuranicWaqfSign = AUTHENTIC_WAQF_GLYPH_REGEX.test(word);
+
+                        const explicitWaqfStop = activeRepeats.find((r) =>
+                          (r.stopWordIdx !== undefined && r.stopWordIdx === wIdx) ||
+                          (r.stopAfterWord && normalizeQuranWord(r.stopAfterWord) === normWord)
+                        );
+                        const isWaqfStop = !wordHasQuranicWaqfSign && Boolean(explicitWaqfStop);
+
+                        const explicitWaqfResume = activeRepeats.find((r) =>
+                          (r.resumeWordIdx !== undefined && r.resumeWordIdx === wIdx) ||
+                          (r.resumeAtWord && normalizeQuranWord(r.resumeAtWord) === normWord)
+                        );
+                        const isIbtidaResume = wIdx > 0 && !wordHasQuranicWaqfSign && !isWaqfStop && Boolean(explicitWaqfResume);
+
                         return (
-                          <span
-                            key={wIdx}
-                            className={`inline-block transition-all duration-150 px-2 py-0.5 mx-0.5 rounded-xl ${
-                              isThisWordActive
-                                ? "bg-amber-400 text-slate-950 font-black shadow-lg shadow-amber-500/30 ring-2 ring-amber-300 scale-105"
-                                : isThisAyahActive
-                                ? isDay ? "text-emerald-800 font-bold" : "text-amber-200 font-semibold"
-                                : isDay ? "text-slate-900" : "text-slate-100"
-                            }`}
-                          >
-                            {word}
+                          <span key={wIdx} className="inline-block relative">
+                            {/* ১. ক্বারীর তিলাওয়াত পুনরায় শুরুর মার্কার [✓] (ওয়াকফে ইবতেদা) */}
+                            {isIbtidaResume && (
+                              <span
+                                className={`inline-flex items-center justify-center font-black mx-1 px-1.5 py-0.5 rounded-full select-none shadow-md transition-transform hover:scale-115 cursor-help ${
+                                  isDay
+                                    ? "bg-emerald-600 text-white border border-emerald-700 text-xs sm:text-sm ring-1 ring-emerald-400"
+                                    : "bg-emerald-500 text-slate-950 border border-emerald-300 text-xs sm:text-sm ring-2 ring-emerald-400/50 shadow-emerald-500/50"
+                                }`}
+                                title={`পুনরায় পড়ার সূচনা (ইবতেদা): ${word} (ক্বারী দম নেওয়ার পর এখান থেকে মিলিয়ে তিলাওয়াত শুরু করেছেন)`}
+                              >
+                                ✓
+                              </span>
+                            )}
+
+                            {/* ২. মূল শব্দের টেক্সট ও ক্লিক-টু-প্লে অডিও হাইলাইট */}
+                            <span
+                              onClick={() => playAyahAudio(ayah.numberInSurah, wIdx, words)}
+                              className={`inline-block transition-colors duration-150 px-2 py-0.5 mx-0.5 rounded-xl cursor-pointer ${
+                                isThisWordActive
+                                  ? isThisAyahActive && selectedQari === "minshawy_teacher" && activeSpeaker === "student"
+                                    ? "bg-sky-400 text-slate-950 font-black shadow-md ring-2 ring-sky-300"
+                                    : "bg-amber-400 text-slate-950 font-black shadow-md ring-2 ring-amber-300"
+                                  : isThisAyahActive
+                                  ? isDay ? "text-emerald-800 font-bold" : "text-amber-200 font-semibold"
+                                  : isDay ? "text-slate-900" : "text-slate-100"
+                              }`}
+                              title={`শব্দ #${wIdx + 1}: ${word} (ক্লিক করে শুনুন)`}
+                            >
+                              {word}
+                            </span>
+
+                            {/* ৩. ক্বারীর দম ফেলার স্থান: গোল্ডেন স্টার মার্কার [★] (ওয়াকফ) */}
+                            {isWaqfStop && (
+                              <span
+                                className={`inline-flex items-center justify-center font-black mx-1 px-1.5 py-0.5 rounded-full select-none shadow-md transition-transform hover:scale-115 cursor-help ${
+                                  isDay
+                                    ? "bg-amber-400 text-slate-950 border border-amber-600 text-xs sm:text-sm ring-1 ring-amber-300"
+                                    : "bg-amber-400 text-slate-950 border border-amber-300 text-xs sm:text-sm ring-2 ring-amber-400/50 shadow-amber-500/50"
+                                }`}
+                                title={`ক্বারীর বিরতি (ওয়াকফ): ${word} (কুরআনে কোনো লিখিত ওয়াকফ চিহ্ন নেই, ক্বারী দম নেওয়ার জন্য এখানে থেমেছেন)`}
+                              >
+                                ★
+                              </span>
+                            )}
                           </span>
                         );
                       })}{" "}
@@ -1594,6 +1751,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
               playingSurahId={selectedSurahId}
               isPlayingAudio={isPlayingAudio}
               activeWordIndex={activeWordIndex}
+              activeSpeaker={activeSpeaker}
               arabicFontSize={arabicFontSize}
               onChangeFontSize={(delta) => changeFontSize(delta)}
               readerTheme={readerTheme}

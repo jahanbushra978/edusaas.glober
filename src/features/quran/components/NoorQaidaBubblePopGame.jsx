@@ -10,7 +10,7 @@ import {
   ChevronRight,
   Check,
 } from "lucide-react";
-import { universalAudioEngine } from "@/lib/quran/audio";
+import { universalAudioEngine, QAIDA_TAKHTI_1_LETTERS } from "@/lib/quran/audio";
 import {
   SHOP_NEEDLES,
   SHOP_BLADES,
@@ -142,6 +142,26 @@ export default function NoorQaidaBubblePopGame({
   // Progressive Round Counter (Rounds 1, 2, 3 -> then Haruf Ninja unlocks!)
   const [bubbleRound, setBubbleRound] = useState(1);
 
+  // ⏱️ Round Countdown Timer (Default 30 seconds, selectable: 15s, 30s, 45s, 60s)
+  const [selectedDuration, setSelectedDuration] = useState(30);
+  const [timeLeft, setTimeLeft] = useState(30);
+
+  // 🎯 Target Letter Index in Canonical Takhti 1 sequence
+  const targetIndex = useMemo(() => {
+    if (!QAIDA_TAKHTI_1_LETTERS) return 0;
+    const idx = QAIDA_TAKHTI_1_LETTERS.findIndex(
+      (l) => l.ar === targetItem?.ar || l.sound === targetItem?.sound || l.id === targetItem?.id
+    );
+    return idx >= 0 ? idx : 0;
+  }, [targetItem]);
+
+  // 📚 Strictly Learned Distractor Letters: Only letters learned prior to targetIndex
+  // At Alif (index 0), this is strictly EMPTY! Future letters (Ayn, Taa, etc.) can NEVER spawn!
+  const learnedDistractors = useMemo(() => {
+    if (!QAIDA_TAKHTI_1_LETTERS || targetIndex <= 0) return [];
+    return QAIDA_TAKHTI_1_LETTERS.slice(0, targetIndex);
+  }, [targetIndex]);
+
   // Coins & Shop Inventory System (পয়েন্ট জমিয়ে সুই, কাঠি ও চাকু কেনা)
   const [coins, setCoins] = useState(() => getStoredCoins());
   const [unlockedNeedles, setUnlockedNeedles] = useState(() => getUnlockedNeedles());
@@ -163,7 +183,38 @@ export default function NoorQaidaBubblePopGame({
   // References
   const nextBubbleId = useRef(1);
   const containerRef = useRef(null);
+  const playfieldRef = useRef(null);
   const spawnTimerRef = useRef(null);
+  const isSwipingRef = useRef(false);
+  const poppedBubbleIdsRef = useRef(new Set());
+
+  // Responsive & Orientation State
+  const [isPortrait, setIsPortrait] = useState(false);
+  const [showRotateTip, setShowRotateTip] = useState(true);
+
+  // Detect orientation for responsive mobile gameplay
+  useEffect(() => {
+    const checkOrientation = () => {
+      const portrait = typeof window !== "undefined" && window.innerHeight > window.innerWidth && window.innerWidth < 768;
+      setIsPortrait(portrait);
+    };
+    checkOrientation();
+    window.addEventListener("resize", checkOrientation);
+    return () => window.removeEventListener("resize", checkOrientation);
+  }, []);
+
+  // Manual Landscape Request
+  const handleRequestLandscape = async () => {
+    try {
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      }
+      if (window.screen?.orientation?.lock) {
+        await window.screen.orientation.lock("landscape");
+      }
+      setShowRotateTip(false);
+    } catch {}
+  };
 
   // ── SAVE COINS HELPER ──
   const addCoins = (amount) => {
@@ -293,56 +344,77 @@ export default function NoorQaidaBubblePopGame({
     } catch {}
   }, [isMuted]);
 
-  // ── SPAWN A BUBBLE (WITH PROGRESSIVE SPEED & INCREASING BOMBS) ──
+  // ── SPAWN A BUBBLE (STRICT PROGRESSIVE LETTERS & COMFORTABLE SPEED) ──
   const spawnBubble = useCallback(() => {
     if (gameState !== "playing") return;
 
     const id = nextBubbleId.current++;
     const xPos = Math.random() * 80 + 10;
-    const size = Math.floor(Math.random() * 26) + 76;
+    const size = Math.floor(Math.random() * 24) + 78;
 
-    // Progressive speed: "aste aste aro druto hobe"
+    // Comfortable upward float speed for children (no frantic racing)
     const currentLevel = bubbleRound === 1 && score < 60 ? 1 : score < 140 ? 2 : 3;
     const duration =
       currentLevel === 1
-        ? Math.random() * 2.0 + 6.8
+        ? Math.random() * 2.2 + 7.2
         : currentLevel === 2
-        ? Math.random() * 1.8 + 4.8
-        : Math.random() * 1.4 + 3.4;
+        ? Math.random() * 1.8 + 5.5
+        : Math.random() * 1.4 + 4.2;
 
     const theme = BUBBLE_THEMES[Math.floor(Math.random() * BUBBLE_THEMES.length)];
-
-    // Bomb density increases: "bom beshi kore ashbe"
-    const bombThreshold = currentLevel === 1 ? 0.88 : currentLevel === 2 ? 0.76 : 0.65;
     const rand = Math.random();
+
     let type = "target";
-    let content = targetItem.ar || "س";
+    let content = targetItem.ar || "ا";
     let nameBn = targetItem.nameBn || "হরফ";
     let sound = targetItem.sound || targetItem.ar;
 
-    if (rand < 0.42) {
-      type = "target";
-      content = targetItem.ar;
-      nameBn = targetItem.nameBn;
-      sound = targetItem.sound || targetItem.ar;
-    } else if (rand < 0.68) {
-      type = "fruit";
-      const fruit = BONUS_FRUITS[Math.floor(Math.random() * BONUS_FRUITS.length)];
-      content = fruit.icon;
-      nameBn = fruit.nameBn;
-      sound = fruit.sound;
-    } else if (rand < bombThreshold) {
-      type = "distractor";
-      const filtered = DISTRACTOR_LETTERS.filter((l) => l.ar !== targetItem.ar);
-      const dist = filtered[Math.floor(Math.random() * filtered.length)] || DISTRACTOR_LETTERS[0];
-      content = dist.ar;
-      nameBn = dist.nameBn;
-      sound = dist.ar;
+    // Strict cumulative spawning:
+    // If learnedDistractors is empty (Alif): ONLY Alif, fruits, and bombs can spawn.
+    // Future unlearned letters (Baa, Taa, Ayn, etc.) have 0% probability!
+    if (learnedDistractors.length === 0) {
+      if (rand < 0.58) {
+        type = "target";
+        content = targetItem.ar;
+        nameBn = targetItem.nameBn;
+        sound = targetItem.sound || targetItem.ar;
+      } else if (rand < 0.88) {
+        type = "fruit";
+        const fruit = BONUS_FRUITS[Math.floor(Math.random() * BONUS_FRUITS.length)];
+        content = fruit.icon;
+        nameBn = fruit.nameBn;
+        sound = fruit.sound;
+      } else {
+        type = "bomb";
+        content = "💣";
+        nameBn = "বিপদজনক বোমা";
+        sound = "bomb";
+      }
     } else {
-      type = "bomb";
-      content = "💣";
-      nameBn = "বিপদজনক বোমা";
-      sound = "bomb";
+      // For Baa, Taa, Thaa etc.: Target letter 45%, Distractor (strictly prior learned letter) 20%, Fruit 25%, Bomb 10%
+      if (rand < 0.45) {
+        type = "target";
+        content = targetItem.ar;
+        nameBn = targetItem.nameBn;
+        sound = targetItem.sound || targetItem.ar;
+      } else if (rand < 0.65) {
+        type = "distractor";
+        const dist = learnedDistractors[Math.floor(Math.random() * learnedDistractors.length)];
+        content = dist.ar;
+        nameBn = dist.nameBn;
+        sound = dist.ar;
+      } else if (rand < 0.88) {
+        type = "fruit";
+        const fruit = BONUS_FRUITS[Math.floor(Math.random() * BONUS_FRUITS.length)];
+        content = fruit.icon;
+        nameBn = fruit.nameBn;
+        sound = fruit.sound;
+      } else {
+        type = "bomb";
+        content = "💣";
+        nameBn = "বিপদজনক বোমা";
+        sound = "bomb";
+      }
     }
 
     const newBubble = {
@@ -359,7 +431,7 @@ export default function NoorQaidaBubblePopGame({
     };
 
     setActiveBubbles((prev) => [...prev, newBubble]);
-  }, [gameState, targetItem, score, bubbleRound]);
+  }, [gameState, targetItem, score, bubbleRound, learnedDistractors]);
 
   // ── CLEANUP BUBBLES THAT REACH TOP ──
   useEffect(() => {
@@ -393,15 +465,24 @@ export default function NoorQaidaBubblePopGame({
   }, [gameState, spawnBubble, score, bubbleRound]);
 
   // ── POP BUBBLE HANDLER ──
-  const handlePopBubble = (bubble, e) => {
-    e.stopPropagation();
+  const handlePopBubble = useCallback((bubble, e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
     if (gameState !== "playing") return;
+    if (poppedBubbleIdsRef.current.has(bubble.id)) return;
+    poppedBubbleIdsRef.current.add(bubble.id);
 
     setActiveBubbles((prev) => prev.filter((b) => b.id !== bubble.id));
 
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = rect.left + rect.width / 2;
-    const clickY = rect.top + rect.height / 2;
+    let clickX = window.innerWidth / 2;
+    let clickY = window.innerHeight / 2;
+    if (e && typeof e.clientX === "number" && typeof e.clientY === "number") {
+      clickX = e.clientX;
+      clickY = e.clientY;
+    } else if (e && e.currentTarget && e.currentTarget.getBoundingClientRect) {
+      const rect = e.currentTarget.getBoundingClientRect();
+      clickX = rect.left + rect.width / 2;
+      clickY = rect.top + rect.height / 2;
+    }
 
     // Visual particles colored by the equipped needle/wand!
     createParticles(clickX, clickY, equippedNeedle);
@@ -451,7 +532,34 @@ export default function NoorQaidaBubblePopGame({
         setGameState("gameover");
       }
     }
-  };
+  }, [gameState, equippedNeedle, isMuted, playWebAudioPop, playFruitPopSound, playBombExplosionSound, targetCount, TARGET_GOAL, lives]);
+
+  // ── SWIPE-TO-SLICE TOUCH & DRAG HANDLER ──
+  const handlePointerSwipe = useCallback((e) => {
+    if (gameState !== "playing" || !playfieldRef.current) return;
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    if (typeof clientX !== "number" || typeof clientY !== "number") return;
+
+    const bubbleElements = playfieldRef.current.querySelectorAll("[data-bubble-id]");
+    bubbleElements.forEach((el) => {
+      const bId = Number(el.getAttribute("data-bubble-id"));
+      if (!bId || poppedBubbleIdsRef.current.has(bId)) return;
+      const rect = el.getBoundingClientRect();
+      const margin = 12;
+      if (
+        clientX >= rect.left - margin &&
+        clientX <= rect.right + margin &&
+        clientY >= rect.top - margin &&
+        clientY <= rect.bottom + margin
+      ) {
+        const found = activeBubbles.find((b) => b.id === bId);
+        if (found) {
+          handlePopBubble(found, { clientX, clientY, currentTarget: el, stopPropagation: () => {} });
+        }
+      }
+    });
+  }, [gameState, activeBubbles, handlePopBubble]);
 
   // ── PARTICLE EXPLOSION GENERATOR ──
   const createParticles = (x, y, needle) => {
@@ -511,6 +619,7 @@ export default function NoorQaidaBubblePopGame({
     setScore(0);
     setLives(3);
     setTargetCount(0);
+    setTimeLeft(selectedDuration);
     setActiveBubbles([]);
     setGameState("playing");
   };
@@ -518,9 +627,36 @@ export default function NoorQaidaBubblePopGame({
   const handleNextRound = () => {
     setBubbleRound((r) => r + 1);
     setTargetCount(0);
+    setTimeLeft(selectedDuration);
     setActiveBubbles([]);
     setGameState("playing");
   };
+
+  const handleSelectDuration = (sec) => {
+    setSelectedDuration(sec);
+    setTimeLeft(sec);
+  };
+
+  // ── COUNTDOWN TIMER TICK EFFECT ──
+  useEffect(() => {
+    if (gameState !== "playing") return;
+    if (timeLeft <= 0) {
+      setGameState("won");
+      addCoins(50);
+      playVictoryFanfare();
+      return;
+    }
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [gameState, timeLeft, playVictoryFanfare]);
 
   // ── SHOP PURCHASE & EQUIP HANDLERS ──
   const handleBuyNeedle = (needle) => {
@@ -830,60 +966,110 @@ export default function NoorQaidaBubblePopGame({
         </div>
       </div>
 
+      {/* 🔄 Gentle Orientation Guidance (Non-Blocking) */}
+      {isPortrait && showRotateTip && (
+        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 bg-amber-950/95 text-amber-200 text-xs px-3 py-1.5 rounded-full border border-amber-400 shadow-xl flex items-center gap-2 backdrop-blur-md animate-fade-in pointer-events-auto max-w-[95%]">
+          <span>🔄</span>
+          <span className="font-bold font-hind-siliguri truncate">সুন্দর অনুভূতির জন্য ফোনটি আড়াআড়ি (Landscape) করে ধরুন</span>
+          <button
+            type="button"
+            onClick={handleRequestLandscape}
+            className="text-[10px] font-black bg-amber-500 text-amber-950 px-2 py-0.5 rounded-lg hover:bg-amber-400 shrink-0 cursor-pointer"
+          >
+            আড়াআড়ি মোড
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowRotateTip(false)}
+            className="text-amber-400 hover:text-white font-black px-1.5 py-0.5 rounded bg-white/10 shrink-0 cursor-pointer"
+            title="বন্ধ করুন"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* ══════════════════════════════════════════════════════════
           TOP GAMEBAR HUD (CLEAN, FOCUSED & PROGRESSIVE)
           (Home, Shop/Coins, Target Badge, Round/Goal, Score, Hearts, Controls)
       ══════════════════════════════════════════════════════════ */}
-      <header className="relative z-30 p-2 sm:p-4 flex items-center justify-between gap-2 max-w-6xl mx-auto w-full">
+      <header className="relative z-30 p-1.5 sm:p-4 flex items-center justify-between gap-1 sm:gap-2 max-w-6xl mx-auto w-full">
         {/* Left: Home Button & Point Shop */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={onClose}
-            className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-teal-500 hover:bg-teal-600 text-white border-2 border-teal-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-teal-500 hover:bg-teal-600 text-white border-2 border-teal-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
             title="কায়দায় ফিরে যান"
           >
-            <Home className="w-5 h-5 sm:w-6 sm:h-6" />
+            <Home className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
 
           {/* 🛒 Shop Button (পয়েন্ট জমিয়ে সুই ও চাকু কেনা) */}
           <button
             onClick={() => setIsShopOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-xs shadow-xl border-2 border-amber-300 active:scale-95 transition hover:scale-105 cursor-pointer"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-2xl bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 hover:from-amber-500 hover:to-yellow-500 text-amber-950 font-black text-xs shadow-xl border-2 border-amber-300 active:scale-95 transition hover:scale-105 cursor-pointer"
             title="দোকান: সুই ও চাকু কিনুন"
           >
-            <span className="text-sm">🛒</span>
+            <span className="text-xs sm:text-sm">🛒</span>
             <span className="hidden sm:inline">দোকান</span>
-            <span className="bg-white/90 px-1.5 py-0.5 rounded-full text-[10px] font-mono shadow-2xs">
+            <span className="bg-white/90 px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono shadow-2xs">
               🪙 {coins}
             </span>
           </button>
         </div>
 
         {/* Center: Mission Target Letter & Status Dashboard */}
-        <div className="flex items-center gap-2 sm:gap-4 bg-white/90 backdrop-blur-md px-3 sm:px-6 py-1.5 sm:py-2 rounded-2xl sm:rounded-3xl border-2 sm:border-3 border-emerald-400 shadow-2xl">
+        <div className="flex items-center gap-1.5 sm:gap-4 bg-white/90 backdrop-blur-md px-2 sm:px-6 py-1 sm:py-2 rounded-2xl sm:rounded-3xl border-2 sm:border-3 border-emerald-400 shadow-2xl">
           {/* Target Letter Display */}
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] sm:text-xs font-black text-slate-700 hidden xs:inline">
+          <div className="flex items-center gap-1 sm:gap-2">
+            <span className="text-[10px] sm:text-xs font-black text-slate-700 hidden xs:inline">
               লক্ষ্য:
             </span>
-            <div className="px-2.5 py-0.5 sm:px-3 sm:py-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-arabic font-black text-xl sm:text-2xl shadow-md flex items-center gap-1.5 animate-pulse">
+            <div className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-arabic font-black text-lg sm:text-2xl shadow-md flex items-center gap-1 animate-pulse">
               <span>{targetItem.ar}</span>
-              <span className="text-[10px] font-sans font-bold bg-white/20 px-1.5 rounded">
+              <span className="text-[9px] sm:text-[10px] font-sans font-bold bg-white/20 px-1 sm:px-1.5 rounded">
                 {targetItem.nameBn}
               </span>
             </div>
           </div>
 
           {/* Progress Goal */}
-          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 font-black text-xs sm:text-sm">
+          <div className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-50 border border-amber-300 text-amber-900 font-black text-[11px] sm:text-sm">
             <span>🎯</span>
             <span>
               {targetCount} / {TARGET_GOAL}
             </span>
           </div>
 
+          {/* ⏱️ Countdown Timer & Remaining Seconds */}
+          <div className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-sky-50 border border-sky-300 text-sky-950 font-black text-[11px] sm:text-sm shadow-xs">
+            <span className="text-xs">⏱️</span>
+            <span className={`font-mono ${timeLeft <= 5 ? "text-rose-600 font-black animate-pulse" : ""}`}>
+              {timeLeft}s
+            </span>
+          </div>
+
+          {/* ⏱️ Duration Selector Options (15s, 30s [default], 45s, 60s) */}
+          <div className="hidden lg:flex items-center gap-1 bg-slate-100/90 p-0.5 rounded-xl border border-slate-300">
+            {[15, 30, 45, 60].map((sec) => (
+              <button
+                key={sec}
+                type="button"
+                onClick={() => handleSelectDuration(sec)}
+                className={`px-1.5 py-0.5 rounded-lg text-[10px] font-black transition cursor-pointer ${
+                  selectedDuration === sec
+                    ? "bg-amber-500 text-amber-950 shadow-xs"
+                    : "text-slate-600 hover:bg-white"
+                }`}
+                title={`সময়: ${sec} সেকেন্ড`}
+              >
+                {sec}s
+              </button>
+            ))}
+          </div>
+
           {/* Score Counter */}
-          <div className="flex items-center gap-1 text-xs sm:text-sm font-black text-emerald-900">
+          <div className="flex items-center gap-1 text-[11px] sm:text-sm font-black text-emerald-900">
             <span>⭐</span>
             <span>{score}</span>
           </div>
@@ -893,7 +1079,7 @@ export default function NoorQaidaBubblePopGame({
             {[1, 2, 3].map((heartIndex) => (
               <span
                 key={heartIndex}
-                className={`text-base sm:text-lg transition-transform ${
+                className={`text-sm sm:text-lg transition-transform ${
                   heartIndex <= lives ? "scale-100 animate-bounce" : "opacity-30 grayscale scale-75"
                 }`}
               >
@@ -904,49 +1090,72 @@ export default function NoorQaidaBubblePopGame({
         </div>
 
         {/* Right: Sound & Settings Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <button
             onClick={() => setIsMuted((m) => !m)}
-            className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white border-2 border-sky-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white border-2 border-sky-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
             title={isMuted ? "সাউন্ড চালু করুন" : "সাউন্ড মিউট করুন"}
           >
-            {isMuted ? <VolumeX className="w-5 h-5 sm:w-6 sm:h-6" /> : <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />}
+            {isMuted ? <VolumeX className="w-4 h-4 sm:w-5 sm:h-5" /> : <Volume2 className="w-4 h-4 sm:w-5 sm:h-5" />}
           </button>
 
           {onNextLetter && (
             <button
               onClick={onNextLetter}
-              className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white border-2 border-emerald-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+              className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-emerald-500 hover:bg-emerald-600 text-white border-2 border-emerald-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
               title="পরবর্তী হরফে যান"
             >
-              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" />
+              <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" />
             </button>
           )}
 
           <button
             onClick={restartGame}
-            className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white border-2 border-amber-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white border-2 border-amber-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
             title="নতুন করে শুরু করুন"
           >
-            <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6" />
+            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </header>
 
       {/* ══════════════════════════════════════════════════════════
-          BUBBLE / BALLOON PLAYFIELD
+          BUBBLE / BALLOON PLAYFIELD (SWIPE-TO-SLICE ENABLED)
       ══════════════════════════════════════════════════════════ */}
-      <div className="relative flex-1 w-full overflow-hidden">
+      <div 
+        ref={playfieldRef}
+        onPointerDown={(e) => {
+          isSwipingRef.current = true;
+          handlePointerSwipe(e);
+        }}
+        onPointerMove={(e) => {
+          if (isSwipingRef.current) {
+            handlePointerSwipe(e);
+          }
+        }}
+        onPointerUp={() => {
+          isSwipingRef.current = false;
+        }}
+        onPointerCancel={() => {
+          isSwipingRef.current = false;
+        }}
+        className="relative flex-1 w-full overflow-hidden touch-none select-none cursor-crosshair"
+        style={{
+          cursor: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 24 24' fill='none' stroke='%230284c7' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='6' cy='6' r='3'/%3E%3Ccircle cx='6' cy='18' r='3'/%3E%3Cline x1='20' y1='4' x2='8.12' y2='15.88'/%3E%3Cline x1='14.47' y1='14.48' x2='20' y2='20'/%3E%3Cline x1='8.12' y1='8.12' x2='12' y2='12'/%3E%3C/svg%3E\") 16 16, crosshair",
+        }}
+      >
         {activeBubbles.map((bubble) => {
           return (
             <div
               key={bubble.id}
+              data-bubble-id={bubble.id}
+              onPointerDown={(e) => handlePopBubble(bubble, e)}
               onClick={(e) => handlePopBubble(bubble, e)}
-              className="absolute cursor-pointer transition-transform active:scale-90 group select-none animate-bubble-rise"
+              className="absolute cursor-pointer transition-transform active:scale-90 group select-none animate-bubble-rise p-2.5"
               style={{
                 left: `${bubble.xPos}%`,
-                width: `${bubble.size}px`,
-                height: `${bubble.size}px`,
+                width: `${bubble.size + 20}px`,
+                height: `${bubble.size + 20}px`,
                 animationDuration: `${bubble.duration}s`,
                 animationTimingFunction: "linear",
               }}
@@ -1251,54 +1460,61 @@ export default function NoorQaidaBubblePopGame({
             </div>
 
             <div className="space-y-1">
+              <div className="flex items-center justify-center gap-1 text-2xl animate-pulse">
+                {lives === 3 ? "⭐⭐⭐" : lives === 2 ? "⭐⭐" : "⭐"}
+              </div>
               <h2 className="text-2xl font-black text-amber-950 font-hind-siliguri">
                 مَا شَاءَ اللَّهُ (মাশাআল্লাহ!)
               </h2>
               <p className="text-sm font-bold text-emerald-800">
-                রাউন্ড {bubbleRound} বিজয়ী! তুমি সফলভাবে {TARGET_GOAL}টি <strong>{targetItem.nameBn} ({targetItem.ar})</strong> হরফ সংগ্রহ করেছ!
+                রাউন্ড সম্পন্ন! তুমি সফলভাবে <strong>{targetItem.nameBn} ({targetItem.ar})</strong> হরফে {score} পয়েন্ট অর্জন করেছ!
               </p>
-              <div className="text-xs font-black text-amber-700 bg-amber-50 py-1 rounded-xl border border-amber-200">
-                পুরস্কার: +৫০ 🪙 পয়েন্ট যুক্ত হয়েছে!
+              <div className="text-xs font-black text-amber-700 bg-amber-50 py-1.5 rounded-xl border border-amber-200 flex items-center justify-center gap-2">
+                <span>পুরস্কার: +৫০ 🪙 কয়েন</span>
+                <span>•</span>
+                <span>স্কোর: {score} ⭐</span>
               </div>
             </div>
 
             <div className="space-y-2 pt-2">
+              {/* ➔ Next Level Button (Main Action) */}
+              {onNextLetter && (
+                <button
+                  onClick={() => {
+                    onNextLetter();
+                    restartGame();
+                  }}
+                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 animate-pulse cursor-pointer"
+                >
+                  <span>পরবর্তী হরফে যান</span>
+                  <ChevronRight className="w-5 h-5 stroke-[3]" />
+                </button>
+              )}
+
+              {/* ↺ Replay Button */}
+              <button
+                onClick={restartGame}
+                className="w-full py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+              >
+                <RotateCcw className="w-4 h-4" />
+                <span>পুনরায় খেলুন</span>
+              </button>
+
               {/* After 2-3 rounds, Ninja Level unlocks! */}
               {onLaunchNinja && (
                 <button
                   onClick={() => onLaunchNinja(targetItem)}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-black text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 animate-pulse cursor-pointer"
+                  className="w-full py-2.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs shadow-md flex items-center justify-center gap-2 active:scale-95 cursor-pointer"
                 >
                   <span>⚔️</span>
-                  <span>
-                    {bubbleRound >= 2 ? "🎉 মহাবিজয়: হরফ নিনজা লেভেলে যাও!" : "হরফ নিনজা লেভেলে খেলো!"}
-                  </span>
+                  <span>হরফ নিনজা লেভেলে খেলো!</span>
                   <span>➔</span>
-                </button>
-              )}
-
-              {bubbleRound < 3 && (
-                <button
-                  onClick={handleNextRound}
-                  className="w-full py-2.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95"
-                >
-                  <span>🎈 পরবর্তী রাউন্ড ({bubbleRound + 1}/৩) খেলো</span>
-                </button>
-              )}
-
-              {onNextLetter && (
-                <button
-                  onClick={onNextLetter}
-                  className="w-full py-2 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95"
-                >
-                  <span>পরবর্তী হরফে যাও</span>
-                  <ChevronRight className="w-4 h-4" />
                 </button>
               )}
 
               <button
                 onClick={onClose}
-                className="w-full py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
+                className="w-full py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
               >
                 কায়দায় ফিরে যান
               </button>

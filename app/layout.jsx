@@ -168,11 +168,40 @@ export default async function RootLayout({ children }) {
     <html lang={initialLang} suppressHydrationWarning data-scroll-behavior="smooth" className={`light ${inter.variable} ${hindSiliguri.variable} ${notoSansBengali.variable} ${notoSansArabic.variable} ${amiri.variable} ${playfairDisplay.variable} ${balooDa2.variable}`}>
       <head>
         <meta charSet="utf-8" />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              // 🛡️ Prevent browser extensions & autofill from injecting synthetic attributes (fdprocessedid, bis_skin_checked) before React hydrates
+              if (typeof Element !== 'undefined' && Element.prototype) {
+                var origSetAttr = Element.prototype.setAttribute;
+                Element.prototype.setAttribute = function(name, value) {
+                  if (name === 'fdprocessedid' || name === 'bis_skin_checked' || name === 'data-bitwarden-watching') {
+                    return;
+                  }
+                  return origSetAttr.apply(this, arguments);
+                };
+              }
+
+              if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+                if ('serviceWorker' in navigator) {
+                  navigator.serviceWorker.getRegistrations().then(function(regs) {
+                    for (var i = 0; i < regs.length; i++) { regs.unregister(); }
+                  });
+                }
+                if ('caches' in window) {
+                  caches.keys().then(function(names) {
+                    for (var i = 0; i < names.length; i++) { caches.delete(names[i]); }
+                  });
+                }
+              }
+            `,
+          }}
+        />
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Scheherazade+New:wght@400;700&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Amiri:wght@400;700&family=Scheherazade+New:wght@400;700&family=Hind+Siliguri:wght@300;400;500;600;700&family=Noto+Sans+Bengali:wght@400;600;700&family=Noto+Sans+Arabic:wght@400;700&family=Inter:wght@400;500;600;700&family=Baloo+Da+2:wght@400;600;700&display=swap"
         />
       </head>
       <body suppressHydrationWarning className="light">
@@ -303,12 +332,20 @@ export default async function RootLayout({ children }) {
         <Script id="register-sw" strategy="afterInteractive">
           {`
             if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
-              if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+              var isDevHost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.endsWith('.local');
+              if (isDevHost) {
                 navigator.serviceWorker.getRegistrations().then(function(registrations) {
                   for (var i = 0; i < registrations.length; i++) {
                     registrations[i].unregister();
                   }
                 });
+                if ('caches' in window) {
+                  caches.keys().then(function(names) {
+                    for (var i = 0; i < names.length; i++) {
+                      caches.delete(names[i]);
+                    }
+                  });
+                }
               } else {
                 window.addEventListener('load', function() {
                   navigator.serviceWorker.register('/sw.js').catch(function(err) {

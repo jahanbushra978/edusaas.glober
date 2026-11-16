@@ -77,6 +77,28 @@ class AudioLRUCache {
     if (options.rate !== undefined) audio.playbackRate = options.rate;
     audio.src = url;
 
+    // Dual-Tier Persistent Offline Caching: CacheStorage (PWA Disk Cache)
+    if (typeof window !== "undefined" && "caches" in window && url.startsWith("http")) {
+      caches.open("nur-audio-cache-v2").then(async (cache) => {
+        try {
+          const match = await cache.match(url);
+          if (match) {
+            // If offline, convert cached audio to Blob URL to guarantee zero-latency offline playback
+            if (typeof navigator !== "undefined" && !navigator.onLine && !audio.src.startsWith("blob:")) {
+              const blob = await match.blob();
+              audio.src = URL.createObjectURL(blob);
+            }
+          } else if (typeof navigator === "undefined" || navigator.onLine) {
+            fetch(url, { mode: "cors" }).then((resp) => {
+              if (resp && (resp.status === 200 || resp.type === "opaque")) {
+                cache.put(url, resp).catch(() => {});
+              }
+            }).catch(() => {});
+          }
+        } catch {}
+      }).catch(() => {});
+    }
+
     this.cache.set(url, {
       audio,
       lastAccessed: Date.now(),

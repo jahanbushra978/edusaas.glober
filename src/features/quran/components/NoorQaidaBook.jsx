@@ -30,7 +30,7 @@ import {
   PARVA_THEMES,
   SPECIAL_PAGES,
 } from "../data/noorQaidaPagesData";
-import { nurQaidaAudioEngine } from "@/lib/quran/audio";
+import { nurQaidaAudioEngine, QAIDA_TAKHTI_1_LETTERS } from "@/lib/quran/audio";
 import { formatBangladeshDate } from "@/lib/quran/bangladesh-time";
 import NoorQaidaBubblePopGame from "./NoorQaidaBubblePopGame";
 import NoorQaidaHarufNinjaGame from "./NoorQaidaHarufNinjaGame";
@@ -155,14 +155,17 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
     return () => window.removeEventListener("resize", checkMobile);
   }, []);
 
-  // When game tab is activated on mobile, automatically prompt or activate landscape orientation!
+  // When game is activated on mobile, automatically prompt or activate landscape orientation!
   useEffect(() => {
-    if (activeTab === "game" && isMobileDevice) {
+    const isGameActive = isBubbleGameOpen || isNinjaGameOpen || (activeTab === "game" && isMobileDevice);
+    if (isGameActive && isMobileDevice) {
       setIsGameLandscape(true);
       // Try to lock orientation to landscape if browser supports it
       try {
         if (window.screen?.orientation?.lock) {
-          window.screen.orientation.lock("landscape").catch(() => {});
+          window.screen.orientation.lock("landscape").catch(() => {
+            // Gracefully handled if browser rejects or requires fullscreen first
+          });
         }
       } catch {}
     } else {
@@ -172,8 +175,14 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
           window.screen.orientation.unlock();
         }
       } catch {}
+      // Exit fullscreen if game had entered fullscreen
+      try {
+        if (typeof document !== "undefined" && document.fullscreenElement && document.exitFullscreen) {
+          document.exitFullscreen().catch(() => {});
+        }
+      } catch {}
     }
-  }, [activeTab, isMobileDevice]);
+  }, [activeTab, isMobileDevice, isBubbleGameOpen, isNinjaGameOpen]);
 
   // Load saved progress on mount
   useEffect(() => {
@@ -356,8 +365,24 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
     setIsNinjaGameOpen(true);
   };
 
-  // Switch to Next Letter inside Bubble Game
+  // Switch to Next Letter inside Bubble Game & Ninja Game
   const handleNextLetterForGame = () => {
+    // 1. First check if current letter is part of canonical Takhti 1 sequence (all 29 letters)
+    if (QAIDA_TAKHTI_1_LETTERS && QAIDA_TAKHTI_1_LETTERS.length > 0) {
+      const t1Index = QAIDA_TAKHTI_1_LETTERS.findIndex(
+        (it) => it.ar === bubbleGameTarget.ar || it.id === bubbleGameTarget.id || it.sound === bubbleGameTarget.sound
+      );
+      if (t1Index !== -1) {
+        const nextIndex = (t1Index + 1) % QAIDA_TAKHTI_1_LETTERS.length;
+        const nextItem = QAIDA_TAKHTI_1_LETTERS[nextIndex];
+        if (nextItem) {
+          handleLaunchBubbleGame(nextItem);
+          return;
+        }
+      }
+    }
+
+    // 2. Fallback to current page class items if on higher lessons
     if (typeof currentPage === "number") {
       const cls = getClassByNumber(currentPage);
       if (cls && cls.items && cls.items.length > 0) {
@@ -372,18 +397,11 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
         }
       }
     }
-    const standardLetters = [
-      "ب", "ت", "ث", "ج", "ح", "خ", "د", "ذ", "ر", "ز",
-      "س", "ش", "ص", "ض", "ط", "ظ", "ع", "غ", "ف", "ق",
-      "ك", "ل", "م", "ن", "و", "هـ", "ي"
-    ];
-    const idx = standardLetters.indexOf(bubbleGameTarget.ar);
-    const nextAr = standardLetters[(idx + 1) % standardLetters.length];
-    setBubbleGameTarget({
-      ar: nextAr,
-      nameBn: "হরফ",
-      sound: nextAr,
-    });
+
+    // 3. Fallback to first Takhti 1 letter
+    if (QAIDA_TAKHTI_1_LETTERS?.[0]) {
+      handleLaunchBubbleGame(QAIDA_TAKHTI_1_LETTERS[0]);
+    }
   };
 
   // "আজ আমি পারলাম ⭐" Star Claim Action
@@ -934,6 +952,19 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                         <div className="text-xs sm:text-sm font-black text-slate-800 font-hind-siliguri">
                           {item.nameBn}
                         </div>
+                        {/* 🎮 নতুন "গেমে যান" বাটন — সরাসরি সংশ্লিষ্ট হরফের খেলায় প্রবেশ */}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleLaunchBubbleGame(item);
+                          }}
+                          className="w-full mt-1.5 py-1 px-1.5 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 hover:from-amber-500 hover:to-orange-500 text-amber-950 font-black text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all cursor-pointer border border-amber-300"
+                          title={`${item.nameBn || item.ar} হরফ দিয়ে খেলা খেলুন`}
+                        >
+                          <span>🎮</span>
+                          <span>গেমে যান</span>
+                        </button>
                       </div>
                     </div>
                   );
@@ -1068,6 +1099,19 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
                           👆 ট্যাপ করে ক্বারীর আওয়াজে পড়ো
                         </div>
                       )}
+                      {/* 🎮 নতুন "গেমে যান" বাটন — সরাসরি সংশ্লিষ্ট হরফের খেলায় প্রবেশ */}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleLaunchBubbleGame(item);
+                        }}
+                        className="w-full mt-1.5 py-1 px-1.5 rounded-xl bg-gradient-to-r from-amber-400 via-orange-400 to-amber-500 hover:from-amber-500 hover:to-orange-500 text-amber-950 font-black text-[10px] sm:text-xs flex items-center justify-center gap-1 shadow-xs active:scale-95 transition-all cursor-pointer border border-amber-300"
+                        title={`${item.nameBn || item.ar} হরফ দিয়ে খেলা খেলুন`}
+                      >
+                        <span>🎮</span>
+                        <span>গেমে যান</span>
+                      </button>
                     </div>
                   </div>
                 );

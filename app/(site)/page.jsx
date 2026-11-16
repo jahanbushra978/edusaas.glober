@@ -130,25 +130,18 @@ export async function generateMetadata() {
 export default async function Page() {
   const queryClient = new QueryClient()
 
-  // Prefetch home page data on the server and seed the React Query cache.
-  // HydrationBoundary dehydrates this and passes it to the browser's
-  // QueryClient, so the client's useQuery(['home-page-data']) finds data
-  // immediately — no extra API call, no loading flash for real users.
-  //
-  // Note: We intentionally do NOT pass initialData as a prop to HomeClient.
-  // Doing so caused React hydration error #418 because HomeContent renders
-  // language-dependent text (via LanguageContext which reads localStorage in
-  // useEffect). The server always renders in 'bn' (default), but the client's
-  // first render could use a different stored language — text mismatch.
-  // Instead, HomeContent uses a `mounted` guard: before mount it renders a
-  // neutral spinner (same on server and client), after mount it renders full
-  // content in the correct language. HydrationBoundary ensures the data is
-  // already in cache when that happens, so there is no visible loading flash.
+  // Resilient prefetch: We attempt server-side data prefetch for instant hydration.
+  // A strict 1.5s timeout prevents slow database latency or offline connection hiccups
+  // from blocking the initial HTML stream and causing Next.js to stall on a white loading screen.
   try {
-    const data = await fetchHomePageData()
+    const prefetchPromise = fetchHomePageData();
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Prefetch timeout')), 1500)
+    );
+    const data = await Promise.race([prefetchPromise, timeoutPromise]);
     queryClient.setQueryData(['home-page-data'], { ok: true, elapsed: 0, ...data })
   } catch (e) {
-    console.warn('[Homepage SSR] Failed to prefetch home data, falling back to client fetch:', e?.message)
+    // Non-blocking fallback: Client React Query will seamlessly load data in the background
   }
 
   return (

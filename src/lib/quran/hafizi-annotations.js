@@ -2673,6 +2673,15 @@ export const MUTASHABIHAT_REGISTRY = [
 ];
 
 export const WAQF_IBTIDA_REGISTRY = {
+  "8-44": [
+    {
+      "stopWordIdx": 9,
+      "stopAfterWord": "أَعْيُنِهِمْ",
+      "resumeWordIdx": 7,
+      "resumeAtWord": "وَيُقَلِّلُكُمْ",
+      "note": "ক্বারীর দম ফেলার বিরতি: أَعْيُنِهِمْ (★) • ২য় বার শুরু: وَيُقَلِّلُكُمْ (✓)"
+    }
+  ],
   "2-14": [
     {
       "stopWordIdx": 10,

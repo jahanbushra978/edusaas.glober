@@ -7,7 +7,8 @@ import {
   Check,
   ChevronDown,
   Volume2,
-  Search
+  Search,
+  GraduationCap
 } from "lucide-react";
 import { toast } from "sonner";
 import {
@@ -18,11 +19,15 @@ import {
 import {
   getHafiziHeaderMetadata,
   MUTASHABIHAT_REGISTRY,
-  WAQF_IBTIDA_REGISTRY,
   getThematicSummaryForPage,
   normalizeQuranWord
 } from "@/lib/quran/hafizi-annotations";
-import { splitArabicAyahWords } from "@/lib/quran/quran-audio-timing";
+import {
+  splitArabicAyahWords,
+  getUniversalAyahRepeats,
+  loadChapterSegments,
+  AUTHENTIC_WAQF_GLYPH_REGEX
+} from "@/lib/quran/quran-audio-timing";
 import { useBanglaAudioEngine, BANGLA_VOICE_ENGINES } from "@/lib/quran/bangla-audio-engine";
 import { QARI_REGISTRY } from "@/lib/ai/qari-registry";
 
@@ -40,18 +45,20 @@ export default function HafiziMushafSheet({
   playingSurahId = null,
   isPlayingAudio = false,
   activeWordIndex = 0,
+  activeSpeaker = "ustad",
   arabicFontSize = 26,
   onChangeFontSize,
   readerTheme = "day",
   getSurahData,
   targetHighlightAyah = null,
-  selectedQari = "husary_muallim",
+  selectedQari = "minshawy_teacher",
   onSelectQari,
   onOpenSearch,
 }) {
   const isDay = readerTheme === "day";
   const [pageLoading, setPageLoading] = useState(true);
   const [pageAyahs, setPageAyahs] = useState([]);
+  const [qariSegmentsVersion, setQariSegmentsVersion] = useState(0);
   const [jumpInput, setJumpInput] = useState(String(pageNum));
   const [isParaDropdownOpen, setIsParaDropdownOpen] = useState(false);
   const [isQariMenuOpen, setIsQariMenuOpen] = useState(false);
@@ -117,12 +124,18 @@ export default function HafiziMushafSheet({
     setJumpInput(String(pageNum));
   }, [pageNum]);
 
-  // Auto-scroll screen so currently recited Ayah is centered in view
+  // Auto-scroll screen only if currently recited Ayah is scrolled out of view (zero jumping)
   useEffect(() => {
     if (playingAyahNumber && playingSurahId) {
       const el = document.getElementById(`mushaf-ayah-${playingSurahId}-${playingAyahNumber}`);
       if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
+        const rect = el.getBoundingClientRect();
+        const isInViewport =
+          rect.top >= 60 &&
+          rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) - 60;
+        if (!isInViewport) {
+          el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+        }
       }
     }
   }, [playingAyahNumber, playingSurahId]);
@@ -254,57 +267,40 @@ export default function HafiziMushafSheet({
   }, [pageAyahs]);
 
   // Look up Waqf & Ibtida markers for ayahs on this page strictly from the authentic verified registry + natural long-ayah breath pause engine
+  // Preload authentic QDC audio segments for all surahs spanning this page across all 114 surahs
+  useEffect(() => {
+    if (!pageMeta?.ranges || pageMeta.ranges.length === 0) return;
+    const uniqueSurahs = Array.from(new Set(pageMeta.ranges.map((r) => r.surah)));
+    let isCancelled = false;
+
+    Promise.all(
+      uniqueSurahs.map((sId) => loadChapterSegments(sId, selectedQari))
+    )
+      .then(() => {
+        if (!isCancelled) {
+          setQariSegmentsVersion((v) => v + 1);
+        }
+      })
+      .catch(() => {});
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [pageMeta, selectedQari]);
+
+  // Universal Waqf (★) and Ibtida (✓) markers across ALL 114 Surahs and 6,236 Ayahs
   const waqfIbtidaMap = useMemo(() => {
     const map = {};
-    const AUTHENTIC_WAQF_REGEX = /[\u06D6\u06D7\u06D8\u06DA\u06DB\u06DC]|(?:\b|\s)(?:ۖ|ۗ|ۘ|ۚ|ۛ|ۜ|قلى|صلى|ج|ط|م|قف)(?:\b|\s|$)/;
-
     pageAyahs.forEach((a) => {
       const key = `${a.surahId}-${a.numberInSurah}`;
-      if (WAQF_IBTIDA_REGISTRY[key]) {
-        map[key] = WAQF_IBTIDA_REGISTRY[key];
-        return;
-      }
-
-      // If Ayah is long (> 12 words), provide natural breath pause & resume markers
-      const words = a.words || [];
-      if (words.length >= 13) {
-        let midStopIdx = -1;
-        let resumeIdx = -1;
-
-        // Check if there is already a printed waqf mark midway in the words
-        const hasPrintedWaqf = words.some((w, idx) => idx >= 4 && idx <= words.length - 4 && AUTHENTIC_WAQF_REGEX.test(w));
-        if (!hasPrintedWaqf) {
-          // Find standard Arabic transition particles: وَإِذْ, ثُمَّ, فَإِنَّ, كَمَا, إِنَّ, لَعَلَّ, بَلْ, وَلَٰكِنْ
-          for (let i = 5; i <= Math.min(words.length - 4, 15); i++) {
-            const wClean = normalizeQuranWord(words[i]);
-            if (/^(واذ|ثم|فان|كما|ان|لعل|بل|حتى|ولكن|فاذا|وهو|وان|فمن|الذين)$/.test(wClean)) {
-              midStopIdx = i - 1;
-              resumeIdx = i;
-              break;
-            }
-          }
-          // If no particle found, pick natural breath stop near midpoint
-          if (midStopIdx === -1) {
-            midStopIdx = Math.floor(words.length / 2) - 1;
-            resumeIdx = midStopIdx + 1;
-          }
-
-          if (midStopIdx > 0 && resumeIdx > 0 && midStopIdx < words.length - 1) {
-            map[key] = [
-              {
-                stopWordIdx: midStopIdx,
-                stopAfterWord: words[midStopIdx],
-                resumeWordIdx: resumeIdx,
-                resumeAtWord: words[resumeIdx],
-                note: `শায়েখের দম ফেলার বিরতি: ${words[midStopIdx]} (★) • ২য় বার শুরু: ${words[resumeIdx]} (✓)`
-              }
-            ];
-          }
-        }
+      const words = a.words && a.words.length > 0 ? a.words : splitArabicAyahWords(a.text);
+      const repeats = getUniversalAyahRepeats(a.surahId, a.numberInSurah, words, selectedQari);
+      if (repeats && repeats.length > 0) {
+        map[key] = repeats;
       }
     });
     return map;
-  }, [pageAyahs]);
+  }, [pageAyahs, selectedQari, qariSegmentsVersion]);
 
   // Handle page jump
   const handleJumpSubmit = (e) => {
@@ -672,6 +668,22 @@ export default function HafiziMushafSheet({
         </div>
 
         {/* ── PAGE CONTENT AREA ── */}
+        {/* ── সিদ্দিক আল-মিনশাবি উস্তাদ বনাম ছাত্র পুনরাবৃত্তি স্ট্যাটাস ব্যানার ── */}
+        {isPlayingAudio && selectedQari === "minshawy_teacher" && (
+          <div className="flex items-center justify-center py-2 px-3 border-b border-amber-500/20 bg-black/10 animate-fadeIn">
+            {activeSpeaker === "student" ? (
+              <span className="inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full bg-sky-500/20 border border-sky-400 text-sky-300 text-xs sm:text-sm font-black animate-pulse shadow-md">
+                <GraduationCap className="w-4 h-4 text-sky-400" />
+                <span>ছাত্রদের সমবেত পুনরাবৃত্তি (মনোযোগ দিয়ে শুনুন...)</span>
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2 px-3 sm:px-4 py-1 rounded-full bg-amber-500/20 border border-amber-400 text-amber-300 text-xs sm:text-sm font-black shadow-md">
+                <Volume2 className="w-4 h-4 text-amber-400" />
+                <span>শায়খ সিদ্দিক আল-মিনশাবির মূল তিলাওয়াত</span>
+              </span>
+            )}
+          </div>
+        )}
         <div className="p-3 sm:p-8 min-h-[520px] flex flex-col justify-between">
           {pageLoading ? (
             <div className="flex flex-col items-center justify-center py-24 space-y-4">
@@ -798,9 +810,6 @@ export default function HafiziMushafSheet({
                           }
                         });
 
-                        // Strict Authentic Quranic Waqf Glyphs (ۖ, ۗ, ۘ, ۚ, ۛ, ۜ, قلى, صلى, ج, ط, م) - Zero false Iqlab / Tanween triggers
-                        const AUTHENTIC_WAQF_GLYPH_REGEX = /[\u06D6\u06D7\u06D8\u06DA\u06DB\u06DC]|(?:\b|\s)(?:ۖ|ۗ|ۘ|ۚ|ۛ|ۜ|قلى|صلى|ج|ط|م|قف)(?:\b|\s|$)/;
-
                         return (
                           <span
                             key={`${ayah.surahId}-${ayah.numberInSurah}`}
@@ -832,20 +841,18 @@ export default function HafiziMushafSheet({
                               // ইউজার রুল: যে শব্দে কুরআনের নিজস্ব ওয়াকফ চিহ্ন আগে থেকেই আছে (যেমন: ج / ۚ), সেখানে স্টার বা টিক দেওয়া যাবে না।
                               // স্টার (★) বসবে শুধু সেই সমস্ত মধ্যবর্তী স্থানে যেখানে কুরআনে আগে থেকে কোনো ওয়াকফ চিহ্ন নেই, কিন্তু ক্বারী দম শেষ হওয়ায় থেমেছেন
                               const explicitWaqfStop = ayahWaqfList.find((w) =>
-                                w.stopWordIdx !== undefined
-                                  ? w.stopWordIdx === wIdx
-                                  : normWord === normalizeQuranWord(w.stopAfterWord)
+                                (w.stopWordIdx !== undefined && w.stopWordIdx === wIdx) ||
+                                (w.stopAfterWord && normalizeQuranWord(w.stopAfterWord) === normWord)
                               );
-                              const isWaqfStopWord = !wordHasQuranicWaqfSign && !!explicitWaqfStop;
+                              const isWaqfStopWord = !wordHasQuranicWaqfSign && Boolean(explicitWaqfStop);
 
                               // টিক (✓) বসবে ঠিক সেই শব্দে যেখান থেকে ক্বারী দম নেওয়ার পর ২য় বার মিলিয়ে শুরু করেছেন (ইবতিদা)
                               // রুল: যেখানে স্টার আছে বা কুরআনের ছাপা ওয়াকফ চিহ্ন আছে বা আয়াতের ১ম শব্দ (wIdx === 0) সেখানে টিক বসবে না
                               const explicitWaqfResume = ayahWaqfList.find((w) =>
-                                w.resumeWordIdx !== undefined
-                                  ? w.resumeWordIdx === wIdx
-                                  : normWord === normalizeQuranWord(w.resumeAtWord)
+                                (w.resumeWordIdx !== undefined && w.resumeWordIdx === wIdx) ||
+                                (w.resumeAtWord && normalizeQuranWord(w.resumeAtWord) === normWord)
                               );
-                              const isIbtidaResumeWord = wIdx > 0 && !wordHasQuranicWaqfSign && !isWaqfStopWord && !!explicitWaqfResume;
+                              const isIbtidaResumeWord = wIdx > 0 && !wordHasQuranicWaqfSign && !isWaqfStopWord && Boolean(explicitWaqfResume);
 
                               return (
                                 <span
@@ -874,11 +881,15 @@ export default function HafiziMushafSheet({
                                     </span>
                                   )}
 
-                                  {/* ২. শায়খের তিলাওয়াত পুনরায় শুরুর মার্কার [✓] (ইবতিদা) */}
+                                  {/* ২. শায়খের তিলাওয়াত পুনরায় শুরুর মার্কার [✓] (ওয়াকফে ইবতেদা) */}
                                   {isIbtidaResumeWord && (
                                     <span
-                                      className="inline-flex items-center justify-center w-4 h-4 mx-0.5 rounded-full bg-emerald-500/25 border border-emerald-400 text-emerald-400 text-[11px] font-black align-middle select-none shadow-xs"
-                                      title={`পুনরায় তিলাওয়াত শুরুর স্থান (ইবতিদা): ${word}`}
+                                      className={`inline-flex items-center justify-center font-black mx-1 px-1.5 py-0.5 rounded-full select-none shadow-md transition-transform hover:scale-115 align-middle cursor-help ${
+                                        isDay
+                                          ? "bg-emerald-600 text-white border border-emerald-700 text-xs sm:text-sm ring-1 ring-emerald-400 font-extrabold"
+                                          : "bg-emerald-500 text-slate-950 border border-emerald-300 text-xs sm:text-sm ring-2 ring-emerald-400/50 shadow-emerald-500/50 font-black"
+                                      }`}
+                                      title={`পুনরায় তিলাওয়াত শুরুর স্থান (ইবতিদা): ${word} (ক্বারী দম নেওয়ার পর এখান থেকে মিলিয়ে তিলাওয়াত শুরু করেছেন)`}
                                     >
                                       ✓
                                     </span>
@@ -886,19 +897,21 @@ export default function HafiziMushafSheet({
 
                                   {/* ৩. মূল শব্দের টেক্সট (মুতাশাবিহাত হলে শতভাগ স্পষ্ট সবুজ রঙ!) */}
                                   <span
-                                    className={`inline transition-all duration-100 px-0.5 mx-[1.5px] rounded-sm ${
+                                    className={`inline transition-colors duration-150 px-1 py-0.5 mx-[1px] rounded ${
                                       isThisWordActive
-                                        ? "bg-amber-400 text-stone-950 font-black px-1 py-0.5 rounded shadow-sm ring-2 ring-amber-300"
+                                        ? selectedQari === "minshawy_teacher" && activeSpeaker === "student"
+                                          ? "bg-sky-400 text-slate-950 font-black shadow-md ring-2 ring-sky-300"
+                                          : "bg-amber-400 text-stone-950 font-bold shadow-sm ring-2 ring-amber-300"
                                         : isTargetJump
-                                        ? "text-amber-400 dark:text-amber-300 font-black"
+                                        ? "text-amber-400 dark:text-amber-300 font-bold"
                                         : isThisAyahActive
                                         ? isDay
                                           ? "text-amber-900 font-bold"
                                           : "text-amber-300 font-bold"
                                         : isInMutashabihat
                                         ? (isDay
-                                            ? "text-emerald-700 font-black underline decoration-emerald-600 decoration-2 underline-offset-4"
-                                            : "text-emerald-400 font-black underline decoration-emerald-400 decoration-2 underline-offset-4")
+                                            ? "text-emerald-700 font-bold underline decoration-emerald-600 decoration-2 underline-offset-4"
+                                            : "text-emerald-400 font-bold underline decoration-emerald-400 decoration-2 underline-offset-4")
                                         : isDay
                                         ? "text-stone-950"
                                         : "text-white"
@@ -917,8 +930,12 @@ export default function HafiziMushafSheet({
                                   {/* ৫. শায়খের দম ফেলার স্থান: গোল্ডেন স্টার মার্কার [★] (ওয়াকফ) */}
                                   {isWaqfStopWord && (
                                     <span
-                                      className="inline-flex items-center justify-center w-4 h-4 mx-0.5 rounded-full bg-amber-500/25 border border-amber-400 text-amber-400 text-[11px] font-black align-middle select-none shadow-xs"
-                                      title={`দম ফেলার স্থান (ওয়াকফ): ${word}`}
+                                      className={`inline-flex items-center justify-center font-black mx-1 px-1.5 py-0.5 rounded-full select-none shadow-lg transition-transform hover:scale-125 align-middle cursor-help ${
+                                        isDay
+                                          ? "bg-amber-500 text-slate-950 border border-amber-600 text-xs sm:text-sm ring-1 ring-amber-300 font-extrabold"
+                                          : "bg-amber-400 text-slate-950 border border-amber-300 text-xs sm:text-sm ring-2 ring-amber-400/60 shadow-amber-500/50 font-black"
+                                      }`}
+                                      title={`ক্বারীর দম ফেলার স্থান (ওয়াকফ): ${word}`}
                                     >
                                       ★
                                     </span>

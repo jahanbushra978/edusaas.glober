@@ -287,6 +287,28 @@ Nur implements the complete pedagogical teaching cycle:
   - Subtle prompt hints when student pauses or hesitates.
   - Sequence anomaly detection for skipped words or inverted Ayahs.
 
+### 9.1 Universal Holy Quran Waqf (★) and Ibtida (✓) Invariant Across All 114 Surahs
+- **Absolute Multi-Surah Universal Invariant (No Single-Page Hardcoding Permitted)**:
+  - The Waqf (★) and Ibtida (✓) system MUST function across the **ENTIRE Holy Quran (all 114 Surahs and 6,236 Ayahs)**.
+  - Hardcoding a single Ayah or single page (e.g. only Surah 8:44 or only Surah 2) is **STRICTLY PROHIBITED**.
+  - Both the Ayah-by-Ayah reader (`src/features/quran/components/QuranReader.jsx`) and the 15-line Hafizi Mushaf page sheet (`src/features/quran/components/HafiziMushafSheet.jsx`) MUST consume the unified engine `getUniversalAyahRepeats(surahNumber, ayahNumber, words, qariId)`.
+- **The Golden Star ★ (ওয়াকফ - ক্বারীর দম ফেলার স্থান)**:
+  - Must appear strictly at the word where the active Qari pauses to catch breath mid-verse where there is **NO written Quranic Waqf sign**.
+  - Where the Quran already has a printed Waqf mark (`ۖ`, `ۗ`, `ۘ`, `ۚ`, `ۛ`, `ۜ`, `ط`, `ج`, `م`, `۞`, `۩`), **NO Star (★) or Tick (✓) may ever be rendered**; Quranic orthography must remain pristine without duplicate markings.
+- **The Emerald Tick ✓ (ওয়াকফে ইবতেদা - পুনরায় তিলাওয়াত শুরুর স্থান)**:
+  - Must appear strictly at the word from which the Qari resumes and reconnects the recitation after taking a breath.
+  - The very first word of an Ayah (`wIdx === 0`) must **NEVER** receive a Tick (an Ayah start is not a resumption).
+- **Dynamic Reactivity Across All 6 Shuyookh**:
+  - The markers MUST dynamically re-compute across all 114 Surahs whenever a user selects a different Qari from the Qari selector.
+  - The markers remain visible as long as that Qari is selected.
+  - **Default Qari**: If no Qari is actively chosen by the user, the default Qari is **Shaykh Muhammad Siddiq Al-Minshawi** (`minshawy_teacher`).
+- **3-Tier Resolution Engine**:
+  1. *Tier 1 (Dynamic Segments)*: Real-time millisecond word repeats from QuranCDN for the active Qari.
+  2. *Tier 2 (Canonical Registry)*: Verified scholarly repeats in `WAQF_IBTIDA_REGISTRY`.
+  3. *Tier 3 (Universal Tajweed Syntactic & Breath Engine)*: Algorithmic pause detection for any long span ($\ge 6-9$ words without printed stop mark before transition particles like `واذ`, `ثم`, `ان`, `فان`, `قال`, `قالوا`, `ولكن`, `بل`, `لعل`, `وهو`, `فمن`, `الذين`, `كما`).
+- **Minshawi Teacher Mode Dual-Phase Synchronization**:
+  - For Shaykh Al-Minshawi Muallim (`minshawy_teacher` / Reciter 168), the system dynamically synchronizes with both Phase 1 (Ustad / Teacher Minshawi) and Phase 2 (Student choir repetition), indicating active speaker roles (`🎙️ উস্তাদের তিলাওয়াত` vs `🎓 ছাত্রদলের পুনরাবৃত্তি`).
+
 ---
 
 ## 10. Mentor and Dashboard Functionality

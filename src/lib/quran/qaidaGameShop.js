@@ -13,6 +13,15 @@ export const SHOP_NEEDLES = [
     sparkleType: "stars",
   },
   {
+    id: "scissors",
+    nameBn: "রুপালী কেঁচি",
+    icon: "✂️",
+    price: 25,
+    descBn: "ধারালো রুপালী কেঁচি দিয়ে দ্রুত বুদ্বুদ ফুটবে",
+    trailColor: "#38bdf8",
+    sparkleType: "silver",
+  },
+  {
     id: "silver_needle",
     nameBn: "রূপালী সুই",
     icon: "🪡",

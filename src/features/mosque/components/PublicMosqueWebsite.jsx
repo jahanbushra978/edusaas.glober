@@ -145,13 +145,14 @@ export function PublicMosqueWebsite({
         else if (p.name?.includes("এশা")) id = "isha";
         else id = `prayer-${idx}`;
       }
-      return { ...p, id };
+      const isForbidden = Boolean(p.isForbidden || id === "sunrise" || p.name?.includes("সূর্যোদয়"));
+      return { ...p, id, isForbidden };
     });
   }, [schedule]);
 
-  const currentPrayerItem = realtimePrayerState.activePrayer || initialCurrentPrayer || PRAYER_TIMETABLE[2];
-  const nextJamaatDisplay = realtimePrayerState.nextJamaatDisplay || initialNextJamaat || "মাগরিব জামা'আত: ০৫:১৫ PM";
-  const countdownDisplay = realtimePrayerState.countdownDisplay || initialCountdown || "৪৫ মিনিট বাকি";
+  const currentPrayerItem = realtimePrayerState?.activePrayer || initialCurrentPrayer || PRAYER_TIMETABLE[2];
+  const nextJamaatDisplay = realtimePrayerState?.nextJamaatDisplay || initialNextJamaat || (currentPrayerItem ? `${currentPrayerItem.name} জামা'আত: ${currentPrayerItem.jamaat}` : "যোহর জামা'আত: ০১:১৫ PM");
+  const countdownDisplay = realtimePrayerState?.countdownDisplay || initialCountdown || "শীঘ্রই জামা'আত";
 
   const handleTriggerLogin = () => {
     if (onOpenLogin) {
@@ -445,7 +446,9 @@ export function PublicMosqueWebsite({
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-1 text-center">
                 {PRAYER_TIMETABLE.map((p) => {
                   const isCurrent = !p.isForbidden && Boolean(
-                    currentPrayerItem && (p.id === currentPrayerItem.id || p.name === currentPrayerItem.name)
+                    currentPrayerItem &&
+                    ((p.id && currentPrayerItem.id && p.id === currentPrayerItem.id) ||
+                     (p.name && currentPrayerItem.name && p.name === currentPrayerItem.name))
                   );
                   return (
                     <div
@@ -887,7 +890,9 @@ export function PublicMosqueWebsite({
                 <tbody className="divide-y divide-stone-100 dark:divide-emerald-950/80">
                   {PRAYER_TIMETABLE.map((p) => {
                     const isCurrent = !p.isForbidden && Boolean(
-                      currentPrayerItem && (p.id === currentPrayerItem.id || p.name === currentPrayerItem.name)
+                      currentPrayerItem &&
+                      ((p.id && currentPrayerItem.id && p.id === currentPrayerItem.id) ||
+                       (p.name && currentPrayerItem.name && p.name === currentPrayerItem.name))
                     );
                     return (
                       <tr key={p.id} className={isCurrent ? "bg-emerald-50/80 dark:bg-emerald-950/40 font-bold" : ""}>

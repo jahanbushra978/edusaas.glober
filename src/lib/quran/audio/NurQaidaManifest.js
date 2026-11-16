@@ -1891,4 +1891,7 @@ for (const item of NUR_QAIDA_MANIFEST) {
   }
 }
 
+// Canonical 29 Huruf Mufradat (Takhti 1) in Pedagogical Order
+export const QAIDA_TAKHTI_1_LETTERS = NUR_QAIDA_MANIFEST.filter(item => item.lessonId === 1);
+
 export default NUR_QAIDA_MANIFEST;

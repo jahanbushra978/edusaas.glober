@@ -6,13 +6,15 @@
  * with local caching and an intelligent Tajweed-aware fallback engine.
  */
 
+import { WAQF_IBTIDA_REGISTRY, normalizeQuranWord } from "./hafizi-annotations.js";
+
 export const QDC_RECITER_MAP = {
   alafasy: 7, // Mishary Rashid Alafasy
-  husary_muallim: 6, // Mahmoud Khalil Al-Husary
+  husary_muallim: 12, // Mahmoud Khalil Al-Husary (Muallim)
   abdul_basit: 1, // Abdul Basit Abdus Samad
   sudais: 3, // Abdur-Rahman As-Sudais
   ghamadi: 4, // Saad Al-Ghamdi
-  minshawy_teacher: 2, // Mohamed Siddiq Al-Minshawi
+  minshawy_teacher: 168, // Mohamed Siddiq Al-Minshawi (Kids repeat - মুআল্লিম ও ছাত্রদল)
 };
 
 /**
@@ -20,6 +22,12 @@ export const QDC_RECITER_MAP = {
  * (علائم الوقف: ۚ, ۗ, ۖ, ۘ, ۙ, ۜ, ۞, ۩, ۛ etc.)
  */
 export const WAQF_OR_SIGN_REGEX = /^[\u06D6-\u06DC\u06DF-\u06E8\u06EA-\u06ED\u06DE\u06E9\u06DD\uFD3E\uFD3F\s\(\)\[\]\d০-৯0-9\.,:-]+$/;
+
+/**
+ * Regex matching authentic written Quranic Waqf symbols and section marks.
+ * (علائم الوقف المكتوبة في المصحف: ۖ, ۗ, ۘ, ۚ, ۛ, ۜ, قلى, صلى, ج, ط, م, قف, ۞, ۩ ইত্যাদি)
+ */
+export const AUTHENTIC_WAQF_GLYPH_REGEX = /[\u06D6-\u06DC\u06DE\u06E9ۖۗۘۚۛۜ۞۩]|(?:\s|^)(?:قلى|صلى|ج|ط|م|قف)(?:\s|$)/;
 
 /**
  * Split Arabic Quran Ayah text into clean individual words,
@@ -77,7 +85,7 @@ export async function loadChapterSegments(chapterNumber, qariId = "alafasy") {
   }
 
   // Check localStorage if available
-  const storageKey = `rahmania_segments_v2_${reciterId}_${chapterNumber}`;
+  const storageKey = `rahmania_segments_v4_${reciterId}_${chapterNumber}`;
   if (typeof window !== "undefined") {
     try {
       const stored = localStorage.getItem(storageKey);
@@ -99,6 +107,7 @@ export async function loadChapterSegments(chapterNumber, qariId = "alafasy") {
       const data = await res.json();
       const timings = data.audio_files?.[0]?.verse_timings || [];
       const segmentMap = {};
+      const isTeacherMode = qariId === "minshawy_teacher" || reciterId === 168;
 
       timings.forEach((vt) => {
         if (!vt.segments || vt.segments.length === 0) return;
@@ -107,35 +116,44 @@ export async function loadChapterSegments(chapterNumber, qariId = "alafasy") {
         if (validSegments.length === 0) return;
 
         // Detect and remove trailing outro artifact (e.g. abrupt reset to word 1 after verse completion)
-        let maxWord = 0;
-        for (const s of validSegments) {
-          if (s[0] > maxWord) maxWord = s[0];
+        let cleanSegments = validSegments;
+        if (!isTeacherMode) {
+          let maxWord = 0;
+          for (const s of validSegments) {
+            if (s[0] > maxWord) maxWord = s[0];
+          }
+          const lastSeg = validSegments[validSegments.length - 1];
+          cleanSegments = (validSegments.length > 3 && maxWord >= 5 && lastSeg[0] <= 2)
+            ? validSegments.slice(0, -1)
+            : validSegments;
         }
-        const lastSeg = validSegments[validSegments.length - 1];
-        const cleanSegments = (validSegments.length > 3 && maxWord >= 5 && lastSeg[0] <= 2)
-          ? validSegments.slice(0, -1)
-          : validSegments;
 
         const baseOffset = cleanSegments[0][1];
-        // Normalize segment timings relative to the start of this verse audio (0ms)
-        const normalized = cleanSegments.map((seg) => ({
-          wordIndex: Math.max(0, seg[0] - 1),
-          startMs: Math.max(0, seg[1] - baseOffset),
-          endMs: Math.max(0, seg[2] - baseOffset),
-        }));
-        // Detect authentic pause-and-repeat (Waqf & Ibtida) from segment sequence
-        const repeats = [];
+        let currentSpeaker = "ustad";
         let prevWord = 0;
-        for (let i = 0; i < cleanSegments.length; i++) {
-          const currWord = cleanSegments[i][0];
-          if (currWord < prevWord && prevWord > 0) {
+        const repeats = [];
+
+        // Normalize segment timings relative to the start of this verse audio (0ms)
+        const normalized = cleanSegments.map((seg) => {
+          const currWord = seg[0];
+          if (currWord <= prevWord && prevWord > 0) {
+            if (isTeacherMode) {
+              currentSpeaker = currentSpeaker === "ustad" ? "student" : "ustad";
+            }
             repeats.push({
               stopWordIdx: prevWord - 1, // 0-based word index
-              resumeWordIdx: currWord - 1 // 0-based word index
+              resumeWordIdx: currWord - 1, // 0-based word index
             });
           }
           prevWord = currWord;
-        }
+
+          return {
+            wordIndex: Math.max(0, currWord - 1),
+            startMs: Math.max(0, seg[1] - baseOffset),
+            endMs: Math.max(0, seg[2] - baseOffset),
+            speaker: currentSpeaker,
+          };
+        });
 
         segmentMap[vt.verse_key] = normalized;
         if (repeats.length > 0) {
@@ -168,11 +186,9 @@ export function calculateTajweedWordIndex(currentTimeSec, durationSec, words = [
   if (!words || words.length <= 1) return 0;
   if (!durationSec || durationSec <= 0) return 0;
 
-  // Account for typical introductory silence (0.5s) and trailing reverb (0.4s)
-  // Plus human vocalization perceptual lag so highlight never rushes ahead of the voice
-  // ক্বারীর কণ্ঠস্বর রেজিস্ট্রেশনের পরেই হাইলাইট জ্বলে উঠবে, আগে নয়
-  const introSilence = 0.5;
-  const outroSilence = 0.4;
+  // Account for acoustic boundaries with natural micro-offset
+  const introSilence = 0.12;
+  const outroSilence = 0.2;
   const effectiveTime = Math.max(0, currentTimeSec - introSilence);
   const effectiveDuration = Math.max(0.1, durationSec - introSilence - outroSilence);
   const progress = Math.min(0.999, effectiveTime / effectiveDuration);
@@ -227,22 +243,24 @@ export function calculateTajweedWordIndex(currentTimeSec, durationSec, words = [
 }
 
 /**
- * Compute the precise active Arabic word index
+ * Compute the precise active Arabic word index and speaker role
+ * (Distinguishes between Ustad and Student repetitions in Teacher recitations)
  */
-export function getActiveArabicWordIndex({
+export function getActiveArabicWordDetails({
   currentTime,
   duration,
   surahNumber,
   ayahNumber,
-  qariId,
+  qariId = "alafasy",
   words = [],
 }) {
-  if (!words || words.length === 0) return 0;
-  if (!duration || duration <= 0) return 0;
+  const isTeacherMode = qariId === "minshawy_teacher";
+  if (!words || words.length === 0) return { wordIndex: 0, speaker: "ustad", isTeacherMode };
+  if (!duration || duration <= 0) return { wordIndex: 0, speaker: "ustad", isTeacherMode };
 
   const cleanWords = splitArabicAyahWords(words);
   const totalWords = cleanWords.length || (Array.isArray(words) ? words.length : 1);
-  if (totalWords <= 1) return 0;
+  if (totalWords <= 1) return { wordIndex: 0, speaker: "ustad", isTeacherMode };
 
   const reciterId = QDC_RECITER_MAP[qariId] || 7;
   const cacheKey = `${reciterId}:${surahNumber}`;
@@ -251,7 +269,7 @@ export function getActiveArabicWordIndex({
   // Fast synchronous hydrate from localStorage if in-memory cache is cold
   if (!segmentsMap && typeof window !== "undefined") {
     try {
-      const storageKey = `rahmania_segments_v2_${reciterId}_${surahNumber}`;
+      const storageKey = `rahmania_segments_v4_${reciterId}_${surahNumber}`;
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         segmentsMap = JSON.parse(stored);
@@ -280,34 +298,58 @@ export function getActiveArabicWordIndex({
         : 1.0;
       const scale = Math.min(1.8, Math.max(0.6, rawScale));
 
-      // Compensate for perceptual vocalization lag (~400ms):
-      // শব্দ শুনতে পাওয়ার সাথে সাথে হাইলাইট জ্বলে উঠবে, আগে নয়।
-      // 200ms ছিল অপর্যাপ্ত — 400ms এখন সঠিক।
-      const currentMs = Math.max(0, (currentTime * 1000) - 400);
+      // Synchronize directly with millisecond-accurate QuranCDN segment boundaries (0ms lag)
+      const currentMs = Math.max(0, currentTime * 1000);
 
-      // Find which segment the current time falls within
+      // If currentMs is before the very first segment, stay on the first segment
+      if (currentMs < rawSegments[0].startMs * scale) {
+        return {
+          wordIndex: Math.min(rawSegments[0].wordIndex, totalWords - 1),
+          speaker: rawSegments[0].speaker || "ustad",
+          isTeacherMode,
+        };
+      }
+
+      // Find which segment currentMs belongs to.
+      // Crucial: A word remains smoothly highlighted through acoustic pauses until the NEXT word begins.
       for (let i = 0; i < rawSegments.length; i++) {
         const seg = rawSegments[i];
         const segStart = seg.startMs * scale;
-        const segEnd = seg.endMs * scale;
+        const nextSeg = rawSegments[i + 1];
+        const segEnd = nextSeg ? nextSeg.startMs * scale : (seg.endMs * scale);
 
         if (currentMs >= segStart && currentMs < segEnd) {
-          return Math.min(seg.wordIndex, totalWords - 1);
+          return {
+            wordIndex: Math.min(seg.wordIndex, totalWords - 1),
+            speaker: seg.speaker || "ustad",
+            isTeacherMode,
+          };
         }
       }
 
-      // If currentMs is before the very first segment, stay on word 0
-      if (currentMs < rawSegments[0].startMs * scale) {
-        return 0;
-      }
-
-      // If past the last segment, hold on the last word until playback ends
-      return totalWords - 1;
+      // If past the last segment, hold on the last segment until playback completes
+      const lastSeg = rawSegments[rawSegments.length - 1];
+      return {
+        wordIndex: Math.min(lastSeg.wordIndex, totalWords - 1),
+        speaker: lastSeg.speaker || "ustad",
+        isTeacherMode,
+      };
     }
   }
 
   // Fallback to Tajweed acoustic pacing with waqf breath pauses
-  return calculateTajweedWordIndex(currentTime, duration, cleanWords);
+  return {
+    wordIndex: calculateTajweedWordIndex(currentTime, duration, cleanWords),
+    speaker: "ustad",
+    isTeacherMode,
+  };
+}
+
+/**
+ * Compute the precise active Arabic word index (backward-compatible wrapper)
+ */
+export function getActiveArabicWordIndex(args) {
+  return getActiveArabicWordDetails(args).wordIndex;
 }
 
 /**
@@ -365,7 +407,7 @@ export function getWordStartTimeSec({
 
   if (!segmentsMap && typeof window !== "undefined") {
     try {
-      const storageKey = `rahmania_segments_v2_${reciterId}_${surahNumber}`;
+      const storageKey = `rahmania_segments_v4_${reciterId}_${surahNumber}`;
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         segmentsMap = JSON.parse(stored);
@@ -405,7 +447,7 @@ export function getVerseRepeats(surahNumber, ayahNumber, qariId = "alafasy") {
 
   if (!segmentsMap && typeof window !== "undefined") {
     try {
-      const storageKey = `rahmania_segments_v2_${reciterId}_${surahNumber}`;
+      const storageKey = `rahmania_segments_v4_${reciterId}_${surahNumber}`;
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         segmentsMap = JSON.parse(stored);
@@ -419,5 +461,66 @@ export function getVerseRepeats(surahNumber, ayahNumber, qariId = "alafasy") {
     return segmentsMap[`${verseKey}_repeats`];
   }
   return [];
+}
+
+/**
+ * Universal Waqf & Ibtida Calculation Engine for ALL 114 Surahs and 6,236 Ayahs.
+ * Priority 1: Exact audio segment repeats from QuranCDN for the active Qari
+ * Priority 2: Canonical verified scholarly registry (WAQF_IBTIDA_REGISTRY)
+ * Priority 3: Algorithmic Tajweed breath pause and syntactic resume engine across any long span
+ */
+export function getUniversalAyahRepeats(surahNumber, ayahNumber, words = [], qariId = "minshawy_teacher") {
+  const cleanWords = Array.isArray(words) ? words : splitArabicAyahWords(words);
+
+  // 1. Dynamic audio repeats for the active Qari
+  const dynamic = getVerseRepeats(surahNumber, ayahNumber, qariId);
+  if (dynamic && dynamic.length > 0) {
+    return dynamic.map((d) => ({
+      ...d,
+      stopAfterWord: d.stopAfterWord || cleanWords[d.stopWordIdx] || "",
+      resumeAtWord: d.resumeAtWord || cleanWords[d.resumeWordIdx] || "",
+    }));
+  }
+
+  // 2. Canonical verified registry
+  const key = `${surahNumber}-${ayahNumber}`;
+  if (WAQF_IBTIDA_REGISTRY[key] && WAQF_IBTIDA_REGISTRY[key].length > 0) {
+    return WAQF_IBTIDA_REGISTRY[key];
+  }
+
+  // 3. Universal Quranic breath pause engine for any verse in all 114 Surahs
+  if (!cleanWords || cleanWords.length < 8) return [];
+
+  const repeats = [];
+  let lastPauseIdx = 0;
+
+  for (let i = 0; i < cleanWords.length; i++) {
+    const w = cleanWords[i];
+    const hasWrittenWaqf = AUTHENTIC_WAQF_GLYPH_REGEX.test(w);
+
+    if (hasWrittenWaqf) {
+      lastPauseIdx = i;
+    } else {
+      const spanLen = i - lastPauseIdx;
+      if (spanLen >= 6 && i <= cleanWords.length - 2) {
+        const nextWord = cleanWords[i + 1] || "";
+        const wNorm = normalizeQuranWord(nextWord);
+        const isTransitionParticle = /^(واذ|ثم|فان|كما|ان|لعل|بل|حتي|ولكن|فاذا|وهو|وان|فمن|الذين|قال|قالوا|الا|فلما|واذا)$/.test(wNorm);
+
+        if (isTransitionParticle || spanLen >= 9) {
+          repeats.push({
+            stopWordIdx: i,
+            stopAfterWord: cleanWords[i],
+            resumeWordIdx: Math.max(0, i - 1),
+            resumeAtWord: cleanWords[Math.max(0, i - 1)],
+            isAlgorithmic: true,
+          });
+          lastPauseIdx = i;
+        }
+      }
+    }
+  }
+
+  return repeats;
 }
 

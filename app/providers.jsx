@@ -16,21 +16,37 @@ const SonnerToaster = dynamic(() => import('sonner').then(m => ({ default: m.Toa
 const AIChatLauncher = dynamic(() => import('@/features/ai/components/AIChatLauncher'), { ssr: false })
 
 // 🛡️ Safeguard against Google Chrome Translate / Browser Extensions crashing React DOM reconciliation
-if (typeof window !== 'undefined' && typeof Node !== 'undefined' && Node.prototype) {
-  const originalRemoveChild = Node.prototype.removeChild;
-  Node.prototype.removeChild = function (child) {
-    if (child && child.parentNode !== this) {
-      return child;
-    }
-    return originalRemoveChild.apply(this, arguments);
-  };
+if (typeof window !== 'undefined') {
+  if (typeof Node !== 'undefined' && Node.prototype) {
+    const originalRemoveChild = Node.prototype.removeChild;
+    Node.prototype.removeChild = function (child) {
+      if (child && child.parentNode !== this) {
+        return child;
+      }
+      return originalRemoveChild.apply(this, arguments);
+    };
 
-  const originalInsertBefore = Node.prototype.insertBefore;
-  Node.prototype.insertBefore = function (newNode, referenceNode) {
-    if (referenceNode && referenceNode.parentNode !== this) {
-      return newNode;
+    const originalInsertBefore = Node.prototype.insertBefore;
+    Node.prototype.insertBefore = function (newNode, referenceNode) {
+      if (referenceNode && referenceNode.parentNode !== this) {
+        return newNode;
+      }
+      return originalInsertBefore.apply(this, arguments);
+    };
+  }
+
+  // Filter third-party browser extension attribute hydration warnings from Next.js dev overlay
+  const originalConsoleError = console.error;
+  console.error = function (...args) {
+    const msg = typeof args[0] === 'string' ? args[0] : '';
+    if (
+      msg.includes('fdprocessedid') ||
+      msg.includes('bis_skin_checked') ||
+      (msg.includes('hydration') && msg.includes('fdprocessedid'))
+    ) {
+      return;
     }
-    return originalInsertBefore.apply(this, arguments);
+    return originalConsoleError.apply(console, args);
   };
 }
 

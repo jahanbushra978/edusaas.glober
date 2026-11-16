@@ -11,8 +11,10 @@ const PageLoader = () => (
 
 export default function SiteLayout({ children }) {
   return (
-    <Suspense fallback={<PageLoader />}>
-      <Layout>{children}</Layout>
-    </Suspense>
+    <Layout>
+      <Suspense fallback={<PageLoader />}>
+        {children}
+      </Suspense>
+    </Layout>
   )
 }

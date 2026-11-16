@@ -48,11 +48,11 @@ export default function SaaSHeroSection({ onOpenWebsiteForm, onOpenMsgModal }) {
 
             {/* ── Main Headline ── */}
             <div className="space-y-1">
-              <div className="overflow-hidden">
+              <div>
                 <motion.h1
-                  initial={{ y: "105%", opacity: 0 }}
-                  animate={{ y: "0%", opacity: 1 }}
-                  transition={{ delay: 0.15, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+                  initial={{ opacity: 0.9, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35 }}
                   className="text-[1.8rem] xs:text-[2.1rem] sm:text-[3.3rem] lg:text-[3.9rem] xl:text-[4.4rem] font-black text-white leading-[1.18] sm:leading-[1.12] tracking-tight font-bengali break-words"
                   style={{ fontFamily: "var(--font-hind-siliguri), 'Hind Siliguri', sans-serif" }}
                 >
@@ -60,11 +60,11 @@ export default function SaaSHeroSection({ onOpenWebsiteForm, onOpenMsgModal }) {
                 </motion.h1>
               </div>
 
-              <div className="overflow-hidden">
+              <div>
                 <motion.h1
-                  initial={{ y: "105%", opacity: 0 }}
-                  animate={{ y: "0%", opacity: 1 }}
-                  transition={{ delay: 0.25, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+                  initial={{ opacity: 0.9, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: 0.08 }}
                   className="text-[1.8rem] xs:text-[2.1rem] sm:text-[3.3rem] lg:text-[3.9rem] xl:text-[4.4rem] font-black text-white leading-[1.18] sm:leading-[1.12] tracking-tight font-bengali break-words"
                   style={{ fontFamily: "var(--font-hind-siliguri), 'Hind Siliguri', sans-serif" }}
                 >
@@ -72,11 +72,11 @@ export default function SaaSHeroSection({ onOpenWebsiteForm, onOpenMsgModal }) {
                 </motion.h1>
               </div>
 
-              <div className="overflow-hidden pt-1">
+              <div className="pt-1">
                 <motion.div
-                  initial={{ y: "105%", opacity: 0 }}
-                  animate={{ y: "0%", opacity: 1 }}
-                  transition={{ delay: 0.35, duration: 0.65, ease: [0.22, 1, 0.36, 1] }}
+                  initial={{ opacity: 0.9, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.35, delay: 0.16 }}
                 >
                   <h1
                     className="text-[1.8rem] xs:text-[2.1rem] sm:text-[3.3rem] lg:text-[3.9rem] xl:text-[4.4rem] font-black leading-[1.18] sm:leading-[1.12] tracking-tight font-bengali break-words"
