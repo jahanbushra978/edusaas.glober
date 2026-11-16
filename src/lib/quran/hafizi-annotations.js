@@ -2711,11 +2711,11 @@ export const WAQF_IBTIDA_REGISTRY = {
   ],
   "2-23": [
     {
-      "stopWordIdx": 9,
-      "stopAfterWord": "بِسُورَةٍ",
+      "stopWordIdx": 11,
+      "stopAfterWord": "مِّثْلِهِ",
       "resumeWordIdx": 8,
       "resumeAtWord": "فَأْتُوا",
-      "note": "শায়েখের দম ফেলার বিরতি: بِسُورَةٍۢ (★) • ২য় বার শুরু: فَأْتُوا۟ (✓)"
+      "note": "শায়েখের দম ফেলার বিরতি: مِّثْلِهِۦ (★) • ২য় বার শুরু: فَأْتُوا۟ (✓)"
     }
   ],
   "2-30": [

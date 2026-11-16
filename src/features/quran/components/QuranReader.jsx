@@ -1558,14 +1558,16 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                         const wordHasQuranicWaqfSign = AUTHENTIC_WAQF_GLYPH_REGEX.test(word);
 
                         const explicitWaqfStop = activeRepeats.find((r) =>
-                          (r.stopWordIdx !== undefined && r.stopWordIdx === wIdx) ||
-                          (r.stopAfterWord && normalizeQuranWord(r.stopAfterWord) === normWord)
+                          r.stopWordIdx !== undefined
+                            ? r.stopWordIdx === wIdx
+                            : Boolean(r.stopAfterWord && normalizeQuranWord(r.stopAfterWord) === normWord)
                         );
                         const isWaqfStop = !wordHasQuranicWaqfSign && Boolean(explicitWaqfStop);
 
                         const explicitWaqfResume = activeRepeats.find((r) =>
-                          (r.resumeWordIdx !== undefined && r.resumeWordIdx === wIdx) ||
-                          (r.resumeAtWord && normalizeQuranWord(r.resumeAtWord) === normWord)
+                          r.resumeWordIdx !== undefined
+                            ? r.resumeWordIdx === wIdx
+                            : Boolean(r.resumeAtWord && normalizeQuranWord(r.resumeAtWord) === normWord)
                         );
                         const isIbtidaResume = wIdx > 0 && !wordHasQuranicWaqfSign && !isWaqfStop && Boolean(explicitWaqfResume);
 

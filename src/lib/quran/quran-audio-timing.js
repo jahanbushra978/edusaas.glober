@@ -13,7 +13,6 @@ export const QDC_RECITER_MAP = {
   husary_muallim: 12, // Mahmoud Khalil Al-Husary (Muallim)
   abdul_basit: 1, // Abdul Basit Abdus Samad
   sudais: 3, // Abdur-Rahman As-Sudais
-  ghamadi: 4, // Saad Al-Ghamdi
   minshawy_teacher: 168, // Mohamed Siddiq Al-Minshawi (Kids repeat - মুআল্লিম ও ছাত্রদল)
 };
 
@@ -77,7 +76,12 @@ const chapterSegmentsCache = new Map();
  * Fetch and cache millisecond segments for an entire chapter/surah
  */
 export async function loadChapterSegments(chapterNumber, qariId = "alafasy") {
-  const reciterId = QDC_RECITER_MAP[qariId] || 7;
+  const reciterId = QDC_RECITER_MAP[qariId];
+  if (!reciterId) {
+    // This reciter (e.g. Saad Al-Ghamdi) does not have QuranCDN segment maps.
+    // Return null so the system uses the Tajweed acoustic fallback engine smoothly.
+    return null;
+  }
   const cacheKey = `${reciterId}:${chapterNumber}`;
 
   if (chapterSegmentsCache.has(cacheKey)) {
@@ -85,7 +89,7 @@ export async function loadChapterSegments(chapterNumber, qariId = "alafasy") {
   }
 
   // Check localStorage if available
-  const storageKey = `rahmania_segments_v4_${reciterId}_${chapterNumber}`;
+  const storageKey = `rahmania_segments_v5_${reciterId}_${chapterNumber}`;
   if (typeof window !== "undefined") {
     try {
       const stored = localStorage.getItem(storageKey);
@@ -136,7 +140,9 @@ export async function loadChapterSegments(chapterNumber, qariId = "alafasy") {
         // Normalize segment timings relative to the start of this verse audio (0ms)
         const normalized = cleanSegments.map((seg) => {
           const currWord = seg[0];
-          if (currWord <= prevWord && prevWord > 0) {
+          // Authentic repeat occurs ONLY when Qari steps BACKWARDS in the verse (currWord < prevWord).
+          // If currWord === prevWord, it is simply a multi-part segment of the same word (e.g. Madd elongation), NOT a repeat!
+          if (currWord < prevWord && prevWord > 0) {
             if (isTeacherMode) {
               currentSpeaker = currentSpeaker === "ustad" ? "student" : "ustad";
             }
@@ -156,8 +162,11 @@ export async function loadChapterSegments(chapterNumber, qariId = "alafasy") {
         });
 
         segmentMap[vt.verse_key] = normalized;
-        if (repeats.length > 0) {
-          segmentMap[`${vt.verse_key}_repeats`] = repeats;
+        const validRepeats = repeats.filter(
+          (r) => r.stopWordIdx > r.resumeWordIdx && r.stopWordIdx >= 0 && r.resumeWordIdx >= 0
+        );
+        if (validRepeats.length > 0) {
+          segmentMap[`${vt.verse_key}_repeats`] = validRepeats;
         }
       });
 
@@ -262,14 +271,24 @@ export function getActiveArabicWordDetails({
   const totalWords = cleanWords.length || (Array.isArray(words) ? words.length : 1);
   if (totalWords <= 1) return { wordIndex: 0, speaker: "ustad", isTeacherMode };
 
-  const reciterId = QDC_RECITER_MAP[qariId] || 7;
+  const reciterId = QDC_RECITER_MAP[qariId];
+  if (!reciterId) {
+    // Reciters without QuranCDN segment maps (e.g. Saad Al-Ghamdi)
+    // Synchronize smoothly using Tajweed acoustic pacing against actual EveryAyah audio duration
+    return {
+      wordIndex: calculateTajweedWordIndex(currentTime, duration, cleanWords),
+      speaker: "ustad",
+      isTeacherMode,
+    };
+  }
+
   const cacheKey = `${reciterId}:${surahNumber}`;
   let segmentsMap = chapterSegmentsCache.get(cacheKey);
 
   // Fast synchronous hydrate from localStorage if in-memory cache is cold
   if (!segmentsMap && typeof window !== "undefined") {
     try {
-      const storageKey = `rahmania_segments_v4_${reciterId}_${surahNumber}`;
+      const storageKey = `rahmania_segments_v5_${reciterId}_${surahNumber}`;
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         segmentsMap = JSON.parse(stored);
@@ -401,13 +420,17 @@ export function getWordStartTimeSec({
   const totalWords = cleanWords.length || 1;
   const targetIdx = Math.min(wordIndex, totalWords - 1);
 
-  const reciterId = QDC_RECITER_MAP[qariId] || 7;
+  const reciterId = QDC_RECITER_MAP[qariId];
+  if (!reciterId) {
+    return calculateTajweedWordStartTime(targetIdx, duration, cleanWords);
+  }
+
   const cacheKey = `${reciterId}:${surahNumber}`;
   let segmentsMap = chapterSegmentsCache.get(cacheKey);
 
   if (!segmentsMap && typeof window !== "undefined") {
     try {
-      const storageKey = `rahmania_segments_v4_${reciterId}_${surahNumber}`;
+      const storageKey = `rahmania_segments_v5_${reciterId}_${surahNumber}`;
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         segmentsMap = JSON.parse(stored);
@@ -441,13 +464,17 @@ export function getWordStartTimeSec({
  * computed dynamically from millisecond audio segments across all 114 Surahs
  */
 export function getVerseRepeats(surahNumber, ayahNumber, qariId = "alafasy") {
-  const reciterId = QDC_RECITER_MAP[qariId] || 7;
+  const reciterId = QDC_RECITER_MAP[qariId];
+  if (!reciterId) {
+    return [];
+  }
+
   const cacheKey = `${reciterId}:${surahNumber}`;
   let segmentsMap = chapterSegmentsCache.get(cacheKey);
 
   if (!segmentsMap && typeof window !== "undefined") {
     try {
-      const storageKey = `rahmania_segments_v4_${reciterId}_${surahNumber}`;
+      const storageKey = `rahmania_segments_v5_${reciterId}_${surahNumber}`;
       const stored = localStorage.getItem(storageKey);
       if (stored) {
         segmentsMap = JSON.parse(stored);
@@ -471,25 +498,48 @@ export function getVerseRepeats(surahNumber, ayahNumber, qariId = "alafasy") {
  */
 export function getUniversalAyahRepeats(surahNumber, ayahNumber, words = [], qariId = "minshawy_teacher") {
   const cleanWords = Array.isArray(words) ? words : splitArabicAyahWords(words);
+  if (!cleanWords || cleanWords.length === 0) return [];
 
   // 1. Dynamic audio repeats for the active Qari
   const dynamic = getVerseRepeats(surahNumber, ayahNumber, qariId);
   if (dynamic && dynamic.length > 0) {
-    return dynamic.map((d) => ({
-      ...d,
-      stopAfterWord: d.stopAfterWord || cleanWords[d.stopWordIdx] || "",
-      resumeAtWord: d.resumeAtWord || cleanWords[d.resumeWordIdx] || "",
-    }));
+    const validDynamic = dynamic.filter(
+      (d) =>
+        d.stopWordIdx !== d.resumeWordIdx &&
+        d.stopWordIdx >= 0 &&
+        d.stopWordIdx < cleanWords.length &&
+        d.resumeWordIdx >= 0 &&
+        d.resumeWordIdx < cleanWords.length &&
+        !AUTHENTIC_WAQF_GLYPH_REGEX.test(cleanWords[d.stopWordIdx] || "")
+    );
+    if (validDynamic.length > 0) {
+      return validDynamic.map((d) => ({
+        ...d,
+        stopAfterWord: d.stopAfterWord || cleanWords[d.stopWordIdx] || "",
+        resumeAtWord: d.resumeAtWord || cleanWords[d.resumeWordIdx] || "",
+      }));
+    }
   }
 
   // 2. Canonical verified registry
   const key = `${surahNumber}-${ayahNumber}`;
   if (WAQF_IBTIDA_REGISTRY[key] && WAQF_IBTIDA_REGISTRY[key].length > 0) {
-    return WAQF_IBTIDA_REGISTRY[key];
+    const filteredRegistry = WAQF_IBTIDA_REGISTRY[key].filter((entry) => {
+      const stopWord = cleanWords[entry.stopWordIdx] || entry.stopAfterWord || "";
+      return !AUTHENTIC_WAQF_GLYPH_REGEX.test(stopWord);
+    });
+    if (filteredRegistry.length > 0) {
+      return filteredRegistry;
+    }
   }
 
-  // 3. Universal Quranic breath pause engine for any verse in all 114 Surahs
-  if (!cleanWords || cleanWords.length < 8) return [];
+  // 3. Universal Quranic breath pause engine for any long verse across all 114 Surahs
+  // Rules:
+  // - Verse must be long (cleanWords.length >= 14)
+  // - Breath span between pauses >= 7 words before a grammatical transition particle, or >= 11 words
+  // - No printed stop signs on current word, next word, or next 2 words
+  // - At least 3 words away from end of Ayah
+  if (!cleanWords || cleanWords.length < 14) return [];
 
   const repeats = [];
   let lastPauseIdx = 0;
@@ -502,12 +552,19 @@ export function getUniversalAyahRepeats(surahNumber, ayahNumber, words = [], qar
       lastPauseIdx = i;
     } else {
       const spanLen = i - lastPauseIdx;
-      if (spanLen >= 6 && i <= cleanWords.length - 2) {
+      if (spanLen >= 7 && i <= cleanWords.length - 3) {
+        // If upcoming words already have a printed Waqf mark, let Qari pause on that instead
+        const next1HasWaqf = AUTHENTIC_WAQF_GLYPH_REGEX.test(cleanWords[i + 1] || "");
+        const next2HasWaqf = AUTHENTIC_WAQF_GLYPH_REGEX.test(cleanWords[i + 2] || "");
+        if (next1HasWaqf || next2HasWaqf) {
+          continue;
+        }
+
         const nextWord = cleanWords[i + 1] || "";
         const wNorm = normalizeQuranWord(nextWord);
         const isTransitionParticle = /^(واذ|ثم|فان|كما|ان|لعل|بل|حتي|ولكن|فاذا|وهو|وان|فمن|الذين|قال|قالوا|الا|فلما|واذا)$/.test(wNorm);
 
-        if (isTransitionParticle || spanLen >= 9) {
+        if (isTransitionParticle || spanLen >= 11) {
           repeats.push({
             stopWordIdx: i,
             stopAfterWord: cleanWords[i],

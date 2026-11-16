@@ -1,4 +1,5 @@
-import StudioClient from "./StudioClient";
+import { Suspense } from "react";
+import QuranStudioPage from "@/features/site/pages/QuranStudioPage";
 
 export const metadata = {
   title: "নূর কুরআন লার্নিং স্টুডিও — ইন্টারেক্টিভ কুরআন শিক্ষক | Edusaas",
@@ -7,5 +8,15 @@ export const metadata = {
 };
 
 export default function StudioRoute() {
-  return <StudioClient />;
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-[#F4F9F5] flex items-center justify-center">
+          <div className="w-8 h-8 border-4 border-emerald-300 border-t-emerald-700 rounded-full animate-spin" />
+        </div>
+      }
+    >
+      <QuranStudioPage />
+    </Suspense>
+  );
 }

@@ -7,6 +7,13 @@ export const metadata = {
   robots: { index: true, follow: true },
 };
 
-export default function NoorQaidaPage() {
-  return <NoorQaidaBook />;
+export default async function NoorQaidaPage({ searchParams }) {
+  const sp = await searchParams;
+  const initialClass = sp?.class
+    ? sp.class === "cover" || sp.class === "rules"
+      ? sp.class
+      : parseInt(sp.class, 10) || 1
+    : "cover";
+
+  return <NoorQaidaBook initialClass={initialClass} />;
 }
