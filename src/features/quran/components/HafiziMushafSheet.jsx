@@ -30,6 +30,10 @@ import {
 } from "@/lib/quran/quran-audio-timing";
 import { useBanglaAudioEngine, BANGLA_VOICE_ENGINES } from "@/lib/quran/bangla-audio-engine";
 import { QARI_REGISTRY } from "@/lib/ai/qari-registry";
+import AyahActionDrawer from "./AyahActionDrawer";
+import AyahTafsirModal from "./AyahTafsirModal";
+import AyahShareCardModal from "./AyahShareCardModal";
+import { getAyahTranslationBundle } from "@/lib/quran/quran-translations";
 
 // Canonical Arabic normalizer for 100% accurate Mutashabihat and Waqf matching
 function cleanArabic(str) {
@@ -54,10 +58,19 @@ export default function HafiziMushafSheet({
   selectedQari = "minshawy_teacher",
   onSelectQari,
   onOpenSearch,
+  onLaunchNurEngine,
+  onSwitchViewMode,
+  bookmarks = [],
+  onToggleBookmark,
 }) {
   const isDay = readerTheme === "day";
   const [pageLoading, setPageLoading] = useState(true);
   const [pageAyahs, setPageAyahs] = useState([]);
+  const [selectedAyahForDrawer, setSelectedAyahForDrawer] = useState(null);
+  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const [isTafsirModalOpen, setIsTafsirModalOpen] = useState(false);
+  const [isShareCardModalOpen, setIsShareCardModalOpen] = useState(false);
+  const [selectedAyahBundle, setSelectedAyahBundle] = useState(null);
   const [qariSegmentsVersion, setQariSegmentsVersion] = useState(0);
   const [jumpInput, setJumpInput] = useState(String(pageNum));
   const [isParaDropdownOpen, setIsParaDropdownOpen] = useState(false);
@@ -96,6 +109,16 @@ export default function HafiziMushafSheet({
     }
     toast.success(`পূর্বের পাঠ পৃষ্ঠা ${toBn(prev)}-এ ফিরে আসা হয়েছে`);
   };
+
+  // Open Ayah Action Drawer with Taqi Usmani (default) and Muhiuddin Khan translations
+  const handleAyahSelect = (ayah) => {
+    if (!ayah) return;
+    const bundle = getAyahTranslationBundle(ayah.surahId, ayah.numberInSurah, ayah);
+    setSelectedAyahBundle(bundle);
+    setSelectedAyahForDrawer(ayah);
+    setIsDrawerOpen(true);
+  };
+
   const [showMobileMargins, setShowMobileMargins] = useState(false);
   const pageContainerRef = useRef(null);
 
@@ -407,10 +430,48 @@ export default function HafiziMushafSheet({
         </div>
       )}
 
-      {/* ── THE 15-LINE HAFIZI QURAN PAGE SHEET (SCREENSHOT AUTHENTIC FRAME) ── */}
-      <div className="w-full max-w-4xl flex items-start justify-center">
+      {/* ── THE 15-LINE HAFIZI QURAN PAGE SHEET (SCREENSHOT AUTHENTIC FRAME) WITH LEFT & RIGHT HASHIA ── */}
+      <div className="w-full max-w-6xl flex items-start justify-center gap-2 xl:gap-4 relative px-1">
+        {/* 📜 বাম পাশের হাশিয়া (LEFT HASHIA MARGIN) */}
+        {leftMarginRefs && leftMarginRefs.length > 0 && (
+          <div className="hidden lg:flex flex-col w-28 xl:w-36 shrink-0 py-6 space-y-2 sticky top-16 select-none text-right">
+            <div className={`text-[10px] font-black uppercase tracking-wider pb-1 border-b flex items-center justify-end gap-1 ${
+              isDay ? "text-amber-800 border-amber-300" : "text-amber-400 border-amber-500/30"
+            }`}>
+              <span>📜 বাম হাশিয়া</span>
+            </div>
+            {leftMarginRefs.map((ref, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={(e) => handleJumpToMutashabiha(ref.page, e)}
+                className={`p-2 rounded-xl border text-[11px] font-bold text-right transition cursor-pointer active:scale-95 shadow-xs flex flex-col items-end ${
+                  isDay
+                    ? "bg-amber-100/70 hover:bg-amber-200 border-amber-300 text-stone-900"
+                    : "bg-[#061c16]/80 hover:bg-[#092920] border-teal-500/30 text-emerald-200 hover:text-white"
+                }`}
+                title={`পারা ${toBn(ref.para)}, পৃষ্ঠা ${toBn(ref.page)}-এ যান`}
+              >
+                <div className="flex items-center gap-1 text-amber-500 dark:text-amber-400 font-black">
+                  <span>[{toBn(ref.refNo || (idx + 1))}]</span>
+                  <span>পারা {toBn(ref.para)}</span>
+                </div>
+                <span className="text-[10px] opacity-80">
+                  পৃষ্ঠা {toBn(ref.page)}
+                </span>
+                {ref.note && (
+                  <span className="text-[9px] text-teal-400/90 truncate max-w-full">
+                    {ref.note}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* সেন্টারে মূল ১৫-লাইন হাফেজী কুরআন ফ্রেম */}
         <div
-          className={`w-full rounded-2xl sm:rounded-3xl border-2 sm:border-4 transition-all duration-300 shadow-2xl overflow-hidden relative ${
+          className={`flex-1 max-w-4xl rounded-2xl sm:rounded-3xl border-2 sm:border-4 transition-all duration-300 shadow-2xl overflow-hidden relative ${
             isDay
               ? "bg-[#FAF7F2] border-stone-800 shadow-amber-950/10 text-stone-900"
               : "bg-[#06140e] border-amber-500/80 shadow-emerald-950/40 text-slate-100"
@@ -810,19 +871,26 @@ export default function HafiziMushafSheet({
                           }
                         });
 
+                        const isThisAyahSelected =
+                          selectedAyahForDrawer &&
+                          selectedAyahForDrawer.numberInSurah === ayah.numberInSurah &&
+                          selectedAyahForDrawer.surahId === ayah.surahId;
+
                         return (
                           <span
                             key={`${ayah.surahId}-${ayah.numberInSurah}`}
                             id={`mushaf-ayah-${ayah.surahId}-${ayah.numberInSurah}`}
-                            onClick={() => onPlayAyah && onPlayAyah(ayah.numberInSurah, ayah.surahId, null, ayah.words, 0)}
+                            onClick={() => handleAyahSelect(ayah)}
                             className={`inline cursor-pointer select-text transition-all duration-300 rounded-md ${
                               isTargetJump
                                 ? "bg-amber-400/30 text-amber-200 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)] px-1.5 py-0.5 animate-pulse"
                                 : isThisAyahActive
-                                ? "bg-emerald-500/15 rounded-md px-1 py-0.5"
+                                ? "bg-emerald-500/15 ring-1 ring-emerald-400/50 rounded-md px-1 py-0.5"
+                                : isThisAyahSelected
+                                ? "bg-teal-500/15 ring-2 ring-teal-400/60 rounded-md px-1 py-0.5"
                                 : ""
                             }`}
-                            title={`সূরা ${ayah.surahNameBn}, আয়াত ${toBn(ayah.numberInSurah)} শুনতে ক্লিক করুন`}
+                            title={`সূরা ${ayah.surahNameBn}, আয়াত ${toBn(ayah.numberInSurah)} — অনুবাদ ও অ্যাকশন ড্রয়ার দেখতে ক্লিক করুন`}
                           >
                             {ayah.words.map((word, wIdx) => {
                               const isThisWordActive =
@@ -859,12 +927,10 @@ export default function HafiziMushafSheet({
                                   key={wIdx}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    if (onPlayAyah) {
-                                      onPlayAyah(ayah.numberInSurah, ayah.surahId, null, ayah.words, 0);
-                                    }
+                                    handleAyahSelect(ayah);
                                   }}
                                   className="inline-block relative cursor-pointer group"
-                                  title={`শব্দ: ${word} (ক্লিক করে আয়াত শুনুন)`}
+                                  title={`শব্দ: ${word} (ক্লিক করে আয়াত ও অনুবাদ পপআপ দেখুন)`}
                                 >
                                   {/* ১. মুতাশাবিহাত শুরুর চিহ্ন: [১] সিরিয়াল নম্বর ও প্রারম্ভিক কোণ ব্র্যাকেট ┌ */}
                                   {isMutashabihatStart && (
@@ -1117,7 +1183,88 @@ export default function HafiziMushafSheet({
           </div>
         </div>
       </div>
+
+      {/* 📜 ডান পাশের হাশিয়া (RIGHT HASHIA MARGIN) */}
+      {rightMarginRefs && rightMarginRefs.length > 0 && (
+        <div className="hidden lg:flex flex-col w-28 xl:w-36 shrink-0 py-6 space-y-2 sticky top-16 select-none text-left">
+          <div className={`text-[10px] font-black uppercase tracking-wider pb-1 border-b flex items-center gap-1 ${
+            isDay ? "text-amber-800 border-amber-300" : "text-amber-400 border-amber-500/30"
+          }`}>
+            <span>ডান হাশিয়া 📜</span>
+          </div>
+          {rightMarginRefs.map((ref, idx) => (
+            <button
+              key={idx}
+              type="button"
+              onClick={(e) => handleJumpToMutashabiha(ref.page, e)}
+              className={`p-2 rounded-xl border text-[11px] font-bold text-left transition cursor-pointer active:scale-95 shadow-xs flex flex-col items-start ${
+                isDay
+                  ? "bg-amber-100/70 hover:bg-amber-200 border-amber-300 text-stone-900"
+                  : "bg-[#061c16]/80 hover:bg-[#092920] border-teal-500/30 text-emerald-200 hover:text-white"
+              }`}
+              title={`পারা ${toBn(ref.para)}, পৃষ্ঠা ${toBn(ref.page)}-এ যান`}
+            >
+              <div className="flex items-center gap-1 text-amber-500 dark:text-amber-400 font-black">
+                <span>[{toBn(ref.refNo || (idx + Math.ceil(allMarginRefs.length / 2) + 1))}]</span>
+                <span>পারা {toBn(ref.para)}</span>
+              </div>
+              <span className="text-[10px] opacity-80">
+                পৃষ্ঠা {toBn(ref.page)}
+              </span>
+              {ref.note && (
+                <span className="text-[9px] text-teal-400/90 truncate max-w-full">
+                  {ref.note}
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
+
+    {/* ── AYAH ACTION DRAWER (পপআপ ড্রয়ার) ── */}
+    <AyahActionDrawer
+      isOpen={isDrawerOpen}
+      onClose={() => setIsDrawerOpen(false)}
+      ayahData={selectedAyahBundle}
+      surahNameBn={selectedAyahForDrawer?.surahNameBn || pageMeta.firstSurahMeta.nameBn}
+      surahNameAr={selectedAyahForDrawer?.surahNameAr || pageMeta.firstSurahMeta.nameAr}
+      isPlayingAudio={isPlayingAudio}
+      playingAyahNumber={playingAyahNumber}
+      playingSurahId={playingSurahId}
+      activeSpeaker={activeSpeaker}
+      selectedQari={selectedQari}
+      onSelectQari={onSelectQari}
+      onPlayAyah={onPlayAyah}
+      onOpenTafsir={() => setIsTafsirModalOpen(true)}
+      onOpenShareCard={() => setIsShareCardModalOpen(true)}
+      onLaunchNurEngine={onLaunchNurEngine}
+      onToggleBookmark={onToggleBookmark}
+      isBookmarked={Boolean(bookmarks?.some((b) => b.surahId === selectedAyahForDrawer?.surahId && b.ayah === selectedAyahForDrawer?.numberInSurah))}
+      isDay={isDay}
+      arabicFontSize={arabicFontSize}
+      onChangeFontSize={onChangeFontSize}
+      onSwitchViewMode={onSwitchViewMode}
+    />
+
+    {/* ── TAFSIR MODAL (তাফসীর পপআপ) ── */}
+    <AyahTafsirModal
+      isOpen={isTafsirModalOpen}
+      onClose={() => setIsTafsirModalOpen(false)}
+      ayahData={selectedAyahBundle}
+      surahNameBn={selectedAyahForDrawer?.surahNameBn || pageMeta.firstSurahMeta.nameBn}
+      isDay={isDay}
+      onLaunchNurEngine={onLaunchNurEngine}
+    />
+
+    {/* ── SHARE CARD MODAL (ছবি হিসেবে শেয়ার করার কার্ড) ── */}
+    <AyahShareCardModal
+      isOpen={isShareCardModalOpen}
+      onClose={() => setIsShareCardModalOpen(false)}
+      ayahData={selectedAyahBundle}
+      surahNameBn={selectedAyahForDrawer?.surahNameBn || pageMeta.firstSurahMeta.nameBn}
+      isDay={isDay}
+    />
   </div>
 );
 }

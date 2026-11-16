@@ -45,6 +45,7 @@ import {
 import AmbientFloatingOrbs from "./AmbientFloatingOrbs";
 import HafiziMushafSheet from "./HafiziMushafSheet";
 import QuranReader from "./QuranReader";
+import PrayerTimesDashboardCard from "./PrayerTimesDashboardCard";
 
 // Bengali numeral conversion helper
 const toBn = (num) => {
@@ -652,6 +653,13 @@ export default function TahfizQuranApp({
                 </div>
               </div>
             </div>
+
+            {/* 3. ৫ ওয়াক্ত নামাজের সময়সূচি (PRAYER TIMES WIDGET — MUSLIM BANGLA STYLE) */}
+            <PrayerTimesDashboardCard
+              currentTime={bangladeshNow}
+              sunTimes={instituteSunTimes}
+              isDay={pageFilter === "day"}
+            />
 
             {/* 4. CONTINUE READING SECTION ("পড়া চালিয়ে যান") */}
             <div className="space-y-2">
@@ -1279,6 +1287,27 @@ export default function TahfizQuranApp({
                   selectedQari={selectedQari}
                   onSelectQari={handleQariChange}
                   onOpenSearch={() => setIsPageSearchOpen(true)}
+                  onLaunchNurEngine={onLaunchNurEngine}
+                  onSwitchViewMode={() => setReaderMode("ayah")}
+                  bookmarks={bookmarks}
+                  onToggleBookmark={(surahId, ayahNum) => {
+                    const isBm = bookmarks.some((b) => b.surahId === surahId && b.ayah === ayahNum);
+                    if (isBm) {
+                      setBookmarks((prev) => prev.filter((b) => !(b.surahId === surahId && b.ayah === ayahNum)));
+                      toast.success("বুকমার্ক সরানো হয়েছে");
+                    } else {
+                      const sMeta = ALL_SURAHS.find((s) => s.id === surahId) || ALL_SURAHS[0];
+                      const newBm = {
+                        id: `bm-${Date.now()}`,
+                        surahId,
+                        ayah: ayahNum,
+                        label: `সূরা ${sMeta.nameBn} : আয়াত ${toBn(ayahNum)}`,
+                        date: formatBangladeshDate(new Date()),
+                      };
+                      setBookmarks((prev) => [newBm, ...prev]);
+                      toast.success("বুকমার্ক যুক্ত করা হয়েছে");
+                    }
+                  }}
                 />
               ) : (
                 <QuranReader
