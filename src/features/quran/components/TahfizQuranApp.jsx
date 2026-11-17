@@ -61,17 +61,18 @@ export default function TahfizQuranApp({
   initialSurah = 2,
   onLaunchNurEngine,
   onNavigateToFeature,
+  initialReaderMode = "scroll",
 }) {
   // Navigation Screens: 'home' | 'surahs' | 'paras' | 'reader' | 'tasbih' | 'bookmarks' | 'last-read'
   const [currentScreen, setCurrentScreen] = useState(initialScreen);
   const [bottomNavTab, setBottomNavTab] = useState(initialScreen === "reader" ? "reader" : "home");
 
-  // Reader State
+  // Reader State (ডিফল্ট: 'scroll' যাতে সবাই সরাসরি একটানা স্ক্রোল পায়)
   const [readerSurahId, setReaderSurahId] = useState(initialSurah);
   const [readerPageNum, setReaderPageNum] = useState(initialPage);
-  const [readerMode, setReaderMode] = useState("3d"); // '3d' (১৫ লাইনের ৩ডি বই) | 'scroll' (একটানা স্ক্রোল) | 'card' (আয়াত কার্ড)
+  const [readerMode, setReaderMode] = useState(initialReaderMode || "scroll"); // 'scroll' (ডিফল্ট একটানা স্ক্রোল) | '3d' (১৫ লাইনের ৩ডি বই) | 'card' (আয়াত কার্ড)
   const [pageFilter, setPageFilter] = useState("night"); // 'night' | 'day' | 'sepia'
-  const [readingNavStyle, setReadingNavStyle] = useState("flip"); // 'flip' | 'scroll'
+  const [readingNavStyle, setReadingNavStyle] = useState("scroll"); // 'scroll' | 'flip'
 
   // Continuous Vertical Scroll Pages (পৃষ্ঠা ১ থেকে ৬০৪ পর্যন্ত একটানা স্ক্রোল)
   const [scrollPages, setScrollPages] = useState(() => {
@@ -149,12 +150,24 @@ export default function TahfizQuranApp({
         setSelectedQari(prefQari);
       }
 
+      // Check saved reader mode preference (ডিফল্ট: scroll)
+      const savedMode = localStorage.getItem("tahfiz_quran_reader_mode_v1");
+      if (savedMode && ["scroll", "3d", "card"].includes(savedMode)) {
+        setReaderMode(savedMode);
+        setReadingNavStyle(savedMode === "scroll" ? "scroll" : "flip");
+      }
+
       // Check URL query parameters on client mount
       if (typeof window !== "undefined") {
         const sp = new URLSearchParams(window.location.search);
         const qScreen = sp.get("screen");
         const qPage = sp.get("page");
         const qSurah = sp.get("surah");
+        const qMode = sp.get("mode");
+        if (qMode && ["scroll", "3d", "card"].includes(qMode)) {
+          setReaderMode(qMode);
+          setReadingNavStyle(qMode === "scroll" ? "scroll" : "flip");
+        }
         if (qScreen && ["home", "surahs", "paras", "reader", "tasbih", "bookmarks"].includes(qScreen)) {
           setCurrentScreen(qScreen);
         }
@@ -334,6 +347,22 @@ export default function TahfizQuranApp({
       });
     } else {
       setTasbihCount(nextCount);
+    }
+  };
+
+  // Switch reader mode with persistent preference
+  const handleSwitchReaderMode = (mode) => {
+    setReaderMode(mode);
+    setReadingNavStyle(mode === "scroll" ? "scroll" : "flip");
+    try {
+      localStorage.setItem("tahfiz_quran_reader_mode_v1", mode);
+    } catch {}
+    if (mode === "scroll") {
+      toast.success("মোড: একটানা স্ক্রোল (সব পাতা সরাসরি নিচে টানুন)");
+    } else if (mode === "3d") {
+      toast.success("মোড: ৩ডি বই (১৫ লাইনের হাফেজী কুরআন)");
+    } else {
+      toast.success("মোড: আয়াত কার্ড ভিউ (বাংলা অনুবাদ সহ)");
     }
   };
 
@@ -1437,11 +1466,7 @@ export default function TahfizQuranApp({
                 <div className="flex items-center gap-0.5 sm:gap-1 bg-black/50 p-0.5 sm:p-1 rounded-xl sm:rounded-2xl border border-teal-500/40 backdrop-blur-md">
                   <button
                     type="button"
-                    onClick={() => {
-                      setReaderMode("3d");
-                      setReadingNavStyle("flip");
-                      toast.success("মোড: ৩ডি বই (১৫ লাইনের হাফেজী মুসহাফ)");
-                    }}
+                    onClick={() => handleSwitchReaderMode("3d")}
                     className={`px-1.5 sm:px-2.5 py-1 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                       readerMode === "3d" || readerMode === "mushaf"
                         ? "bg-teal-500 text-slate-950 shadow-md font-black"
@@ -1454,27 +1479,20 @@ export default function TahfizQuranApp({
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setReaderMode("scroll");
-                      setReadingNavStyle("scroll");
-                      toast.success("মোড: একটানা স্ক্রোল");
-                    }}
+                    onClick={() => handleSwitchReaderMode("scroll")}
                     className={`px-1.5 sm:px-2.5 py-1 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                       readerMode === "scroll"
                         ? "bg-teal-500 text-slate-950 shadow-md font-black"
                         : "text-teal-200/80 hover:text-white hover:bg-teal-900/40"
                     }`}
-                    title="একটানা স্ক্রোল মোড"
+                    title="একটানা স্ক্রোল মোড (ডিফল্ট)"
                   >
                     <List className="w-3 h-3" />
                     <span className="font-hind-siliguri">স্ক্রোল</span>
                   </button>
                   <button
                     type="button"
-                    onClick={() => {
-                      setReaderMode("card");
-                      toast.success("মোড: আয়াত কার্ড ভিউ");
-                    }}
+                    onClick={() => handleSwitchReaderMode("card")}
                     className={`px-1.5 sm:px-2.5 py-1 rounded-lg sm:rounded-xl text-[10px] sm:text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                       readerMode === "card" || readerMode === "ayah"
                         ? "bg-teal-500 text-slate-950 shadow-md font-black"
@@ -1499,11 +1517,7 @@ export default function TahfizQuranApp({
               <div className="flex items-center gap-1 bg-[#031c17] p-1 rounded-2xl border border-teal-500/40 text-xs font-bold shadow-inner">
                 <button
                   type="button"
-                  onClick={() => {
-                    setReaderMode("3d");
-                    setReadingNavStyle("flip");
-                    toast.success("মোড: ৩ডি বই (১৫ লাইনের হাফেজী কুরআন)");
-                  }}
+                  onClick={() => handleSwitchReaderMode("3d")}
                   className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
                     readerMode === "3d" || readerMode === "mushaf"
                       ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md font-black scale-102"
@@ -1517,17 +1531,13 @@ export default function TahfizQuranApp({
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setReaderMode("scroll");
-                    setReadingNavStyle("scroll");
-                    toast.success("মোড: একটানা স্ক্রোল (সব পাতা সরাসরি নিচে টানুন)");
-                  }}
+                  onClick={() => handleSwitchReaderMode("scroll")}
                   className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
                     readerMode === "scroll"
                       ? "bg-gradient-to-r from-teal-500 to-cyan-600 text-slate-950 shadow-md font-black scale-102"
                       : "text-teal-200/70 hover:text-white hover:bg-teal-900/40"
                   }`}
-                  title="একটানা স্ক্রোল মোড (পৃষ্ঠা ১ থেকে ৬০৪ পর্যন্ত সরাসরি টান দিয়ে পড়ুন)"
+                  title="একটানা স্ক্রোল মোড (ডিফল্ট: পৃষ্ঠা ১ থেকে ৬০৪ পর্যন্ত সরাসরি টান দিয়ে পড়ুন)"
                 >
                   <span className="text-sm">📜</span>
                   <span className="font-hind-siliguri font-black">স্ক্রোল</span>
@@ -1535,10 +1545,7 @@ export default function TahfizQuranApp({
 
                 <button
                   type="button"
-                  onClick={() => {
-                    setReaderMode("card");
-                    toast.success("মোড: আয়াত কার্ড ভিউ (বাংলা অনুবাদ সহ)");
-                  }}
+                  onClick={() => handleSwitchReaderMode("card")}
                   className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
                     readerMode === "card" || readerMode === "ayah"
                       ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md font-black scale-102"
@@ -1593,7 +1600,7 @@ export default function TahfizQuranApp({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setReaderMode("scroll")}
+                      onClick={() => handleSwitchReaderMode("scroll")}
                       className="px-3 py-1 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-500 transition shrink-0 cursor-pointer text-xs"
                     >
                       স্ক্রোল মোড ➔
@@ -1628,7 +1635,7 @@ export default function TahfizQuranApp({
                     onSelectQari={handleQariChange}
                     onOpenSearch={() => setIsPageSearchOpen(true)}
                     onLaunchNurEngine={onLaunchNurEngine}
-                    onSwitchViewMode={() => setReaderMode("card")}
+                    onSwitchViewMode={() => handleSwitchReaderMode("card")}
                     bookmarks={bookmarks}
                     onToggleBookmark={(surahId, ayahNum) => {
                       const isBm = bookmarks.some((b) => b.surahId === surahId && b.ayah === ayahNum);
@@ -1660,7 +1667,7 @@ export default function TahfizQuranApp({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setReaderMode("3d")}
+                      onClick={() => handleSwitchReaderMode("3d")}
                       className="px-3 py-1 rounded-xl bg-teal-600 text-white font-bold hover:bg-teal-500 transition shrink-0 cursor-pointer text-xs"
                     >
                       ৩ডি বই ➔
@@ -1730,7 +1737,7 @@ export default function TahfizQuranApp({
                         onSelectQari={handleQariChange}
                         onOpenSearch={() => setIsPageSearchOpen(true)}
                         onLaunchNurEngine={onLaunchNurEngine}
-                        onSwitchViewMode={() => setReaderMode("card")}
+                        onSwitchViewMode={() => handleSwitchReaderMode("card")}
                         bookmarks={bookmarks}
                         onToggleBookmark={(surahId, ayahNum) => {
                           const isBm = bookmarks.some((b) => b.surahId === surahId && b.ayah === ayahNum);
@@ -1779,7 +1786,7 @@ export default function TahfizQuranApp({
                     </span>
                     <button
                       type="button"
-                      onClick={() => setReaderMode("scroll")}
+                      onClick={() => handleSwitchReaderMode("scroll")}
                       className="px-3 py-1 rounded-xl bg-amber-600 text-slate-950 font-bold hover:bg-amber-500 transition shrink-0 cursor-pointer text-xs"
                     >
                       স্ক্রোল মোড ➔
