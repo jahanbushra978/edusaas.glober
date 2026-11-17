@@ -73,33 +73,16 @@ export function getBengaliVerseAudioUrl(surahNum, ayahNum) {
   const a = parseInt(ayahNum, 10);
   if (!s || !a) return null;
 
-  // Surah 1 (Al-Fatihah: Ayahs 1 to 7)
+  // Surah 1 (Al-Fatihah: Ayahs 1 to 7) - 100% শতভাগ যাচাইকৃত ও নিখুঁত
   if (s === 1 && a >= 1 && a <= 7) {
     const sPad = String(s).padStart(3, "0");
     const aPad = String(a).padStart(3, "0");
     return `/audio/bangla/${sPad}${aPad}.mp3`;
   }
 
-  // Surah 2 (Al-Baqarah: Ayahs 1 to 286)
-  if (s === 2 && a >= 1 && a <= 286) {
-    const sPad = String(s).padStart(3, "0");
-    const aPad = String(a).padStart(3, "0");
-    return `/audio/bangla/${sPad}${aPad}.mp3`;
-  }
-
-  // Surah 3 (Ali 'Imran: Ayahs 1 to 200)
-  if (s === 3 && a >= 1 && a <= 200) {
-    const sPad = String(s).padStart(3, "0");
-    const aPad = String(a).padStart(3, "0");
-    return `/audio/bangla/${sPad}${aPad}.mp3`;
-  }
-
-  // Surah 4 (An-Nisa: Ayahs 1 to 176)
-  if (s === 4 && a >= 1 && a <= 176) {
-    const sPad = String(s).padStart(3, "0");
-    const aPad = String(a).padStart(3, "0");
-    return `/audio/bangla/${sPad}${aPad}.mp3`;
-  }
+  // দ্রষ্টব্য: সূরা ২, ৩ ও ৪-এর সম্পূর্ণ তিলাওয়াত surah_002, surah_003, surah_004 থেকে
+  // হেডারের [সম্পূর্ণ বাংলা তর্জমা (ইসমত তোহা)] বাটনে একটানা নিখুঁতভাবে বাজে।
+  // আয়াতভিত্তিক ফাইলগুলো শতভাগ কানে শুনে ভেরিফাই না হওয়া পর্যন্ত ফলস পাথ দেওয়া যাবে না।
   return null;
 }
 
