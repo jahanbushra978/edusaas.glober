@@ -79,6 +79,13 @@ export function getBengaliVerseAudioUrl(surahNum, ayahNum) {
     const aPad = String(a).padStart(3, "0");
     return `/audio/bangla/${sPad}${aPad}.mp3`;
   }
+
+  // Surah 2 (Al-Baqarah: Ayahs 1 to 10 and expanding)
+  if (s === 2 && a >= 1 && a <= 10) {
+    const sPad = String(s).padStart(3, "0");
+    const aPad = String(a).padStart(3, "0");
+    return `/audio/bangla/${sPad}${aPad}.mp3`;
+  }
   return null;
 }
 
