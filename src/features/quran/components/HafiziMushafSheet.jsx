@@ -58,6 +58,7 @@ export default function HafiziMushafSheet({
   onSwitchViewMode,
   bookmarks = [],
   onToggleBookmark,
+  isContinuousScrollMode = false,
 }) {
   const isDay = readerTheme === "day";
   const [pageLoading, setPageLoading] = useState(true);
@@ -132,6 +133,12 @@ export default function HafiziMushafSheet({
   // Auto-scroll screen to keep currently recited line in center of screen
   useEffect(() => {
     if (playingAyahNumber && playingSurahId) {
+      // In multi-page continuous scroll, only the page containing this Ayah should auto-scroll
+      const hasThisAyah = pageAyahs.some(
+        (a) => a.surahId === playingSurahId && a.numberInSurah === playingAyahNumber
+      );
+      if (!hasThisAyah) return;
+
       const activeWordEl = document.getElementById("mushaf-active-word");
       const targetEl =
         activeWordEl ||
@@ -146,7 +153,7 @@ export default function HafiziMushafSheet({
         }
       }
     }
-  }, [playingAyahNumber, playingSurahId, activeWordIndex]);
+  }, [playingAyahNumber, playingSurahId, activeWordIndex, pageAyahs]);
 
   // Auto-scroll screen to target searched Ayah when page loads or target changes
   useEffect(() => {
@@ -357,7 +364,12 @@ export default function HafiziMushafSheet({
   }));
 
   return (
-    <div className="w-full flex flex-col items-center select-text" ref={pageContainerRef}>
+    <div
+      id={`mushaf-page-${pageNum}`}
+      data-page={pageNum}
+      className="w-full flex flex-col items-center select-text scroll-mt-20 sm:scroll-mt-24"
+      ref={pageContainerRef}
+    >
       {/* ── RETURN TO PREVIOUS READING PAGE (এক ক্লিকে পূর্বের পাঠে ফেরত) ── */}
       {returnHistoryPage && returnHistoryPage !== pageNum && (
         <div className="sticky top-2 z-50 mb-3 flex items-center justify-center animate-in fade-in slide-in-from-top-3 duration-200">
@@ -1075,7 +1087,16 @@ export default function HafiziMushafSheet({
             <button
               type="button"
               disabled={pageNum <= 1}
-              onClick={() => onPageChange(pageNum - 1)}
+              onClick={() => {
+                if (isContinuousScrollMode) {
+                  const el = document.getElementById(`mushaf-page-${pageNum - 1}`);
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    return;
+                  }
+                }
+                if (onPageChange) onPageChange(pageNum - 1);
+              }}
               className="p-1 rounded-lg hover:bg-amber-500/20 disabled:opacity-30 transition cursor-pointer"
               title="আগের পৃষ্ঠা"
             >
@@ -1087,7 +1108,16 @@ export default function HafiziMushafSheet({
             <button
               type="button"
               disabled={pageNum >= TOTAL_UTHMANI_PAGES}
-              onClick={() => onPageChange(pageNum + 1)}
+              onClick={() => {
+                if (isContinuousScrollMode) {
+                  const el = document.getElementById(`mushaf-page-${pageNum + 1}`);
+                  if (el) {
+                    el.scrollIntoView({ behavior: "smooth", block: "start" });
+                    return;
+                  }
+                }
+                if (onPageChange) onPageChange(pageNum + 1);
+              }}
               className="p-1 rounded-lg hover:bg-amber-500/20 disabled:opacity-30 transition cursor-pointer"
               title="পরের পৃষ্ঠা"
             >

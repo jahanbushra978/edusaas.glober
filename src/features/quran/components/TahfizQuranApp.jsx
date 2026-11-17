@@ -73,6 +73,16 @@ export default function TahfizQuranApp({
   const [pageFilter, setPageFilter] = useState("night"); // 'night' | 'day' | 'sepia'
   const [readingNavStyle, setReadingNavStyle] = useState("flip"); // 'flip' | 'scroll'
 
+  // Continuous Vertical Scroll Pages (পৃষ্ঠা ১ থেকে ৬০৪ পর্যন্ত একটানা স্ক্রোল)
+  const [scrollPages, setScrollPages] = useState(() => {
+    const initial = [];
+    const start = Math.max(1, initialPage - 1);
+    const end = Math.min(TOTAL_UTHMANI_PAGES, initialPage + 4);
+    for (let p = start; p <= end; p++) initial.push(p);
+    return initial;
+  });
+  const scrollBottomSentinelRef = useRef(null);
+
   // Universal Authentic Audio Engine State
   const [selectedQari, setSelectedQari] = useState("minshawy_teacher");
   const [playingAyahNumber, setPlayingAyahNumber] = useState(null);
@@ -201,6 +211,87 @@ export default function TahfizQuranApp({
       localStorage.setItem("tahfiz_quran_last_read_v1", JSON.stringify(lastRead));
     } catch {}
   }, [lastRead]);
+
+  // Synchronize scrollPages when readerPageNum changes externally (jump / search)
+  useEffect(() => {
+    if (readerMode !== "scroll") return;
+    setScrollPages((prev) => {
+      if (prev.includes(readerPageNum)) return prev;
+      const start = Math.max(1, readerPageNum - 1);
+      const end = Math.min(TOTAL_UTHMANI_PAGES, readerPageNum + 4);
+      const newPages = [];
+      for (let p = start; p <= end; p++) newPages.push(p);
+      return newPages;
+    });
+  }, [readerMode, readerPageNum]);
+
+  // Infinite Scroll: Automatically load next batches as user drags/scrolls down
+  useEffect(() => {
+    if (readerMode !== "scroll") return;
+    const sentinel = scrollBottomSentinelRef.current;
+    if (!sentinel) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          setScrollPages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last >= TOTAL_UTHMANI_PAGES) return prev;
+            const nextPages = [];
+            for (let p = last + 1; p <= Math.min(TOTAL_UTHMANI_PAGES, last + 4); p++) {
+              nextPages.push(p);
+            }
+            return [...prev, ...nextPages];
+          });
+        }
+      },
+      { rootMargin: "800px" }
+    );
+
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [readerMode, scrollPages.length]);
+
+  // Real-Time Current Page Tracking as user scrolls vertically
+  useEffect(() => {
+    if (readerMode !== "scroll") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const pageStr = entry.target.getAttribute("data-page");
+            if (pageStr) {
+              const p = parseInt(pageStr, 10);
+              if (!isNaN(p) && p !== readerPageNum) {
+                setReaderPageNum(p);
+                const pMeta = getHafiziPageMeta(p);
+                const pLoc = getHafiziLocation(p);
+                setLastRead({
+                  surahId: pMeta?.ranges[0]?.surah || readerSurahId,
+                  ayah: pMeta?.ranges[0]?.fromAyah || 1,
+                  para: pLoc.para,
+                  page: p,
+                  percentage: Math.min(100, Math.round((p / TOTAL_UTHMANI_PAGES) * 100)),
+                  updatedAt: new Date().toISOString(),
+                });
+              }
+            }
+          }
+        });
+      },
+      {
+        rootMargin: "-25% 0px -55% 0px",
+        threshold: 0.1,
+      }
+    );
+
+    scrollPages.forEach((p) => {
+      const el = document.getElementById(`mushaf-page-${p}`);
+      if (el) observer.observe(el);
+    });
+
+    return () => observer.disconnect();
+  }, [readerMode, scrollPages, readerPageNum, readerSurahId]);
 
   // Sound Synthesizer for Digital Tasbih
   const playBeadClickSound = () => {
@@ -335,18 +426,44 @@ export default function TahfizQuranApp({
         const sMeta = ALL_SURAHS.find((s) => s.id === sId);
         if (sMeta && aNum < sMeta.versesCount) {
           const nextAyah = aNum + 1;
-          // Auto page flip to next Hafizi Mushaf page if next Ayah is on the next page
+          // Auto page flip / expand to next Hafizi Mushaf page if next Ayah is on the next page
           const loc = getHafiziLocationForAyah(sId, nextAyah);
-          if (loc && loc.uthmaniPage && loc.uthmaniPage !== readerPageNum) {
-            setReaderPageNum(loc.uthmaniPage);
+          if (loc && loc.uthmaniPage) {
+            const targetP = loc.uthmaniPage;
+            if (targetP !== readerPageNum) {
+              setReaderPageNum(targetP);
+            }
+            if (readerMode === "scroll") {
+              setScrollPages((prev) => {
+                if (prev.includes(targetP)) return prev;
+                const nextPages = [];
+                for (let p = prev[prev.length - 1] + 1; p <= Math.min(TOTAL_UTHMANI_PAGES, targetP + 3); p++) {
+                  nextPages.push(p);
+                }
+                return [...prev, ...nextPages];
+              });
+            }
           }
           handlePlayAyah(nextAyah, sId, activeQari, null, 0);
         } else if (sId < 114) {
           // Last Ayah of Surah reached: seamless uninterrupted advance to the next Surah!
           const nextSurahId = sId + 1;
           const loc = getHafiziLocationForAyah(nextSurahId, 1);
-          if (loc && loc.uthmaniPage && loc.uthmaniPage !== readerPageNum) {
-            setReaderPageNum(loc.uthmaniPage);
+          if (loc && loc.uthmaniPage) {
+            const targetP = loc.uthmaniPage;
+            if (targetP !== readerPageNum) {
+              setReaderPageNum(targetP);
+            }
+            if (readerMode === "scroll") {
+              setScrollPages((prev) => {
+                if (prev.includes(targetP)) return prev;
+                const nextPages = [];
+                for (let p = prev[prev.length - 1] + 1; p <= Math.min(TOTAL_UTHMANI_PAGES, targetP + 3); p++) {
+                  nextPages.push(p);
+                }
+                return [...prev, ...nextPages];
+              });
+            }
           }
           setReaderSurahId(nextSurahId);
           handlePlayAyah(1, nextSurahId, activeQari, null, 0);
@@ -422,7 +539,21 @@ export default function TahfizQuranApp({
     setReaderPageNum(uthmaniPage);
     setReaderSurahId(target.surah);
     setTargetHighlightAyah({ surah: target.surah, ayah: target.ayah });
-    setReaderMode("mushaf");
+
+    if (readerMode === "scroll") {
+      setScrollPages((prev) => {
+        if (prev.includes(uthmaniPage)) return prev;
+        const newPages = [];
+        for (let i = Math.max(1, uthmaniPage - 1); i <= Math.min(TOTAL_UTHMANI_PAGES, uthmaniPage + 4); i++) {
+          newPages.push(i);
+        }
+        return newPages;
+      });
+      setTimeout(() => {
+        const el = document.getElementById(`mushaf-page-${uthmaniPage}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
 
     // Update last read
     setLastRead({
@@ -456,7 +587,20 @@ export default function TahfizQuranApp({
       setTargetHighlightAyah({ surah: sId, ayah: aNum });
     }, 60);
 
-    setReaderMode("mushaf");
+    if (readerMode === "scroll") {
+      setScrollPages((prev) => {
+        if (prev.includes(targetPage)) return prev;
+        const newPages = [];
+        for (let i = Math.max(1, targetPage - 1); i <= Math.min(TOTAL_UTHMANI_PAGES, targetPage + 4); i++) {
+          newPages.push(i);
+        }
+        return newPages;
+      });
+      setTimeout(() => {
+        const el = document.getElementById(`mushaf-page-${targetPage}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
 
     setLastRead({
       surahId: sId,
@@ -485,6 +629,22 @@ export default function TahfizQuranApp({
     setReaderPageNum(targetPage);
     const pageMeta = getHafiziPageMeta(targetPage);
     const pageLocation = getHafiziLocation(targetPage);
+
+    if (readerMode === "scroll") {
+      setScrollPages((prev) => {
+        if (prev.includes(targetPage)) return prev;
+        const newPages = [];
+        for (let i = Math.max(1, targetPage - 1); i <= Math.min(TOTAL_UTHMANI_PAGES, targetPage + 4); i++) {
+          newPages.push(i);
+        }
+        return newPages;
+      });
+      setTimeout(() => {
+        const el = document.getElementById(`mushaf-page-${targetPage}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
+
     setLastRead({
       surahId: pageMeta.ranges[0]?.surah || readerSurahId,
       ayah: pageMeta.ranges[0]?.fromAyah || 1,
@@ -493,7 +653,6 @@ export default function TahfizQuranApp({
       percentage: Math.min(100, Math.round((targetPage / TOTAL_UTHMANI_PAGES) * 100)),
       updatedAt: new Date().toISOString(),
     });
-    setReaderMode("mushaf");
     setIsPageSearchOpen(false);
     setCurrentScreen("reader");
     toast.success(`পৃষ্ঠা ${toBn(rawPage)}-এ যাওয়া হয়েছে`);
@@ -508,6 +667,22 @@ export default function TahfizQuranApp({
 
     setReaderSurahId(sId);
     setReaderPageNum(targetPage);
+
+    if (readerMode === "scroll") {
+      setScrollPages((prev) => {
+        if (prev.includes(targetPage)) return prev;
+        const newPages = [];
+        for (let i = Math.max(1, targetPage - 1); i <= Math.min(TOTAL_UTHMANI_PAGES, targetPage + 4); i++) {
+          newPages.push(i);
+        }
+        return newPages;
+      });
+      setTimeout(() => {
+        const el = document.getElementById(`mushaf-page-${targetPage}`);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 150);
+    }
+
     setLastRead({
       surahId: sId,
       ayah: 1,
@@ -1314,74 +1489,114 @@ export default function TahfizQuranApp({
               </div>
             </div>
 
+            {/* ── 3-WAY VIEW MODES SUB-HEADER: ৩ডি বই | স্ক্রোল | কার্ড ── */}
+            <div className="max-w-4xl mx-auto w-full px-3 py-2 flex items-center justify-between gap-2 border-b border-teal-900/40 bg-[#041412]/90 backdrop-blur-sm sticky top-[49px] z-30">
+              <div className="flex items-center gap-1.5 text-xs text-teal-300 font-bold">
+                <BookOpen className="w-4 h-4 text-teal-400" />
+                <span className="font-hind-siliguri">পড়ার ধরন:</span>
+              </div>
+
+              <div className="flex items-center gap-1 bg-[#031c17] p-1 rounded-2xl border border-teal-500/40 text-xs font-bold shadow-inner">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReaderMode("3d");
+                    setReadingNavStyle("flip");
+                    toast.success("মোড: ৩ডি বই (১৫ লাইনের হাফেজী কুরআন)");
+                  }}
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                    readerMode === "3d" || readerMode === "mushaf"
+                      ? "bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md font-black scale-102"
+                      : "text-teal-200/70 hover:text-white hover:bg-teal-900/40"
+                  }`}
+                  title="১৫ লাইনের ৩ডি হাফেজী কুরআন বই মোড"
+                >
+                  <span className="text-sm">📖</span>
+                  <span className="font-hind-siliguri font-black">৩ডি বই</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReaderMode("scroll");
+                    setReadingNavStyle("scroll");
+                    toast.success("মোড: একটানা স্ক্রোল (সব পাতা সরাসরি নিচে টানুন)");
+                  }}
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                    readerMode === "scroll"
+                      ? "bg-gradient-to-r from-teal-500 to-cyan-600 text-slate-950 shadow-md font-black scale-102"
+                      : "text-teal-200/70 hover:text-white hover:bg-teal-900/40"
+                  }`}
+                  title="একটানা স্ক্রোল মোড (পৃষ্ঠা ১ থেকে ৬০৪ পর্যন্ত সরাসরি টান দিয়ে পড়ুন)"
+                >
+                  <span className="text-sm">📜</span>
+                  <span className="font-hind-siliguri font-black">স্ক্রোল</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReaderMode("card");
+                    toast.success("মোড: আয়াত কার্ড ভিউ (বাংলা অনুবাদ সহ)");
+                  }}
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                    readerMode === "card" || readerMode === "ayah"
+                      ? "bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 shadow-md font-black scale-102"
+                      : "text-teal-200/70 hover:text-white hover:bg-teal-900/40"
+                  }`}
+                  title="আয়াত ও অনুবাদের কার্ড মোড"
+                >
+                  <span className="text-sm">🗂️</span>
+                  <span className="font-hind-siliguri font-black">কার্ড</span>
+                </button>
+              </div>
+            </div>
+
             {/* The Quran Reader Content */}
             <div className="flex-1 p-1 sm:p-3 pb-24">
               {readerMode === "3d" || readerMode === "mushaf" ? (
                 <div className="relative perspective-[2500px] w-full">
-                  <HafiziMushafSheet
-                    pageNum={readerPageNum}
-                    onPageChange={(p) => {
-                      setReaderPageNum(p);
-                      const pageMeta = getHafiziPageMeta(p);
-                      const pageLocation = getHafiziLocation(p);
-                      setLastRead({
-                        surahId: pageMeta.ranges[0]?.surah || readerSurahId,
-                        ayah: pageMeta.ranges[0]?.fromAyah || 1,
-                        para: pageLocation.para,
-                        page: p,
-                        percentage: Math.min(100, Math.round((p / TOTAL_UTHMANI_PAGES) * 100)),
-                        updatedAt: new Date().toISOString(),
-                      });
+                  {/* Floating Desktop Turn Arrows */}
+                  <button
+                    type="button"
+                    disabled={readerPageNum <= 1}
+                    onClick={() => {
+                      const prev = Math.max(1, readerPageNum - 1);
+                      setReaderPageNum(prev);
                     }}
-                    onJumpToParaPage={handleJumpToParaAndPage}
-                    onPlayAyah={handlePlayAyah}
-                    playingAyahNumber={playingAyahNumber}
-                    playingSurahId={playingSurahId}
-                    isPlayingAudio={isPlayingAudio}
-                    activeWordIndex={activeWordIndex}
-                    targetHighlightAyah={targetHighlightAyah}
-                    readerTheme={pageFilter === "day" ? "day" : "night"}
-                    getSurahData={getSurahData}
-                    selectedQari={selectedQari}
-                    onSelectQari={handleQariChange}
-                    onOpenSearch={() => setIsPageSearchOpen(true)}
-                    onLaunchNurEngine={onLaunchNurEngine}
-                    onSwitchViewMode={() => setReaderMode("card")}
-                    bookmarks={bookmarks}
-                    onToggleBookmark={(surahId, ayahNum) => {
-                      const isBm = bookmarks.some((b) => b.surahId === surahId && b.ayah === ayahNum);
-                      if (isBm) {
-                        setBookmarks((prev) => prev.filter((b) => !(b.surahId === surahId && b.ayah === ayahNum)));
-                        toast.success("বুকমার্ক সরানো হয়েছে");
-                      } else {
-                        const sMeta = ALL_SURAHS.find((s) => s.id === surahId) || ALL_SURAHS[0];
-                        const newBm = {
-                          id: `bm-${Date.now()}`,
-                          surahId,
-                          ayah: ayahNum,
-                          label: `সূরা ${sMeta.nameBn} : আয়াত ${toBn(ayahNum)}`,
-                          date: formatBangladeshDate(new Date()),
-                        };
-                        setBookmarks((prev) => [newBm, ...prev]);
-                        toast.success("বুকমার্ক যুক্ত করা হয়েছে");
-                      }
+                    className="hidden lg:flex fixed left-4 top-1/2 -translate-y-1/2 z-30 flex-col items-center justify-center w-12 h-20 rounded-2xl bg-[#092923]/95 hover:bg-emerald-600 hover:text-white text-teal-200 border-2 border-amber-400 shadow-2xl transition-all hover:scale-110 active:scale-95 group disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                    title="পূর্ববর্তী পৃষ্ঠা উল্টান"
+                  >
+                    <ChevronLeft className="w-6 h-6 group-hover:-translate-x-0.5 transition-transform" />
+                    <span className="text-[10px] font-black mt-1 font-hind-siliguri">আগের</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={readerPageNum >= TOTAL_UTHMANI_PAGES}
+                    onClick={() => {
+                      const next = Math.min(TOTAL_UTHMANI_PAGES, readerPageNum + 1);
+                      setReaderPageNum(next);
                     }}
-                  />
-                </div>
-              ) : readerMode === "scroll" ? (
-                <div className="space-y-4 max-w-4xl mx-auto w-full">
-                  {/* একটানা স্ক্রোল মোড ব্যানার */}
-                  <div className="p-3 rounded-2xl bg-teal-950/80 border border-teal-500/50 flex items-center justify-between text-xs font-bold text-teal-200 shadow-md">
+                    className="hidden lg:flex fixed right-4 top-1/2 -translate-y-1/2 z-30 flex-col items-center justify-center w-12 h-20 rounded-2xl bg-[#092923]/95 hover:bg-emerald-600 hover:text-white text-teal-200 border-2 border-amber-400 shadow-2xl transition-all hover:scale-110 active:scale-95 group disabled:opacity-30 disabled:pointer-events-none cursor-pointer"
+                    title="পরবর্তী পৃষ্ঠা উল্টান"
+                  >
+                    <ChevronRight className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
+                    <span className="text-[10px] font-black mt-1 font-hind-siliguri">পরের</span>
+                  </button>
+
+                  {/* ৩ডি বই মোড ব্যানার */}
+                  <div className="p-3 mb-4 rounded-2xl bg-[#092b23]/90 border border-emerald-500/40 flex items-center justify-between text-xs font-bold text-emerald-200 shadow-md max-w-4xl mx-auto">
                     <span className="flex items-center gap-2 font-hind-siliguri">
-                      <List className="w-4 h-4 text-teal-400" />
-                      <span>একটানা স্ক্রোল মোড: তিলাওয়াত চলার সাথে সাথে স্ক্রিন স্বয়ংক্রিয়ভাবে স্ক্রোল হয়ে সামনে চলে আসবে।</span>
+                      <span className="text-base">📖</span>
+                      <span>৩ডি বই মোড: বাস্তব পাতার মতো উল্টিয়ে ১৫ লাইনের হাফেজী কুরআন পড়ুন।</span>
                     </span>
                     <button
                       type="button"
-                      onClick={() => setReaderMode("3d")}
-                      className="px-3 py-1 rounded-xl bg-teal-600 text-white font-bold hover:bg-teal-500 transition shrink-0 cursor-pointer text-xs"
+                      onClick={() => setReaderMode("scroll")}
+                      className="px-3 py-1 rounded-xl bg-emerald-600 text-white font-bold hover:bg-emerald-500 transition shrink-0 cursor-pointer text-xs"
                     >
-                      ৩ডি বই ➔
+                      স্ক্রোল মোড ➔
                     </button>
                   </div>
 
@@ -1433,16 +1648,15 @@ export default function TahfizQuranApp({
                         toast.success("বুকমার্ক যুক্ত করা হয়েছে");
                       }
                     }}
-                    isContinuousScrollMode={true}
                   />
                 </div>
-              ) : (
-                <div className="max-w-4xl mx-auto w-full">
-                  {/* কার্ড মোড ব্যানার */}
-                  <div className="p-3 mb-4 rounded-2xl bg-teal-950/80 border border-teal-500/50 flex items-center justify-between text-xs font-bold text-teal-200 shadow-md">
+              ) : readerMode === "scroll" ? (
+                <div className="space-y-6 sm:space-y-8 max-w-4xl mx-auto w-full">
+                  {/* একটানা স্ক্রোল মোড ব্যানার */}
+                  <div className="p-3 rounded-2xl bg-teal-950/90 border border-teal-500/50 flex items-center justify-between text-xs font-bold text-teal-200 shadow-md">
                     <span className="flex items-center gap-2 font-hind-siliguri">
-                      <FileText className="w-4 h-4 text-teal-400" />
-                      <span>কার্ড মোড: প্রতিটি আয়াতের বাংলা অনুবাদ, আরবি শব্দ ও অডিও আলাদা কার্ডে সাজানো।</span>
+                      <span className="text-base">📜</span>
+                      <span>একটানা স্ক্রোল মোড: উপর থেকে নিচে টান দিয়ে পৃষ্ঠা ১ থেকে ৬০৪ পর্যন্ত একটানা পড়ুন। ক্বারীর তিলাওয়াতের সাথে সাথে স্ক্রিন স্বয়ংক্রিয়ভাবে স্ক্রোল হয়ে লাইন সামনে চলে আসবে।</span>
                     </span>
                     <button
                       type="button"
@@ -1450,6 +1664,125 @@ export default function TahfizQuranApp({
                       className="px-3 py-1 rounded-xl bg-teal-600 text-white font-bold hover:bg-teal-500 transition shrink-0 cursor-pointer text-xs"
                     >
                       ৩ডি বই ➔
+                    </button>
+                  </div>
+
+                  {/* যদি ১ম পৃষ্ঠা ১ এর বেশি হয়, তবে আগের পৃষ্ঠাগুলো লোড করার বাটন */}
+                  {scrollPages[0] > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setScrollPages((prev) => {
+                          const first = prev[0];
+                          if (first <= 1) return prev;
+                          const prevBatch = [];
+                          for (let p = Math.max(1, first - 4); p < first; p++) {
+                            prevBatch.push(p);
+                          }
+                          return [...prevBatch, ...prev];
+                        });
+                      }}
+                      className="w-full py-2.5 px-4 rounded-2xl bg-[#082922] hover:bg-[#0c3930] text-teal-300 border border-teal-500/40 text-xs font-bold transition flex items-center justify-center gap-2 cursor-pointer shadow-md"
+                    >
+                      <ChevronLeft className="w-4 h-4 rotate-90" />
+                      <span>পূর্ববর্তী পৃষ্ঠাগুলো লোড করুন (পৃষ্ঠা {toBn(Math.max(1, scrollPages[0] - 4))} - {toBn(scrollPages[0] - 1)})</span>
+                    </button>
+                  )}
+
+                  {/* এক পৃষ্ঠার পর এক পৃষ্ঠা একটানা রেন্ডার */}
+                  {scrollPages.map((pNum, idx) => (
+                    <div key={pNum} className="relative">
+                      {/* পৃষ্ঠা ডিভাইডার */}
+                      {idx > 0 && (
+                        <div className="flex items-center justify-center gap-3 my-4 py-2 select-none">
+                          <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-amber-500/40 to-transparent" />
+                          <span className="text-xs font-black text-amber-300 px-3 py-1 rounded-full bg-black/60 border border-amber-500/40 shadow-sm flex items-center gap-1.5 font-hind-siliguri">
+                            <span>📖</span>
+                            <span>পৃষ্ঠা {toBn(pNum)}</span>
+                            <span className="text-teal-400 text-[10px]">({ALL_SURAHS.find(s => s.id === getHafiziPageMeta(pNum)?.firstSurahMeta?.id)?.nameBn || "সূরা"})</span>
+                          </span>
+                          <div className="h-[1px] flex-1 bg-gradient-to-l from-transparent via-amber-500/40 to-transparent" />
+                        </div>
+                      )}
+
+                      <HafiziMushafSheet
+                        pageNum={pNum}
+                        onPageChange={(p) => {
+                          setReaderPageNum(p);
+                          if (!scrollPages.includes(p)) {
+                            setScrollPages(prev => [...prev, p].sort((a,b) => a - b));
+                          }
+                          setTimeout(() => {
+                            const el = document.getElementById(`mushaf-page-${p}`);
+                            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+                          }, 100);
+                        }}
+                        onJumpToParaPage={handleJumpToParaAndPage}
+                        onPlayAyah={handlePlayAyah}
+                        playingAyahNumber={playingAyahNumber}
+                        playingSurahId={playingSurahId}
+                        isPlayingAudio={isPlayingAudio}
+                        activeWordIndex={activeWordIndex}
+                        targetHighlightAyah={targetHighlightAyah}
+                        readerTheme={pageFilter === "day" ? "day" : "night"}
+                        getSurahData={getSurahData}
+                        selectedQari={selectedQari}
+                        onSelectQari={handleQariChange}
+                        onOpenSearch={() => setIsPageSearchOpen(true)}
+                        onLaunchNurEngine={onLaunchNurEngine}
+                        onSwitchViewMode={() => setReaderMode("card")}
+                        bookmarks={bookmarks}
+                        onToggleBookmark={(surahId, ayahNum) => {
+                          const isBm = bookmarks.some((b) => b.surahId === surahId && b.ayah === ayahNum);
+                          if (isBm) {
+                            setBookmarks((prev) => prev.filter((b) => !(b.surahId === surahId && b.ayah === ayahNum)));
+                            toast.success("বুকমার্ক সরানো হয়েছে");
+                          } else {
+                            const sMeta = ALL_SURAHS.find((s) => s.id === surahId) || ALL_SURAHS[0];
+                            const newBm = {
+                              id: `bm-${Date.now()}`,
+                              surahId,
+                              ayah: ayahNum,
+                              label: `সূরা ${sMeta.nameBn} : আয়াত ${toBn(ayahNum)}`,
+                              date: formatBangladeshDate(new Date()),
+                            };
+                            setBookmarks((prev) => [newBm, ...prev]);
+                            toast.success("বুকমার্ক যুক্ত করা হয়েছে");
+                          }
+                        }}
+                        isContinuousScrollMode={true}
+                      />
+                    </div>
+                  ))}
+
+                  {/* নিচে আরো পৃষ্ঠা লোড করার সেন্টিনেল বা শেষ বার্তা */}
+                  {scrollPages[scrollPages.length - 1] < TOTAL_UTHMANI_PAGES ? (
+                    <div ref={scrollBottomSentinelRef} className="py-8 text-center flex flex-col items-center justify-center gap-2">
+                      <div className="w-8 h-8 rounded-full border-2 border-teal-400 border-t-transparent animate-spin" />
+                      <p className="text-xs text-teal-300 font-bold font-hind-siliguri">
+                        পরবর্তী পৃষ্ঠাগুলো লোড হচ্ছে... (পৃষ্ঠা {toBn(scrollPages[scrollPages.length - 1] + 1)})
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="py-8 text-center text-amber-400 font-bold text-sm bg-teal-950/60 rounded-2xl border border-amber-500/30">
+                      الحمد لله — পবিত্র কুরআনের শেষ পৃষ্ঠা (পৃষ্ঠা ৬০৪)।
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="max-w-4xl mx-auto w-full">
+                  {/* কার্ড মোড ব্যানার */}
+                  <div className="p-3 mb-4 rounded-2xl bg-amber-950/80 border border-amber-500/50 flex items-center justify-between text-xs font-bold text-amber-200 shadow-md">
+                    <span className="flex items-center gap-2 font-hind-siliguri">
+                      <span className="text-base">🗂️</span>
+                      <span>কার্ড মোড: প্রতিটি আয়াতের বাংলা অনুবাদ, আরবি শব্দ ও অডিও আলাদা কার্ডে সাজানো।</span>
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setReaderMode("scroll")}
+                      className="px-3 py-1 rounded-xl bg-amber-600 text-slate-950 font-bold hover:bg-amber-500 transition shrink-0 cursor-pointer text-xs"
+                    >
+                      স্ক্রোল মোড ➔
                     </button>
                   </div>
                   <QuranReader
