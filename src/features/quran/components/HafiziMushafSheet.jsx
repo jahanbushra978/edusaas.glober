@@ -129,21 +129,24 @@ export default function HafiziMushafSheet({
     setJumpInput(String(pageNum));
   }, [pageNum]);
 
-  // Auto-scroll screen only if currently recited Ayah is scrolled out of view (zero jumping)
+  // Auto-scroll screen to keep currently recited line in center of screen
   useEffect(() => {
     if (playingAyahNumber && playingSurahId) {
-      const el = document.getElementById(`mushaf-ayah-${playingSurahId}-${playingAyahNumber}`);
-      if (el) {
-        const rect = el.getBoundingClientRect();
-        const isInViewport =
-          rect.top >= 60 &&
-          rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) - 60;
-        if (!isInViewport) {
-          el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      const activeWordEl = document.getElementById("mushaf-active-word");
+      const targetEl =
+        activeWordEl ||
+        document.getElementById(`mushaf-ayah-${playingSurahId}-${playingAyahNumber}`);
+      if (targetEl) {
+        const rect = targetEl.getBoundingClientRect();
+        const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+        const isComfortablyCentered =
+          rect.top >= windowHeight * 0.25 && rect.bottom <= windowHeight * 0.75;
+        if (!isComfortablyCentered) {
+          targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
         }
       }
     }
-  }, [playingAyahNumber, playingSurahId]);
+  }, [playingAyahNumber, playingSurahId, activeWordIndex]);
 
   // Auto-scroll screen to target searched Ayah when page loads or target changes
   useEffect(() => {
@@ -872,11 +875,12 @@ export default function HafiziMushafSheet({
 
                                   {/* ৩. মূল শব্দের টেক্সট (মুতাশাবিহাত হলে শতভাগ স্পষ্ট সবুজ রঙ!) */}
                                   <span
+                                    id={isThisWordActive ? "mushaf-active-word" : undefined}
                                     className={`inline transition-colors duration-150 px-1 py-0.5 mx-[1px] rounded ${
                                       isThisWordActive
                                         ? selectedQari === "minshawy_teacher" && activeSpeaker === "student"
-                                          ? "bg-sky-400 text-slate-950 font-black shadow-md ring-2 ring-sky-300"
-                                          : "bg-amber-400 text-stone-950 font-bold shadow-sm ring-2 ring-amber-300"
+                                          ? "bg-sky-400 text-slate-950 font-black shadow-md ring-2 ring-sky-300 animate-pulse"
+                                          : "bg-amber-400 text-stone-950 font-bold shadow-sm ring-2 ring-amber-300 animate-pulse"
                                         : isTargetJump
                                         ? "text-amber-400 dark:text-amber-300 font-bold"
                                         : isThisAyahActive

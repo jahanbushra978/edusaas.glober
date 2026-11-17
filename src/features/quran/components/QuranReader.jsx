@@ -388,6 +388,15 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
       // Last Ayah of Surah reached
       if (repeatModeRef.current === "surah") {
         startNewAyahAudio(1, 0);
+      } else if (selectedSurahIdRef.current < 114) {
+        // Seamless auto-advance to next Surah: Recitation never stops until paused!
+        const nextSurahId = selectedSurahIdRef.current + 1;
+        handleSelectSurah(nextSurahId);
+        setTimeout(() => {
+          startNewAyahAudio(1, 0);
+        }, 450);
+        const nextMeta = ALL_SURAHS.find((s) => s.id === nextSurahId);
+        toast.success(`শুরু হচ্ছে: সূরা ${nextMeta?.nameBn || nextSurahId}`);
       } else {
         if (audioRef.current) {
           try {
@@ -398,7 +407,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
         setActiveWordIndex(-1);
         setPlayingAyahNumber(null);
         playingAyahRef.current = null;
-        toast.success(`মাশাআল্লাহ! সূরা ${currentSurah.bengaliName || currentSurah.name || ""} তিলাওয়াত সমাপ্ত হয়েছে।`);
+        toast.success(`মাশাআল্লাহ! পবিত্র কুরআন তিলাওয়াত সমাপ্ত হয়েছে।`);
       }
     }
   };
@@ -515,15 +524,17 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
               }
             }
 
-            // Scroll playing Ayah into view only if out of viewport
-            const el = document.getElementById(`mushaf-ayah-${selectedSurahIdRef.current}-${aNum}`);
+            // Scroll playing Ayah into view right in the center of the screen
+            const el =
+              document.getElementById(`ayah-${aNum}`) ||
+              document.getElementById(`mushaf-ayah-${selectedSurahIdRef.current}-${aNum}`);
             if (el) {
               const rect = el.getBoundingClientRect();
-              const isInViewport =
-                rect.top >= 80 &&
-                rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) - 80;
-              if (!isInViewport) {
-                el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+              const windowHeight = window.innerHeight || document.documentElement.clientHeight;
+              const isComfortablyCentered =
+                rect.top >= windowHeight * 0.25 && rect.bottom <= windowHeight * 0.75;
+              if (!isComfortablyCentered) {
+                el.scrollIntoView({ behavior: "smooth", block: "center" });
               }
             }
           })
