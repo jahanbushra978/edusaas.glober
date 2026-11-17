@@ -1367,7 +1367,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                 )}
 
                 {/* 📖 সম্পূর্ণ বাংলা তর্জমা শুনুন (সৈয়দ ইসমত তোহা) */}
-                {selectedSurahId === 1 && (
+                {(selectedSurahId === 1 || selectedSurahId === 2) && (
                   <button
                     type="button"
                     onClick={() => {
@@ -1379,10 +1379,11 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                           audioRef.current.pause();
                           setIsPlayingAudio(false);
                         }
+                        const sPad = String(selectedSurahId).padStart(3, "0");
                         handleToggleBangla(
-                          "সূরা আল-ফাতিহা সমগ্র বাংলা অনুবাদ। পরম করুণাময় ও অসীম দয়ালু আল্লাহর নামে শুরু করছি। সমস্ত প্রশংসা আল্লাহর জন্য, যিনি বিশ্বজগতের প্রতিপালক।",
+                          `সূরা ${currentSurahMeta.nameBn} সমগ্র বাংলা অনুবাদ।`,
                           fullKey,
-                          "/audio/bangla/surah_001.mp3"
+                          `/audio/bangla/surah_${sPad}.mp3`
                         );
                       }
                     }}
@@ -1391,7 +1392,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                         ? "bg-amber-400 text-slate-950 border-2 border-amber-200 animate-pulse font-black"
                         : "bg-white/15 hover:bg-white/25 text-amber-200 border border-white/25"
                     }`}
-                    title="হাফেজ সৈয়দ ইসমত তোহার কণ্ঠে সম্পূর্ণ সূরা আল-ফাতিহার খাঁটি বাংলা অনুবাদ শুনুন"
+                    title={`হাফেজ সৈয়দ ইসমত তোহার কণ্ঠে সম্পূর্ণ ${currentSurahMeta.nameBn}-এর খাঁটি বাংলা অনুবাদ শুনুন`}
                   >
                     <Volume2 className="w-4 h-4 text-amber-300" />
                     <span>
