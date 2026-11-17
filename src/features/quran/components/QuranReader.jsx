@@ -35,7 +35,7 @@ import {
   TOTAL_UTHMANI_PAGES
 } from "@/lib/quran/hafizi-pages";
 import HafiziMushafSheet from "./HafiziMushafSheet";
-import { useBanglaAudioEngine } from "@/lib/quran/bangla-audio-engine";
+import { useBanglaAudioEngine, getBengaliVerseAudioUrl } from "@/lib/quran/bangla-audio-engine";
 import {
   loadChapterSegments,
   getActiveArabicWordDetails,
@@ -914,14 +914,16 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
             <div className="flex items-center gap-1.5">
               <span className={`text-xs font-bold ${isDay ? "text-stone-600" : "text-slate-400"}`}>বাংলা কণ্ঠ:</span>
               <select
-                value={activeBanglaEngine || "engine-2"}
+                value={activeBanglaEngine || "engine-ismat"}
                 onChange={(e) => {
                   const newEng = e.target.value;
                   setActiveBanglaEngine(newEng);
                   toast.success(
-                    newEng === "engine-2"
-                      ? "ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ (সুললিত ও হৃদয়স্পর্শী) সক্রিয়"
-                      : "ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ (অভিজ্ঞ ও শান্ত) সক্রিয়"
+                    newEng === "engine-ismat"
+                      ? "হাফেজ সৈয়দ ইসমত তোহা (মূল অডিও কুরআন) সক্রিয়"
+                      : newEng === "engine-2"
+                      ? "ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ সক্রিয়"
+                      : "ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ সক্রিয়"
                   );
                 }}
                 className={`${
@@ -931,7 +933,8 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                 } rounded-xl px-2.5 sm:px-3 py-1.5 text-xs font-black focus:outline-none focus:ring-1 focus:ring-amber-500 cursor-pointer`}
                 title="বাংলা অনুবাদ ও ব্যাখ্যার ভয়েস ইঞ্জিন নির্বাচন করুন"
               >
-                <option value="engine-2">🎙️ ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ [ডিফল্ট]</option>
+                <option value="engine-ismat">🌟 সৈয়দ ইসমত তোহা (মূল অডিও)</option>
+                <option value="engine-2">🎙️ ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ</option>
                 <option value="engine-1">🎙️ ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ</option>
               </select>
               {elVoices && (
@@ -1060,12 +1063,14 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
           </select>
 
           <select
-            value={activeBanglaEngine || "engine-2"}
+            value={activeBanglaEngine || "engine-ismat"}
             onChange={(e) => {
               const newEng = e.target.value;
               setActiveBanglaEngine(newEng);
               toast.success(
-                newEng === "engine-2"
+                newEng === "engine-ismat"
+                  ? "সৈয়দ ইসমত তোহা (মূল অডিও) সক্রিয়"
+                  : newEng === "engine-2"
                   ? "ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ সক্রিয়"
                   : "ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ সক্রিয়"
               );
@@ -1074,9 +1079,10 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
               isDay
                 ? "bg-amber-50 text-amber-950 border border-amber-300 shadow-2xs"
                 : "bg-[#071d15] text-amber-300 border border-amber-600/60"
-            } rounded-xl px-2 py-1 text-[11px] font-black w-[112px] shrink-0 truncate focus:outline-none cursor-pointer`}
+            } rounded-xl px-2 py-1 text-[11px] font-black w-[130px] shrink-0 truncate focus:outline-none cursor-pointer`}
             title="বাংলা ভয়েস ইঞ্জিন"
           >
+            <option value="engine-ismat">সৈয়দ ইসমত তোহা (মূল)</option>
             <option value="engine-2">ইঞ্জিন ২ (স্টুডিও)</option>
             <option value="engine-1">ইঞ্জিন ১ (উস্তাদ)</option>
           </select>
@@ -1710,7 +1716,10 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                         {/* খাঁটি মানুষের পুরুষ কণ্ঠে বাংলা অনুবাদ অডিও প্লেয়ার */}
                         <button
                           type="button"
-                          onClick={() => handleToggleBangla(ayah.bengali, banglaKey)}
+                          onClick={() => {
+                            const staticUrl = getBengaliVerseAudioUrl(selectedSurahId, ayah.numberInSurah);
+                            handleToggleBangla(ayah.bengali, banglaKey, staticUrl);
+                          }}
                           className={`shrink-0 self-end sm:self-center px-3.5 py-2 rounded-2xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs ${
                             isThisBanglaPlaying
                               ? "bg-amber-500 border-amber-300 text-slate-950 shadow-md animate-pulse font-extrabold"
@@ -1993,11 +2002,13 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                   🎙️ বাংলা অনুবাদ ভয়েস ইঞ্জিন
                 </span>
                 <select
-                  value={activeBanglaEngine || "engine-2"}
+                  value={activeBanglaEngine || "engine-ismat"}
                   onChange={(e) => {
                     setActiveBanglaEngine(e.target.value);
                     toast.success(
-                      e.target.value === "engine-2"
+                      e.target.value === "engine-ismat"
+                        ? "সৈয়দ ইসমত তোহা (মূল অডিও কুরআন) সক্রিয়"
+                        : e.target.value === "engine-2"
                         ? "ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ সক্রিয়"
                         : "ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ সক্রিয়"
                     );
@@ -2006,7 +2017,8 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                     isDay ? "bg-white border-amber-300 text-slate-900" : "bg-[#071d15] border-emerald-700 text-amber-200"
                   }`}
                 >
-                  <option value="engine-2" className="bg-white text-slate-900">ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ [ডিফল্ট]</option>
+                  <option value="engine-ismat" className="bg-white text-slate-900">🌟 সৈয়দ ইসমত তোহা (মূল অডিও)</option>
+                  <option value="engine-2" className="bg-white text-slate-900">ইঞ্জিন ২: আল-কুরআন স্টুডিও কণ্ঠ</option>
                   <option value="engine-1" className="bg-white text-slate-900">ইঞ্জিন ১: ইসলামিক উস্তাদ স্টুডিও কণ্ঠ</option>
                 </select>
               </div>

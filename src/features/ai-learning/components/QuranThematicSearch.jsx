@@ -21,7 +21,7 @@ import {
   parseHafiziSearchQuery
 } from "@/lib/quran/hafizi-pages";
 import { getActiveShaykhId } from "@/lib/ai/qari-registry";
-import { useBanglaAudioEngine } from "@/lib/quran/bangla-audio-engine";
+import { useBanglaAudioEngine, getBengaliVerseAudioUrl } from "@/lib/quran/bangla-audio-engine";
 import { universalAudioEngine } from "@/lib/quran/audio";
 
 const POPULAR_THEMATIC_TOPICS = [
@@ -434,9 +434,9 @@ export default function QuranThematicSearch({ onSelectAyah }) {
   };
 
   // Toggle Authentic Neural Bengali Translation Audio
-  const handleToggleBangla = (text, id) => {
+  const handleToggleBangla = (text, id, customUrl = null) => {
     stopAudio();
-    toggleBanglaAudio(text, id);
+    toggleBanglaAudio(text, id, customUrl);
   };
 
   // ── NATURAL LANGUAGE HAFIZI QUERY DETECTION ──
@@ -823,7 +823,13 @@ export default function QuranThematicSearch({ onSelectAyah }) {
                         return (
                           <button
                             type="button"
-                            onClick={() => handleToggleBangla(verse.bangla, `bn-${verseKey}`)}
+                            onClick={() => {
+                              const parts = String(verseKey).split(":");
+                              const sNum = parseInt(parts[0], 10);
+                              const aNum = parseInt(parts[1], 10);
+                              const staticUrl = getBengaliVerseAudioUrl(sNum, aNum);
+                              handleToggleBangla(verse.bangla, `bn-${verseKey}`, staticUrl);
+                            }}
                             className={`shrink-0 self-end sm:self-center px-3 py-1.5 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5 cursor-pointer active:scale-95 shadow-xs ${
                               isThisBanglaPlaying
                                 ? "bg-amber-500 border-amber-300 text-slate-950 shadow-md animate-pulse font-extrabold"

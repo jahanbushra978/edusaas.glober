@@ -32,6 +32,14 @@ export const ELEVENLABS_STUDIO_VOICES = {
 };
 
 export const BANGLA_VOICE_ENGINES = {
+  "engine-ismat": {
+    id: "engine-ismat",
+    code: "engine-ismat",
+    name: "হাফেজ সৈয়দ ইসমত তোহা (মূল অডিও কুরআন)",
+    shortName: "সৈয়দ ইসমত তোহা (মূল অডিও)",
+    description: "হাফেজ মুনীর উদ্দীন আহমদ অনূদিত আল-কুরআন একাডেমি লন্ডনের মূল বিশুদ্ধ বাংলা অনুবাদ",
+    isDefault: true,
+  },
   "engine-2": {
     id: "engine-2",
     code: "engine-2",
@@ -40,7 +48,7 @@ export const BANGLA_VOICE_ENGINES = {
     description: "রোবোটিকতামুক্ত সুললিত, হৃদয়স্পর্শী ও স্পষ্ট স্টুডিও কণ্ঠ (উস্তাদ ব্রায়ান)",
     pitch: "0Hz",
     rate: "-3%",
-    isDefault: true,
+    isDefault: false,
   },
   "engine-1": {
     id: "engine-1",
@@ -104,14 +112,14 @@ class UniversalBanglaAudioEngine {
   }
 
   /**
-   * Get currently active voice engine (Default: 'engine-2' ElevenLabs v3 Studio)
+   * Get currently active voice engine (Default: 'engine-ismat' Syed Ismat Toha authentic audio)
    */
   getActiveEngine() {
-    if (typeof window === "undefined") return "engine-2";
+    if (typeof window === "undefined") return "engine-ismat";
     try {
-      return localStorage.getItem("rahmania_bangla_voice_engine") || "engine-2";
+      return localStorage.getItem("rahmania_bangla_voice_engine") || "engine-ismat";
     } catch {
-      return "engine-2";
+      return "engine-ismat";
     }
   }
 
@@ -121,7 +129,7 @@ class UniversalBanglaAudioEngine {
   setActiveEngine(engineId) {
     if (typeof window === "undefined") return;
     try {
-      const validId = engineId === "engine-1" ? "engine-1" : "engine-2";
+      const validId = BANGLA_VOICE_ENGINES[engineId] ? engineId : "engine-ismat";
       localStorage.setItem("rahmania_bangla_voice_engine", validId);
       if (this.status === "playing" || this.status === "loading") {
         this.stop();
@@ -376,7 +384,7 @@ class UniversalBanglaAudioEngine {
     let audioUrl = customUrl;
     // Auto-resolve static pre-cut authentic recitation if available
     if (!audioUrl && id) {
-      const match = String(id).match(/^(?:reader-bn-|bn-)?(\d+)-(\d+)$/);
+      const match = String(id).match(/^(?:reader-bn-|bn-)?(\d+)[:-](\d+)$/);
       if (match) {
         const s = parseInt(match[1], 10);
         const a = parseInt(match[2], 10);
@@ -583,7 +591,7 @@ export function useBanglaAudioEngine() {
     progress: typeof window !== "undefined" ? (banglaAudioEngine.progress ?? 0) : 0,
     currentTime: typeof window !== "undefined" ? (banglaAudioEngine.currentTime ?? 0) : 0,
     duration: typeof window !== "undefined" ? (banglaAudioEngine.duration ?? 0) : 0,
-    activeEngine: typeof window !== "undefined" ? banglaAudioEngine.getActiveEngine() : "engine-2",
+    activeEngine: typeof window !== "undefined" ? banglaAudioEngine.getActiveEngine() : "engine-ismat",
     activeElVoice: typeof window !== "undefined" ? banglaAudioEngine.getActiveElVoice() : "brian",
   }));
 
