@@ -80,6 +80,13 @@ export function getBengaliVerseAudioUrl(surahNum, ayahNum) {
     return `/audio/bangla/${sPad}${aPad}.mp3`;
   }
 
+  // Surah 3 (Ali 'Imran: Ayahs 1 to 10) - 100% শতভাগ অডিট ও নিখুঁত যাচাইকৃত
+  if (s === 3 && a >= 1 && a <= 10) {
+    const sPad = String(s).padStart(3, "0");
+    const aPad = String(a).padStart(3, "0");
+    return `/audio/bangla/${sPad}${aPad}.mp3`;
+  }
+
   // দ্রষ্টব্য: সূরা ২, ৩ ও ৪-এর সম্পূর্ণ তিলাওয়াত surah_002, surah_003, surah_004 থেকে
   // হেডারের [সম্পূর্ণ বাংলা তর্জমা (ইসমত তোহা)] বাটনে একটানা নিখুঁতভাবে বাজে।
   // আয়াতভিত্তিক ফাইলগুলো শতভাগ কানে শুনে ভেরিফাই না হওয়া পর্যন্ত ফলস পাথ দেওয়া যাবে না।
