@@ -57,6 +57,24 @@ export const BANGLA_VOICE_ENGINES = {
 export const EL_VOICE_STORAGE_KEY = "rahmania_bangla_el_voice";
 
 /**
+ * Resolves static pre-segmented authentic Bengali Quran audio file if available
+ * (e.g. Surah Al-Fatihah sliced from Syed Ismat Toha's recitation)
+ */
+export function getBengaliVerseAudioUrl(surahNum, ayahNum) {
+  const s = parseInt(surahNum, 10);
+  const a = parseInt(ayahNum, 10);
+  if (!s || !a) return null;
+
+  // Surah 1 (Al-Fatihah: Ayahs 1 to 7)
+  if (s === 1 && a >= 1 && a <= 7) {
+    const sPad = String(s).padStart(3, "0");
+    const aPad = String(a).padStart(3, "0");
+    return `/audio/bangla/${sPad}${aPad}.mp3`;
+  }
+  return null;
+}
+
+/**
  * Universal Bengali Quran Translation Audio Engine
  * (সার্বজনীন বাংলা অনুবাদ অডিও ইঞ্জিন)
  *
@@ -314,14 +332,14 @@ class UniversalBanglaAudioEngine {
   /**
    * Play Bengali audio for translation text with unique identifier
    */
-  async play(text, id) {
+  async play(text, id, customUrl = null) {
     if (typeof window === "undefined") return;
 
     const clean = this.cleanText(text);
-    if (!clean) return;
+    if (!clean && !customUrl) return;
 
     // Split text into words for real-time word-by-word tracking
-    this.currentWords = clean.split(/\s+/).filter(Boolean);
+    this.currentWords = clean ? clean.split(/\s+/).filter(Boolean) : [];
     this.activeWordIndex = 0;
     this.currentTime = 0;
     this.duration = 0;
@@ -355,7 +373,22 @@ class UniversalBanglaAudioEngine {
     this.status = "loading";
     this.notify();
 
-    const audioUrl = this.getAudioUrl(clean);
+    let audioUrl = customUrl;
+    // Auto-resolve static pre-cut authentic recitation if available
+    if (!audioUrl && id) {
+      const match = String(id).match(/^(?:reader-bn-|bn-)?(\d+)-(\d+)$/);
+      if (match) {
+        const s = parseInt(match[1], 10);
+        const a = parseInt(match[2], 10);
+        const staticUrl = getBengaliVerseAudioUrl(s, a);
+        if (staticUrl) {
+          audioUrl = staticUrl;
+        }
+      }
+    }
+    if (!audioUrl && clean) {
+      audioUrl = this.getAudioUrl(clean);
+    }
 
     try {
       const audio = new Audio();
@@ -471,8 +504,17 @@ class UniversalBanglaAudioEngine {
       };
 
       audio.onerror = (e) => {
-        console.warn("Bengali server audio error, switching to browser speech synthesis:", e);
+        console.warn("Bengali audio error:", audioUrl, e);
         if (this.currentId === id) {
+          const fallbackTts = this.getAudioUrl(clean);
+          if (audioUrl !== fallbackTts) {
+            audio.src = fallbackTts;
+            audio.load();
+            audio.play().catch(() => {
+              this.playBrowserSpeechFallback(clean, id);
+            });
+            return;
+          }
           this.playBrowserSpeechFallback(clean, id);
         }
       };
@@ -504,11 +546,11 @@ class UniversalBanglaAudioEngine {
   /**
    * Toggle playback for a translation
    */
-  toggle(text, id) {
+  toggle(text, id, customUrl = null) {
     if (this.currentId === id && (this.status === "playing" || this.status === "loading")) {
       this.stop();
     } else {
-      this.play(text, id);
+      this.play(text, id, customUrl);
     }
   }
 
@@ -549,16 +591,16 @@ export function useBanglaAudioEngine() {
     return banglaAudioEngine.subscribe(setState);
   }, []);
 
-  const play = React.useCallback((text, id) => {
-    banglaAudioEngine.play(text, id);
+  const play = React.useCallback((text, id, customUrl = null) => {
+    banglaAudioEngine.play(text, id, customUrl);
   }, []);
 
   const stop = React.useCallback(() => {
     banglaAudioEngine.stop();
   }, []);
 
-  const toggle = React.useCallback((text, id) => {
-    banglaAudioEngine.toggle(text, id);
+  const toggle = React.useCallback((text, id, customUrl = null) => {
+    banglaAudioEngine.toggle(text, id, customUrl);
   }, []);
 
   const setActiveEngine = React.useCallback((engineId) => {

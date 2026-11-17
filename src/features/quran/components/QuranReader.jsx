@@ -216,8 +216,8 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
     elVoices,
   } = useBanglaAudioEngine();
 
-  const handleToggleBangla = (text, id) => {
-    if (!text) {
+  const handleToggleBangla = (text, id, customUrl = null) => {
+    if (!text && !customUrl) {
       toast.error("এই আয়াতের বাংলা অনুবাদ পাওয়া যায়নি");
       return;
     }
@@ -225,7 +225,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
       audioRef.current.pause();
       setIsPlayingAudio(false);
     }
-    toggleBanglaAudio(text, id);
+    toggleBanglaAudio(text, id, customUrl);
   };
 
   // Audio unmount cleanup
@@ -1359,6 +1359,42 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                     <span>বন্ধ করুন</span>
                   </button>
                 )}
+
+                {/* 📖 সম্পূর্ণ বাংলা তর্জমা শুনুন (সৈয়দ ইসমত তোহা) */}
+                {selectedSurahId === 1 && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const fullKey = `reader-bn-surah-${selectedSurahId}`;
+                      if (playingBanglaId === fullKey) {
+                        stopBanglaAudio();
+                      } else {
+                        if (isPlayingAudio && audioRef.current) {
+                          audioRef.current.pause();
+                          setIsPlayingAudio(false);
+                        }
+                        handleToggleBangla(
+                          "সূরা আল-ফাতিহা সমগ্র বাংলা অনুবাদ। পরম করুণাময় ও অসীম দয়ালু আল্লাহর নামে শুরু করছি। সমস্ত প্রশংসা আল্লাহর জন্য, যিনি বিশ্বজগতের প্রতিপালক।",
+                          fullKey,
+                          "/audio/bangla/surah_001.mp3"
+                        );
+                      }
+                    }}
+                    className={`px-4 py-2.5 rounded-2xl font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg transition active:scale-95 cursor-pointer ${
+                      playingBanglaId === `reader-bn-surah-${selectedSurahId}`
+                        ? "bg-amber-400 text-slate-950 border-2 border-amber-200 animate-pulse font-black"
+                        : "bg-white/15 hover:bg-white/25 text-amber-200 border border-white/25"
+                    }`}
+                    title="হাফেজ সৈয়দ ইসমত তোহার কণ্ঠে সম্পূর্ণ সূরা আল-ফাতিহার খাঁটি বাংলা অনুবাদ শুনুন"
+                  >
+                    <Volume2 className="w-4 h-4 text-amber-300" />
+                    <span>
+                      {playingBanglaId === `reader-bn-surah-${selectedSurahId}`
+                        ? "বাংলা তর্জমা বাজছে (থামুন)"
+                        : "সম্পূর্ণ বাংলা তর্জমা (ইসমত তোহা)"}
+                    </span>
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1684,7 +1720,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                               ? "bg-amber-100 hover:bg-amber-200 border-amber-300 text-amber-950"
                               : "bg-[#05140d] border-emerald-900/80 hover:border-emerald-600 text-emerald-300 hover:bg-emerald-950/80"
                           }`}
-                          title="খাঁটি পুরুষ কণ্ঠে বাংলা অনুবাদ শুনুন"
+                          title={selectedSurahId === 1 ? "ক্বারী সৈয়দ ইসমত তোহার কণ্ঠে বিশুদ্ধ বাংলা তর্জমা শুনুন" : "খাঁটি পুরুষ কণ্ঠে বাংলা অনুবাদ শুনুন"}
                         >
                           {isThisBanglaLoading ? (
                             <span className="w-3.5 h-3.5 border-2 border-amber-300 border-t-transparent rounded-full animate-spin" />
@@ -1693,9 +1729,11 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                           )}
                           <span className="text-[11px] font-hind-siliguri font-bold">
                             {isThisBanglaPlaying
-                              ? "অনুবাদ বাজছে (থামুন)"
+                              ? "তর্জমা বাজছে (থামুন)"
                               : isThisBanglaLoading
                               ? "লোড হচ্ছে..."
+                              : selectedSurahId === 1
+                              ? "বাংলা তর্জমা শুনুন"
                               : "অনুবাদ শুনুন"}
                           </span>
                         </button>
