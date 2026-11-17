@@ -1367,7 +1367,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
                 )}
 
                 {/* 📖 সম্পূর্ণ বাংলা তর্জমা শুনুন (সৈয়দ ইসমত তোহা) */}
-                {(selectedSurahId === 1 || selectedSurahId === 2) && (
+                {(selectedSurahId === 1 || selectedSurahId === 2 || selectedSurahId === 3 || selectedSurahId === 4) && (
                   <button
                     type="button"
                     onClick={() => {

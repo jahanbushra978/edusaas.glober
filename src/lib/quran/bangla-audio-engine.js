@@ -86,6 +86,20 @@ export function getBengaliVerseAudioUrl(surahNum, ayahNum) {
     const aPad = String(a).padStart(3, "0");
     return `/audio/bangla/${sPad}${aPad}.mp3`;
   }
+
+  // Surah 3 (Ali 'Imran: Ayahs 1 to 200)
+  if (s === 3 && a >= 1 && a <= 200) {
+    const sPad = String(s).padStart(3, "0");
+    const aPad = String(a).padStart(3, "0");
+    return `/audio/bangla/${sPad}${aPad}.mp3`;
+  }
+
+  // Surah 4 (An-Nisa: Ayahs 1 to 176)
+  if (s === 4 && a >= 1 && a <= 176) {
+    const sPad = String(s).padStart(3, "0");
+    const aPad = String(a).padStart(3, "0");
+    return `/audio/bangla/${sPad}${aPad}.mp3`;
+  }
   return null;
 }
 
