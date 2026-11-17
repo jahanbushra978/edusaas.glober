@@ -80,6 +80,13 @@ export function getBengaliVerseAudioUrl(surahNum, ayahNum) {
     return `/audio/bangla/${sPad}${aPad}.mp3`;
   }
 
+  // Surah 2 (Al-Baqarah: Ayahs 1 to 12) - 100% শতভাগ কান দিয়ে অডিট ও শব্দে-শব্দে নিখুঁত যাচাইকৃত
+  if (s === 2 && a >= 1 && a <= 12) {
+    const sPad = String(s).padStart(3, "0");
+    const aPad = String(a).padStart(3, "0");
+    return `/audio/bangla/${sPad}${aPad}.mp3`;
+  }
+
   // Surah 3 (Ali 'Imran: Ayahs 1 to 10) - 100% শতভাগ অডিট ও নিখুঁত যাচাইকৃত
   if (s === 3 && a >= 1 && a <= 10) {
     const sPad = String(s).padStart(3, "0");
