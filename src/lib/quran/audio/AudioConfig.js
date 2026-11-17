@@ -28,7 +28,7 @@ export const AUDIO_CONFIG = {
   // Default audio settings
   DEFAULT_VOLUME: 1.0,
   DEFAULT_PLAYBACK_SPEED: 1.0,
-  DEFAULT_SHAYKH_ID: "husary_muallim",
+  DEFAULT_SHAYKH_ID: "minshawy_teacher",
 
   // Storage Keys
   STORAGE_KEY_ACTIVE_SHAYKH: "rahmania_nur_active_shaykh_v1",

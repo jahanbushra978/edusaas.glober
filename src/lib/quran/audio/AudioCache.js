@@ -89,7 +89,7 @@ class AudioLRUCache {
               audio.src = URL.createObjectURL(blob);
             }
           } else if (typeof navigator === "undefined" || navigator.onLine) {
-            fetch(url, { mode: "cors" }).then((resp) => {
+            fetch(url, { mode: "cors", credentials: "omit" }).then((resp) => {
               if (resp && (resp.status === 200 || resp.type === "opaque")) {
                 cache.put(url, resp).catch(() => {});
               }

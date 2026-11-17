@@ -3,8 +3,8 @@
  * Enables offline recitation, cached Quranic Uthmani text, and background sync.
  */
 
-const CACHE_NAME = "nur-quran-pwa-v2";
-const AUDIO_CACHE = "nur-audio-cache-v2";
+const CACHE_NAME = "nur-quran-pwa-v3";
+const AUDIO_CACHE = "nur-audio-cache-v3";
 
 const STATIC_PRECACHE = [
   "/",
@@ -82,10 +82,29 @@ self.addEventListener("fetch", (event) => {
             return cachedResponse;
           }
 
-          // Fetch with cors mode to allow cross-origin caching
-          const networkResponse = await fetch(event.request, { mode: "cors" }).catch(() => null);
-          if (networkResponse && (networkResponse.status === 200 || networkResponse.type === "opaque")) {
-            cache.put(event.request, networkResponse.clone()).catch(() => {});
+          // For cross-origin audio CDNs (EveryAyah, QuranCDN, jsDelivr), ALWAYS use credentials: 'omit'
+          // because they serve Access-Control-Allow-Origin: * which browsers reject if credentials: 'include'.
+          const isCrossDomain = url.origin !== self.location.origin;
+          const audioFetchRequest = isCrossDomain
+            ? new Request(event.request.url, {
+                method: "GET",
+                mode: "cors",
+                credentials: "omit",
+                headers: event.request.headers.get("range")
+                  ? { Range: event.request.headers.get("range") }
+                  : {},
+              })
+            : event.request;
+
+          const networkResponse = await fetch(audioFetchRequest).catch(() => null);
+          if (
+            networkResponse &&
+            (networkResponse.status === 200 || networkResponse.status === 206 || networkResponse.type === "opaque")
+          ) {
+            // Only cache full 200 OK responses to avoid caching 206 partial chunks
+            if (networkResponse.status === 200) {
+              cache.put(event.request, networkResponse.clone()).catch(() => {});
+            }
             return networkResponse;
           }
 
@@ -95,12 +114,15 @@ self.addEventListener("fetch", (event) => {
           const fallback = await cache.match(url.pathname, { ignoreSearch: true });
           if (fallback) return fallback;
 
-          return new Response(null, { status: 504, statusText: "Offline Audio Unavailable" });
+          // If not in cache, fallback to native fetch without service worker obstruction
+          return fetch(event.request);
         } catch {
           const cache = await caches.open(AUDIO_CACHE);
           const fallback = await cache.match(event.request, { ignoreSearch: true });
           if (fallback) return fallback;
-          return new Response(null, { status: 504, statusText: "Offline Audio Unavailable" });
+          return fetch(event.request).catch(
+            () => new Response(null, { status: 504, statusText: "Offline Audio Unavailable" })
+          );
         }
       })()
     );
@@ -115,7 +137,13 @@ self.addEventListener("fetch", (event) => {
         const cached = await cache.match(event.request);
         if (cached) return cached;
         try {
-          const res = await fetch(event.request);
+          const apiReq = new Request(event.request.url, {
+            method: "GET",
+            mode: "cors",
+            credentials: "omit",
+            headers: { Accept: "application/json" },
+          });
+          const res = await fetch(apiReq);
           if (res && res.status === 200) {
             cache.put(event.request, res.clone()).catch(() => {});
           }

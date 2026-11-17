@@ -71,7 +71,7 @@ test("1. Centralized Audio Engine Singleton & Config Verification", () => {
   assert.equal(typeof universalAudioEngine.playChime, "function");
   assert.equal(typeof universalAudioEngine.stopAll, "function");
 
-  assert.equal(AUDIO_CONFIG.DEFAULT_SHAYKH_ID, "husary_muallim");
+  assert.equal(AUDIO_CONFIG.DEFAULT_SHAYKH_ID, "minshawy_teacher");
   assert.ok(AUDIO_CONFIG.MAX_IN_MEMORY_AUDIO_INSTANCES >= 100);
 });
 

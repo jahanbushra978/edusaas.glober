@@ -74,7 +74,7 @@ export default function TahfizQuranApp({
   const [readingNavStyle, setReadingNavStyle] = useState("flip"); // 'flip' | 'scroll'
 
   // Universal Authentic Audio Engine State
-  const [selectedQari, setSelectedQari] = useState(() => getStoredQariPreference() || "minshawy_teacher");
+  const [selectedQari, setSelectedQari] = useState("minshawy_teacher");
   const [playingAyahNumber, setPlayingAyahNumber] = useState(null);
   const [playingSurahId, setPlayingSurahId] = useState(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState(false);

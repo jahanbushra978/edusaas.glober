@@ -71,7 +71,7 @@ export default function QuranReader({ onLaunchNurEngine, onLaunchVoiceTutor, ini
   const [readerTheme, setReaderTheme] = useState("day"); // 'day' (kids/warm) | 'night' (dark sanctuary)
 
   // Audio Player State
-  const [selectedQari, setSelectedQari] = useState(() => getStoredQariPreference() || "minshawy_teacher");
+  const [selectedQari, setSelectedQari] = useState("minshawy_teacher");
   const [activeSpeaker, setActiveSpeaker] = useState("ustad"); // 'ustad' | 'student' (ফর মুআল্লিম ও ছাত্রদল পুনরাবৃত্তি)
   const [qariSegmentsVersion, setQariSegmentsVersion] = useState(0); // Triggers re-render when Qari segments load
   const [playingAyahNumber, setPlayingAyahNumber] = useState(null);
