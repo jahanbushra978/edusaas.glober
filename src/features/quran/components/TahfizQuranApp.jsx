@@ -413,7 +413,6 @@ export default function TahfizQuranApp({
       if (directWords && directWords.length > 0) {
         playingAyahWordsRef.current = directWords;
       } else {
-        playingAyahWordsRef.current = [];
         getSurahData(sId)
           .then((data) => {
             if (data && data.ayahs) {
@@ -447,7 +446,7 @@ export default function TahfizQuranApp({
           words,
         });
 
-        setActiveWordIndex(computedIndex);
+        setActiveWordIndex((prev) => (prev === computedIndex ? prev : computedIndex));
       };
 
       audioRef.current.onended = () => {

@@ -130,7 +130,7 @@ export default function HafiziMushafSheet({
     setJumpInput(String(pageNum));
   }, [pageNum]);
 
-  // Auto-scroll screen to keep currently recited line in center of screen
+  // Auto-scroll screen only if currently recited Ayah is scrolled out of view (zero jumping)
   useEffect(() => {
     if (playingAyahNumber && playingSurahId) {
       // In multi-page continuous scroll, only the page containing this Ayah should auto-scroll
@@ -139,21 +139,18 @@ export default function HafiziMushafSheet({
       );
       if (!hasThisAyah) return;
 
-      const activeWordEl = document.getElementById("mushaf-active-word");
-      const targetEl =
-        activeWordEl ||
-        document.getElementById(`mushaf-ayah-${playingSurahId}-${playingAyahNumber}`);
-      if (targetEl) {
-        const rect = targetEl.getBoundingClientRect();
-        const windowHeight = window.innerHeight || document.documentElement.clientHeight;
-        const isComfortablyCentered =
-          rect.top >= windowHeight * 0.25 && rect.bottom <= windowHeight * 0.75;
-        if (!isComfortablyCentered) {
-          targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+      const el = document.getElementById(`mushaf-ayah-${playingSurahId}-${playingAyahNumber}`);
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const isInViewport =
+          rect.top >= 70 &&
+          rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) - 70;
+        if (!isInViewport) {
+          el.scrollIntoView({ behavior: "smooth", block: "nearest" });
         }
       }
     }
-  }, [playingAyahNumber, playingSurahId, activeWordIndex, pageAyahs]);
+  }, [playingAyahNumber, playingSurahId, pageAyahs]);
 
   // Auto-scroll screen to target searched Ayah when page loads or target changes
   useEffect(() => {
@@ -805,7 +802,7 @@ export default function HafiziMushafSheet({
                             }}
                             className={`inline cursor-pointer select-text transition-all duration-300 rounded-md ${
                               isTargetJump
-                                ? "bg-amber-400/30 text-amber-200 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)] px-1.5 py-0.5 animate-pulse"
+                                ? "bg-amber-400/30 text-amber-200 ring-2 ring-amber-400 shadow-[0_0_15px_rgba(251,191,36,0.6)] px-1.5 py-0.5"
                                 : isThisAyahActive
                                 ? "bg-emerald-500/15 ring-1 ring-emerald-400/50 rounded-md px-1 py-0.5"
                                 : ""
@@ -891,8 +888,8 @@ export default function HafiziMushafSheet({
                                     className={`inline transition-colors duration-150 px-1 py-0.5 mx-[1px] rounded ${
                                       isThisWordActive
                                         ? selectedQari === "minshawy_teacher" && activeSpeaker === "student"
-                                          ? "bg-sky-400 text-slate-950 font-black shadow-md ring-2 ring-sky-300 animate-pulse"
-                                          : "bg-amber-400 text-stone-950 font-bold shadow-sm ring-2 ring-amber-300 animate-pulse"
+                                          ? "bg-sky-400 text-slate-950 font-black shadow-md ring-2 ring-sky-300"
+                                          : "bg-amber-400 text-stone-950 font-bold shadow-sm ring-2 ring-amber-300"
                                         : isTargetJump
                                         ? "text-amber-400 dark:text-amber-300 font-bold"
                                         : isThisAyahActive
