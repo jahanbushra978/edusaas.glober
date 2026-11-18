@@ -34,6 +34,11 @@ import {
   getQariAudioUrl,
 } from "@/lib/quran/audio/QariRegistry";
 import { universalAudioEngine } from "@/lib/quran/audio";
+import {
+  getActiveArabicWordDetails,
+  splitArabicAyahWords,
+  getWordStartTimeSec,
+} from "@/lib/quran/quran-audio-timing";
 import { toast } from "sonner";
 
 export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
@@ -44,9 +49,9 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
     QURANI_AMAL_ITEMS.map((item) => item.id)
   );
 
-  // Global & Card Display Modes ('verses' or 'fazilat')
-  const [globalDisplayMode, setGlobalDisplayMode] = useState("verses"); // 'verses' | 'fazilat'
-  const [cardTabState, setCardTabState] = useState({}); // { [amalId]: 'verses' | 'fazilat' }
+  // Global & Card Display Modes: 'mushaf' (আয়াতভিত্তিক) | 'meaning' (অর্থভিত্তিক আয়াত) | 'fazilat' (ফযিলত ভিউ)
+  const [globalDisplayMode, setGlobalDisplayMode] = useState("mushaf");
+  const [cardTabState, setCardTabState] = useState({}); // { [amalId]: 'mushaf' | 'meaning' | 'fazilat' }
 
   // Active View / Modal state
   const [expandedAmalId, setExpandedAmalId] = useState("fatiha"); // Default first expanded
@@ -59,6 +64,8 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
   const [playbackType, setPlaybackType] = useState(null); // 'arabic' | 'bangla_meaning' | 'fazilat'
   const [activeAmalIndex, setActiveAmalIndex] = useState(-1);
   const [activeAyahIndex, setActiveAyahIndex] = useState(0);
+  const [activeWordIndex, setActiveWordIndex] = useState(-1);
+  const activeWordIndexRef = useRef(-1);
 
   // 🔁 Repeat & Multiple Playback Loop State (একাধিক বার ও একটানা বাজানোর নিয়ন্ত্রণ)
   const [repeatCount, setRepeatCount] = useState("1"); // '1' | '3' | '5' | '7' | '11' | '33' | '100' | 'infinite'
@@ -106,14 +113,19 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
   const analyserRef = useRef(null);
   const animationFrameRef = useRef(null);
 
-  // Helper to get active tab for a card
+  // Helper to get active tab for a card: 'mushaf' | 'meaning' | 'fazilat'
   const getCardActiveTab = (itemId) => {
-    if (globalDisplayMode === "fazilat") return "fazilat";
-    return cardTabState[itemId] || "verses";
+    if (cardTabState[itemId]) return cardTabState[itemId];
+    return globalDisplayMode;
   };
 
   const setCardActiveTab = (itemId, tab) => {
     setCardTabState((prev) => ({ ...prev, [itemId]: tab }));
+  };
+
+  const handleGlobalDisplayModeChange = (mode) => {
+    setGlobalDisplayMode(mode);
+    setCardTabState({});
   };
 
   // Filtered items
@@ -155,6 +167,10 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
     if (audioPlayerRef.current) {
       audioPlayerRef.current.pause();
       audioPlayerRef.current.currentTime = 0;
+      audioPlayerRef.current.ontimeupdate = null;
+      audioPlayerRef.current.onended = null;
+      audioPlayerRef.current.onerror = null;
+      audioPlayerRef.current.onloadedmetadata = null;
     }
 
     isPlayingRef.current = false;
@@ -162,6 +178,8 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
     setPlaybackType(null);
     setActiveAmalIndex(-1);
     setActiveAyahIndex(0);
+    setActiveWordIndex(-1);
+    activeWordIndexRef.current = -1;
     setLoadingAudioKey(null);
     playlistQueueRef.current = [];
     currentQueueStepRef.current = 0;
@@ -212,6 +230,9 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
     const task = queue[stepIndex];
     setActiveAmalIndex(task.amalIndex);
     setActiveAyahIndex(task.ayahIndex);
+    const initialWord = task.startWordIdx && task.startWordIdx > 0 ? task.startWordIdx : 0;
+    activeWordIndexRef.current = initialWord;
+    setActiveWordIndex(initialWord);
     setPlaybackStatus("playing");
     setPlaybackType(task.type);
     isPlayingRef.current = true;
@@ -225,6 +246,56 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
       }
       const audio = audioPlayerRef.current;
       audio.src = audioUrl;
+
+      // Extract / split words for real-time word-by-word tracking
+      const cleanWords = task.words && task.words.length > 0
+        ? task.words
+        : splitArabicAyahWords(task.arabic || "");
+
+      // Real-time word-by-word tracking synchronized with EveryAyah / QuranCDN
+      audio.ontimeupdate = () => {
+        if (!isPlayingRef.current || !audioPlayerRef.current) return;
+        const { currentTime, duration } = audio;
+        if (!duration || isNaN(duration)) return;
+
+        const details = getActiveArabicWordDetails({
+          currentTime,
+          duration,
+          surahNumber: task.surahNumber,
+          ayahNumber: task.ayahNumber,
+          qariId: selectedQari,
+          words: cleanWords,
+        });
+
+        if (details && details.wordIndex !== activeWordIndexRef.current && details.wordIndex >= 0) {
+          activeWordIndexRef.current = details.wordIndex;
+          setActiveWordIndex(details.wordIndex);
+        }
+      };
+
+      const handleLoadedMeta = () => {
+        if (task.startWordIdx && task.startWordIdx > 0) {
+          const dur = audio.duration || 0;
+          const seekTime = getWordStartTimeSec({
+            surahNumber: task.surahNumber,
+            ayahNumber: task.ayahNumber,
+            wordIndex: task.startWordIdx,
+            qariId: selectedQari,
+            duration: dur,
+            words: cleanWords,
+          });
+          try {
+            audio.currentTime = seekTime;
+          } catch {}
+        }
+      };
+
+      if (audio.readyState >= 1) {
+        handleLoadedMeta();
+      } else {
+        audio.onloadedmetadata = handleLoadedMeta;
+      }
+
       audio.play()
         .then(() => {
           setLoadingAudioKey(null);
@@ -237,11 +308,15 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
 
       audio.onended = () => {
         if (!isPlayingRef.current) return;
+        activeWordIndexRef.current = -1;
+        setActiveWordIndex(-1);
         playQueueStep(stepIndex + 1);
       };
       audio.onerror = () => {
         if (!isPlayingRef.current) return;
         setLoadingAudioKey(null);
+        activeWordIndexRef.current = -1;
+        setActiveWordIndex(-1);
         playQueueStep(stepIndex + 1);
       };
     } else if (task.type === "bangla_meaning") {
@@ -294,6 +369,9 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
       ayahIndex: vIdx,
       surahNumber: amalItem.surahNumber,
       ayahNumber: v.ayahNumber,
+      arabic: v.arabic,
+      words: splitArabicAyahWords(v.arabic),
+      startWordIdx: 0,
       audioKey: `arabic-${amalItem.id}-${v.ayahNumber}`,
       title: `${amalItem.titleBn} (আয়াত ${v.ayahNumber})`,
     }));
@@ -334,7 +412,7 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
   };
 
   // Play SINGLE Ayah Arabic Audio - Supports Custom / Multiple Repeat Counts
-  const handlePlaySingleAyahArabic = (amalItem, verse, vIdx, specificRepeat = null) => {
+  const handlePlaySingleAyahArabic = (amalItem, verse, vIdx, specificRepeat = null, startWord = 0) => {
     stopAllAudio();
     if (specificRepeat !== null && specificRepeat !== undefined) {
       repeatCountRef.current = String(specificRepeat);
@@ -352,6 +430,9 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
         ayahIndex: vIdx,
         surahNumber: amalItem.surahNumber,
         ayahNumber: verse.ayahNumber,
+        arabic: verse.arabic,
+        words: splitArabicAyahWords(verse.arabic),
+        startWordIdx: startWord,
         audioKey: `arabic-${amalItem.id}-${verse.ayahNumber}`,
         title: `${amalItem.titleBn} - আয়াত ${verse.ayahNumber}`,
       },
@@ -361,6 +442,35 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
     const count = specificRepeat !== null ? String(specificRepeat) : repeatCountRef.current;
     const countLabel = count === "infinite" ? " (একটানা লুপ)" : Number(count) > 1 ? ` (${count} বার)` : "";
     toast.info(`${amalItem.titleBn} - আয়াত ${verse.ayahNumber} তিলাওয়াত শুরু${countLabel}`);
+  };
+
+  // Play from a specific word in an Amal (for Mushaf / আয়াতভিত্তিক View)
+  const handlePlayFromWord = (amalItem, verse, vIdx, wordIdx, words) => {
+    stopAllAudio();
+    const globalIdx = QURANI_AMAL_ITEMS.findIndex((i) => i.id === amalItem.id);
+    const remainingVerses = amalItem.verses.slice(vIdx);
+    const queue = remainingVerses.map((v, relIdx) => {
+      const wList = relIdx === 0 && words && words.length > 0 ? words : splitArabicAyahWords(v.arabic);
+      return {
+        type: "arabic",
+        amalId: amalItem.id,
+        amalIndex: globalIdx,
+        ayahIndex: vIdx + relIdx,
+        surahNumber: amalItem.surahNumber,
+        ayahNumber: v.ayahNumber,
+        arabic: v.arabic,
+        words: wList,
+        startWordIdx: relIdx === 0 ? wordIdx : 0,
+        audioKey: `arabic-${amalItem.id}-${v.ayahNumber}`,
+        title: `${amalItem.titleBn} (আয়াত ${v.ayahNumber})`,
+      };
+    });
+
+    playlistQueueRef.current = queue;
+    currentLoopCycleRef.current = 1;
+    setCurrentLoopCycle(1);
+    setExpandedAmalId(amalItem.id);
+    playQueueStep(0);
   };
 
   // Play SINGLE Ayah Bengali Meaning Fast
@@ -442,6 +552,9 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
           ayahIndex: vIdx,
           surahNumber: item.surahNumber,
           ayahNumber: v.ayahNumber,
+          arabic: v.arabic,
+          words: splitArabicAyahWords(v.arabic),
+          startWordIdx: 0,
           audioKey: `arabic-${item.id}-${v.ayahNumber}`,
           title: `${item.titleBn} - আয়াত ${v.ayahNumber}`,
         });
@@ -685,28 +798,50 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
               )}
             </div>
 
-            {/* Global View Switch: Verses vs Fazilat Reading Mode */}
-            <div className="flex items-center gap-1 bg-emerald-950/80 border border-emerald-600/50 p-1 rounded-2xl">
+            {/* Global View Switch: আয়াতভিত্তিক (মুসহাফ) vs অর্থভিত্তিক আয়াত vs ফযিলত ভিউ */}
+            <div className="flex items-center gap-1 bg-emerald-950/80 border border-emerald-600/50 p-1 rounded-2xl shadow-inner">
+              {/* ১. আয়াতভিত্তিক (কুরআনের মূল নুসখা/মুসহাফ — শুধু আয়াত, শব্দ-বাই-শব্দ সিঙ্ক ও তিলাওয়াত) */}
               <button
-                onClick={() => setGlobalDisplayMode("verses")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                  globalDisplayMode === "verses"
+                type="button"
+                onClick={() => handleGlobalDisplayModeChange("mushaf")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                  globalDisplayMode === "mushaf"
                     ? "bg-amber-400 text-slate-950 shadow-md font-black"
                     : "text-emerald-200 hover:text-white"
                 }`}
+                title="শুধুমাত্র কুরআনের নুসখা/মুসহাফ — একটার পর একটা শব্দ শব্দ তিলাওয়াত"
               >
                 <BookOpen className="w-3.5 h-3.5" />
-                <span>আয়াত ভিউ</span>
+                <span>আয়াতভিত্তিক</span>
               </button>
+
+              {/* ২. অর্থভিত্তিক আয়াত (আরবি + উচ্চারণ + বাংলা অর্থ — ইউজার মার্ককৃত অবস্থান) */}
               <button
-                onClick={() => setGlobalDisplayMode("fazilat")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                type="button"
+                onClick={() => handleGlobalDisplayModeChange("meaning")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                  globalDisplayMode === "meaning"
+                    ? "bg-amber-400 text-slate-950 shadow-md font-black"
+                    : "text-emerald-200 hover:text-white"
+                }`}
+                title="আয়াত ও বাংলা অনুবাদসহ বিস্তারিত ভিউ"
+              >
+                <FileText className="w-3.5 h-3.5" />
+                <span>অর্থভিত্তিক আয়াত</span>
+              </button>
+
+              {/* ৩. ফযিলত ভিউ (হাদীসের দলিল ও আমলবিধি) */}
+              <button
+                type="button"
+                onClick={() => handleGlobalDisplayModeChange("fazilat")}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                   globalDisplayMode === "fazilat"
                     ? "bg-amber-400 text-slate-950 shadow-md font-black"
                     : "text-emerald-200 hover:text-white"
                 }`}
+                title="সহীহ হাদিসের ফযিলত ও আমলবিধি"
               >
-                <FileText className="w-3.5 h-3.5" />
+                <ShieldCheck className="w-3.5 h-3.5" />
                 <span>ফযিলত ভিউ</span>
               </button>
             </div>
@@ -925,43 +1060,67 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                 </div>
               )}
 
-              {/* Card Tabs: [ আয়াত ও অনুবাদ ] vs [ ফযিলত ও পড়ার নিয়ম ] */}
+              {/* Card Tabs: [ আয়াতভিত্তিক (মুসহাফ) ] vs [ অর্থভিত্তিক আয়াত ] vs [ ফযিলত ও পড়ার নিয়ম ] */}
               <div className="px-4 sm:px-5 pb-2">
-                <div className="flex items-center gap-2 border-b border-stone-200/80 dark:border-stone-800 pb-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 border-b border-stone-200/80 dark:border-stone-800 pb-2 overflow-x-auto no-scrollbar">
+                  {/* ১. আয়াতভিত্তিক (মুসহাফ) — শুধুমাত্র আয়াত, শব্দ-বাই-শব্দ তিলাওয়াত */}
                   <button
+                    type="button"
                     onClick={() => {
-                      setCardActiveTab(item.id, "verses");
+                      setCardActiveTab(item.id, "mushaf");
                       setExpandedAmalId(item.id);
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                      currentTab === "verses"
-                        ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-200 font-extrabold border border-emerald-300 dark:border-emerald-700"
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                      currentTab === "mushaf"
+                        ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-200 font-extrabold border border-emerald-300 dark:border-emerald-700 shadow-2xs"
                         : "text-slate-500 hover:text-slate-800 dark:text-stone-400"
                     }`}
+                    title="কুরআনের মূল নুসখা — শুধুমাত্র আয়াত"
                   >
                     <BookOpen className="w-3.5 h-3.5" />
-                    <span>আয়াত ও অনুবাদ ({item.totalVerses})</span>
+                    <span>আয়াতভিত্তিক (মুসহাফ)</span>
                   </button>
 
+                  {/* ২. অর্থভিত্তিক আয়াত — আরবি + উচ্চারণ + বাংলা অর্থ */}
                   <button
+                    type="button"
+                    onClick={() => {
+                      setCardActiveTab(item.id, "meaning");
+                      setExpandedAmalId(item.id);
+                    }}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                      currentTab === "meaning"
+                        ? "bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-200 font-extrabold border border-amber-300 dark:border-amber-700 shadow-2xs"
+                        : "text-slate-500 hover:text-slate-800 dark:text-stone-400"
+                    }`}
+                    title="আয়াত ও বাংলা অনুবাদসহ বিস্তারিত ভিউ"
+                  >
+                    <FileText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                    <span>অর্থভিত্তিক আয়াত ({item.totalVerses})</span>
+                  </button>
+
+                  {/* ৩. ফযিলত ও সহীহ হাদীসের দলিল */}
+                  <button
+                    type="button"
                     onClick={() => {
                       setCardActiveTab(item.id, "fazilat");
                       setExpandedAmalId(item.id);
                     }}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                       currentTab === "fazilat"
-                        ? "bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-200 font-extrabold border border-amber-300 dark:border-amber-700"
+                        ? "bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-200 font-extrabold border border-amber-300 dark:border-amber-700 shadow-2xs"
                         : "text-slate-500 hover:text-slate-800 dark:text-stone-400"
                     }`}
+                    title="সহীহ হাদিসের ফযিলত ও আমলবিধি"
                   >
-                    <FileText className="w-3.5 h-3.5 text-amber-600" />
-                    <span>ফযিলত ও সহীহ হাদীসের দলিল</span>
+                    <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
+                    <span>ফযিলত ও সহীহ দলিল</span>
                   </button>
                 </div>
               </div>
 
               {/* Virtue Summary Quick Banner */}
-              {currentTab === "verses" && (
+              {currentTab !== "fazilat" && (
                 <div className="px-4 sm:px-5 pb-3">
                   <div className="text-xs text-slate-700 dark:text-emerald-200/90 leading-relaxed bg-amber-50/70 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200/70 dark:border-amber-900/40 flex items-start justify-between gap-3">
                     <div className="flex items-start gap-2">
@@ -972,6 +1131,7 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                       </div>
                     </div>
                     <button
+                      type="button"
                       onClick={() => {
                         setCardActiveTab(item.id, "fazilat");
                         setExpandedAmalId(item.id);
@@ -987,8 +1147,105 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
               {/* ── CARD BODY (Expanded) ── */}
               {isExpanded && (
                 <div className="border-t border-stone-100 dark:border-stone-800 bg-[#FAFBF9] dark:bg-stone-950/40 p-4 sm:p-6 space-y-4">
-                  {/* TAB 1: VERSES VIEW */}
-                  {currentTab === "verses" && (
+                  {/* TAB 1: MUSHAF / শুধুমাত্র আয়াতভিত্তিক ভিউ (কোরআনের মূল নুসখা — কোনো অর্থ ছাড়া খাঁটি পাঠ) */}
+                  {currentTab === "mushaf" && (
+                    <div className="relative rounded-2xl border-2 border-emerald-800/25 dark:border-emerald-600/30 bg-[#FBF9F4] dark:bg-stone-900/90 shadow-inner p-4 sm:p-6 sm:px-8 space-y-4 overflow-hidden">
+                      {/* Decorative Mushaf Corner Accents */}
+                      <div className="absolute top-2 left-2 text-emerald-800/20 dark:text-emerald-400/20 text-xs font-serif select-none pointer-events-none">
+                        ❖
+                      </div>
+                      <div className="absolute top-2 right-2 text-emerald-800/20 dark:text-emerald-400/20 text-xs font-serif select-none pointer-events-none">
+                        ❖
+                      </div>
+                      <div className="absolute bottom-2 left-2 text-emerald-800/20 dark:text-emerald-400/20 text-xs font-serif select-none pointer-events-none">
+                        ❖
+                      </div>
+                      <div className="absolute bottom-2 right-2 text-emerald-800/20 dark:text-emerald-400/20 text-xs font-serif select-none pointer-events-none">
+                        ❖
+                      </div>
+
+                      {/* Bismillah Header (if fromAyah === 1 and not Surah Fatiha where Bismillah is Ayah 1) */}
+                      {item.fromAyah === 1 && item.id !== "fatiha" && (
+                        <div className="text-center pb-4 border-b border-emerald-900/10 dark:border-emerald-700/20">
+                          <p
+                            dir="rtl"
+                            className="font-hafizi-quran text-2xl sm:text-3xl text-emerald-950 dark:text-emerald-200"
+                          >
+                            بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Continuous Mushaf Flow of Ayahs */}
+                      <div
+                        dir="rtl"
+                        className="font-hafizi-quran text-2xl sm:text-3xl lg:text-3xl leading-[2.6] sm:leading-[3.0] text-right text-emerald-950 dark:text-emerald-100 select-text"
+                      >
+                        {item.verses.map((v, vIdx) => {
+                          const isAyahPlaying = isThisAmalPlaying && activeAyahIndex === vIdx;
+                          const words = splitArabicAyahWords(v.arabic);
+
+                          return (
+                            <React.Fragment key={v.ayahNumber}>
+                              {words.map((word, wIdx) => {
+                                const isWordActive =
+                                  isAyahPlaying && activeWordIndex === wIdx;
+
+                                return (
+                                  <span
+                                    key={wIdx}
+                                    onClick={() => handlePlayFromWord(item, v, vIdx, wIdx, words)}
+                                    className={`inline-block transition-all duration-150 px-1.5 py-0.5 mx-0.5 rounded-lg cursor-pointer ${
+                                      isWordActive
+                                        ? "bg-amber-400 text-slate-950 font-black shadow-md ring-2 ring-amber-300 scale-105"
+                                        : isAyahPlaying
+                                        ? "text-emerald-900 dark:text-amber-200 font-bold hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40"
+                                        : "text-slate-900 dark:text-stone-100 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40"
+                                    }`}
+                                    title={`শব্দ #${wIdx + 1}: ${word} (ক্লিক করে শুনুন)`}
+                                  >
+                                    {word}
+                                  </span>
+                                );
+                              })}
+
+                              {/* Ayah End Circle Marker */}
+                              <span
+                                onClick={() => handlePlaySingleAyahArabic(item, v, vIdx)}
+                                className={`inline-flex items-center justify-center min-w-[30px] h-7 px-1.5 rounded-full border text-xs sm:text-sm font-bold font-mono mx-1.5 align-middle select-none transition-all cursor-pointer shadow-2xs ${
+                                  isAyahPlaying
+                                    ? "bg-amber-400 text-slate-950 border-amber-500 ring-2 ring-amber-300 scale-110 shadow-xs"
+                                    : "border-amber-600/50 dark:border-amber-400/50 bg-amber-50/90 dark:bg-amber-950/70 text-amber-950 dark:text-amber-200 hover:bg-amber-100 hover:scale-105"
+                                }`}
+                                title={`আয়াত ${v.ayahNumber} (ক্লিক করে শুনুন)`}
+                              >
+                                ﴿{v.ayahNumber}﴾
+                              </span>
+                            </React.Fragment>
+                          );
+                        })}
+                      </div>
+
+                      {/* Mushaf Interactive Guidance Footer */}
+                      <div className="mt-4 pt-3 border-t border-emerald-900/10 dark:border-emerald-700/20 flex flex-wrap items-center justify-between gap-2 text-[11px] text-stone-500 dark:text-stone-400">
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                          <span>শব্দে বা আয়াতের চিহ্নে ﴿১﴾ ক্লিক করে শুনুন • মূল মুসহাফ অনুযায়ী একটার পর একটা শব্দ সিঙ্ক হয়ে বাজবে</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handlePlaySingleAmal(item)}
+                          className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-[11px] flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-xs"
+                        >
+                          <Play className="w-3 h-3 fill-white" />
+                          <span>শুরু থেকে শুনুন</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* TAB 2: অর্থভিত্তিক আয়াত ভিউ (আরবি + উচ্চারণ + বাংলা অর্থ) */}
+                  {currentTab === "meaning" && (
                     <div className="space-y-4">
                       {item.verses.map((v, vIdx) => {
                         const isAyahActive =
@@ -1013,6 +1270,7 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                               {/* Individual Ayah Play Buttons */}
                               <div className="flex items-center gap-1.5">
                                 <button
+                                  type="button"
                                   onClick={() => handlePlaySingleAyahArabic(item, v, vIdx)}
                                   className="px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950 hover:bg-emerald-200 text-emerald-800 dark:text-emerald-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition active:scale-95"
                                   title="শুধু এই আয়াত তিলাওয়াত শুনুন"
@@ -1022,6 +1280,7 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                                 </button>
 
                                 <button
+                                  type="button"
                                   onClick={() => handlePlaySingleAyahMeaning(item, v, vIdx)}
                                   className="px-2 py-1 rounded-lg bg-teal-100 dark:bg-teal-950 hover:bg-teal-200 text-teal-800 dark:text-teal-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition active:scale-95"
                                   title="এই আয়াতের বাংলা অর্থ শুনুন"
@@ -1130,17 +1389,28 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                       {/* Bottom Action: Switch to Verses or Start Tilawat */}
                       <div className="flex flex-wrap items-center gap-2.5 pt-2">
                         <button
+                          type="button"
                           onClick={() => handlePlaySingleAmal(item)}
-                          className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer"
+                          className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer transition active:scale-95"
                         >
                           <Play className="w-3.5 h-3.5 fill-white" />
                           <span>এই আমলের তিলাওয়াত শুরু করুন</span>
                         </button>
                         <button
-                          onClick={() => setCardActiveTab(item.id, "verses")}
-                          className="px-4 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-bold text-xs cursor-pointer"
+                          type="button"
+                          onClick={() => setCardActiveTab(item.id, "mushaf")}
+                          className="px-3.5 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 font-bold text-xs cursor-pointer transition active:scale-95 flex items-center gap-1"
                         >
-                          আয়াত ও অর্থ দেখুন
+                          <BookOpen className="w-3.5 h-3.5" />
+                          <span>আয়াতভিত্তিক (মুসহাফ) দেখুন</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setCardActiveTab(item.id, "meaning")}
+                          className="px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-bold text-xs cursor-pointer transition active:scale-95 flex items-center gap-1"
+                        >
+                          <FileText className="w-3.5 h-3.5 text-teal-600" />
+                          <span>অর্থভিত্তিক আয়াত দেখুন</span>
                         </button>
                       </div>
                     </div>
