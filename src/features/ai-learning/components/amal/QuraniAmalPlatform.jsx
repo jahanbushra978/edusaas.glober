@@ -22,6 +22,8 @@ import {
   FileText,
   Loader2,
   Repeat,
+  SlidersHorizontal,
+  HelpCircle,
 } from "lucide-react";
 import {
   QURANI_AMAL_ITEMS,
@@ -57,6 +59,8 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
   const [expandedAmalId, setExpandedAmalId] = useState("fatiha"); // Default first expanded
   const [fazilatModalItem, setFazilatModalItem] = useState(null);
   const [activeMicItem, setActiveMicItem] = useState(null);
+  const [showAudioSettings, setShowAudioSettings] = useState(false);
+  const [showInfoModal, setShowInfoModal] = useState(false);
 
   // Audio Playback State
   const [selectedQari, setSelectedQari] = useState(getActiveShaykhId() || "alafasy");
@@ -72,6 +76,12 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
   const [currentLoopCycle, setCurrentLoopCycle] = useState(1);
   const repeatCountRef = useRef("1");
   const currentLoopCycleRef = useRef(1);
+  // Per-card repeat settings state (সুনির্দিষ্ট সূরায় কতবার পড়া হবে তা নির্ধারণ)
+  const [cardRepeatCounts, setCardRepeatCounts] = useState({});
+
+  const getCardRepeatCount = (itemId) => {
+    return cardRepeatCounts[itemId] || repeatCount || "1";
+  };
 
   // Helper to extract numeric repetition from text (e.g. "৩ বার" -> 3, "৭ বার" -> 7)
   const extractRepetitionNumber = (repText) => {
@@ -696,115 +706,97 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
   };
 
   return (
-    <div className="w-full min-h-screen bg-[#FAF8F5] dark:bg-[#07130E] text-slate-800 dark:text-emerald-50 transition-colors pb-32">
+    <div className="w-full min-h-screen bg-[#FAF8F5] dark:bg-[#06140D] text-slate-800 dark:text-emerald-50 transition-colors pb-32">
       {/* ── TOP HERO HEADER & CONTROLS ── */}
-      <div className="bg-gradient-to-b from-emerald-900 to-teal-950 text-white pt-8 pb-10 px-4 sm:px-6 rounded-b-[2.5rem] shadow-xl border-b border-emerald-700/40 relative overflow-hidden">
-        {/* Background Islamic Subtle Lattice (No Sparkles) */}
+      <div className="bg-gradient-to-b from-emerald-900 to-teal-950 text-white pt-5 pb-7 px-3 sm:px-6 rounded-b-[2rem] shadow-xl border-b border-emerald-700/40 relative overflow-hidden">
+        {/* Subtle Islamic Lattice Background (No Sparkles) */}
         <div className="absolute inset-0 opacity-10 pointer-events-none bg-[radial-gradient(#10b981_1px,transparent_1px)] [background-size:16px_16px]" />
 
-        <div className="max-w-5xl mx-auto space-y-6 relative z-10">
-          {/* Top Pill / Badge without sparkles */}
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-800/80 border border-emerald-500/40 text-emerald-200 text-xs font-bold backdrop-blur-md">
-              <BookOpen className="w-4 h-4 text-amber-300" />
-              <span>দৈনন্দিন সুন্নাত ও মাসনূন আমল</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-              <span className="text-amber-300 font-extrabold">{QURANI_AMAL_ITEMS.length}টি ফযিলতপূর্ণ আমল</span>
-            </div>
-
-            {/* Qari Selector & Repeat / Loop Controls */}
-            <div className="flex flex-wrap items-center gap-2">
-              {/* Qari Selector Dropdown */}
-              <div className="flex items-center gap-2 bg-emerald-950/70 border border-emerald-600/40 px-3 py-1.5 rounded-2xl backdrop-blur-md">
-                <Volume2 className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-bold text-emerald-200 hidden sm:inline">ক্বারী:</span>
-                <select
-                  value={selectedQari}
-                  onChange={(e) => handleQariChange(e.target.value)}
-                  className="bg-transparent text-xs font-extrabold text-amber-300 focus:outline-none cursor-pointer"
-                >
-                  {SHAYKH_REGISTRY.map((qari) => (
-                    <option key={qari.id} value={qari.id} className="bg-emerald-950 text-white font-medium">
-                      {qari.displayTitleBn || qari.nameBn} ({qari.roleBn})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* 🔁 Global Repeat / Loop Selector (একাধিক বার বাজানোর কন্ট্রোল) */}
-              <div className="flex items-center gap-1.5 bg-emerald-950/70 border border-emerald-600/40 px-3 py-1.5 rounded-2xl backdrop-blur-md">
-                <Repeat className="w-4 h-4 text-amber-400" />
-                <span className="text-xs font-bold text-emerald-200 hidden sm:inline">পুনরাবৃত্তি:</span>
-                <select
-                  value={repeatCount}
-                  onChange={(e) => handleRepeatCountChange(e.target.value)}
-                  className="bg-transparent text-xs font-extrabold text-amber-300 focus:outline-none cursor-pointer"
-                  title="কোনো সূরা বা আমল কতবার বাজবে তা নির্ধারণ করুন"
-                >
-                  <option value="1" className="bg-emerald-950 text-white font-medium">১ বার (একবার বাজবে)</option>
-                  <option value="3" className="bg-emerald-950 text-white font-medium">৩ বার (সুন্নাহ আমল)</option>
-                  <option value="5" className="bg-emerald-950 text-white font-medium">৫ বার (হিফজ ও মুখস্থ)</option>
-                  <option value="7" className="bg-emerald-950 text-white font-medium">৭ বার (শিফা ও রুকইয়াহ)</option>
-                  <option value="11" className="bg-emerald-950 text-white font-medium">১১ বার (আমল)</option>
-                  <option value="33" className="bg-emerald-950 text-white font-medium">৩৩ বার (তাসবীহ সংখ্যা)</option>
-                  <option value="100" className="bg-emerald-950 text-white font-medium">১০০ বার (যিকির সংখ্যা)</option>
-                  <option value="infinite" className="bg-emerald-950 text-white font-medium">🔁 একটানা / অসীম বার</option>
-                </select>
-              </div>
-            </div>
-          </div>
-
-          {/* Title & Description */}
-          <div className="space-y-2">
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-tight flex items-center gap-3">
-              <span>কুরআনী আমল</span>
-              <span className="text-xs sm:text-sm font-semibold px-2.5 py-1 rounded-xl bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                الأَعْمَالُ القُرْآنِيَّة
+        <div className="max-w-5xl mx-auto space-y-3.5 relative z-10">
+          {/* Top Row: Title, Quick Badges & Settings Menu Bar */}
+          <div className="flex items-center justify-between gap-2.5">
+            <div className="flex items-center gap-1.5 sm:gap-3 min-w-0">
+              <h1 className="text-lg sm:text-2xl md:text-3xl font-extrabold tracking-tight flex items-center gap-1.5 sm:gap-2 truncate">
+                <span>কুরআনী আমল</span>
+                <span className="text-[10px] sm:text-xs font-semibold px-1.5 sm:px-2 py-0.5 rounded-lg bg-amber-400/20 text-amber-300 border border-amber-400/30 shrink-0">
+                  الأَعْمَالُ القُرْآنِيَّة
+                </span>
+              </h1>
+              <span className="hidden sm:inline-flex text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-800/80 text-emerald-200 border border-emerald-600/40 shrink-0">
+                {QURANI_AMAL_ITEMS.length}টি আমল
               </span>
-            </h1>
-            <p className="text-emerald-100/90 text-xs sm:text-sm max-w-2xl leading-relaxed">
-              নবীজী (ﷺ)-এর সহীহ সুন্নাহ ও হাদীস অনুযায়ী দৈনন্দিন ফযিলতপূর্ণ সূরা ও আয়াতের সমষ্টি। যেকোনো আমল এককভাবে, অর্থসহ বা একসাথে শুনুন এবং ফযিলত বিস্তারিত পড়ুন।
-            </p>
-          </div>
+            </div>
 
-          {/* Quick Action Buttons Bar + Global Display Mode Switcher */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2">
-            <div className="flex flex-wrap items-center gap-2.5">
+            {/* তিলাওয়াত সেটিংস মেনুবার ও নির্দেশিকা বাটন (Settings Menu Bar) */}
+            <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
               <button
-                onClick={() => handlePlayAllAmal(false)}
-                className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-amber-500/20 transition active:scale-95 cursor-pointer"
+                type="button"
+                onClick={() => setShowAudioSettings(true)}
+                className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-emerald-950/80 hover:bg-emerald-900 border border-emerald-500/50 text-emerald-100 text-xs font-bold flex items-center gap-1.5 shadow-xs transition active:scale-95 cursor-pointer backdrop-blur-md"
+                title="ক্বারী ও তিলাওয়াত সেটিংস পরিবর্তন করুন"
               >
-                <Play className="w-4 h-4 fill-slate-950" />
-                <span>সকল আমল একসাথে শুনুন</span>
+                <SlidersHorizontal className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-amber-300 font-extrabold text-xs">
+                  {SHAYKH_REGISTRY.find((q) => q.id === selectedQari)?.nameBn?.split(" ")?.[0] || "ক্বারী"}
+                </span>
+                <span className="px-1.5 py-0.2 rounded bg-amber-400/20 text-amber-300 text-[10px] font-mono font-black border border-amber-400/30">
+                  {repeatCount === "infinite" ? "♾️" : `${repeatCount}x`}
+                </span>
               </button>
 
               <button
+                type="button"
+                onClick={() => setShowInfoModal(true)}
+                className="p-1.5 rounded-xl bg-emerald-950/60 hover:bg-emerald-900/80 border border-emerald-600/40 text-emerald-200 hover:text-white transition cursor-pointer"
+                title="আমল ব্যবহারের নির্দেশিকা"
+              >
+                <HelpCircle className="w-4 h-4 text-emerald-300" />
+              </button>
+            </div>
+          </div>
+
+          {/* Bottom Row: Actions & 3-View Switcher (100% Mobile Responsive) */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-2.5 pt-0.5">
+            {/* Play Actions: সকল আমল শুনুন & নির্বাচিত শুনুন */}
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => handlePlayAllAmal(false)}
+                className="flex-1 sm:flex-initial px-3 sm:px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs sm:text-sm flex items-center justify-center gap-1.5 shadow-md shadow-amber-500/20 transition active:scale-95 cursor-pointer whitespace-nowrap"
+              >
+                <Play className="w-3.5 h-3.5 fill-slate-950" />
+                <span>সকল আমল শুনুন</span>
+              </button>
+
+              <button
+                type="button"
                 onClick={() => handlePlayAllAmal(true)}
                 disabled={selectedAmalIds.length === 0}
-                className="px-4 py-2.5 rounded-xl bg-emerald-800/80 hover:bg-emerald-700/80 disabled:opacity-40 border border-emerald-500/40 text-emerald-100 font-bold text-xs sm:text-sm flex items-center gap-2 transition active:scale-95 cursor-pointer"
+                className="flex-1 sm:flex-initial px-3 sm:px-3.5 py-2 rounded-xl bg-emerald-800/90 hover:bg-emerald-700 disabled:opacity-40 border border-emerald-500/40 text-emerald-100 font-bold text-xs sm:text-sm flex items-center justify-center gap-1.5 transition active:scale-95 cursor-pointer whitespace-nowrap"
               >
-                <CheckSquare className="w-4 h-4 text-emerald-300" />
-                <span>নির্বাচিত আমল শুনুন ({selectedAmalIds.length})</span>
+                <CheckSquare className="w-3.5 h-3.5 text-emerald-300" />
+                <span>নির্বাচিত ({selectedAmalIds.length})</span>
               </button>
 
               {playbackStatus !== "idle" && (
                 <button
+                  type="button"
                   onClick={stopAllAudio}
-                  className="px-3.5 py-2.5 rounded-xl bg-rose-600/80 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
+                  className="px-2.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center gap-1 transition active:scale-95 cursor-pointer shadow-xs shrink-0"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-3.5 h-3.5" />
                   <span>থামুন</span>
                 </button>
               )}
             </div>
 
             {/* Global View Switch: আয়াতভিত্তিক (মুসহাফ) vs অর্থভিত্তিক আয়াত vs ফযিলত ভিউ */}
-            <div className="flex items-center gap-1 bg-emerald-950/80 border border-emerald-600/50 p-1 rounded-2xl shadow-inner">
+            <div className="inline-flex items-center gap-1 bg-emerald-950/90 border border-emerald-600/50 p-1 rounded-2xl shadow-inner self-stretch sm:self-auto justify-between sm:justify-start">
               {/* ১. আয়াতভিত্তিক (কুরআনের মূল নুসখা/মুসহাফ — শুধু আয়াত, শব্দ-বাই-শব্দ সিঙ্ক ও তিলাওয়াত) */}
               <button
                 type="button"
                 onClick={() => handleGlobalDisplayModeChange("mushaf")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                className={`flex-1 sm:flex-initial px-2 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap ${
                   globalDisplayMode === "mushaf"
                     ? "bg-amber-400 text-slate-950 shadow-md font-black"
                     : "text-emerald-200 hover:text-white"
@@ -819,7 +811,7 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
               <button
                 type="button"
                 onClick={() => handleGlobalDisplayModeChange("meaning")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                className={`flex-1 sm:flex-initial px-2 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap ${
                   globalDisplayMode === "meaning"
                     ? "bg-amber-400 text-slate-950 shadow-md font-black"
                     : "text-emerald-200 hover:text-white"
@@ -827,14 +819,14 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                 title="আয়াত ও বাংলা অনুবাদসহ বিস্তারিত ভিউ"
               >
                 <FileText className="w-3.5 h-3.5" />
-                <span>অর্থভিত্তিক আয়াত</span>
+                <span>অর্থভিত্তিক<span className="hidden sm:inline"> আয়াত</span></span>
               </button>
 
               {/* ৩. ফযিলত ভিউ (হাদীসের দলিল ও আমলবিধি) */}
               <button
                 type="button"
                 onClick={() => handleGlobalDisplayModeChange("fazilat")}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
+                className={`flex-1 sm:flex-initial px-2 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition flex items-center justify-center gap-1 cursor-pointer whitespace-nowrap ${
                   globalDisplayMode === "fazilat"
                     ? "bg-amber-400 text-slate-950 shadow-md font-black"
                     : "text-emerald-200 hover:text-white"
@@ -842,7 +834,7 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                 title="সহীহ হাদিসের ফযিলত ও আমলবিধি"
               >
                 <ShieldCheck className="w-3.5 h-3.5" />
-                <span>ফযিলত ভিউ</span>
+                <span>ফযিলত<span className="hidden sm:inline"> ভিউ</span></span>
               </button>
             </div>
           </div>
@@ -850,18 +842,18 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
       </div>
 
       {/* ── CATEGORY FILTER TABS (No sparkles) ── */}
-      <div className="max-w-5xl mx-auto px-3 sm:px-6 -mt-5 relative z-20">
-        <div className="bg-white dark:bg-stone-900 rounded-2xl p-2 shadow-lg border border-stone-200/80 dark:border-stone-800 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 -mt-4 sm:-mt-5 relative z-20">
+        <div className="bg-white dark:bg-[#0D271D] rounded-2xl p-1.5 sm:p-2 shadow-lg border border-stone-200/80 dark:border-[#1B4A37] flex items-center gap-1.5 overflow-x-auto no-scrollbar">
           {QURANI_AMAL_CATEGORIES.map((cat) => {
             const isActive = activeCategory === cat.id;
             return (
               <button
                 key={cat.id}
                 onClick={() => setActiveCategory(cat.id)}
-                className={`px-3.5 py-2 rounded-xl text-xs font-extrabold whitespace-nowrap flex items-center gap-2 transition active:scale-95 cursor-pointer ${
+                className={`px-3 sm:px-3.5 py-1.5 sm:py-2 rounded-xl text-[11px] sm:text-xs font-extrabold whitespace-nowrap flex items-center gap-1.5 sm:gap-2 transition active:scale-95 cursor-pointer ${
                   isActive
                     ? "bg-emerald-700 text-white shadow-md shadow-emerald-700/20"
-                    : "text-slate-600 dark:text-stone-300 hover:bg-stone-100 dark:hover:bg-stone-800"
+                    : "text-slate-600 dark:text-emerald-200/80 hover:bg-stone-100 dark:hover:bg-[#143B2C]"
                 }`}
               >
                 {renderCategoryIcon(cat.iconName)}
@@ -873,19 +865,19 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
       </div>
 
       {/* ── SEARCH BOX & SELECT ALL ── */}
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 pt-5 flex flex-wrap items-center justify-between gap-3">
-        <div className="relative flex-1 min-w-[240px]">
+      <div className="max-w-5xl mx-auto px-3 sm:px-6 pt-4 sm:pt-5 flex flex-col xs:flex-row items-stretch xs:items-center justify-between gap-2.5">
+        <div className="relative flex-1 min-w-[200px]">
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="আমল খুঁজুন... (যেমন: আয়াতুল কুরসী, বাক্বারা, ফালাক্ব, সকাল-সন্ধ্যা)"
-            className="w-full px-4 py-2.5 rounded-2xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs"
+            className="w-full px-3.5 sm:px-4 py-2 sm:py-2.5 rounded-2xl bg-white dark:bg-[#0D271D] border border-stone-200 dark:border-[#1B4A37] text-xs sm:text-sm font-medium focus:outline-none focus:ring-2 focus:ring-emerald-500 shadow-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-emerald-500/60"
           />
           {searchQuery && (
             <button
               onClick={() => setSearchQuery("")}
-              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
+              className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-emerald-300"
             >
               <X className="w-4 h-4" />
             </button>
@@ -894,14 +886,14 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
 
         <button
           onClick={selectAllAmal}
-          className="px-3.5 py-2 rounded-xl bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-50 transition cursor-pointer"
+          className="px-3.5 py-2 rounded-xl bg-white dark:bg-[#0D271D] border border-stone-200 dark:border-[#1B4A37] text-emerald-800 dark:text-emerald-300 text-xs font-bold hover:bg-emerald-50 dark:hover:bg-[#143B2C] transition cursor-pointer text-center whitespace-nowrap shrink-0"
         >
           {selectedAmalIds.length === QURANI_AMAL_ITEMS.length ? "বাছাই মুছুন" : "সবগুলো নির্বাচন করুন"}
         </button>
       </div>
 
       {/* ── AMAL CARDS FEED ── */}
-      <main className="max-w-5xl mx-auto px-3 sm:px-6 pt-6 space-y-4">
+      <main className="max-w-5xl mx-auto px-3 sm:px-6 pt-4 sm:pt-6 space-y-3.5 sm:space-y-4">
         {filteredItems.map((item, idx) => {
           const isSelected = selectedAmalIds.includes(item.id);
           const isExpanded = expandedAmalId === item.id;
@@ -911,36 +903,37 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
           return (
             <article
               key={item.id}
-              className={`rounded-2xl transition-all duration-200 border bg-white dark:bg-stone-900 shadow-sm overflow-hidden ${
+              className={`rounded-2xl transition-all duration-200 border bg-white dark:bg-[#0D271D] shadow-sm overflow-hidden ${
                 isThisAmalPlaying
-                  ? "border-amber-400/80 ring-2 ring-amber-400/30"
+                  ? "border-amber-400/80 ring-2 ring-amber-400/40 dark:border-amber-400/80 dark:ring-amber-400/30"
                   : isExpanded
-                  ? "border-emerald-300 dark:border-emerald-800 shadow-md"
-                  : "border-stone-200/80 dark:border-stone-800 hover:border-emerald-200"
+                  ? "border-emerald-300 dark:border-[#1B4A37] shadow-md"
+                  : "border-stone-200/80 dark:border-[#1B4A37]/70 hover:border-emerald-200 dark:hover:border-emerald-600/50"
               }`}
             >
               {/* Card Header Top */}
-              <div className="p-4 sm:p-5 flex flex-wrap items-start justify-between gap-3">
-                <div className="flex items-start gap-3">
+              <div className="p-3.5 sm:p-5 space-y-2.5 sm:space-y-0 sm:flex sm:items-start sm:justify-between sm:gap-4">
+                <div className="flex items-start gap-2.5 sm:gap-3 flex-1 min-w-0">
                   {/* Selection Checkbox */}
                   <button
+                    type="button"
                     onClick={() => toggleSelectAmal(item.id)}
-                    className="mt-1 text-emerald-700 dark:text-emerald-400 hover:scale-110 transition cursor-pointer"
+                    className="mt-0.5 sm:mt-1 text-emerald-700 dark:text-emerald-400 hover:scale-110 transition cursor-pointer shrink-0"
                     title={isSelected ? "প্লেলিস্ট থেকে বাদ দিন" : "প্লেলিস্টে যুক্ত করুন"}
                   >
                     {isSelected ? (
                       <CheckSquare className="w-5 h-5 fill-emerald-100 dark:fill-emerald-950" />
                     ) : (
-                      <Square className="w-5 h-5 text-slate-300 dark:text-stone-600" />
+                      <Square className="w-5 h-5 text-slate-300 dark:text-emerald-700/60" />
                     )}
                   </button>
 
-                  <div className="space-y-1">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <span className="text-xs font-black px-2 py-0.5 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                  <div className="space-y-1 min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                      <span className="text-[11px] sm:text-xs font-black px-1.5 sm:px-2 py-0.5 rounded-md bg-emerald-100 dark:bg-[#143B2C] text-emerald-800 dark:text-emerald-300">
                         #{idx + 1}
                       </span>
-                      <h2 className="text-base sm:text-lg font-extrabold text-slate-900 dark:text-emerald-100">
+                      <h2 className="text-base sm:text-lg font-black text-slate-900 dark:text-slate-100">
                         {item.titleBn}
                       </h2>
                       <span className="font-hafizi-quran text-sm text-emerald-700 dark:text-emerald-400">
@@ -948,52 +941,71 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                       </span>
                     </div>
 
-                    {/* Timing Badge & Repetition Pill */}
-                    <div className="flex flex-wrap items-center gap-2 text-xs">
-                      <span className="inline-flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                    {/* Compact metadata line */}
+                    <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 text-[11px] sm:text-xs text-slate-500 dark:text-emerald-200/70">
+                      <span className="inline-flex items-center gap-1 font-bold text-amber-800 dark:text-amber-300">
                         <Sun className="w-3 h-3 text-amber-500" />
                         <span>{item.timingBadge}</span>
                       </span>
-
-                      {/* Interactive Sunnah repetition button */}
+                      <span>•</span>
+                      <span>{item.totalVerses}টি আয়াত</span>
+                      <span>•</span>
                       <button
                         type="button"
-                        onClick={() => handlePlaySingleAmal(item, extractRepetitionNumber(item.repetition))}
-                        className="inline-flex items-center gap-1 font-bold px-2.5 py-0.5 rounded-full bg-amber-100 hover:bg-amber-200 dark:bg-amber-950/70 dark:hover:bg-amber-900 text-amber-900 dark:text-amber-200 border border-amber-300 dark:border-amber-700/60 transition active:scale-95 cursor-pointer shadow-2xs"
-                        title={`সুন্নাহ আমল অনুযায়ী এই সূরাটি ${item.repetition} বাজান`}
+                        onClick={() => {
+                          const num = extractRepetitionNumber(item.repetition);
+                          setCardRepeatCounts((prev) => ({ ...prev, [item.id]: String(num) }));
+                          handlePlaySingleAmal(item, num);
+                        }}
+                        className="font-semibold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+                        title={`সুন্নাহ অনুযায়ী ${item.repetition} বাজান`}
                       >
-                        <Repeat className="w-3 h-3 text-amber-600 dark:text-amber-400" />
-                        <span>পড়ার সংখ্যা: <b>{item.repetition}</b> (বাজান)</span>
+                        সুন্নাহ: {item.repetition}
                       </button>
-
-                      <span className="text-[11px] text-slate-500 dark:text-stone-400">
-                        {item.totalVerses}টি আয়াত
-                      </span>
                     </div>
                   </div>
+
+                  {/* Mobile-only Expand/Collapse Chevron in top row */}
+                  <button
+                    type="button"
+                    onClick={() => setExpandedAmalId(isExpanded ? null : item.id)}
+                    className="sm:hidden p-1 rounded-xl text-slate-400 dark:text-emerald-300/70 hover:bg-stone-100 dark:hover:bg-emerald-900/40 transition cursor-pointer shrink-0"
+                    title={isExpanded ? "সংকুচিত করুন" : "বিস্তারিত দেখুন"}
+                  >
+                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </button>
                 </div>
 
                 {/* Quick Action Controls on Header Right */}
-                <div className="flex items-center gap-1.5 flex-wrap sm:flex-nowrap">
-                  {/* Play Qari Audio with Integrated Loop Selector */}
-                  <div className="flex items-center rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs overflow-hidden transition">
+                <div className="flex items-center justify-between sm:justify-end gap-1.5 sm:gap-2 shrink-0 pt-1.5 sm:pt-0 border-t border-stone-100 dark:border-[#1B4A37]/50 sm:border-0">
+                  {/* Play Qari Audio with Integrated Repeat / Loop Selector */}
+                  <div className="flex-1 sm:flex-initial flex items-center rounded-xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-white shadow-2xs overflow-hidden transition">
                     <button
                       type="button"
-                      onClick={() => handlePlaySingleAmal(item)}
-                      className="px-3 py-1.5 font-extrabold text-xs flex items-center gap-1.5 cursor-pointer active:scale-95 transition"
-                      title="এই সূরাটি তিলাওয়াত শুনুন"
+                      onClick={() => handlePlaySingleAmal(item, getCardRepeatCount(item.id))}
+                      className="flex-1 sm:flex-initial px-2.5 sm:px-3 py-1.5 font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-95 transition"
+                      title={`এই সূরাটি তিলাওয়াত শুনুন (${getCardRepeatCount(item.id) === "infinite" ? "লুপ" : `${getCardRepeatCount(item.id)}x`})`}
                     >
                       <Play className="w-3.5 h-3.5 fill-white" />
-                      <span>তিলাওয়াত {repeatCount === "infinite" ? "♾️" : Number(repeatCount) > 1 ? `(${repeatCount}x)` : ""}</span>
+                      <span>
+                        তিলাওয়াত
+                        {getCardRepeatCount(item.id) === "infinite"
+                          ? " ♾️"
+                          : Number(getCardRepeatCount(item.id)) > 1
+                          ? ` (${getCardRepeatCount(item.id)}x)`
+                          : ""}
+                      </span>
                     </button>
                     <select
-                      value={repeatCount}
+                      value={getCardRepeatCount(item.id)}
                       onChange={(e) => {
                         e.stopPropagation();
-                        handleRepeatCountChange(e.target.value);
+                        const val = e.target.value;
+                        setCardRepeatCounts((prev) => ({ ...prev, [item.id]: val }));
+                        handleRepeatCountChange(val);
                       }}
-                      className="bg-emerald-950/90 text-amber-300 hover:bg-black px-1.5 py-1.5 text-[11px] font-black border-l border-emerald-600/70 focus:outline-none cursor-pointer"
-                      title="সূরাটি কতবার পুনরাবৃত্তি হবে নির্বাচন করুন"
+                      className="bg-emerald-950/90 dark:bg-[#06140E] text-amber-300 hover:bg-black px-1.5 py-1.5 text-[11px] font-black border-l border-emerald-600/70 dark:border-emerald-700/60 focus:outline-none cursor-pointer"
+                      title="এই সূরাটি কতবার পড়া হবে নির্বাচন করুন"
                     >
                       <option value="1">১x</option>
                       <option value="3">৩x (সুন্নাহ)</option>
@@ -1008,30 +1020,35 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
 
                   {/* Play Bangla Translation Button */}
                   <button
+                    type="button"
                     onClick={() => handlePlayBanglaMeaning(item)}
-                    className="px-3 py-1.5 rounded-xl bg-teal-50 dark:bg-teal-950/60 hover:bg-teal-100 text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800 font-bold text-xs flex items-center gap-1.5 transition active:scale-95 cursor-pointer"
+                    className="px-2.5 py-1.5 rounded-xl bg-teal-50 dark:bg-[#0A2218] hover:bg-teal-100 dark:hover:bg-[#113526] text-teal-800 dark:text-teal-300 border border-teal-200 dark:border-teal-800/80 font-bold text-xs flex items-center gap-1 transition active:scale-95 cursor-pointer shrink-0"
+                    title="বাংলা অর্থ শুনুন"
                   >
                     {loadingAudioKey?.startsWith(`meaning-${item.id}`) ? (
-                      <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-600" />
+                      <Loader2 className="w-3.5 h-3.5 animate-spin text-teal-600 dark:text-teal-400" />
                     ) : (
                       <Volume2 className="w-3.5 h-3.5" />
                     )}
-                    <span className="hidden xs:inline">অর্থ শুনুন</span>
+                    <span>অর্থ</span>
                   </button>
 
                   {/* Mic Practice Button */}
                   <button
+                    type="button"
                     onClick={() => startMic(item)}
-                    className="p-1.5 rounded-xl bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 transition cursor-pointer"
+                    className="p-1.5 rounded-xl bg-emerald-100 dark:bg-[#143B2C] text-emerald-800 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-800/80 transition cursor-pointer shrink-0"
                     title="মুখে মুখে তিলাওয়াত করুন (মাইক)"
                   >
                     <Mic className="w-4 h-4" />
                   </button>
 
-                  {/* Expand / Collapse Button */}
+                  {/* Desktop-only Expand / Collapse Button */}
                   <button
+                    type="button"
                     onClick={() => setExpandedAmalId(isExpanded ? null : item.id)}
-                    className="p-1.5 rounded-xl text-slate-400 hover:bg-stone-100 dark:hover:bg-stone-800 transition cursor-pointer"
+                    className="hidden sm:inline-flex p-1.5 rounded-xl text-slate-400 dark:text-emerald-300/70 hover:bg-stone-100 dark:hover:bg-[#143B2C] transition cursor-pointer shrink-0"
+                    title={isExpanded ? "সংকুচিত করুন" : "বিস্তারিত দেখুন"}
                   >
                     {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                   </button>
@@ -1040,19 +1057,19 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
 
               {/* Active Loop / Repetition Status Banner inside Playing Card */}
               {isThisAmalPlaying && (Number(repeatCount) > 1 || repeatCount === "infinite") && (
-                <div className="mx-4 sm:mx-6 mb-3 p-2.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-emerald-500/15 to-teal-500/15 border border-amber-400/60 dark:border-amber-600/50 flex items-center justify-between text-xs font-bold text-amber-900 dark:text-amber-200 animate-pulse shadow-xs">
+                <div className="mx-3.5 sm:mx-6 mb-3 p-2.5 rounded-2xl bg-gradient-to-r from-amber-500/15 via-emerald-500/15 to-teal-500/15 border border-amber-400/60 dark:border-amber-500/40 flex items-center justify-between text-xs font-bold text-amber-900 dark:text-amber-200 animate-pulse shadow-xs">
                   <div className="flex items-center gap-2">
                     <Repeat className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
                     <span>
                       {repeatCount === "infinite"
                         ? `🔁 একটানা লুপ চলছে — বর্তমান চক্র: ${currentLoopCycle}`
-                        : `🔁 পুনরাবৃত্তি তিলাওয়াত চলছে — চক্র ${currentLoopCycle} / ${repeatCount} (${currentLoopCycle === 1 ? "১ম বার" : currentLoopCycle === 2 ? "২য় বার" : currentLoopCycle === 3 ? "৩য় বার" : `${currentLoopCycle}ম বার`})`}
+                        : `🔁 পুনরাবৃত্তি তিলাওয়াত চলছে — চক্র ${currentLoopCycle} / ${repeatCount}`}
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => handleRepeatCountChange("1")}
-                    className="px-2 py-0.5 rounded-lg bg-amber-200/80 dark:bg-amber-900/60 hover:bg-amber-300 text-amber-950 dark:text-amber-100 text-[10px] font-black transition cursor-pointer"
+                    className="px-2 py-0.5 rounded-lg bg-amber-200/80 dark:bg-amber-950/80 hover:bg-amber-300 dark:hover:bg-amber-900 text-amber-950 dark:text-amber-100 text-[10px] font-black transition cursor-pointer"
                     title="পুনরাবৃত্তি বন্ধ করে স্বাভাবিক ১ বার করুন"
                   >
                     লুপ বন্ধ (১x)
@@ -1061,8 +1078,8 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
               )}
 
               {/* Card Tabs: [ আয়াতভিত্তিক (মুসহাফ) ] vs [ অর্থভিত্তিক আয়াত ] vs [ ফযিলত ও পড়ার নিয়ম ] */}
-              <div className="px-4 sm:px-5 pb-2">
-                <div className="flex items-center gap-1.5 sm:gap-2 border-b border-stone-200/80 dark:border-stone-800 pb-2 overflow-x-auto no-scrollbar">
+              <div className="px-3.5 sm:px-5 pb-2">
+                <div className="flex items-center gap-1.5 sm:gap-2 border-b border-stone-200/80 dark:border-[#1B4A37]/80 pb-2 overflow-x-auto no-scrollbar">
                   {/* ১. আয়াতভিত্তিক (মুসহাফ) — শুধুমাত্র আয়াত, শব্দ-বাই-শব্দ তিলাওয়াত */}
                   <button
                     type="button"
@@ -1072,8 +1089,8 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                     }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                       currentTab === "mushaf"
-                        ? "bg-emerald-100 dark:bg-emerald-950 text-emerald-900 dark:text-emerald-200 font-extrabold border border-emerald-300 dark:border-emerald-700 shadow-2xs"
-                        : "text-slate-500 hover:text-slate-800 dark:text-stone-400"
+                        ? "bg-emerald-100 dark:bg-[#143B2C] text-emerald-900 dark:text-emerald-200 font-extrabold border border-emerald-300 dark:border-emerald-600/50 shadow-2xs"
+                        : "text-slate-500 hover:text-slate-800 dark:text-emerald-300/70 dark:hover:text-emerald-100"
                     }`}
                     title="কুরআনের মূল নুসখা — শুধুমাত্র আয়াত"
                   >
@@ -1090,8 +1107,8 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                     }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                       currentTab === "meaning"
-                        ? "bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-200 font-extrabold border border-amber-300 dark:border-amber-700 shadow-2xs"
-                        : "text-slate-500 hover:text-slate-800 dark:text-stone-400"
+                        ? "bg-amber-100 dark:bg-amber-950/80 text-amber-950 dark:text-amber-200 font-extrabold border border-amber-300 dark:border-amber-700/60 shadow-2xs"
+                        : "text-slate-500 hover:text-slate-800 dark:text-emerald-300/70 dark:hover:text-emerald-100"
                     }`}
                     title="আয়াত ও বাংলা অনুবাদসহ বিস্তারিত ভিউ"
                   >
@@ -1108,8 +1125,8 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                     }}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer whitespace-nowrap ${
                       currentTab === "fazilat"
-                        ? "bg-amber-100 dark:bg-amber-950 text-amber-950 dark:text-amber-200 font-extrabold border border-amber-300 dark:border-amber-700 shadow-2xs"
-                        : "text-slate-500 hover:text-slate-800 dark:text-stone-400"
+                        ? "bg-amber-100 dark:bg-amber-950/80 text-amber-950 dark:text-amber-200 font-extrabold border border-amber-300 dark:border-amber-700/60 shadow-2xs"
+                        : "text-slate-500 hover:text-slate-800 dark:text-emerald-300/70 dark:hover:text-emerald-100"
                     }`}
                     title="সহীহ হাদিসের ফযিলত ও আমলবিধি"
                   >
@@ -1119,57 +1136,32 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                 </div>
               </div>
 
-              {/* Virtue Summary Quick Banner */}
-              {currentTab !== "fazilat" && (
-                <div className="px-4 sm:px-5 pb-3">
-                  <div className="text-xs text-slate-700 dark:text-emerald-200/90 leading-relaxed bg-amber-50/70 dark:bg-amber-950/30 p-3 rounded-xl border border-amber-200/70 dark:border-amber-900/40 flex items-start justify-between gap-3">
-                    <div className="flex items-start gap-2">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-extrabold text-amber-900 dark:text-amber-300 mr-1.5">ফযিলত সংক্ষেপ:</span>
-                        <span>{item.virtueSummary}</span>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCardActiveTab(item.id, "fazilat");
-                        setExpandedAmalId(item.id);
-                      }}
-                      className="text-emerald-700 dark:text-emerald-400 font-extrabold whitespace-nowrap hover:underline cursor-pointer"
-                    >
-                      হাদীস পড়ুন →
-                    </button>
-                  </div>
-                </div>
-              )}
-
               {/* ── CARD BODY (Expanded) ── */}
               {isExpanded && (
-                <div className="border-t border-stone-100 dark:border-stone-800 bg-[#FAFBF9] dark:bg-stone-950/40 p-4 sm:p-6 space-y-4">
+                <div className="border-t border-stone-100 dark:border-[#1B4A37]/80 bg-[#FAFBF9] dark:bg-[#071912]/80 p-3.5 sm:p-6 space-y-3.5 sm:space-y-4">
                   {/* TAB 1: MUSHAF / শুধুমাত্র আয়াতভিত্তিক ভিউ (কোরআনের মূল নুসখা — কোনো অর্থ ছাড়া খাঁটি পাঠ) */}
                   {currentTab === "mushaf" && (
-                    <div className="relative rounded-2xl border-2 border-emerald-800/25 dark:border-emerald-600/30 bg-[#FBF9F4] dark:bg-stone-900/90 shadow-inner p-4 sm:p-6 sm:px-8 space-y-4 overflow-hidden">
+                    <div className="relative rounded-2xl border-2 border-emerald-800/25 dark:border-[#1B4A37] bg-[#FBF9F4] dark:bg-[#071912] shadow-inner p-3.5 sm:p-6 sm:px-8 space-y-3 sm:space-y-4 overflow-hidden">
                       {/* Decorative Mushaf Corner Accents */}
-                      <div className="absolute top-2 left-2 text-emerald-800/20 dark:text-emerald-400/20 text-xs font-serif select-none pointer-events-none">
+                      <div className="absolute top-2 left-2 text-emerald-800/20 dark:text-emerald-400/30 text-xs font-serif select-none pointer-events-none">
                         ❖
                       </div>
-                      <div className="absolute top-2 right-2 text-emerald-800/20 dark:text-emerald-400/20 text-xs font-serif select-none pointer-events-none">
+                      <div className="absolute top-2 right-2 text-emerald-800/20 dark:text-emerald-400/30 text-xs font-serif select-none pointer-events-none">
                         ❖
                       </div>
-                      <div className="absolute bottom-2 left-2 text-emerald-800/20 dark:text-emerald-400/20 text-xs font-serif select-none pointer-events-none">
+                      <div className="absolute bottom-2 left-2 text-emerald-800/20 dark:text-emerald-400/30 text-xs font-serif select-none pointer-events-none">
                         ❖
                       </div>
-                      <div className="absolute bottom-2 right-2 text-emerald-800/20 dark:text-emerald-400/20 text-xs font-serif select-none pointer-events-none">
+                      <div className="absolute bottom-2 right-2 text-emerald-800/20 dark:text-emerald-400/30 text-xs font-serif select-none pointer-events-none">
                         ❖
                       </div>
 
                       {/* Bismillah Header (if fromAyah === 1 and not Surah Fatiha where Bismillah is Ayah 1) */}
                       {item.fromAyah === 1 && item.id !== "fatiha" && (
-                        <div className="text-center pb-4 border-b border-emerald-900/10 dark:border-emerald-700/20">
+                        <div className="text-center pb-3 border-b border-emerald-900/10 dark:border-emerald-800/40">
                           <p
                             dir="rtl"
-                            className="font-hafizi-quran text-2xl sm:text-3xl text-emerald-950 dark:text-emerald-200"
+                            className="font-hafizi-quran text-xl sm:text-3xl text-emerald-950 dark:text-emerald-200"
                           >
                             بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ
                           </p>
@@ -1179,7 +1171,7 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                       {/* Continuous Mushaf Flow of Ayahs */}
                       <div
                         dir="rtl"
-                        className="font-hafizi-quran text-2xl sm:text-3xl lg:text-3xl leading-[2.6] sm:leading-[3.0] text-right text-emerald-950 dark:text-emerald-100 select-text"
+                        className="font-hafizi-quran text-xl sm:text-2xl md:text-3xl leading-[2.4] sm:leading-[2.8] md:leading-[3.0] text-right text-emerald-950 dark:text-emerald-50 select-text"
                       >
                         {item.verses.map((v, vIdx) => {
                           const isAyahPlaying = isThisAmalPlaying && activeAyahIndex === vIdx;
@@ -1195,12 +1187,12 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                                   <span
                                     key={wIdx}
                                     onClick={() => handlePlayFromWord(item, v, vIdx, wIdx, words)}
-                                    className={`inline-block transition-all duration-150 px-1.5 py-0.5 mx-0.5 rounded-lg cursor-pointer ${
+                                    className={`inline-block transition-all duration-150 px-1 sm:px-1.5 py-0.5 mx-0.5 rounded-lg cursor-pointer ${
                                       isWordActive
                                         ? "bg-amber-400 text-slate-950 font-black shadow-md ring-2 ring-amber-300 scale-105"
                                         : isAyahPlaying
-                                        ? "text-emerald-900 dark:text-amber-200 font-bold hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40"
-                                        : "text-slate-900 dark:text-stone-100 hover:text-emerald-700 dark:hover:text-emerald-300 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40"
+                                        ? "text-emerald-900 dark:text-amber-300 font-bold hover:bg-emerald-100/60 dark:hover:bg-emerald-900/40"
+                                        : "text-slate-900 dark:text-emerald-100/90 hover:text-emerald-700 dark:hover:text-amber-300 hover:bg-emerald-100/50 dark:hover:bg-emerald-900/40"
                                     }`}
                                     title={`শব্দ #${wIdx + 1}: ${word} (ক্লিক করে শুনুন)`}
                                   >
@@ -1212,10 +1204,10 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                               {/* Ayah End Circle Marker */}
                               <span
                                 onClick={() => handlePlaySingleAyahArabic(item, v, vIdx)}
-                                className={`inline-flex items-center justify-center min-w-[30px] h-7 px-1.5 rounded-full border text-xs sm:text-sm font-bold font-mono mx-1.5 align-middle select-none transition-all cursor-pointer shadow-2xs ${
+                                className={`inline-flex items-center justify-center min-w-[28px] sm:min-w-[30px] h-6 sm:h-7 px-1 sm:px-1.5 rounded-full border text-[11px] sm:text-xs font-bold font-mono mx-1 sm:mx-1.5 align-middle select-none transition-all cursor-pointer shadow-2xs ${
                                   isAyahPlaying
                                     ? "bg-amber-400 text-slate-950 border-amber-500 ring-2 ring-amber-300 scale-110 shadow-xs"
-                                    : "border-amber-600/50 dark:border-amber-400/50 bg-amber-50/90 dark:bg-amber-950/70 text-amber-950 dark:text-amber-200 hover:bg-amber-100 hover:scale-105"
+                                    : "border-amber-600/50 dark:border-amber-500/50 bg-amber-50/90 dark:bg-amber-950/80 text-amber-950 dark:text-amber-200 hover:bg-amber-100 dark:hover:bg-amber-900 hover:scale-105"
                                 }`}
                                 title={`আয়াত ${v.ayahNumber} (ক্লিক করে শুনুন)`}
                               >
@@ -1227,15 +1219,15 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                       </div>
 
                       {/* Mushaf Interactive Guidance Footer */}
-                      <div className="mt-4 pt-3 border-t border-emerald-900/10 dark:border-emerald-700/20 flex flex-wrap items-center justify-between gap-2 text-[11px] text-stone-500 dark:text-stone-400">
+                      <div className="mt-3 sm:mt-4 pt-2.5 sm:pt-3 border-t border-emerald-900/10 dark:border-emerald-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[10px] sm:text-[11px] text-stone-500 dark:text-emerald-200/70">
                         <div className="flex items-center gap-1.5">
-                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
-                          <span>শব্দে বা আয়াতের চিহ্নে ﴿১﴾ ক্লিক করে শুনুন • মূল মুসহাফ অনুযায়ী একটার পর একটা শব্দ সিঙ্ক হয়ে বাজবে</span>
+                          <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse shrink-0" />
+                          <span>শব্দে বা আয়াতের চিহ্নে ﴿১﴾ ট্যাপ করে শুনুন • ক্বারীর তিলাওয়াত শব্দ অনুযায়ী সিঙ্ক হবে</span>
                         </div>
                         <button
                           type="button"
                           onClick={() => handlePlaySingleAmal(item)}
-                          className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-extrabold text-[11px] flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-xs"
+                          className="px-2.5 py-1 rounded-lg bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-white font-extrabold text-[10px] sm:text-[11px] flex items-center gap-1 cursor-pointer transition active:scale-95 shadow-xs shrink-0"
                         >
                           <Play className="w-3 h-3 fill-white" />
                           <span>শুরু থেকে শুনুন</span>
@@ -1246,7 +1238,7 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
 
                   {/* TAB 2: অর্থভিত্তিক আয়াত ভিউ (আরবি + উচ্চারণ + বাংলা অর্থ) */}
                   {currentTab === "meaning" && (
-                    <div className="space-y-4">
+                    <div className="space-y-3 sm:space-y-4">
                       {item.verses.map((v, vIdx) => {
                         const isAyahActive =
                           isThisAmalPlaying && activeAyahIndex === vIdx;
@@ -1255,38 +1247,38 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                         return (
                           <div
                             key={v.ayahNumber}
-                            className={`p-3.5 sm:p-4 rounded-xl transition-all duration-200 border ${
+                            className={`p-3 sm:p-4 rounded-xl transition-all duration-200 border ${
                               isAyahActive
-                                ? "bg-amber-50/90 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 ring-2 ring-amber-400/40"
-                                : "bg-white dark:bg-stone-900 border-stone-200/70 dark:border-stone-800"
+                                ? "bg-amber-50/90 dark:bg-[#143B2C]/90 border-amber-300 dark:border-amber-400/80 ring-2 ring-amber-400/40"
+                                : "bg-white dark:bg-[#071912] border-stone-200/70 dark:border-[#1B4A37]"
                             }`}
                           >
                             {/* Ayah Header, Number & Individual Play Controls */}
-                            <div className="flex items-center justify-between gap-3 mb-2">
-                              <span className="text-[11px] font-black px-2 py-0.5 rounded-md bg-stone-100 dark:bg-stone-800 text-stone-600 dark:text-stone-300">
+                            <div className="flex items-center justify-between gap-2 mb-2">
+                              <span className="text-[10px] sm:text-[11px] font-black px-2 py-0.5 rounded-md bg-stone-100 dark:bg-[#143B2C] text-stone-600 dark:text-emerald-300">
                                 আয়াত {v.ayahNumber}
                               </span>
 
                               {/* Individual Ayah Play Buttons */}
-                              <div className="flex items-center gap-1.5">
+                              <div className="flex items-center gap-1 sm:gap-1.5">
                                 <button
                                   type="button"
                                   onClick={() => handlePlaySingleAyahArabic(item, v, vIdx)}
-                                  className="px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950 hover:bg-emerald-200 text-emerald-800 dark:text-emerald-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition active:scale-95"
+                                  className="px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-900/70 hover:bg-emerald-200 dark:hover:bg-emerald-800 text-emerald-800 dark:text-emerald-200 font-bold text-[10px] sm:text-[11px] flex items-center gap-1 cursor-pointer transition active:scale-95"
                                   title="শুধু এই আয়াত তিলাওয়াত শুনুন"
                                 >
-                                  <Play className="w-3 h-3 fill-emerald-800 dark:fill-emerald-300" />
+                                  <Play className="w-3 h-3 fill-emerald-800 dark:fill-emerald-200" />
                                   <span>তিলাওয়াত</span>
                                 </button>
 
                                 <button
                                   type="button"
                                   onClick={() => handlePlaySingleAyahMeaning(item, v, vIdx)}
-                                  className="px-2 py-1 rounded-lg bg-teal-100 dark:bg-teal-950 hover:bg-teal-200 text-teal-800 dark:text-teal-300 font-bold text-[11px] flex items-center gap-1 cursor-pointer transition active:scale-95"
+                                  className="px-2 py-1 rounded-lg bg-teal-100 dark:bg-teal-900/70 hover:bg-teal-200 dark:hover:bg-teal-800 text-teal-800 dark:text-teal-200 font-bold text-[10px] sm:text-[11px] flex items-center gap-1 cursor-pointer transition active:scale-95"
                                   title="এই আয়াতের বাংলা অর্থ শুনুন"
                                 >
                                   {isMeaningLoading ? (
-                                    <Loader2 className="w-3 h-3 animate-spin text-teal-700" />
+                                    <Loader2 className="w-3 h-3 animate-spin text-teal-700 dark:text-teal-300" />
                                   ) : (
                                     <Volume2 className="w-3 h-3" />
                                   )}
@@ -1298,19 +1290,19 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                             {/* Arabic Uthmani Script */}
                             <p
                               dir="rtl"
-                              className="font-hafizi-quran text-xl sm:text-2xl text-right leading-loose text-emerald-950 dark:text-emerald-100 my-2"
+                              className="font-hafizi-quran text-xl sm:text-2xl text-right leading-loose text-emerald-950 dark:text-emerald-50 my-2"
                             >
                               {v.arabic}
                             </p>
 
                             {/* Pronunciation & Meaning */}
-                            <div className="space-y-1 text-xs pt-2 border-t border-stone-100 dark:border-stone-800/60">
-                              <p className="text-emerald-800 dark:text-emerald-300 font-semibold">
-                                <span className="font-bold text-stone-500 mr-1">উচ্চারণ:</span>
+                            <div className="space-y-1 text-xs pt-2 border-t border-stone-100 dark:border-emerald-800/40">
+                              <p className="text-emerald-800 dark:text-emerald-300 font-semibold leading-relaxed">
+                                <span className="font-bold text-stone-500 dark:text-emerald-400/80 mr-1">উচ্চারণ:</span>
                                 {v.transliteration}
                               </p>
-                              <p className="text-slate-700 dark:text-stone-300 leading-relaxed">
-                                <span className="font-bold text-stone-500 mr-1">অর্থ:</span>
+                              <p className="text-slate-700 dark:text-emerald-100/90 leading-relaxed">
+                                <span className="font-bold text-stone-500 dark:text-emerald-400/80 mr-1">অর্থ:</span>
                                 {v.bengali}
                               </p>
                             </div>
@@ -1320,78 +1312,79 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                     </div>
                   )}
 
-                  {/* TAB 2: DEDICATED FAZILAT & RULES VIEW */}
+                  {/* TAB 3: DEDICATED FAZILAT & RULES VIEW */}
                   {currentTab === "fazilat" && (
-                    <div className="bg-white dark:bg-stone-900 rounded-2xl p-4 sm:p-6 border border-amber-200 dark:border-amber-900/60 space-y-4">
+                    <div className="bg-white dark:bg-[#071912] rounded-2xl p-3.5 sm:p-6 border border-amber-200 dark:border-amber-600/40 space-y-3 sm:space-y-4">
                       {/* Top Header of Fazilat Section */}
-                      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-stone-100 dark:border-stone-800 pb-3">
-                        <div className="flex items-center gap-2.5">
-                          <span className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
-                            <BookOpen className="w-5 h-5" />
+                      <div className="flex flex-wrap items-center justify-between gap-2.5 border-b border-stone-100 dark:border-emerald-800/40 pb-3">
+                        <div className="flex items-center gap-2">
+                          <span className="p-1.5 sm:p-2 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
+                            <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" />
                           </span>
                           <div>
-                            <h3 className="text-sm sm:text-base font-black text-slate-900 dark:text-emerald-100">
+                            <h3 className="text-xs sm:text-base font-black text-slate-900 dark:text-emerald-100">
                               {item.titleBn} — সহীহ হাদীসের ফযিলত ও আমলবিধি
                             </h3>
-                            <p className="text-xs text-slate-500 font-hafizi-quran">{item.titleAr}</p>
+                            <p className="text-[11px] sm:text-xs text-slate-500 dark:text-emerald-400 font-hafizi-quran">{item.titleAr}</p>
                           </div>
                         </div>
 
                         {/* Listen to Fazilat Audio Button */}
                         <button
+                          type="button"
                           onClick={() => handlePlayFazilatAudio(item)}
-                          className="px-3.5 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
+                          className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
                         >
-                          <Volume2 className="w-4 h-4" />
+                          <Volume2 className="w-3.5 h-3.5" />
                           <span>ফযিলতের অডিও শুনুন</span>
                         </button>
                       </div>
 
                       {/* Timing & Repetition Highlights */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                        <div className="p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 text-xs">
+                        <div className="p-3 sm:p-3.5 rounded-xl bg-amber-50/80 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60">
                           <p className="text-amber-800 dark:text-amber-300 font-bold mb-0.5">কখন পড়তে হবে:</p>
-                          <p className="font-extrabold text-sm text-slate-900 dark:text-white">
+                          <p className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-amber-100">
                             {item.timingBadge}
                           </p>
                         </div>
 
-                        <div className="p-3.5 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
+                        <div className="p-3 sm:p-3.5 rounded-xl bg-emerald-50/80 dark:bg-[#0D271D] border border-emerald-200 dark:border-[#1B4A37]">
                           <p className="text-emerald-800 dark:text-emerald-300 font-bold mb-0.5">পড়ার সংখ্যা ও পরিমাণ:</p>
-                          <p className="font-extrabold text-sm text-slate-900 dark:text-white">
+                          <p className="font-extrabold text-xs sm:text-sm text-slate-900 dark:text-emerald-100">
                             {item.repetition}
                           </p>
                         </div>
                       </div>
 
                       {/* Rules of Recitation */}
-                      <div className="space-y-1.5 text-xs">
+                      <div className="space-y-1 text-xs">
                         <h4 className="font-extrabold text-slate-900 dark:text-emerald-200 flex items-center gap-1.5">
-                          <Check className="w-4 h-4 text-emerald-600" />
+                          <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                           <span>আমলবিধি ও পড়ার সুন্নাত নিয়ম:</span>
                         </h4>
-                        <p className="text-slate-700 dark:text-stone-300 leading-relaxed bg-stone-50 dark:bg-stone-800/60 p-3.5 rounded-xl border border-stone-200/80 dark:border-stone-800 font-medium">
+                        <p className="text-slate-700 dark:text-emerald-100/90 leading-relaxed bg-stone-50 dark:bg-[#0A2218] p-3 sm:p-3.5 rounded-xl border border-stone-200/80 dark:border-emerald-800/40 font-medium">
                           {item.rulesOfRecitation}
                         </p>
                       </div>
 
                       {/* Detailed Authentic Hadith Proofs */}
-                      <div className="space-y-1.5 text-xs">
+                      <div className="space-y-1 text-xs">
                         <h4 className="font-extrabold text-slate-900 dark:text-emerald-200 flex items-center gap-1.5">
-                          <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                          <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                           <span>সহীহ হাদীসের দলিল ও বরকত:</span>
                         </h4>
-                        <div className="text-slate-700 dark:text-stone-300 leading-relaxed bg-stone-50 dark:bg-stone-800/60 p-4 rounded-xl border border-stone-200/80 dark:border-stone-800 space-y-2 whitespace-pre-line font-medium text-xs sm:text-[13px]">
+                        <div className="text-slate-700 dark:text-emerald-100/90 leading-relaxed bg-stone-50 dark:bg-[#0A2218] p-3 sm:p-3.5 rounded-xl border border-stone-200/80 dark:border-emerald-800/40 space-y-2 whitespace-pre-line font-medium text-xs sm:text-[13px]">
                           {item.virtueDetails}
                         </div>
                       </div>
 
                       {/* Bottom Action: Switch to Verses or Start Tilawat */}
-                      <div className="flex flex-wrap items-center gap-2.5 pt-2">
+                      <div className="flex flex-wrap items-center gap-2 pt-1 sm:pt-2">
                         <button
                           type="button"
                           onClick={() => handlePlaySingleAmal(item)}
-                          className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer transition active:scale-95"
+                          className="px-3.5 sm:px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-1.5 shadow-md cursor-pointer transition active:scale-95"
                         >
                           <Play className="w-3.5 h-3.5 fill-white" />
                           <span>এই আমলের তিলাওয়াত শুরু করুন</span>
@@ -1399,18 +1392,18 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
                         <button
                           type="button"
                           onClick={() => setCardActiveTab(item.id, "mushaf")}
-                          className="px-3.5 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-200 font-bold text-xs cursor-pointer transition active:scale-95 flex items-center gap-1"
+                          className="px-3 py-2 rounded-xl bg-emerald-100 hover:bg-emerald-200 dark:bg-[#143B2C] text-emerald-800 dark:text-emerald-200 font-bold text-xs cursor-pointer transition active:scale-95 flex items-center gap-1"
                         >
                           <BookOpen className="w-3.5 h-3.5" />
-                          <span>আয়াতভিত্তিক (মুসহাফ) দেখুন</span>
+                          <span>আয়াতভিত্তিক (মুসহাফ)</span>
                         </button>
                         <button
                           type="button"
                           onClick={() => setCardActiveTab(item.id, "meaning")}
-                          className="px-3.5 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-bold text-xs cursor-pointer transition active:scale-95 flex items-center gap-1"
+                          className="px-3 py-2 rounded-xl bg-stone-100 hover:bg-stone-200 dark:bg-[#0D271D] text-stone-700 dark:text-emerald-200 font-bold text-xs cursor-pointer transition active:scale-95 flex items-center gap-1"
                         >
-                          <FileText className="w-3.5 h-3.5 text-teal-600" />
-                          <span>অর্থভিত্তিক আয়াত দেখুন</span>
+                          <FileText className="w-3.5 h-3.5 text-teal-600 dark:text-teal-400" />
+                          <span>অর্থভিত্তিক আয়াত</span>
                         </button>
                       </div>
                     </div>
@@ -1424,36 +1417,38 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
 
       {/* ── FAZILAT & RULES MODAL / DRAWER (Zero sparkles) ── */}
       {fazilatModalItem && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fadeIn">
-          <div className="bg-white dark:bg-stone-900 rounded-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl border border-stone-200 dark:border-stone-800 p-5 sm:p-6 space-y-4">
-            <div className="flex items-center justify-between border-b border-stone-100 dark:border-stone-800 pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-[#091F17] rounded-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl border border-stone-200 dark:border-[#1B4A37] p-4 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-[#1B4A37]/80 pb-3">
               <div className="flex items-center gap-2">
                 <span className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
                   <BookOpen className="w-5 h-5" />
                 </span>
                 <div>
-                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
                     {fazilatModalItem.titleBn} — ফযিলত ও পড়ার নিয়ম
                   </h3>
-                  <p className="text-xs text-slate-500 font-hafizi-quran">{fazilatModalItem.titleAr}</p>
+                  <p className="text-xs text-slate-500 dark:text-emerald-400 font-hafizi-quran">{fazilatModalItem.titleAr}</p>
                 </div>
               </div>
               <button
+                type="button"
                 onClick={() => setFazilatModalItem(null)}
-                className="p-1.5 rounded-full hover:bg-stone-100 dark:hover:bg-stone-800 text-slate-400 hover:text-slate-600 cursor-pointer"
+                className="p-1.5 rounded-full hover:bg-stone-100 dark:hover:bg-[#143B2C] text-slate-400 dark:text-emerald-400 hover:text-slate-600 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Quick Action in Modal: Listen to Fazilat */}
-            <div className="p-3 bg-amber-50/80 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800 flex items-center justify-between">
+            <div className="p-3 bg-amber-50/80 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800/60 flex items-center justify-between">
               <span className="text-xs font-bold text-amber-900 dark:text-amber-200">
                 মিষ্টি কণ্ঠে ফযিলত শুনুন
               </span>
               <button
+                type="button"
                 onClick={() => handlePlayFazilatAudio(fazilatModalItem)}
-                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer"
+                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-black text-xs flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95 transition"
               >
                 <Volume2 className="w-4 h-4" />
                 <span>ফযিলতের অডিও</span>
@@ -1462,15 +1457,15 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
 
             {/* When to read & repetition */}
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800">
-                <p className="text-slate-400 font-bold mb-0.5">কখন পড়তে হবে</p>
-                <p className="font-extrabold text-emerald-700 dark:text-emerald-400">
+              <div className="p-3 rounded-xl bg-stone-50 dark:bg-[#0D271D] border border-stone-100 dark:border-[#1B4A37]/60">
+                <p className="text-slate-400 dark:text-emerald-400/80 font-bold mb-0.5">কখন পড়তে হবে</p>
+                <p className="font-extrabold text-emerald-700 dark:text-emerald-300">
                   {fazilatModalItem.timingBadge}
                 </p>
               </div>
-              <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800">
-                <p className="text-slate-400 font-bold mb-0.5">পড়ার সংখ্যা</p>
-                <p className="font-extrabold text-emerald-700 dark:text-emerald-400">
+              <div className="p-3 rounded-xl bg-stone-50 dark:bg-[#0D271D] border border-stone-100 dark:border-[#1B4A37]/60">
+                <p className="text-slate-400 dark:text-emerald-400/80 font-bold mb-0.5">পড়ার সংখ্যা</p>
+                <p className="font-extrabold text-emerald-700 dark:text-emerald-300">
                   {fazilatModalItem.repetition}
                 </p>
               </div>
@@ -1479,10 +1474,10 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
             {/* Recitation Etiquette & Rules */}
             <div className="space-y-1.5 text-xs">
               <h4 className="font-extrabold text-slate-900 dark:text-emerald-200 flex items-center gap-1.5">
-                <Check className="w-4 h-4 text-emerald-600" />
+                <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>আমলবিধি ও পড়ার নিয়ম:</span>
               </h4>
-              <p className="text-slate-600 dark:text-stone-300 leading-relaxed bg-stone-50 dark:bg-stone-800/60 p-3 rounded-xl border border-stone-100 dark:border-stone-800">
+              <p className="text-slate-600 dark:text-emerald-100/90 leading-relaxed bg-stone-50 dark:bg-[#0A2218] p-3 rounded-xl border border-stone-100 dark:border-emerald-800/40">
                 {fazilatModalItem.rulesOfRecitation}
               </p>
             </div>
@@ -1490,27 +1485,29 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
             {/* Hadith Proof Details */}
             <div className="space-y-1.5 text-xs">
               <h4 className="font-extrabold text-slate-900 dark:text-emerald-200 flex items-center gap-1.5">
-                <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                <ShieldCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                 <span>সহীহ হাদীসের ফযিলত ও দলিল:</span>
               </h4>
-              <div className="text-slate-700 dark:text-stone-300 leading-relaxed bg-stone-50 dark:bg-stone-800/60 p-3.5 rounded-xl border border-stone-100 dark:border-stone-800 space-y-2 whitespace-pre-line font-medium">
+              <div className="text-slate-700 dark:text-emerald-100/90 leading-relaxed bg-stone-50 dark:bg-[#0A2218] p-3.5 rounded-xl border border-stone-100 dark:border-emerald-800/40 space-y-2 whitespace-pre-line font-medium text-xs sm:text-[13px]">
                 {fazilatModalItem.virtueDetails}
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex gap-2 pt-1">
               <button
+                type="button"
                 onClick={() => {
                   setFazilatModalItem(null);
                   handlePlaySingleAmal(fazilatModalItem);
                 }}
-                className="flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md transition active:scale-95"
+                className="flex-1 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-white font-bold text-xs flex items-center justify-center gap-2 cursor-pointer shadow-md transition active:scale-95"
               >
                 <Play className="w-4 h-4 fill-white" />
                 <span>তিলাওয়াত শুরু করুন {repeatCount === "infinite" ? "(♾️ লুপ)" : Number(repeatCount) > 1 ? `(${repeatCount}x)` : ""}</span>
               </button>
 
               <button
+                type="button"
                 onClick={() => {
                   setFazilatModalItem(null);
                   handlePlaySingleAmal(fazilatModalItem, extractRepetitionNumber(fazilatModalItem.repetition));
@@ -1520,6 +1517,237 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
               >
                 <Repeat className="w-4 h-4 text-slate-950" />
                 <span>{fazilatModalItem.repetition} বাজান</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── TILAWAAT & QARI SETTINGS MODAL (Dedicated Menu Bar Popup) ── */}
+      {showAudioSettings && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-[#091F17] rounded-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl border border-stone-200 dark:border-[#1B4A37] p-4 sm:p-6 space-y-4 sm:space-y-5">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-[#1B4A37]/80 pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-emerald-100 dark:bg-[#143B2C] text-emerald-800 dark:text-emerald-300">
+                  <SlidersHorizontal className="w-5 h-5 text-emerald-700 dark:text-emerald-400" />
+                </span>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                    তিলাওয়াত ও ক্বারী সেটিংস
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-emerald-300/80">
+                    ক্বারী নির্বাচন এবং পুনরাবৃত্তির সংখ্যা নির্ধারণ করুন
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowAudioSettings(false)}
+                className="p-1.5 rounded-full hover:bg-stone-100 dark:hover:bg-[#143B2C] text-slate-400 dark:text-emerald-400 hover:text-slate-600 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Section 1: Qari Selection */}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-slate-900 dark:text-emerald-200 flex items-center gap-1.5">
+                  <Volume2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  <span>পছন্দের ক্বারী নির্বাচন করুন:</span>
+                </span>
+                <span className="text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-[#143B2C] px-2 py-0.5 rounded-md border border-emerald-200 dark:border-emerald-700/60">
+                  বর্তমান: {SHAYKH_REGISTRY.find((q) => q.id === selectedQari)?.displayTitleBn || selectedQari}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {SHAYKH_REGISTRY.map((qari) => {
+                  const isCurrent = selectedQari === qari.id;
+                  return (
+                    <button
+                      key={qari.id}
+                      type="button"
+                      onClick={() => handleQariChange(qari.id)}
+                      className={`p-3 rounded-2xl border text-left transition active:scale-95 cursor-pointer flex items-center justify-between gap-2 ${
+                        isCurrent
+                          ? "bg-emerald-50 dark:bg-[#143B2C] border-emerald-500 dark:border-emerald-400 shadow-xs ring-2 ring-emerald-500/20"
+                          : "bg-stone-50/70 dark:bg-[#0D271D] border-stone-200/80 dark:border-[#1B4A37] hover:border-emerald-300 dark:hover:border-emerald-500"
+                      }`}
+                    >
+                      <div className="space-y-0.5 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm font-extrabold text-slate-900 dark:text-slate-100 truncate">
+                            {qari.displayTitleBn || qari.nameBn}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-slate-500 dark:text-emerald-300/80 truncate">
+                          {qari.styleBn || qari.roleBn}
+                        </p>
+                      </div>
+                      {isCurrent ? (
+                        <span className="p-1 rounded-full bg-emerald-600 text-white shrink-0">
+                          <Check className="w-3.5 h-3.5" />
+                        </span>
+                      ) : (
+                        <span className="w-4 h-4 rounded-full border border-stone-300 dark:border-emerald-700/60 shrink-0" />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Section 2: Repetition / Loop Count */}
+            <div className="space-y-2.5 pt-2 border-t border-stone-100 dark:border-[#1B4A37]/80">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-black text-slate-900 dark:text-emerald-200 flex items-center gap-1.5">
+                  <Repeat className="w-4 h-4 text-amber-500" />
+                  <span>পুনরাবৃত্তি / লুপ সংখ্যা:</span>
+                </span>
+                <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/80 px-2 py-0.5 rounded-md border border-amber-200 dark:border-amber-800">
+                  {repeatCount === "infinite" ? "♾️ একটানা বাজবে" : `${repeatCount} বার বাজবে`}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-4 gap-2">
+                {[
+                  { value: "1", label: "১ বার", hint: "স্বাভাবিক" },
+                  { value: "3", label: "৩ বার", hint: "সুন্নাহ আমল" },
+                  { value: "5", label: "৫ বার", hint: "হিফজ" },
+                  { value: "7", label: "৭ বার", hint: "শিফা" },
+                  { value: "11", label: "১১ বার", hint: "নফল" },
+                  { value: "33", label: "৩৩ বার", hint: "তাসবীহ" },
+                  { value: "100", label: "১০০ বার", hint: "জিকির" },
+                  { value: "infinite", label: "♾️ লুপ", hint: "একটানা" },
+                ].map((opt) => {
+                  const isCur = repeatCount === opt.value;
+                  return (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      onClick={() => handleRepeatCountChange(opt.value)}
+                      className={`p-2 rounded-xl border text-center transition active:scale-95 cursor-pointer ${
+                        isCur
+                          ? "bg-amber-400 text-slate-950 font-black border-amber-500 shadow-xs"
+                          : "bg-stone-50 dark:bg-[#0D271D] text-slate-700 dark:text-emerald-200 font-bold border-stone-200 dark:border-[#1B4A37] hover:bg-stone-100 dark:hover:bg-[#143B2C]"
+                      }`}
+                    >
+                      <div className="text-xs font-black">{opt.label}</div>
+                      <div className={`text-[9px] ${isCur ? "text-slate-900/80" : "text-slate-400 dark:text-emerald-400/70"}`}>
+                        {opt.hint}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-slate-500 dark:text-emerald-300/70 leading-normal">
+                পছন্দমতো পুনরাবৃত্তি নির্ধারণ করলে যেকোনো সূরা বা আয়াত স্বয়ংক্রিয়ভাবে ততবার পাঠ সম্পন্ন করবে।
+              </p>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowAudioSettings(false)}
+                className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition active:scale-95 cursor-pointer"
+              >
+                সেটিংস সম্পন্ন করুন
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── INFO & GUIDELINES MODAL (Clean Non-Technical Guide) ── */}
+      {showInfoModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/70 backdrop-blur-sm animate-fadeIn">
+          <div className="bg-white dark:bg-[#091F17] rounded-3xl max-w-lg w-full max-h-[85vh] overflow-y-auto shadow-2xl border border-stone-200 dark:border-[#1B4A37] p-4 sm:p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-[#1B4A37]/80 pb-3">
+              <div className="flex items-center gap-2.5">
+                <span className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300">
+                  <BookOpen className="w-5 h-5 text-amber-600" />
+                </span>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-slate-100">
+                    কুরআনী আমল নির্দেশিকা
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-emerald-300/80">
+                    দৈনন্দিন সুন্নাত ও মাসনূন আমল ব্যবহারের নিয়ম
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowInfoModal(false)}
+                className="p-1.5 rounded-full hover:bg-stone-100 dark:hover:bg-[#143B2C] text-slate-400 dark:text-emerald-400 hover:text-slate-600 transition cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs leading-relaxed">
+              <div className="p-3 bg-amber-50/70 dark:bg-amber-950/40 rounded-2xl border border-amber-200/70 dark:border-amber-800/60 text-amber-950 dark:text-amber-200">
+                <span className="font-extrabold block mb-1">হাদীসের নির্দেশিকা:</span>
+                রাসূলুল্লাহ (ﷺ) দৈনন্দিন সকাল-সন্ধ্যায়, ঘুমানোর পূর্বে এবং পাঁচ ওয়াক্ত ফরজ সালাত পরবর্তী সময়ে এই বরকতময় সূরা ও আয়াতগুলো পাঠের বিশেষ তাগিদ দিয়েছেন।
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-extrabold text-slate-900 dark:text-emerald-200">
+                  ৩টি ভিউ মোডের কার্যপদ্ধতি:
+                </h4>
+
+                <div className="p-3 rounded-xl bg-stone-50 dark:bg-[#0D271D] border border-stone-200/80 dark:border-[#1B4A37] space-y-1">
+                  <div className="flex items-center gap-1.5 font-black text-emerald-800 dark:text-emerald-300">
+                    <BookOpen className="w-4 h-4 text-emerald-600" />
+                    <span>১. আয়াতভিত্তিক (মুসহাফ):</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-emerald-100/90 pl-5">
+                    অর্থ ছাড়া পবিত্র কুরআনের মূল নুসখা। ক্বারীর তিলাওয়াতের সাথে শব্দ শব্দ হাইলাইট হয়। যেকোনো শব্দে ট্যাপ করে সেখান থেকে সরাসরি তিলাওয়াত শোনা যায়।
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-stone-50 dark:bg-[#0D271D] border border-stone-200/80 dark:border-[#1B4A37] space-y-1">
+                  <div className="flex items-center gap-1.5 font-black text-teal-800 dark:text-teal-300">
+                    <FileText className="w-4 h-4 text-teal-600" />
+                    <span>২. অর্থভিত্তিক আয়াত:</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-emerald-100/90 pl-5">
+                    আরবি আয়াতের পাশাপাশি বিশুদ্ধ বাংলা উচ্চারণ ও নির্ভরযোগ্য অর্থ। পাশে থাকা স্পিকারে ক্লিক করে বাংলা অডিও শোনা যায়।
+                  </p>
+                </div>
+
+                <div className="p-3 rounded-xl bg-stone-50 dark:bg-[#0D271D] border border-stone-200/80 dark:border-[#1B4A37] space-y-1">
+                  <div className="flex items-center gap-1.5 font-black text-amber-700 dark:text-amber-300">
+                    <ShieldCheck className="w-4 h-4 text-amber-600" />
+                    <span>৩. ফযিলত ভিউ:</span>
+                  </div>
+                  <p className="text-slate-600 dark:text-emerald-100/90 pl-5">
+                    সহীহ বুখারী, মুসলিম ও সুনান গ্রন্থসমূহ থেকে সংগৃহীত ফজিলত, রোগমুক্তি (শিফা) এবং আমলবিধির বিস্তারিত বিবরণ।
+                  </p>
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-emerald-50/80 dark:bg-[#0D271D] border border-emerald-200 dark:border-emerald-800 space-y-1">
+                <span className="font-extrabold text-emerald-900 dark:text-emerald-200 block">
+                  প্লেলিস্ট ও একাধারে শোনা:
+                </span>
+                <p className="text-emerald-800 dark:text-emerald-300">
+                  নির্দিষ্ট কয়েকটি আমল বামপাশের বক্সে মার্ক করে &quot;নির্বাচিত আমল শুনুন&quot; বাটনে ক্লিক করলে তা একের পর এক স্বয়ংক্রিয়ভাবে বাজতে থাকবে।
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2">
+              <button
+                type="button"
+                onClick={() => setShowInfoModal(false)}
+                className="w-full py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-800 dark:hover:bg-emerald-700 text-white font-extrabold text-xs shadow-md transition active:scale-95 cursor-pointer"
+              >
+                বুঝেছি, আলহামদুলিল্লাহ
               </button>
             </div>
           </div>
@@ -1581,76 +1809,79 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
 
       {/* ── STICKY BOTTOM AUDIO PLAYER BAR (Desktop & Mobile) ── */}
       {playbackStatus !== "idle" && activeAmalData && (
-        <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-emerald-950/95 backdrop-blur-md border-t border-emerald-300 dark:border-emerald-800 shadow-2xl p-3 sm:p-4 animate-slideUp">
-          <div className="max-w-5xl mx-auto flex items-center justify-between gap-3">
+        <div className="fixed bottom-0 inset-x-0 z-40 bg-white/95 dark:bg-[#071912]/95 backdrop-blur-md border-t border-emerald-300 dark:border-[#1B4A37] shadow-2xl p-2 sm:p-4 animate-slideUp">
+          <div className="max-w-5xl mx-auto flex items-center justify-between gap-1.5 sm:gap-3">
             {/* Left: Info */}
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-700 text-white flex items-center justify-center font-bold text-xs shadow-xs">
+            <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-700 dark:bg-emerald-800 text-white flex items-center justify-center font-bold text-[11px] sm:text-xs shadow-xs shrink-0">
                 {playbackType === "bangla_meaning" ? "অর্থ" : playbackType === "fazilat" ? "ফযিলত" : "আরবী"}
               </div>
-              <div className="space-y-0.5">
-                <p className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-emerald-100">
+              <div className="space-y-0.5 min-w-0 max-w-[125px] xs:max-w-[180px] sm:max-w-none">
+                <p className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-emerald-50 truncate">
                   {activeAmalData.titleBn}
                 </p>
-                <p className="text-[11px] text-slate-500 dark:text-emerald-300">
+                <p className="text-[10px] sm:text-[11px] text-slate-500 dark:text-emerald-300/80 truncate">
                   {playbackType === "bangla_meaning"
                     ? `বাংলা অর্থ • আয়াত ${activeAyahIndex + 1}/${activeAmalData.totalVerses}`
                     : playbackType === "fazilat"
                     ? "ফযিলতের অডিও বিবরণ"
-                    : `আয়াত ${activeAyahIndex + 1}/${activeAmalData.totalVerses} • ক্বারী: ${SHAYKH_REGISTRY.find((q) => q.id === selectedQari)?.displayTitleBn || selectedQari}${Number(repeatCount) > 1 ? ` • 🔁 চক্র ${currentLoopCycle}/${repeatCount}` : repeatCount === "infinite" ? ` • 🔁 লুপ চক্র ${currentLoopCycle}` : ""}`}
+                    : `আয়াত ${activeAyahIndex + 1}/${activeAmalData.totalVerses} • ক্বারী: ${SHAYKH_REGISTRY.find((q) => q.id === selectedQari)?.displayTitleBn || selectedQari}${Number(repeatCount) > 1 ? ` • 🔁 ${currentLoopCycle}/${repeatCount}` : repeatCount === "infinite" ? ` • 🔁 চক্র ${currentLoopCycle}` : ""}`}
                 </p>
               </div>
             </div>
 
-            {/* Center Controls & Repeat Selector */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            {/* Center Controls & Repeat */}
+            <div className="flex items-center gap-1 sm:gap-2 shrink-0">
               <button
+                type="button"
                 onClick={handleSkipPrev}
-                className="p-1.5 sm:p-2 rounded-xl text-slate-600 dark:text-emerald-200 hover:bg-stone-100 dark:hover:bg-emerald-900/50 cursor-pointer"
+                className="p-1 sm:p-2 rounded-xl text-slate-600 dark:text-emerald-200 hover:bg-stone-100 dark:hover:bg-[#143B2C] cursor-pointer"
                 title="পূর্ববর্তী আয়াত"
               >
-                <SkipBack className="w-4 h-4" />
+                <SkipBack className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
 
               <button
+                type="button"
                 onClick={handleTogglePlayPause}
-                className="p-2.5 sm:p-3 rounded-full bg-emerald-700 hover:bg-emerald-800 text-white shadow-md active:scale-95 transition cursor-pointer"
+                className="p-2 sm:p-2.5 rounded-full bg-emerald-700 hover:bg-emerald-800 dark:bg-emerald-700 dark:hover:bg-emerald-600 text-white shadow-md active:scale-95 transition cursor-pointer"
               >
                 {playbackStatus === "playing" ? (
-                  <Pause className="w-4 h-4 fill-white" />
+                  <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-white" />
                 ) : (
-                  <Play className="w-4 h-4 fill-white" />
+                  <Play className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-white" />
                 )}
               </button>
 
               <button
+                type="button"
                 onClick={handleSkipNext}
-                className="p-1.5 sm:p-2 rounded-xl text-slate-600 dark:text-emerald-200 hover:bg-stone-100 dark:hover:bg-emerald-900/50 cursor-pointer"
+                className="p-1 sm:p-2 rounded-xl text-slate-600 dark:text-emerald-200 hover:bg-stone-100 dark:hover:bg-[#143B2C] cursor-pointer"
                 title="পরবর্তী আয়াত"
               >
-                <SkipForward className="w-4 h-4" />
+                <SkipForward className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               </button>
 
               {/* 🔁 Live Repeat Selector inside Bottom Player Bar */}
-              <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-emerald-100/90 dark:bg-emerald-900/60 border border-emerald-300/80 dark:border-emerald-700/60 shadow-2xs ml-0.5 sm:ml-2">
-                <Repeat className="w-3.5 h-3.5 text-emerald-800 dark:text-amber-400 shrink-0" />
+              <div className="flex items-center gap-1 px-1.5 sm:px-2 py-1 rounded-xl bg-emerald-100/90 dark:bg-[#0D271D] border border-emerald-300/80 dark:border-[#1B4A37] shadow-2xs ml-0.5 sm:ml-1">
+                <Repeat className="w-3 h-3 text-emerald-800 dark:text-amber-400 shrink-0" />
                 <select
                   value={repeatCount}
                   onChange={(e) => handleRepeatCountChange(e.target.value)}
-                  className="bg-transparent font-black text-emerald-950 dark:text-emerald-100 text-[11px] sm:text-xs focus:outline-none cursor-pointer"
+                  className="bg-transparent font-black text-emerald-950 dark:text-emerald-100 text-[10px] sm:text-xs focus:outline-none cursor-pointer"
                   title="পুনরাবৃত্তি সংখ্যা পরিবর্তন করুন"
                 >
-                  <option value="1">১ বার</option>
-                  <option value="3">৩ বার (সুন্নাহ)</option>
-                  <option value="5">৫ বার (হিফজ)</option>
-                  <option value="7">৭ বার (শিফা)</option>
-                  <option value="11">১১ বার</option>
-                  <option value="33">৩৩ বার</option>
-                  <option value="100">১০০ বার</option>
-                  <option value="infinite">♾️ একটানা লুপ</option>
+                  <option value="1" className="bg-white dark:bg-[#071912] text-slate-900 dark:text-emerald-100">১x</option>
+                  <option value="3" className="bg-white dark:bg-[#071912] text-slate-900 dark:text-emerald-100">৩x (সুন্নাহ)</option>
+                  <option value="5" className="bg-white dark:bg-[#071912] text-slate-900 dark:text-emerald-100">৫x</option>
+                  <option value="7" className="bg-white dark:bg-[#071912] text-slate-900 dark:text-emerald-100">৭x (শিফা)</option>
+                  <option value="11" className="bg-white dark:bg-[#071912] text-slate-900 dark:text-emerald-100">১১x</option>
+                  <option value="33" className="bg-white dark:bg-[#071912] text-slate-900 dark:text-emerald-100">৩৩x</option>
+                  <option value="100" className="bg-white dark:bg-[#071912] text-slate-900 dark:text-emerald-100">১০০x</option>
+                  <option value="infinite" className="bg-white dark:bg-[#071912] text-slate-900 dark:text-emerald-100">♾️ লুপ</option>
                 </select>
                 {(Number(repeatCount) > 1 || repeatCount === "infinite") && (
-                  <span className="text-[10px] font-black text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 px-1.5 py-0.5 rounded-md border border-amber-300 dark:border-amber-700/60 shrink-0">
+                  <span className="text-[9px] font-black text-amber-700 dark:text-amber-300 bg-amber-100 dark:bg-amber-950/80 px-1 py-0.2 rounded border border-amber-300 dark:border-amber-700/60 shrink-0">
                     {repeatCount === "infinite" ? `চক্র ${currentLoopCycle}` : `${currentLoopCycle}/${repeatCount}`}
                   </span>
                 )}
@@ -1659,11 +1890,12 @@ export default function QuraniAmalPlatform({ _onLaunchQuranReader }) {
 
             {/* Right: Close / Stop */}
             <button
+              type="button"
               onClick={stopAllAudio}
-              className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer"
+              className="p-1.5 sm:p-2 rounded-xl text-slate-400 dark:text-emerald-400/80 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition cursor-pointer shrink-0"
               title="প্লেয়ার বন্ধ করুন"
             >
-              <X className="w-5 h-5" />
+              <X className="w-4 h-4 sm:w-5 sm:h-5" />
             </button>
           </div>
         </div>

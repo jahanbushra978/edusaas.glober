@@ -10,6 +10,7 @@ import {
   X,
   Check,
   Lock,
+  Settings,
 } from "lucide-react";
 import { universalAudioEngine, QAIDA_TAKHTI_1_LETTERS } from "@/lib/quran/audio";
 import { banglaAudioEngine } from "@/lib/quran/bangla-audio-engine";
@@ -81,7 +82,7 @@ export default function NoorQaidaHarufNinjaGame({
   // ⏱️ Round Countdown Timer (Default 60 seconds / 1 min, selectable: 30s, 60s, 90s, 120s)
   const [selectedDuration, setSelectedDuration] = useState(getInitialDuration);
   const [timeLeft, setTimeLeft] = useState(getInitialDuration);
-  const [isTimerSettingsOpen, setIsTimerSettingsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
   // 📊 Real-Time Educational Tracking (মোট হরফ, সংগৃহীত, মিস ও সংগ্রহের হার)
   const totalTargetSpawnedRef = useRef(0);
@@ -123,10 +124,85 @@ export default function NoorQaidaHarufNinjaGame({
   const lastSpawnTimeRef = useRef(Date.now());
   const isShakingRef = useRef(false);
   const [shakeScreen, setShakeScreen] = useState(false);
+  const currentStudioAudioRef = useRef(null);
+  const targetStreakRef = useRef(0);
+  const fruitStreakRef = useRef(0);
 
-  // Responsive Orientation State
+  // Dedicated Studio Game Audio Player (100% Fixed, Zero Robotic Synthesizer Fallback)
+  const playStudioGameAudio = useCallback(
+    (audioPath) => {
+      if (typeof window === "undefined" || isMuted || !audioPath) return;
+      try {
+        if (currentStudioAudioRef.current) {
+          try {
+            currentStudioAudioRef.current.pause();
+            currentStudioAudioRef.current.currentTime = 0;
+          } catch { }
+          currentStudioAudioRef.current = null;
+        }
+        const audio = new Audio(audioPath);
+        audio.volume = 1.0;
+        currentStudioAudioRef.current = audio;
+        audio.play().catch(() => { });
+      } catch { }
+    },
+    [isMuted]
+  );
+
+  const stopStudioGameAudio = useCallback(() => {
+    if (currentStudioAudioRef.current) {
+      try {
+        currentStudioAudioRef.current.pause();
+        currentStudioAudioRef.current.currentTime = 0;
+      } catch { }
+      currentStudioAudioRef.current = null;
+    }
+  }, []);
+
+  // Responsive Orientation State with Session-level Dismissal Persistence
   const [isPortrait, setIsPortrait] = useState(false);
-  const [showRotateTip, setShowRotateTip] = useState(true);
+  const [showRotateTip, setShowRotateTip] = useState(() => {
+    try {
+      if (typeof window !== "undefined") {
+        return sessionStorage.getItem("noor_qaida_hide_rotate_tip") !== "true";
+      }
+    } catch { }
+    return true;
+  });
+  const [showFooterTip, setShowFooterTip] = useState(() => {
+    try {
+      if (typeof window !== "undefined") {
+        return sessionStorage.getItem("noor_qaida_hide_footer_tip") !== "true";
+      }
+    } catch { }
+    return true;
+  });
+
+  const handleDismissRotateTip = useCallback((e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setShowRotateTip(false);
+    try {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("noor_qaida_hide_rotate_tip", "true");
+      }
+    } catch { }
+  }, []);
+
+  const handleDismissFooterTip = useCallback((e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+    setShowFooterTip(false);
+    try {
+      if (typeof window !== "undefined") {
+        sessionStorage.setItem("noor_qaida_hide_footer_tip", "true");
+      }
+    } catch { }
+  }, []);
 
   // Detect orientation for responsive mobile gameplay
   useEffect(() => {
@@ -140,7 +216,11 @@ export default function NoorQaidaHarufNinjaGame({
   }, []);
 
   // Manual Landscape Request
-  const handleRequestLandscape = async () => {
+  const handleRequestLandscape = async (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     try {
       if (document.documentElement.requestFullscreen) {
         await document.documentElement.requestFullscreen();
@@ -148,8 +228,10 @@ export default function NoorQaidaHarufNinjaGame({
       if (window.screen?.orientation?.lock) {
         await window.screen.orientation.lock("landscape");
       }
-      setShowRotateTip(false);
-    } catch { }
+      handleDismissRotateTip(e);
+    } catch {
+      handleDismissRotateTip(e);
+    }
   };
 
   // Load coins, unlocked swords and best score on mount
@@ -590,7 +672,26 @@ export default function NoorQaidaHarufNinjaGame({
           // TARGET ARABIC LETTER SLICED!
           playSwordClashSound();
           if (!isMuted) {
-            universalAudioEngine.playArabicSound(targetItem.sound || targetItem.ar, { rate: 1.0 });
+            // 1. ALWAYS recite authentic Takhti 1 letter audio (Alif, Baa, etc.)
+            universalAudioEngine.playLetter(targetItem.ar);
+
+            // 2. High-incentive praise for Quranic letters: "মাশাআল্লাহ!", "গ্রেট!", "সুপার!", "চমৎকার!", "সাবাশ!", "বাহ!"
+            targetStreakRef.current += 1;
+            if (targetStreakRef.current >= 2 || Math.random() < 0.6) {
+              targetStreakRef.current = 0;
+              const praiseClips = [
+                "/audio/game/mashaallah.mp3",
+                "/audio/game/great.mp3",
+                "/audio/game/super.mp3",
+                "/audio/game/shabash.mp3",
+                "/audio/game/chomothkar.mp3",
+                "/audio/game/bah.mp3",
+              ];
+              const praise = praiseClips[Math.floor(Math.random() * praiseClips.length)];
+              setTimeout(() => {
+                playStudioGameAudio(praise);
+              }, 450);
+            }
           }
 
           // +5 Coins for slicing target letter
@@ -620,6 +721,19 @@ export default function NoorQaidaHarufNinjaGame({
         } else if (item.type === "fruit") {
           // FRUIT SLICED!
           playFruitSquishSound();
+          fruitStreakRef.current += 1;
+
+          // Strict Rule: No voice praise on every fruit so children focus on Quranic letters!
+          // Only after slicing 5 fruits, play a single appreciation voice.
+          if (!isMuted && fruitStreakRef.current >= 5) {
+            fruitStreakRef.current = 0;
+            const fruitVoices = [
+              "/audio/game/bah.mp3",
+              "/audio/game/chomothkar.mp3",
+            ];
+            const selectedVoice = fruitVoices[Math.floor(Math.random() * fruitVoices.length)];
+            playStudioGameAudio(selectedVoice);
+          }
           // +2 Coins for slicing fruit
           setCoins((c) => {
             const next = c + 2;
@@ -973,9 +1087,9 @@ export default function NoorQaidaHarufNinjaGame({
   // ── EDUCATIONAL METRICS CALCULATION ──
   const totalTargetSpawned = Math.max(spawnStats.total, slicedTargetCount, 1);
   const collectedCount = slicedTargetCount;
-  const missedCount = Math.max(0, totalTargetSpawned - collectedCount);
+  const _missedCount = Math.max(0, totalTargetSpawned - collectedCount);
   const collectionRate = Math.round((collectedCount / totalTargetSpawned) * 100);
-  const isPassed = gameState === "won" && collectionRate >= 40 && lives > 0 && finishReason !== "bombs";
+  const _isPassed = gameState === "won" && collectionRate >= 40 && lives > 0 && finishReason !== "bombs";
 
   // ── ROUND FINISH HANDLER (40% PASS THRESHOLD & STRICT SURVIVAL REQUIREMENT) ──
   const handleRoundFinish = useCallback((reason = "timeout") => {
@@ -1001,23 +1115,22 @@ export default function NoorQaidaHarufNinjaGame({
     }
   }, [playVictorySound]);
 
-  // ── VOICE SPEECH LOGIC (READING RESULT ALOUD IN BEAUTIFUL BENGALI) ──
-  const getSpokenSummaryText = useCallback(() => {
-    const rateBn = toBengaliDigits(collectionRate);
+  // ── 100% FIXED STUDIO VOICE AUDIO (ZERO ROBOTIC AI / SYNTHESIZER FALLBACK) ──
+  const getGameResultAudioClip = useCallback(() => {
     if (finishReason === "bombs" || lives <= 0) {
-      return `বোমা বিস্ফোরণে তুমি হেরে গেছ! বোমা এড়িয়ে সময় শেষ হওয়া পর্যন্ত খেলে অন্তত ৪০ শতাংশ সংগ্রহ করতে হবে। আবার চেষ্টা করো!`;
+      return "/audio/game/bomb_gameover.mp3";
     }
     if (gameState === "won" && collectionRate >= 40 && lives > 0) {
-      return `মাশাআল্লাহ! তুমি ${rateBn} শতাংশ ধরেছ! চমৎকার খেলেছ!`;
+      return "/audio/game/level_passed.mp3";
     }
-    return `তুমি ${rateBn} শতাংশ ধরেছ। পরবর্তী লেভেলে যেতে হলে অন্তত ৪০ শতাংশ সংগ্রহ করতে হবে। আবার চেষ্টা করো!`;
+    return "/audio/game/retry_level.mp3";
   }, [collectionRate, gameState, finishReason, lives]);
 
   const handleSpeakResultAgain = useCallback(() => {
     if (typeof window === "undefined") return;
-    const spoken = getSpokenSummaryText();
-    banglaAudioEngine.play(spoken, "ninja-game-result-voice-manual");
-  }, [getSpokenSummaryText]);
+    const clip = getGameResultAudioClip();
+    playStudioGameAudio(clip);
+  }, [getGameResultAudioClip, playStudioGameAudio]);
 
   useEffect(() => {
     if (gameState !== "won" && gameState !== "gameover") {
@@ -1035,24 +1148,28 @@ export default function NoorQaidaHarufNinjaGame({
 
     const timer = setTimeout(() => {
       if (!isMuted) {
-        const spoken = getSpokenSummaryText();
-        banglaAudioEngine.play(spoken, "ninja-game-result-voice-auto");
+        const clip = getGameResultAudioClip();
+        playStudioGameAudio(clip);
       }
     }, 450);
 
     return () => {
       clearTimeout(timer);
+      stopStudioGameAudio();
       banglaAudioEngine.stop();
     };
-  }, [gameState, collectionRate, lives, finishReason, isMuted, getSpokenSummaryText]);
+  }, [gameState, collectionRate, lives, finishReason, isMuted, getGameResultAudioClip, playStudioGameAudio, stopStudioGameAudio]);
 
   // ── RESTART GAME ──
   const restartGame = () => {
+    stopStudioGameAudio();
     banglaAudioEngine.stop();
     setScore(0);
     setSlicedTargetCount(0);
     totalTargetSpawnedRef.current = 0;
     collectedTargetRef.current = 0;
+    targetStreakRef.current = 0;
+    fruitStreakRef.current = 0;
     setSpawnStats({ total: 0, collected: 0 });
     setLives(3);
     setFinishReason(null);
@@ -1071,7 +1188,7 @@ export default function NoorQaidaHarufNinjaGame({
         localStorage.setItem("noor_qaida_game_duration", String(sec));
       }
     } catch { }
-    setIsTimerSettingsOpen(false);
+    setIsSettingsOpen(false);
     restartGame();
   };
 
@@ -1101,39 +1218,52 @@ export default function NoorQaidaHarufNinjaGame({
       className={`fixed inset-0 z-50 overflow-hidden select-none flex flex-col justify-between font-hind-siliguri ${shakeScreen ? "animate-shake" : ""
         }`}
     >
-      {/* 🔄 Gentle Orientation Guidance (Non-Blocking) */}
+      {/* 🔄 Gentle Orientation Guidance (Non-Blocking & Dismissible) */}
       {isPortrait && showRotateTip && (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-50 bg-amber-950/95 text-amber-200 text-xs px-3 py-1.5 rounded-full border border-amber-400 shadow-xl flex items-center gap-2 backdrop-blur-md animate-fade-in pointer-events-auto max-w-[95%]">
-          <span>🔄</span>
-          <span className="font-bold font-hind-siliguri truncate">ফোনটি আড়াআড়ি (Landscape) করে ধরলে সবচেয়ে সুন্দর দেখা যাবে</span>
-          <button
-            type="button"
-            onClick={handleRequestLandscape}
-            className="text-[10px] font-black bg-amber-500 text-amber-950 px-2 py-0.5 rounded-lg hover:bg-amber-400 shrink-0 cursor-pointer"
-          >
-            আড়াআড়ি মোড
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowRotateTip(false)}
-            className="text-amber-400 hover:text-white font-black px-1.5 py-0.5 rounded bg-white/10 shrink-0 cursor-pointer"
-            title="বন্ধ করুন"
-          >
-            ✕
-          </button>
+        <div
+          role="alert"
+          className="absolute top-2 left-1/2 -translate-x-1/2 z-[60] bg-amber-950/95 text-amber-200 text-xs px-3.5 py-1.5 sm:py-2 rounded-full border-2 border-amber-400 shadow-2xl flex items-center justify-between gap-2.5 backdrop-blur-md animate-fade-in pointer-events-auto max-w-[96%] sm:max-w-md w-max"
+        >
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span className="shrink-0 text-sm">📱</span>
+            <span className="font-bold font-hind-siliguri truncate text-[11px] sm:text-xs text-white">
+              আড়াআড়ি (Landscape) মোডে আরও সুন্দর
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onPointerDown={handleRequestLandscape}
+              onClick={handleRequestLandscape}
+              className="text-[10px] sm:text-[11px] font-black bg-amber-500 hover:bg-amber-400 text-amber-950 px-2 py-1 rounded-lg active:scale-95 transition cursor-pointer"
+            >
+              ঘোরান
+            </button>
+            <button
+              type="button"
+              onPointerDown={handleDismissRotateTip}
+              onTouchEnd={handleDismissRotateTip}
+              onClick={handleDismissRotateTip}
+              className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-500/80 hover:bg-rose-600 active:scale-90 text-white flex items-center justify-center font-black shrink-0 cursor-pointer transition shadow-md border border-rose-300"
+              title="বন্ধ করুন"
+              aria-label="বন্ধ করুন"
+            >
+              <X className="w-4 h-4 stroke-[3] pointer-events-none" />
+            </button>
+          </div>
         </div>
       )}
 
       {/* ══════════════════════════════════════════════════════════
-          TOP NINJA HUD (MATCHING USER SCREENSHOT)
-          (Home, Shop/Coins, Target Badge, Sliced Slots, Sliced Score, Best Score, Lives)
+          TOP NINJA HUD (CLEAN, MINIMAL & MOBILE-PERFECT)
+          (Home, Shop, Target Mission Capsule, Restart, Settings)
       ══════════════════════════════════════════════════════════ */}
-      <header className="relative z-30 p-1.5 sm:p-4 flex items-center justify-between gap-1 sm:gap-2 max-w-6xl mx-auto w-full pointer-events-auto">
+      <header className="relative z-30 px-2 sm:px-4 py-1.5 sm:py-3 flex items-center justify-between gap-1 sm:gap-2 max-w-6xl mx-auto w-full pointer-events-auto">
         {/* Left: Home Button & Point Shop */}
-        <div className="flex items-center gap-1 sm:gap-2">
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
           <button
             onClick={onClose}
-            className="w-9 h-9 sm:w-12 sm:h-12 rounded-2xl bg-amber-900/90 hover:bg-amber-800 text-amber-200 border-2 border-amber-600 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-amber-900/90 hover:bg-amber-800 text-amber-200 border-2 border-amber-600 shadow-md flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
             title="কায়দায় ফিরে যান"
           >
             <Home className="w-4 h-4 sm:w-5 sm:h-5" />
@@ -1142,92 +1272,59 @@ export default function NoorQaidaHarufNinjaGame({
           {/* 🛒 Shop Button (সুই ও চাকু কেনা) */}
           <button
             onClick={() => setIsShopOpen(true)}
-            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1.5 sm:py-2 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-black text-xs shadow-xl border-2 border-amber-400 active:scale-95 transition hover:scale-105 cursor-pointer"
+            className="flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 text-white font-black text-xs shadow-md border-2 border-amber-400 active:scale-95 transition hover:scale-105 cursor-pointer"
             title="দোকান: নতুন চাকু ও তলোয়ার কিনুন"
           >
             <span className="text-xs sm:text-sm">🛒</span>
-            <span className="hidden sm:inline">দোকান</span>
-            <span className="bg-black/40 px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono shadow-2xs">
+            <span className="hidden md:inline">দোকান</span>
+            <span className="bg-black/40 px-1 sm:px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-mono shadow-2xs">
               🪙 {coins}
             </span>
           </button>
         </div>
 
         {/* Center: Mission Target Level & Score Box */}
-        <div className="flex items-center gap-1.5 sm:gap-4 bg-amber-950/85 backdrop-blur-md px-2 sm:px-6 py-1 sm:py-2 rounded-2xl sm:rounded-3xl border-2 sm:border-3 border-amber-500 shadow-2xl text-white">
+        <div className="flex items-center gap-1 sm:gap-3 bg-amber-950/90 backdrop-blur-md px-2 sm:px-4 py-1 sm:py-1.5 rounded-2xl sm:rounded-3xl border-2 sm:border-3 border-amber-500 shadow-lg text-white min-w-0">
           {/* Level & Target Letter Display */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            <span className="px-2 py-0.5 rounded-lg bg-amber-900 text-amber-200 font-black text-[11px] sm:text-xs border border-amber-600">
+          <div className="flex items-center gap-1">
+            <span className="px-1.5 sm:px-2 py-0.5 rounded-lg bg-amber-900 text-amber-200 font-black text-[10px] sm:text-xs border border-amber-600 whitespace-nowrap">
               লেভেল {toBengaliDigits(targetIndex + 1)}
             </span>
-            <div className="px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-arabic font-black text-lg sm:text-2xl shadow-md flex items-center gap-1 animate-pulse">
+            <div className="px-2 py-0.5 sm:py-1 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-arabic font-black text-base sm:text-xl shadow-xs flex items-center gap-1 animate-pulse">
               <span>{targetItem.ar}</span>
-              <span className="text-[9px] sm:text-[10px] font-sans font-bold bg-white/20 px-1 sm:px-1.5 rounded">
+              <span className="text-[9px] sm:text-[10px] font-sans font-bold bg-white/20 px-1 rounded hidden sm:inline">
                 {targetItem.nameBn}
               </span>
             </div>
           </div>
 
           {/* Sliced Progress Count */}
-          <div className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-emerald-900/80 border border-emerald-400 text-emerald-200 font-black text-[11px] sm:text-sm">
+          <div className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-xl bg-emerald-900/80 border border-emerald-400 text-emerald-200 font-black text-[10px] sm:text-xs whitespace-nowrap">
             <span>🎯</span>
-            <span>
-              {toBengaliDigits(slicedTargetCount)}টি
-            </span>
+            <span>{toBengaliDigits(slicedTargetCount)}টি</span>
           </div>
 
-          {/* ⏱️ Countdown Timer Display (Click to change duration) */}
+          {/* ⏱️ Countdown Timer Display (Click opens Settings) */}
           <button
             type="button"
-            onClick={() => setIsTimerSettingsOpen((v) => !v)}
-            className="flex items-center gap-1 px-1.5 sm:px-2.5 py-0.5 sm:py-1 rounded-xl bg-amber-900/80 hover:bg-amber-800/90 border border-amber-400 text-amber-200 font-black text-[11px] sm:text-sm shadow-xs transition cursor-pointer"
-            title="গেমের সময় পরিবর্তন করুন"
+            onClick={() => setIsSettingsOpen(true)}
+            className="flex items-center gap-1 px-1.5 sm:px-2 py-0.5 rounded-xl bg-amber-900/80 hover:bg-amber-800 border border-amber-400 text-amber-200 font-black text-[10px] sm:text-xs shadow-2xs transition cursor-pointer whitespace-nowrap"
+            title="গেম সেটিংস ও সময় নির্ধারণ"
           >
-            <span>⏱️</span>
+            <span className="text-xs">⏱️</span>
             <span className={`font-mono ${timeLeft <= 5 ? "text-rose-400 font-black animate-pulse" : ""}`}>
               {toBengaliDigits(timeLeft)} সে
             </span>
           </button>
 
-          {/* ⏱️ Duration Selector Options (30s, 60s [1min/default], 90s, 120s) */}
-          <div className="hidden lg:flex items-center gap-1 bg-black/40 p-0.5 rounded-xl border border-amber-700/60">
-            {[
-              { sec: 30, label: "৩০ সে" },
-              { sec: 60, label: "১ মি (ডিফল্ট)" },
-              { sec: 90, label: "৯০ সে" },
-              { sec: 120, label: "২ মি" },
-            ].map(({ sec, label }) => (
-              <button
-                key={sec}
-                type="button"
-                onClick={() => handleSelectDuration(sec)}
-                className={`px-1.5 py-0.5 rounded-lg text-[10px] font-black transition cursor-pointer ${selectedDuration === sec
-                  ? "bg-amber-500 text-amber-950 shadow-xs scale-105"
-                  : "text-amber-300/80 hover:bg-white/10"
-                  }`}
-                title={`সময়: ${sec} সেকেন্ড`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-
-          {/* Sliced Score */}
-          <div className="flex items-center gap-1 text-xs sm:text-sm font-black text-amber-300">
-            <span>🍐</span>
-            <span>{toBengaliDigits(score)}</span>
-            <span className="text-[10px] text-amber-400/80 hidden sm:inline ml-1 font-mono">
-              (সেরা: {toBengaliDigits(bestScore)})
-            </span>
-          </div>
-
           {/* Lives (Hearts) */}
-          <div className="flex items-center gap-0.5">
+          <div className="flex items-center gap-0.5 shrink-0">
             {[1, 2, 3].map((heartIndex) => (
               <span
                 key={heartIndex}
-                className={`text-base sm:text-lg transition-transform ${heartIndex <= lives ? "scale-100 animate-bounce" : "opacity-25 grayscale scale-75"
-                  }`}
+                className={`text-xs sm:text-base transition-transform ${
+                  heartIndex <= lives ? "scale-100 animate-bounce" : "opacity-25 grayscale scale-75"
+                }`}
               >
                 ❤️
               </span>
@@ -1235,49 +1332,24 @@ export default function NoorQaidaHarufNinjaGame({
           </div>
         </div>
 
-        {/* Right: Sound & Controls */}
-        <div className="flex items-center gap-1.5 sm:gap-2">
-          {onSwitchToBubble && (
-            <button
-              onClick={() => {
-                banglaAudioEngine.stop();
-                onSwitchToBubble();
-              }}
-              className="px-2.5 sm:px-3.5 py-1.5 sm:py-2 rounded-2xl bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 hover:to-teal-700 text-white font-black text-xs shadow-xl border-2 border-sky-300 flex items-center gap-1 active:scale-95 transition hover:scale-105 cursor-pointer"
-              title="🎈 বুদ্বুদ পপ মোডে খেলুন"
-            >
-              <span>🎈</span>
-              <span className="hidden sm:inline">বুদ্বুদ মোড</span>
-            </button>
-          )}
-
-          <button
-            onClick={() => setIsMuted((m) => !m)}
-            className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-amber-900/90 hover:bg-amber-800 text-amber-200 border-2 border-amber-600 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
-            title={isMuted ? "সাউন্ড চালু করুন" : "সাউন্ড মিউট করুন"}
-          >
-            {isMuted ? <VolumeX className="w-5 h-5 sm:w-6 sm:h-6" /> : <Volume2 className="w-5 h-5 sm:w-6 sm:h-6" />}
-          </button>
-
-          {onNextLetter && (
-            <button
-              onClick={() => {
-                banglaAudioEngine.stop();
-                onNextLetter();
-              }}
-              className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white border-2 border-emerald-300 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
-              title="পরবর্তী লেভেলে যান"
-            >
-              <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 stroke-[3]" />
-            </button>
-          )}
-
+        {/* Right: Restart & Settings Controls */}
+        <div className="flex items-center gap-1 sm:gap-2 shrink-0">
+          {/* Quick Restart */}
           <button
             onClick={restartGame}
-            className="w-11 h-11 sm:w-13 sm:h-13 rounded-2xl bg-orange-600 hover:bg-orange-700 text-white border-2 border-orange-400 shadow-xl flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-orange-600 hover:bg-orange-700 text-white border-2 border-orange-400 shadow-md flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
             title="নতুন করে শুরু করুন"
           >
-            <RotateCcw className="w-5 h-5 sm:w-6 sm:h-6" />
+            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
+          </button>
+
+          {/* Master Settings Button (⚙️) */}
+          <button
+            onClick={() => setIsSettingsOpen(true)}
+            className="w-8 h-8 sm:w-11 sm:h-11 rounded-xl sm:rounded-2xl bg-gradient-to-r from-amber-600 to-amber-700 hover:from-amber-500 hover:to-amber-600 text-white border-2 border-amber-400 shadow-md flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer"
+            title="গেম সেটিংস ও সময় নির্ধারণ"
+          >
+            <Settings className="w-4 h-4 sm:w-5 sm:h-5" />
           </button>
         </div>
       </header>
@@ -1295,140 +1367,29 @@ export default function NoorQaidaHarufNinjaGame({
       />
 
       {/* ══════════════════════════════════════════════════════════
-          BOTTOM SWIPE INSTRUCTION FOOTER
+          BOTTOM SWIPE INSTRUCTION FOOTER (DISMISSIBLE)
       ══════════════════════════════════════════════════════════ */}
-      <footer className="relative z-30 p-2.5 sm:p-3 text-center bg-black/40 backdrop-blur-xs text-amber-200 text-xs sm:text-sm font-bold flex items-center justify-center gap-2 pointer-events-none">
-        <span>⚔️</span>
-        <span>
-          আঙুল বা মাউস টেনে তরবারির মতো সোয়াইপ করো! লক্ষ্য হরফ <strong>{targetItem.nameBn} ({targetItem.ar})</strong> ও মিষ্টি ফল কাটো!
-        </span>
-        <span className="text-rose-400 font-black">বোমা 💣 কাটো না!</span>
-      </footer>
-
-      {/* ══════════════════════════════════════════════════════════
-          VICTORY CELEBRATION MODAL (10 TARGET LETTERS SLICED)
-      ══════════════════════════════════════════════════════════ */}
-      {gameState === "won" && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in pointer-events-auto">
-          <div className="bg-[#FFFDF7] rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center space-y-4 border-4 border-amber-500 shadow-2xl">
-            <div className="w-20 h-20 mx-auto rounded-full bg-amber-100 border-4 border-amber-400 flex items-center justify-center text-4xl shadow-inner animate-bounce">
-              ⚔️🏆
-            </div>
-
-            <div className="space-y-1">
-              <h2 className="text-2xl font-black text-amber-950 font-hind-siliguri">
-                مَا شَاءَ اللَّهُ (মাশাআল্লাহ!)
-              </h2>
-              <p className="text-sm font-bold text-emerald-800">
-                তুমি নিনজার মতো সফলভাবে {TARGET_GOAL}টি <strong>{targetItem.nameBn} ({targetItem.ar})</strong> হরফ কেটেছো!
-              </p>
-            </div>
-
-            <div className="p-3 bg-amber-50 rounded-2xl border-2 border-amber-200 flex items-center justify-around">
-              <div>
-                <span className="text-xs text-slate-500 font-bold">মোট স্কোর</span>
-                <div className="text-2xl font-black text-amber-900">{score}</div>
-              </div>
-              <div className="h-8 w-px bg-amber-200" />
-              <div>
-                <span className="text-xs text-slate-500 font-bold">পুরস্কার</span>
-                <div className="text-sm font-black text-amber-800">+৫০ 🪙 পয়েন্ট</div>
-              </div>
-              <div className="h-8 w-px bg-amber-200" />
-              <div>
-                <span className="text-xs text-slate-500 font-bold">অর্জন</span>
-                <div className="text-xl">⭐⭐⭐</div>
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              {onNextLetter && (
-                <button
-                  onClick={onNextLetter}
-                  className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95"
-                >
-                  <span>পরবর্তী হরফে যাও</span>
-                  <ChevronRight className="w-5 h-5" />
-                </button>
-              )}
-
-              {onSwitchToBubble && (
-                <button
-                  onClick={onSwitchToBubble}
-                  className="w-full py-2.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95"
-                >
-                  <span>🎈 বুদ্বুদ মোডে ফিরে খেলুন</span>
-                </button>
-              )}
-
-              <button
-                onClick={restartGame}
-                className="w-full py-2.5 rounded-2xl bg-amber-400 hover:bg-amber-500 text-amber-950 font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95"
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>আবার খেলো</span>
-              </button>
-
-              <button
-                onClick={onClose}
-                className="w-full py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
-              >
-                কায়দায় ফিরে যান
-              </button>
-            </div>
+      {showFooterTip && (
+        <footer className="relative z-30 px-3 py-1.5 sm:py-2 text-center bg-black/50 backdrop-blur-sm text-amber-200 text-[11px] sm:text-xs font-bold flex items-center justify-between gap-2 max-w-2xl mx-auto w-full rounded-2xl border border-amber-500/20 shadow-lg pointer-events-auto my-1">
+          <div className="flex items-center gap-1.5 truncate">
+            <span className="shrink-0">⚔️</span>
+            <span className="truncate">
+              লক্ষ্য হরফ <strong>{targetItem.nameBn} ({targetItem.ar})</strong> ও ফল কাটো!
+            </span>
+            <span className="text-rose-400 font-black shrink-0">বোমা 💣 কাটো না!</span>
           </div>
-        </div>
-      )}
-
-      {/* ══════════════════════════════════════════════════════════
-          GAME OVER MODAL (SLICED 3 BOMBS)
-      ══════════════════════════════════════════════════════════ */}
-      {gameState === "gameover" && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in pointer-events-auto">
-          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-sm w-full text-center space-y-4 border-4 border-rose-500 shadow-2xl">
-            <div className="w-20 h-20 mx-auto rounded-full bg-rose-100 border-4 border-rose-400 flex items-center justify-center text-4xl shadow-inner animate-pulse">
-              💥
-            </div>
-
-            <div className="space-y-1">
-              <h2 className="text-2xl font-black text-rose-950 font-hind-siliguri">
-                ওহ নো! বোমায় তলোয়ার লেগেছে!
-              </h2>
-              <p className="text-xs text-slate-600 font-bold">
-                জীবন শেষ হয়ে গেছে। হরফ ও ফলের মাঝে লুকিয়ে থাকা বোমায় ভুলেও সোয়াইপ করো না!
-              </p>
-            </div>
-
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 flex items-center justify-around">
-              <div>
-                <span className="text-xs text-slate-500 font-bold">অর্জিত স্কোর</span>
-                <div className="text-xl font-black text-slate-800">{score}</div>
-              </div>
-              <div className="h-8 w-px bg-slate-200" />
-              <div>
-                <span className="text-xs text-slate-500 font-bold">কাটা হরফ</span>
-                <div className="text-xl font-black text-emerald-700">{slicedTargetCount}টি</div>
-              </div>
-            </div>
-
-            <div className="space-y-2 pt-2">
-              <button
-                onClick={restartGame}
-                className="w-full py-3 rounded-2xl bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm shadow-lg flex items-center justify-center gap-2 active:scale-95"
-              >
-                <RotateCcw className="w-5 h-5" />
-                <span>আবার চেষ্টা করো</span>
-              </button>
-
-              <button
-                onClick={onClose}
-                className="w-full py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs"
-              >
-                কায়দায় ফিরে যান
-              </button>
-            </div>
-          </div>
-        </div>
+          <button
+            type="button"
+            onPointerDown={handleDismissFooterTip}
+            onTouchEnd={handleDismissFooterTip}
+            onClick={handleDismissFooterTip}
+            className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-rose-500/80 hover:bg-rose-600 active:scale-90 text-white flex items-center justify-center font-black shrink-0 cursor-pointer transition shadow-md border border-rose-300"
+            title="বার্তাটি বন্ধ করুন"
+            aria-label="বার্তাটি বন্ধ করুন"
+          >
+            <X className="w-3.5 h-3.5 stroke-[3] pointer-events-none" />
+          </button>
+        </footer>
       )}
 
       {/* ══════════════════════════════════════════════════════════
@@ -1632,49 +1593,144 @@ export default function NoorQaidaHarufNinjaGame({
         </div>
       )}
 
-      {/* ⏱️ TIMER SETTINGS MODAL */}
-      {isTimerSettingsOpen && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/75 backdrop-blur-xs animate-fade-in pointer-events-auto">
-          <div className="bg-amber-950/95 text-white rounded-3xl p-5 sm:p-6 max-w-xs w-full text-center space-y-4 border-2 border-amber-500 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-amber-800/80 pb-2">
-              <div className="text-sm font-black text-amber-200 flex items-center gap-1.5">
-                <span>⏱️</span>
-                <span>গেমের সময় নির্ধারণ করুন</span>
+      {/* ⚙️ COMPREHENSIVE GAME SETTINGS MODAL */}
+      {isSettingsOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in pointer-events-auto">
+          <div className="bg-amber-950/95 text-white rounded-3xl p-4 sm:p-6 w-[92%] max-w-sm text-center space-y-3.5 border-3 border-amber-500 shadow-2xl m-auto animate-scale-up">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-amber-800/80 pb-2.5">
+              <div className="text-base font-black text-amber-200 flex items-center gap-2">
+                <span className="p-1 rounded-lg bg-amber-900 text-amber-300">
+                  <Settings className="w-4 h-4 stroke-[2.5]" />
+                </span>
+                <span>নিনজা গেম সেটিংস</span>
               </div>
               <button
                 type="button"
-                onClick={() => setIsTimerSettingsOpen(false)}
-                className="w-7 h-7 rounded-full bg-amber-900/80 hover:bg-amber-800 text-amber-200 flex items-center justify-center font-bold cursor-pointer"
+                onClick={() => setIsSettingsOpen(false)}
+                className="w-8 h-8 rounded-full bg-amber-900/80 hover:bg-amber-800 text-amber-200 flex items-center justify-center font-bold text-sm cursor-pointer transition active:scale-95"
+                title="বন্ধ করুন"
               >
                 ✕
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { sec: 30, title: "৩০ সেকেন্ড", sub: "দ্রুত রাউন্ড" },
-                { sec: 60, title: "৬০ সেকেন্ড", sub: "১ মিনিট (প্রস্তাবিত)" },
-                { sec: 90, title: "৯০ সেকেন্ড", sub: "দেড় মিনিট" },
-                { sec: 120, title: "১২০ সেকেন্ড", sub: "২ মিনিট" },
-              ].map(({ sec, title, sub }) => (
-                <button
-                  key={sec}
-                  type="button"
-                  onClick={() => handleSelectDuration(sec)}
-                  className={`p-3 rounded-2xl border-2 text-center transition cursor-pointer ${selectedDuration === sec
-                    ? "bg-amber-500 border-amber-300 text-amber-950 shadow-md font-black"
-                    : "bg-amber-900/50 border-amber-800/80 hover:bg-amber-900 text-amber-200"
+            {/* 1. Duration Selection */}
+            <div className="space-y-1.5 text-left">
+              <div className="text-xs font-black text-amber-200 flex items-center gap-1.5">
+                <span>⏱️</span>
+                <span>খেলার সময় নির্ধারণ করুন:</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { sec: 30, title: "৩০ সেকেন্ড", sub: "দ্রুত রাউন্ড" },
+                  { sec: 60, title: "৬০ সেকেন্ড", sub: "১ মিনিট (প্রস্তাবিত)" },
+                  { sec: 90, title: "৯০ সেকেন্ড", sub: "দেড় মিনিট" },
+                  { sec: 120, title: "১২০ সেকেন্ড", sub: "২ মিনিট (দীর্ঘ)" },
+                ].map(({ sec, title, sub }) => (
+                  <button
+                    key={sec}
+                    type="button"
+                    onClick={() => {
+                      handleSelectDuration(sec);
+                      setIsSettingsOpen(false);
+                    }}
+                    className={`p-2.5 rounded-2xl border-2 text-left transition cursor-pointer active:scale-95 ${
+                      selectedDuration === sec
+                        ? "bg-amber-500 border-amber-300 text-amber-950 shadow-md font-black"
+                        : "bg-amber-900/40 border-amber-800/70 hover:bg-amber-900/80 text-amber-200"
                     }`}
-                >
-                  <div className="text-sm font-black font-hind-siliguri">{title}</div>
-                  <div className="text-[10px] text-amber-300/80">{sub}</div>
-                </button>
-              ))}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-black font-hind-siliguri">{title}</div>
+                      {selectedDuration === sec && <Check className="w-3.5 h-3.5 text-amber-950 stroke-[3]" />}
+                    </div>
+                    <div className="text-[10px] text-amber-300/80 font-medium">{sub}</div>
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <p className="text-[11px] text-amber-300/80 font-bold">
-              পছন্দসই সময় বেছে নিলে পরবর্তী খেলায়ও তা মনে রাখা হবে।
-            </p>
+            {/* 2. Sound Toggle */}
+            <div className="pt-1">
+              <button
+                type="button"
+                onClick={() => setIsMuted((m) => !m)}
+                className={`w-full py-2.5 px-3 rounded-2xl border-2 flex items-center justify-between text-xs font-black transition cursor-pointer active:scale-95 ${
+                  !isMuted
+                    ? "bg-amber-900/70 border-amber-500 text-amber-100"
+                    : "bg-rose-950/70 border-rose-400 text-rose-200"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {!isMuted ? <Volume2 className="w-4 h-4 text-amber-300" /> : <VolumeX className="w-4 h-4 text-rose-400" />}
+                  <span>{!isMuted ? "সাউন্ড ও ভয়েস চালু আছে" : "সাউন্ড মিউট / বন্ধ আছে"}</span>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/40 border border-white/20">
+                  {!isMuted ? "মিউট করুন" : "চালু করুন"}
+                </span>
+              </button>
+            </div>
+
+            {/* 3. Switch Mode & Shop */}
+            <div className="grid grid-cols-2 gap-2 pt-0.5">
+              {onSwitchToBubble && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSettingsOpen(false);
+                    stopStudioGameAudio();
+                    banglaAudioEngine.stop();
+                    onSwitchToBubble();
+                  }}
+                  className="py-2.5 px-2 rounded-2xl bg-gradient-to-r from-sky-500 to-teal-600 hover:from-sky-600 text-white font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                >
+                  <span>🎈</span>
+                  <span>বুদ্বুদ পপ মোড</span>
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSettingsOpen(false);
+                  setIsShopOpen(true);
+                }}
+                className={`py-2.5 px-2 rounded-2xl bg-amber-500 hover:bg-amber-600 text-amber-950 font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
+                  !onSwitchToBubble ? "col-span-2" : ""
+                }`}
+              >
+                <span>🛒</span>
+                <span>চাকুর দোকান</span>
+              </button>
+            </div>
+
+            {/* 4. Restart Level & Back to Qaida */}
+            <div className="flex items-center justify-between gap-2 pt-1 border-t border-amber-800/80">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSettingsOpen(false);
+                  restartGame();
+                }}
+                className="flex-1 py-2 rounded-xl bg-amber-900/60 hover:bg-amber-900 text-amber-200 font-bold text-xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer border border-amber-700/60"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>নতুন করে শুরু</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsSettingsOpen(false);
+                  stopStudioGameAudio();
+                  banglaAudioEngine.stop();
+                  onClose();
+                }}
+                className="flex-1 py-2 rounded-xl bg-amber-900/60 hover:bg-amber-900 text-amber-200 font-bold text-xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer border border-amber-700/60"
+              >
+                <Home className="w-3.5 h-3.5" />
+                <span>কায়দায় ফেরা</span>
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1684,52 +1740,49 @@ export default function NoorQaidaHarufNinjaGame({
           (READS RESULT ALOUD IN BENGALI, STRICT 40% PASS THRESHOLD & SURVIVAL REQUIREMENT FOR NEXT LEVEL)
       ══════════════════════════════════════════════════════════ */}
       {(gameState === "won" || gameState === "gameover") && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md animate-fade-in pointer-events-auto overflow-y-auto">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3.5 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fade-in pointer-events-auto overflow-y-auto">
           <div
-            className={`relative bg-gradient-to-b from-white via-amber-50/40 to-white rounded-3xl sm:rounded-4xl p-5 sm:p-7 max-w-md w-full text-center space-y-4 border-4 shadow-2xl transition-all ${
+            className={`relative bg-gradient-to-b from-white via-amber-50/40 to-white rounded-3xl sm:rounded-[32px] p-4 sm:p-6 w-[90%] max-w-[380px] max-h-[94vh] text-center space-y-2.5 sm:space-y-3.5 border-4 sm:border-[5px] shadow-[0_10px_45px_rgba(0,0,0,0.6)] transition-all m-auto my-auto ${
               gameState === "won" && collectionRate >= 40 && lives > 0 && finishReason !== "bombs"
-                ? "border-amber-400 shadow-[0_0_50px_rgba(251,191,36,0.35)]"
-                : "border-rose-400 shadow-[0_0_40px_rgba(244,63,94,0.3)]"
+                ? "border-emerald-400 shadow-[0_0_50px_rgba(16,185,129,0.35)]"
+                : "border-amber-400 shadow-[0_0_45px_rgba(245,158,11,0.3)]"
             }`}
           >
             {/* Sparkle Glow & Floating Icon */}
-            <div className="relative mx-auto">
+            <div className="space-y-1">
               <div
-                className={`w-20 h-20 sm:w-24 sm:h-24 mx-auto rounded-full flex items-center justify-center text-4xl sm:text-5xl border-4 shadow-xl animate-bounce ${
+                className={`w-14 h-14 sm:w-16 sm:h-16 mx-auto rounded-full flex items-center justify-center text-3xl sm:text-4xl border-3 shadow-lg ${
                   gameState === "won" && collectionRate >= 40 && lives > 0 && finishReason !== "bombs"
-                    ? "bg-gradient-to-tr from-amber-200 via-yellow-100 to-amber-300 border-amber-400 text-amber-600"
+                    ? "bg-gradient-to-tr from-amber-200 via-yellow-100 to-amber-300 border-amber-400 text-amber-600 animate-bounce"
                     : "bg-gradient-to-tr from-rose-100 via-orange-100 to-amber-100 border-rose-300 text-rose-500"
                 }`}
               >
                 {gameState === "won" && collectionRate >= 40 && lives > 0 && finishReason !== "bombs" ? "🏆" : "🎯"}
               </div>
-            </div>
 
-            {/* Main Title & Level */}
-            <div className="space-y-1">
               {gameState === "won" && collectionRate >= 40 && lives > 0 && finishReason !== "bombs" ? (
                 <>
-                  <div className="flex items-center justify-center gap-1.5 text-2xl sm:text-3xl animate-pulse">
+                  <div className="flex items-center justify-center gap-1 text-xl sm:text-2xl">
                     {collectionRate >= 80 ? "⭐⭐⭐" : collectionRate >= 60 ? "⭐⭐" : "⭐"}
                   </div>
-                  <h2 className="text-2xl sm:text-3xl font-black text-amber-950 font-hind-siliguri">
+                  <h2 className="text-xl sm:text-2xl font-black text-amber-950 font-hind-siliguri">
                     مَا شَاءَ اللَّهُ (মাশাআল্লাহ!)
                   </h2>
                   <p className="text-xs sm:text-sm font-bold text-emerald-800">
-                    লেভেল {toBengaliDigits(targetIndex + 1)} নিনজা জয়! তুমি হরফ <strong>{targetItem.nameBn} ({targetItem.ar})</strong> চিনে ফেলেছ!
+                    লেভেল {toBengaliDigits(targetIndex + 1)} সম্পন্ন! হরফ <strong>{targetItem.nameBn} ({targetItem.ar})</strong> সফলভাবে চিনেছ!
                   </p>
                 </>
               ) : (
                 <>
-                  <div className="text-xl sm:text-2xl font-black text-rose-700 font-hind-siliguri">
-                    {finishReason === "bombs" || lives <= 0 ? "বোমা বিস্ফোরণ! 💥" : "আবার চেষ্টা করো! 💪"}
+                  <div className="text-lg sm:text-xl font-black text-rose-700 font-hind-siliguri">
+                    {finishReason === "bombs" || lives <= 0 ? "💥 বোমা বিস্ফোরণ!" : "আবার চেষ্টা করো! 💪"}
                   </div>
-                  <h2 className="text-lg sm:text-xl font-bold text-slate-800 font-hind-siliguri">
+                  <h2 className="text-base sm:text-lg font-bold text-slate-800 font-hind-siliguri">
                     লেভেল {toBengaliDigits(targetIndex + 1)}: {targetItem.nameBn} ({targetItem.ar})
                   </h2>
-                  <p className="text-xs text-rose-600 font-semibold">
+                  <p className="text-xs text-slate-600 font-semibold">
                     {finishReason === "bombs" || lives <= 0
-                      ? "বোমা লেগে জীবন শেষ হয়ে গেছে! বোমা এড়িয়ে সময় শেষ হওয়া পর্যন্ত টিকে থাকতে হবে।"
+                      ? "বোমা এড়িয়ে সময় শেষ হওয়া পর্যন্ত টিকে অন্তত ৪০% সংগ্রহ করতে হবে।"
                       : "পরবর্তী লেভেলে যেতে হলে অন্তত ৪০% সংগ্রহ করতে হবে।"}
                   </p>
                 </>
@@ -1738,144 +1791,158 @@ export default function NoorQaidaHarufNinjaGame({
 
             {/* Spoken Voice Announcement Box with Audio Replay */}
             <div
-              className={`p-3 rounded-2xl border text-center transition flex items-center justify-between gap-2 ${
+              className={`p-2.5 rounded-2xl border text-center transition flex items-center justify-between gap-2 ${
                 gameState === "won" && collectionRate >= 40 && lives > 0 && finishReason !== "bombs"
                   ? "bg-emerald-50/90 border-emerald-300 text-emerald-950"
                   : "bg-rose-50/90 border-rose-200 text-rose-950"
               }`}
             >
-              <div className="text-xs sm:text-sm font-bold font-hind-siliguri text-left">
+              <div className="text-xs font-bold font-hind-siliguri text-left truncate">
                 {finishReason === "bombs" || lives <= 0
-                  ? "বোমা বিস্ফোরণে হেরে গেছ! বোমা এড়িয়ে সময় শেষ হওয়া পর্যন্ত খেলুন।"
-                  : gameState === "won" && collectionRate >= 40
+                  ? "💥 বোমা বিস্ফোরণে হেরে গেছ! আবার চেষ্টা করো!"
+                  : gameState === "won" && collectionRate >= 40 && lives > 0
                   ? `মাশাআল্লাহ! তুমি ${toBengaliDigits(collectionRate)}% সংগ্রহ করেছো!`
-                  : `তুমি ${toBengaliDigits(collectionRate)}% সংগ্রহ করেছো (কমপক্ষে ৪০% প্রয়োজন)`}
+                  : `তুমি ${toBengaliDigits(collectionRate)}% সংগ্রহ করেছো। আবার খেলো!`}
               </div>
               <button
                 type="button"
                 onClick={handleSpeakResultAgain}
-                className="px-2.5 py-1 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 shadow-xs text-xs font-black text-slate-700 flex items-center gap-1 active:scale-95 cursor-pointer shrink-0"
+                className="px-2 py-1 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 shadow-xs text-xs font-black text-slate-700 flex items-center gap-1 active:scale-95 cursor-pointer shrink-0"
                 title="ফলাফল শুনুন"
               >
-                <Volume2 className="w-4 h-4 text-emerald-600" />
-                <span className="hidden sm:inline">শুনুন</span>
+                <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
+                <span className="text-[11px]">শুনুন</span>
               </button>
             </div>
 
-            {/* 4 Educational Analytic Stats Cards */}
-            <div className="grid grid-cols-2 gap-2 text-left">
-              <div className="p-2.5 rounded-2xl bg-sky-50 border border-sky-200">
-                <div className="text-[10px] text-sky-800 font-bold">মোট হরফ এসেছে</div>
-                <div className="text-base sm:text-lg font-black text-sky-950 font-mono">
+            {/* 3 Compact Educational Analytic Stats Cards (NO "মিস হয়েছে" card!) */}
+            <div className="grid grid-cols-3 gap-1.5 sm:gap-2 text-center">
+              <div className="p-2 sm:p-2.5 rounded-2xl bg-sky-50 border border-sky-200">
+                <div className="text-[10px] text-sky-800 font-bold">মোট হরফ</div>
+                <div className="text-sm sm:text-base font-black text-sky-950 font-mono">
                   {toBengaliDigits(totalTargetSpawned)}টি
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-2xl bg-emerald-50 border border-emerald-200">
-                <div className="text-[10px] text-emerald-800 font-bold">সংগ্রহ করেছো</div>
-                <div className="text-base sm:text-lg font-black text-emerald-950 font-mono">
+              <div className="p-2 sm:p-2.5 rounded-2xl bg-emerald-50 border border-emerald-200">
+                <div className="text-[10px] text-emerald-800 font-bold">সংগ্রহ করেছ</div>
+                <div className="text-sm sm:text-base font-black text-emerald-950 font-mono">
                   {toBengaliDigits(collectedCount)}টি
                 </div>
               </div>
 
-              <div className="p-2.5 rounded-2xl bg-amber-50 border border-amber-200">
-                <div className="text-[10px] text-amber-800 font-bold">মিস হয়েছে</div>
-                <div className="text-base sm:text-lg font-black text-amber-950 font-mono">
-                  {toBengaliDigits(missedCount)}টি
-                </div>
-              </div>
-
               <div
-                className={`p-2.5 rounded-2xl border ${
+                className={`p-2 sm:p-2.5 rounded-2xl border ${
                   collectionRate >= 40 && lives > 0 && finishReason !== "bombs"
                     ? "bg-teal-50 border-teal-200 text-teal-950"
                     : "bg-rose-50 border-rose-200 text-rose-950"
                 }`}
               >
                 <div className="text-[10px] font-bold">সংগ্রহের হার</div>
-                <div className="text-base sm:text-lg font-black font-mono">
+                <div className="text-sm sm:text-base font-black font-mono">
                   {toBengaliDigits(collectionRate)}%
                 </div>
               </div>
             </div>
 
-            {/* Rewards Row */}
-            <div className="text-xs font-black text-amber-800 bg-amber-50/90 py-2 rounded-xl border border-amber-200 flex items-center justify-around">
+            {/* Rewards Pill */}
+            <div className="text-xs font-black text-amber-900 bg-amber-100/70 py-1.5 px-3 rounded-xl border border-amber-300 flex items-center justify-around">
               <span>স্কোর: {toBengaliDigits(score)} ⭐</span>
               <span>•</span>
               <span>
-                {gameState === "won" && collectionRate >= 40 && lives > 0 && finishReason !== "bombs" ? "+৫০ 🪙 কয়েন" : "কয়েন: 🪙 ০"}
+                {gameState === "won" && collectionRate >= 40 && lives > 0 && finishReason !== "bombs" ? "+৫০ 🪙 কয়েন" : "🪙 ০ কয়েন"}
               </span>
             </div>
 
-            {/* Action Buttons */}
+            {/* Action Buttons (Large, high-contrast, child-friendly tap targets) */}
             <div className="space-y-2 pt-1">
               {/* Next Level Button (Strict Invariant: Only unlocked if survived timer, lives > 0, reason !== "bombs", and collectionRate >= 40%!) */}
               {gameState === "won" && collectionRate >= 40 && lives > 0 && finishReason !== "bombs" && onNextLetter ? (
-                <button
-                  onClick={() => {
-                    banglaAudioEngine.stop();
-                    onNextLetter();
-                    restartGame();
-                  }}
-                  className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-sm shadow-xl flex items-center justify-center gap-2 active:scale-95 animate-pulse cursor-pointer"
-                >
-                  <span>পরবর্তী লেভেল</span>
-                  <ChevronRight className="w-5 h-5 stroke-[3]" />
-                </button>
-              ) : onNextLetter ? (
-                <div className="w-full py-3 rounded-2xl bg-slate-200 text-slate-500 font-black text-xs flex items-center justify-center gap-2 cursor-not-allowed">
-                  <Lock className="w-4 h-4" />
-                  <span>
-                    {finishReason === "bombs" || lives <= 0
-                      ? "বোমা বিস্ফোরণে হেরে গেছ (পরবর্তী লেভেল লক)"
-                      : `পরবর্তী লেভেল লক (কমপক্ষে ৪০% প্রয়োজন, পেয়েছ ${toBengaliDigits(collectionRate)}%)`}
-                  </span>
-                </div>
-              ) : null}
+                <>
+                  <button
+                    onClick={() => {
+                      stopStudioGameAudio();
+                      banglaAudioEngine.stop();
+                      onNextLetter();
+                      restartGame();
+                    }}
+                    className="w-full py-3 sm:py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-600 hover:to-teal-600 text-white font-black text-base shadow-xl shadow-emerald-500/25 flex items-center justify-center gap-2 active:scale-95 animate-pulse cursor-pointer border-2 border-emerald-300"
+                  >
+                    <span>পরবর্তী লেভেল খেলুন</span>
+                    <ChevronRight className="w-5 h-5 stroke-[3]" />
+                  </button>
 
-              {/* Replay Button */}
-              <button
-                onClick={() => {
-                  banglaAudioEngine.stop();
-                  restartGame();
-                }}
-                className={`w-full py-3 rounded-2xl text-white font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer ${
-                  !(gameState === "won" && collectionRate >= 40 && lives > 0 && finishReason !== "bombs")
-                    ? "bg-amber-500 hover:bg-amber-600 animate-pulse text-sm py-3.5"
-                    : "bg-slate-700 hover:bg-slate-800"
-                }`}
-              >
-                <RotateCcw className="w-4 h-4" />
-                <span>
-                  {!(gameState === "won" && collectionRate >= 40 && lives > 0 && finishReason !== "bombs")
-                    ? "আবার খেলুন (৪০% অর্জনের চেষ্টা)"
-                    : "পুনরায় খেলুন"}
-                </span>
-              </button>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      onClick={() => {
+                        stopStudioGameAudio();
+                        banglaAudioEngine.stop();
+                        restartGame();
+                      }}
+                      className="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer border border-slate-200"
+                    >
+                      <RotateCcw className="w-3.5 h-3.5" />
+                      <span>আবার খেলুন</span>
+                    </button>
+                    <button
+                      onClick={() => {
+                        stopStudioGameAudio();
+                        banglaAudioEngine.stop();
+                        onClose();
+                      }}
+                      className="py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center justify-center gap-1 active:scale-95 cursor-pointer border border-slate-200"
+                    >
+                      <span>কায়দায় ফেরা</span>
+                    </button>
+                  </div>
 
-              {/* Switch to Bubble Pop Game */}
-              {onSwitchToBubble && (
-                <button
-                  onClick={() => {
-                    banglaAudioEngine.stop();
-                    onSwitchToBubble();
-                  }}
-                  className="w-full py-2.5 rounded-2xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
-                >
-                  <span>🎈 বুদ্বুদ ফুটানো খেলায় যান</span>
-                </button>
+                  {/* Switch to Bubble Pop Game */}
+                  {onSwitchToBubble && (
+                    <button
+                      onClick={() => {
+                        stopStudioGameAudio();
+                        banglaAudioEngine.stop();
+                        onSwitchToBubble();
+                      }}
+                      className="w-full py-2 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-black text-xs shadow-md flex items-center justify-center gap-1.5 active:scale-95 cursor-pointer"
+                    >
+                      <span>🎈 বুদ্বুদ ফুটানো খেলায় যান</span>
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  {/* Big Glowing Play Again Button for Kids */}
+                  <button
+                    onClick={() => {
+                      stopStudioGameAudio();
+                      banglaAudioEngine.stop();
+                      restartGame();
+                    }}
+                    className="w-full py-3.5 sm:py-4 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-black text-base sm:text-lg shadow-xl shadow-amber-500/30 flex items-center justify-center gap-2 active:scale-95 animate-pulse cursor-pointer border-2 border-amber-300"
+                  >
+                    <RotateCcw className="w-5 h-5 stroke-[2.5]" />
+                    <span>🔄 আবার খেলুন</span>
+                  </button>
+
+                  <div className="flex items-center justify-between gap-2 pt-0.5">
+                    <div className="text-[11px] text-slate-500 font-medium flex items-center gap-1">
+                      <Lock className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      <span>পাস করতে অন্তত ৪০% সংগ্রহ ও বোমা এড়াতে হবে</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        stopStudioGameAudio();
+                        banglaAudioEngine.stop();
+                        onClose();
+                      }}
+                      className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs shrink-0 cursor-pointer"
+                    >
+                      কায়দায় ফেরা
+                    </button>
+                  </div>
+                </>
               )}
-
-              <button
-                onClick={() => {
-                  banglaAudioEngine.stop();
-                  onClose();
-                }}
-                className="w-full py-2 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs cursor-pointer"
-              >
-                কায়দায় ফিরে যান
-              </button>
             </div>
           </div>
         </div>

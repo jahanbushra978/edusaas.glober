@@ -143,6 +143,20 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
 
   // Scroll View container ref
   const scrollContainerRef = useRef(null);
+  const bookFrameRef = useRef(null);
+
+  // Smoothly anchor to the reading card without jumping to the top of the entire website
+  const scrollToBookComfortably = () => {
+    if (typeof window === "undefined" || !bookFrameRef.current) return;
+    try {
+      const rect = bookFrameRef.current.getBoundingClientRect();
+      // If user was scrolled down at the bottom of the card or past it, gently align reading area
+      // without jumping all the way to top of browser/website (0, 0)
+      if (rect.top < 60 || rect.top > 350) {
+        bookFrameRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    } catch { }
+  };
 
   // Detect mobile & screen size
   useEffect(() => {
@@ -440,6 +454,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
       setTimeout(() => {
         setCurrentPage(targetPage);
         setActiveTab("class");
+        scrollToBookComfortably();
         setTimeout(() => {
           setIsFlipping(false);
         }, 350);
@@ -456,6 +471,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
     } else {
       setCurrentPage(targetPage);
       setActiveTab("class");
+      scrollToBookComfortably();
     }
   };
 
@@ -1165,30 +1181,76 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
           </div>
         </div>
 
-        {/* Footer Navigation Bar */}
-        <div className="p-3.5 bg-slate-100 border-t border-slate-200 hidden sm:flex items-center justify-between text-xs font-bold text-slate-700">
-          <button
-            onClick={handlePrevPage}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-2xl bg-white text-slate-800 border-2 border-slate-300 hover:bg-slate-50 shadow-2xs transition"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span>পূর্ববর্তী পাতা</span>
-          </button>
+        {/* Footer Navigation Bar (বাকি পৃষ্ঠা সূচিপত্র ও সরাসরি পরবর্তী পর্ব এক্সেস) */}
+        {(() => {
+          const currentParva = NOOR_QAIDA_PARVAS.find((p) => p.parvaNumber === cls.parvaNumber);
+          const nextParva = NOOR_QAIDA_PARVAS.find((p) => p.parvaNumber === cls.parvaNumber + 1);
+          const isParvaEnd = currentParva && cls.classNumber === currentParva.endClass;
 
-          <span className="font-mono text-emerald-800 font-black">
-            পৃষ্ঠা নং {cls.classNumber + 7} (ক্লাস {cls.classNumberBn})
-          </span>
+          return (
+            <div className="p-3.5 bg-slate-100 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-2.5 text-xs font-bold text-slate-700">
+              <div className="flex items-center justify-between w-full sm:w-auto gap-2">
+                <button
+                  onClick={handlePrevPage}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-white text-slate-800 border-2 border-slate-300 hover:bg-slate-50 shadow-2xs transition active:scale-95 cursor-pointer"
+                  title="পূর্ববর্তী পাতা"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>পূর্ববর্তী পাতা</span>
+                </button>
 
-          <button
-            onClick={handleNextPage}
-            disabled={cls.classNumber >= 78}
-            className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl transition shadow-md ${cls.classNumber >= 78 ? "opacity-40 cursor-not-allowed bg-slate-200" : "bg-emerald-600 hover:bg-emerald-700 text-white"
-              }`}
-          >
-            <span>পরবর্তী পাতা</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
+                {/* 📑 সূচিপত্র ও বাকি পৃষ্ঠাগুলো দেখার বাটন */}
+                <button
+                  onClick={() => setIsTocOpen(true)}
+                  className="flex items-center gap-1.5 px-3.5 py-2 rounded-2xl bg-emerald-50 hover:bg-emerald-100 border-2 border-emerald-300 text-emerald-950 font-black shadow-2xs transition active:scale-95 cursor-pointer"
+                  title="সকল পৃষ্ঠা ও পর্বের সূচিপত্র খুলুন"
+                >
+                  <span>📑</span>
+                  <span className="font-mono text-emerald-900">
+                    পৃষ্ঠা {cls.classNumber + 7} (ক্লাস {cls.classNumberBn})
+                  </span>
+                  <span className="text-[10px] text-emerald-700 font-bold bg-white/90 px-2 py-0.5 rounded-full border border-emerald-200">
+                    বাকি পৃষ্ঠা ও সূচিপত্র ▾
+                  </span>
+                </button>
+
+                <button
+                  onClick={handleNextPage}
+                  disabled={cls.classNumber >= 78}
+                  className={`flex items-center gap-1.5 px-4 py-2 rounded-2xl transition shadow-md active:scale-95 cursor-pointer ${
+                    cls.classNumber >= 78
+                      ? "opacity-40 cursor-not-allowed bg-slate-200 text-slate-500"
+                      : "bg-emerald-600 hover:bg-emerald-700 text-white"
+                  }`}
+                  title="পরবর্তী পাতা"
+                >
+                  <span>পরবর্তী পাতা</span>
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* ⏩ সরাসরি পরবর্তী পর্ব শুরু করার বোতাম (যেমন: পর্ব ২ মাখরাজ) */}
+              {nextParva && (
+                <button
+                  onClick={() => navigateToPage(nextParva.startClass, "next")}
+                  className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-2xl text-white font-black text-xs shadow-md transition active:scale-95 cursor-pointer border-2 border-amber-300 w-full sm:w-auto ${
+                    isParvaEnd
+                      ? "bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 animate-pulse"
+                      : "bg-amber-600 hover:bg-amber-700 text-amber-50"
+                  }`}
+                  title={`পরবর্তী পর্বে যান: ${nextParva.titleBn}`}
+                >
+                  <span>⏩</span>
+                  <span>পরবর্তী পর্ব: {nextParva.titleBn.split(':')[0]}</span>
+                  <span className="opacity-90 font-medium hidden md:inline">
+                    ({nextParva.titleBn.split(':')[1]?.trim()})
+                  </span>
+                  <span>➔</span>
+                </button>
+              )}
+            </div>
+          );
+        })()}
       </div>
     );
   };
@@ -1351,7 +1413,7 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
       )}
 
       {/* ── MAIN BOOK CONTAINER ── */}
-      <main className="max-w-4xl mx-auto px-2 sm:px-6 pt-2.5 sm:pt-4 relative">
+      <main ref={bookFrameRef} className="max-w-4xl mx-auto px-2 sm:px-6 pt-2.5 sm:pt-4 relative scroll-mt-24">
         {/* Floating Desktop Turn Arrows */}
         {activeTab === "class" && viewMode === "3d" && (
           <>
@@ -1905,13 +1967,13 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
         </button>
 
         <button
-          onClick={() => setIsQuickJumpOpen(true)}
+          onClick={() => setIsTocOpen(true)}
           className="flex flex-col items-center px-3 py-1 rounded-2xl bg-emerald-50 border-2 border-emerald-300 text-emerald-950 font-bold active:scale-95 shadow-xs"
         >
           <span className="text-xs font-black font-hind-siliguri text-emerald-900">
             {getPageHeaderLabel()}
           </span>
-          <span className="text-[9px] text-emerald-700 font-bold">ট্যাপ করে পৃষ্ঠা বদলান ▾</span>
+          <span className="text-[9px] text-emerald-700 font-bold">বাকি পৃষ্ঠা ও সূচিপত্র ▾</span>
         </button>
 
         <button
@@ -2054,6 +2116,34 @@ export default function NoorQaidaBook({ initialClass = "cover", onNavigateBack }
               >
                 🎨 রঙ-সংকেত (পৃষ্ঠা ৫)
               </button>
+            </div>
+
+            {/* 📚 ১১টি পর্বের দ্রুত জাম্প বার */}
+            <div className="p-2.5 bg-amber-50/90 border-b border-amber-200 overflow-x-auto flex items-center gap-1.5 text-xs font-bold scrollbar-thin">
+              <span className="text-[11px] font-black text-amber-950 shrink-0 flex items-center gap-1">
+                <span>📚</span>
+                <span>সকল পর্ব:</span>
+              </span>
+              {NOOR_QAIDA_PARVAS.map((p) => {
+                const isActive = typeof currentPage === "number" && getClassByNumber(currentPage)?.parvaNumber === p.parvaNumber;
+                return (
+                  <button
+                    key={p.id}
+                    onClick={() => {
+                      navigateToPage(p.startClass, "next");
+                      setIsTocOpen(false);
+                    }}
+                    className={`px-2.5 py-1 rounded-xl text-xs font-black whitespace-nowrap transition active:scale-95 cursor-pointer border ${
+                      isActive
+                        ? "bg-emerald-600 text-white border-emerald-700 shadow-xs"
+                        : "bg-white hover:bg-amber-100 text-slate-800 border-amber-300"
+                    }`}
+                    title={`${p.titleBn} (${p.classesRangeBn})`}
+                  >
+                    <span>{p.emoji}</span> {p.titleBn.split(':')[0]}
+                  </button>
+                );
+              })}
             </div>
 
             <div className="p-3 bg-slate-50 border-b border-slate-200">

@@ -3,8 +3,8 @@
  * Enables offline recitation, cached Quranic Uthmani text, and background sync.
  */
 
-const CACHE_NAME = "nur-quran-pwa-v3";
-const AUDIO_CACHE = "nur-audio-cache-v3";
+const CACHE_NAME = "nur-quran-pwa-v4";
+const AUDIO_CACHE = "nur-audio-cache-v4";
 
 const STATIC_PRECACHE = [
   "/",
@@ -61,6 +61,17 @@ self.addEventListener("fetch", (event) => {
 
   // Bypass Next.js hot module reloading on localhost during dev
   if (url.pathname.includes("/_next/webpack-hmr")) {
+    return;
+  }
+
+  // Bypass service worker for local static game audio files (/audio/game/)
+  if (url.pathname.startsWith("/audio/game/")) {
+    return;
+  }
+
+  // Bypass service worker when browser sends a Range header (audio streaming in Chrome/Safari)
+  // Cache Storage does not support HTTP 206 Partial Content and causes net::ERR_CACHE_OPERATION_NOT_SUPPORTED
+  if (event.request.headers.get("range")) {
     return;
   }
 
